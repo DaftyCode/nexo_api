@@ -84,16 +84,7 @@ Los equipos de IT pueden distribuir estos paquetes mediante sus repositorios int
 
 ## Cómo funciona
 
-```mermaid
-flowchart LR
-    Angular[Angular: interfaz] --> Rust[Rust: casos de uso y API]
-    Tauri[Tauri: integración de escritorio] --> Rust
-    Rust --> SQLite[(SQLite)]
-    Rust --> Vault[Vault y credenciales del SO]
-    Rust --> Engine[Motor auxiliar de Nexo]
-    Engine --> APIs[HTTP y protocolos]
-    Engine --> Scripts[Procesos de scripts limitados]
-```
+![Arquitectura de Nexo: Angular y Tauri conectan con el backend Rust, que coordina SQLite, el vault y el motor de peticiones y scripts.](public/architecture.svg)
 
 El escritorio inicia un servicio Rust en un puerto aleatorio de loopback y utiliza un token propio. Conserva sus datos en el equipo y funciona sin cuenta. El modo servidor añade autenticación y permisos por workspace, y puede desplegarse en infraestructura propia.
 
