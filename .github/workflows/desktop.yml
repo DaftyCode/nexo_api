@@ -91,7 +91,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh run download "$GITHUB_RUN_ID" --dir .verification/native
       - name: Generate package manager manifests and checksums
-        run: node tools/package-manifests.mjs --artifacts .verification/native --version "${GITHUB_REF_NAME#v}" --repository "$GITHUB_REPOSITORY"
+        run: |
+          node tools/stage-release-assets.mjs .verification/native .verification/upload
+          node tools/package-manifests.mjs --artifacts .verification/upload --version "${GITHUB_REF_NAME#v}" --repository "$GITHUB_REPOSITORY"
       - name: Create draft release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -101,6 +103,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "Nexo API $GITHUB_REF_NAME" --notes "Native Windows, macOS and Linux packages. Review installers, checksums and signing before publishing."
           fi
-          find .verification/native -type f -print0 | xargs -0 -I{} gh release upload "$GITHUB_REF_NAME" "{}" --clobber
+          find .verification/upload -type f -print0 | xargs -0 -I{} gh release upload "$GITHUB_REF_NAME" "{}" --clobber
           zip -r .verification/package-manager-manifests.zip .verification/packages
           gh release upload "$GITHUB_REF_NAME" .verification/packages/SHA256SUMS .verification/package-manager-manifests.zip --clobber

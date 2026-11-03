@@ -29,7 +29,7 @@ export async function generatePackageManifests({
   const names = new Set();
   const assets = [];
   for (const path of inputs) {
-    const name = basename(path);
+    const name = basename(path).replace(/\s+/g, '.');
     if (names.has(name)) throw new Error(`Duplicate release asset: ${name}`);
     if (/[\r\n\\]/.test(name)) throw new Error('Invalid release asset filename');
     names.add(name);
