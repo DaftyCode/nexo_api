@@ -1,6 +1,7 @@
 {
   "name": "nexo",
   "version": "0.1.0",
+  "license": "MIT",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
@@ -25,7 +26,8 @@
     "test:ssr": "node tools/runtime-node.mjs tools/verify-ssr.mjs",
     "server:start": "node tools/start-server.mjs",
     "nexo": "node tools/cli.mjs",
-    "preview:server": "node tools/preview-server.mjs"
+    "preview:server": "node tools/preview-server.mjs",
+    "test:packages": "node --test tools/package-manifests.test.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.0",

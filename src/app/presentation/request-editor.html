@@ -121,11 +121,11 @@
               <option value="basic">Basic auth</option>
               <option value="apikey">API key</option>
               <option value="digest">Digest auth</option>
-              <option value="oauth1">OAuth 1.0</option>
+              <option value="oauth1" disabled>OAuth 1.0 (planned)</option>
               <option value="oauth2">OAuth 2.0</option>
-              <option value="awsv4">AWS Signature</option>
-              <option value="ntlm">NTLM</option>
-              <option value="hawk">Hawk</option>
+              <option value="awsv4" disabled>AWS Signature (planned)</option>
+              <option value="ntlm" disabled>NTLM (planned)</option>
+              <option value="hawk" disabled>Hawk (planned)</option>
             </select></label
           >
           <p class="muted">
@@ -165,8 +165,8 @@
                 ></textarea>
               </label>
               <p class="muted">
-                AWS Signature uses accessKey, secretKey, region and service. OAuth 1 uses
-                consumerKey, consumerSecret and token fields.
+                Digest uses the username and password fields. OAuth 2 accepts an accessToken in the
+                JSON parameters. Additional signing helpers are planned.
               </p>
             }
           }

@@ -1,9 +1,38 @@
 {
-  "$schema":"https://schema.tauri.app/config/2",
-  "productName":"Nexo API",
-  "version":"0.1.0",
-  "identifier":"dev.nexo.api",
-  "build":{"beforeDevCommand":"npm start -- --host localhost --port 4200","devUrl":"http://localhost:4200/workspace","beforeBuildCommand":"npm run build:desktop","frontendDist":"../dist/desktop/browser"},
-  "app":{"windows":[{"label":"main","title":"Nexo API","width":1480,"height":960,"minWidth":1000,"minHeight":680}],"security":{"csp":"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:*; font-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'self'"}},
-  "bundle":{"active":true,"targets":["nsis"],"icon":["icons/icon.ico","icons/icon.png"],"externalBin":["binaries/nexo-node"],"resources":{"runtime/":"runtime/"},"shortDescription":"Your APIs. Your workspace.","category":"DeveloperTool"}
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Nexo API",
+  "version": "0.1.0",
+  "identifier": "dev.nexo.api",
+  "build": {
+    "beforeDevCommand": "npm start -- --host localhost --port 4200",
+    "devUrl": "http://localhost:4200/workspace",
+    "beforeBuildCommand": "npm run build:desktop",
+    "frontendDist": "../dist/desktop/browser"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Nexo API",
+        "width": 1480,
+        "height": 960,
+        "minWidth": 1000,
+        "minHeight": 680
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://ipc.localhost http://127.0.0.1:*; font-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "DaftyCode",
+    "license": "MIT",
+    "icon": ["icons/icon.ico", "icons/icon.icns", "icons/icon.png"],
+    "externalBin": ["binaries/nexo-node"],
+    "resources": { "runtime/": "runtime/" },
+    "shortDescription": "Your APIs. Your workspace.",
+    "category": "DeveloperTool"
+  }
 }
