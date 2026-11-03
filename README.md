@@ -1,10 +1,5 @@
-<details>
-<summary>🌐 Language: <strong>English</strong></summary>
-
-- **English** — selected
-- [Español](README.es.md)
-
-</details>
+[![English — selected](public/languages/english-active.svg)](README.md)
+[![Español](public/languages/spanish.svg)](README.es.md)
 
 # Nexo API
 
