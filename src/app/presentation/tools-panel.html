@@ -1,0 +1,22 @@
+<div class="tools-page">
+  @switch (section()) {
+    @case ('environments') {
+      <app-environment-panel />
+    }
+    @case ('runner') {
+      <app-runner-panel />
+    }
+    @case ('realtime') {
+      <app-protocol-panel />
+    }
+    @case ('mocks') {
+      <app-data-panel section="mocks" />
+    }
+    @case ('datasets') {
+      <app-data-panel section="datasets" />
+    }
+    @default {
+      <app-integration-panel [section]="section()" />
+    }
+  }
+</div>

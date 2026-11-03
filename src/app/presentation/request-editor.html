@@ -1,0 +1,248 @@
+<div class="request-title">
+  <div class="breadcrumb">
+    Collections <span>/</span> <input [formField]="fields.name" aria-label="Request name" />
+  </div>
+  <div class="row">
+    <button class="button subtle" (click)="code.emit()">&lt;/&gt; Code</button
+    ><button class="button" (click)="save.emit()" [disabled]="readonly()">
+      Save <kbd>Ctrl S</kbd>
+    </button>
+  </div>
+</div>
+<div class="url-toolbar">
+  <select
+    [formField]="fields.method"
+    aria-label="HTTP method"
+    class="method-select"
+    [class.post]="request().method === 'POST'"
+  >
+    @for (method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']; track method) {
+      <option [value]="method">{{ method }}</option>
+    }
+  </select>
+  <input
+    class="url-input"
+    [formField]="fields.url"
+    placeholder="Enter URL or paste a cURL command"
+    aria-label="Request URL"
+    spellcheck="false"
+    (keydown.enter)="send.emit()"
+  />
+  @if (running()) {
+    <button class="button primary" (click)="cancel.emit()">Cancel</button>
+  } @else {
+    <button class="button primary send" (click)="send.emit()">Send <span>↗</span></button>
+  }
+</div>
+<nav class="editor-tabs" aria-label="Request configuration">
+  @for (t of tabs; track t) {
+    <button [class.active]="tab() === t" (click)="tab.set(t)">
+      {{
+        t === 'params'
+          ? 'Params'
+          : t === 'authorization'
+            ? 'Authorization'
+            : t === 'headers'
+              ? 'Headers'
+              : t === 'body'
+                ? 'Body'
+                : t === 'scripts'
+                  ? 'Scripts'
+                  : 'Settings'
+      }}
+      @if (t === 'headers' && request().headers.length > 1) {
+        <span class="count">{{ request().headers.length }}</span>
+      }
+    </button>
+  }
+</nav>
+<div class="request-content">
+  @switch (tab()) {
+    @case ('params') {
+      <div class="section-caption">
+        Query parameters
+        <span
+          >Use <code>{{ '{{variable}}' }}</code> to reference environment values.</span
+        >
+      </div>
+      <app-key-value-editor [rows]="request().query" (rowsChange)="rows('query', $event)" />
+    }
+    @case ('headers') {
+      <div class="section-caption">Request headers</div>
+      <app-key-value-editor [rows]="request().headers" (rowsChange)="rows('headers', $event)" />
+    }
+    @case ('body') {
+      <div class="body-options">
+        <label
+          >Body type<select [formField]="fields.bodyMode">
+            <option value="raw">Raw</option>
+            <option value="urlencoded">x-www-form-urlencoded</option>
+            <option value="formdata">Form data</option>
+          </select></label
+        ><label
+          >Format<select [formField]="fields.bodyLanguage">
+            <option value="json">JSON</option>
+            <option value="text">Text</option>
+            <option value="xml">XML</option>
+            <option value="html">HTML</option>
+            <option value="javascript">JavaScript</option>
+          </select></label
+        ><button class="text-button" (click)="format()">Beautify</button>
+      </div>
+      @if (request().bodyMode === 'raw') {
+        <textarea
+          class="code-editor"
+          [formField]="fields.body"
+          aria-label="Request body"
+          placeholder="Enter your request body"
+          spellcheck="false"
+        ></textarea>
+      } @else {
+        <app-key-value-editor [rows]="request().form" (rowsChange)="rows('form', $event)" />
+      }
+      @if (request().protocol === 'graphql') {
+        <label class="field"
+          >GraphQL variables<textarea
+            class="code-editor small"
+            [formField]="fields.graphqlVariables"
+            aria-label="GraphQL variables"
+          ></textarea>
+        </label>
+      }
+    }
+    @case ('authorization') {
+      <div class="auth-grid">
+        <div>
+          <label class="field"
+            >Authorization type<select [formField]="fields.auth.type">
+              <option value="inherit">Inherit from collection</option>
+              <option value="noauth">No auth</option>
+              <option value="bearer">Bearer token</option>
+              <option value="basic">Basic auth</option>
+              <option value="apikey">API key</option>
+              <option value="digest">Digest auth</option>
+              <option value="oauth1">OAuth 1.0</option>
+              <option value="oauth2">OAuth 2.0</option>
+              <option value="awsv4">AWS Signature</option>
+              <option value="ntlm">NTLM</option>
+              <option value="hawk">Hawk</option>
+            </select></label
+          >
+          <p class="muted">
+            Authorization is applied when the request runs. You can use environment variables in
+            these fields.
+          </p>
+        </div>
+        <div>
+          @switch (request().auth.type) {
+            @case ('noauth') {
+              <div class="empty-inline">This request doesn't use authorization.</div>
+            }
+            @case ('bearer') {
+              <label class="field"
+                >Token<input [formField]="fields.auth.token" placeholder="{{ '{{access_token}}' }}"
+              /></label>
+            }
+            @case ('apikey') {
+              <label class="field">Key<input [formField]="fields.auth.key" /></label
+              ><label class="field">Value<input [formField]="fields.auth.value" /></label
+              ><label class="field"
+                >Add to<select [formField]="fields.auth.in">
+                  <option value="header">Header</option>
+                  <option value="query">Query params</option>
+                </select></label
+              >
+            }
+            @default {
+              <label class="field">Username<input [formField]="fields.auth.username" /></label
+              ><label class="field"
+                >Password<input type="password" [formField]="fields.auth.password" /></label
+              ><label class="field"
+                >Provider parameters (JSON)<textarea
+                  class="code-editor small"
+                  [formField]="fields.auth.parameters"
+                  placeholder="Additional fields for this authorization type"
+                ></textarea>
+              </label>
+              <p class="muted">
+                AWS Signature uses accessKey, secretKey, region and service. OAuth 1 uses
+                consumerKey, consumerSecret and token fields.
+              </p>
+            }
+          }
+        </div>
+      </div>
+    }
+    @case ('scripts') {
+      <div class="body-options">
+        <button
+          class="button"
+          [class.selected]="scriptTab() === 'prerequest'"
+          (click)="scriptTab.set('prerequest')"
+        >
+          Pre-request</button
+        ><button
+          class="button"
+          [class.selected]="scriptTab() === 'tests'"
+          (click)="scriptTab.set('tests')"
+        >
+          Post-response tests</button
+        ><button class="text-button" (click)="addTest()">+ Status assertion</button>
+      </div>
+      @if (scriptTab() === 'tests') {
+        <textarea
+          class="code-editor"
+          [formField]="fields.tests"
+          aria-label="Test scripts"
+          spellcheck="false"
+          placeholder="nx.test('Status is 200', () => nx.response.to.have.status(200));"
+        ></textarea>
+      } @else {
+        <textarea
+          class="code-editor"
+          [formField]="fields.prerequest"
+          aria-label="Pre-request scripts"
+          spellcheck="false"
+          placeholder="nx.environment.set('timestamp', Date.now());"
+        ></textarea>
+      }
+      <p class="editor-hint">
+        Use <code>nx.test</code>, <code>nx.expect</code>, <code>nx.environment</code> and
+        <code>nx.sendRequest</code>. Results appear with the response.
+      </p>
+    }
+    @case ('settings') {
+      <div class="settings-grid">
+        <label class="field"
+          >Request timeout (ms)<input type="number" [formField]="fields.timeout" /></label
+        ><label class="check-field"
+          ><input type="checkbox" [formField]="fields.followRedirects" /> Automatically follow
+          redirects</label
+        ><label class="check-field"
+          ><input type="checkbox" [formField]="fields.strictSSL" /> Verify TLS certificates</label
+        ><label class="field"
+          >Protocol<select [formField]="fields.protocol">
+            <option value="http">HTTP</option>
+            <option value="graphql">GraphQL</option>
+            <option value="grpc">gRPC</option>
+            <option value="websocket">WebSocket</option>
+            <option value="socketio">Socket.IO</option>
+            <option value="mqtt">MQTT</option>
+          </select></label
+        >
+      </div>
+      <label class="field"
+        >Proxy and client TLS (JSON)<textarea
+          class="code-editor small"
+          [formField]="fields.transport"
+          aria-label="Transport configuration"
+          placeholder="Optional proxy, caPem and clientTls settings"
+        ></textarea>
+      </label>
+      <p class="editor-hint">
+        Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates are
+        supplied in memory; server file paths are never read.
+      </p>
+    }
+  }
+</div>

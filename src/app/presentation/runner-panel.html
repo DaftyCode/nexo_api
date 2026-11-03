@@ -1,0 +1,104 @@
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">REPEATABLE. TESTABLE. RELIABLE.</span>
+    <h1>Collection runner</h1>
+    <p>Run requests in order, execute scripts and see every assertion.</p>
+  </div>
+</div>
+<div class="feature-columns">
+  <section class="feature-card runner-config">
+    <h2>Configure run</h2>
+    <label class="field"
+      >Collection<select [formField]="fields.collection">
+        <option value="">Choose a collection</option>
+        @for (collection of state.collections(); track collection.id) {
+          <option [value]="collection.id">{{ collection.name }}</option>
+        }
+      </select></label
+    ><label class="field">Iterations<input type="number" [formField]="fields.iterations" /></label
+    ><label class="field"
+      >Iteration data (JSON array)<textarea
+        class="code-editor small"
+        [formField]="fields.data"
+      ></textarea></label
+    ><label class="file-label"
+      >Import JSON / CSV<input type="file" accept=".json,.csv" (change)="file($event)"
+    /></label>
+    <p class="muted">
+      Active environment: {{ state.environmentId() ? 'selected' : 'none' }}. Use
+      <code>pm.iterationData</code> in scripts.
+    </p>
+    @if (state.run()?.state === 'running') {
+      <button class="button danger" (click)="state.cancelRun()">Stop run</button>
+    } @else {
+      <button
+        class="button primary wide"
+        (click)="start()"
+        [disabled]="!state.collections().length"
+      >
+        ▷ Run collection
+      </button>
+    }
+  </section>
+  <section class="feature-card grow">
+    @if (state.run(); as run) {
+      <div class="row between">
+        <h2>
+          {{
+            run.state === 'running'
+              ? 'Running collection'
+              : run.state === 'completed'
+                ? 'Run completed'
+                : run.state
+          }}
+        </h2>
+        <span class="status-pill" [class.failed]="run.state === 'failed'">{{ run.state }}</span>
+      </div>
+      <div class="metric-grid">
+        <div>
+          <strong>{{ run.results.length }}</strong
+          ><span>Requests</span>
+        </div>
+        <div>
+          <strong>{{ run.assertions.length }}</strong
+          ><span>Assertions</span>
+        </div>
+        <div>
+          <strong>{{ run.duration ?? 0 }}<small> ms</small></strong
+          ><span>Total time</span>
+        </div>
+      </div>
+      @if (run.error) {
+        <p class="danger">{{ run.error }}</p>
+      }
+      @for (result of run.results; track $index) {
+        <div class="run-result">
+          <span class="status-pill" [class.failed]="result.status >= 400 || !!result.error">{{
+            result.status || 'ERR'
+          }}</span
+          ><span>{{ result.statusText }}</span
+          ><span class="muted">{{ result.time }} ms</span>
+        </div>
+      }
+      @for (test of run.assertions; track $index) {
+        <div class="assertion">
+          <span class="status-pill" [class.failed]="!test.passed">{{
+            test.passed ? 'PASS' : 'FAIL'
+          }}</span>
+          <div>
+            {{ test.name }}
+            @if (test.error) {
+              <p class="danger">{{ test.error }}</p>
+            }
+          </div>
+        </div>
+      }
+    } @else {
+      <div class="empty-response">
+        <span class="large-symbol">▷</span>
+        <h3>Make every request count</h3>
+        <p>Choose a collection to run its requests and tests.</p>
+      </div>
+    }
+  </section>
+</div>

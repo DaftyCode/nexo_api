@@ -1,0 +1,39 @@
+[workspace]
+members = ["backend/crates/*", "src-tauri"]
+default-members = ["backend/crates/nexo-server"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+async-trait = "0.1.92"
+thiserror = "2.0.21"
+uuid = { version = "1.29.0", features = ["v4", "serde"] }
+tokio = { version = "1.54.1", features = ["full"] }
+axum = { version = "0.8.9", features = ["ws", "macros"] }
+tower-http = { version = "0.7.1", features = ["cors", "trace", "limit", "fs"] }
+rusqlite = { version = "0.41.1", features = ["bundled"] }
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
+argon2 = "0.6.0"
+rand = "0.10.3"
+sha2 = "0.11.1"
+hex = "0.4.3"
+keyring = { version = "4.2.0", features = ["v1"] }
+tauri = "2.12.5"
+tauri-build = "2.7.4"
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+directories = "6.0.0"
+futures-util = "0.3.34"
+base64 = "0.23.1"
+
+[profile.release]
+lto = "thin"
+strip = true
+

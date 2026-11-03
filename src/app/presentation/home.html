@@ -1,0 +1,131 @@
+<div class="website">
+  <nav class="site-nav">
+    <a class="brand" routerLink="/"
+      ><span class="brand-mark">n</span>nexo<span class="brand-api">API</span></a
+    >
+    <div>
+      <a routerLink="/docs">Documentation</a
+      ><a class="button primary" routerLink="/workspace">Open workspace ↗</a>
+    </div>
+  </nav>
+  @if (docs) {
+    <main class="docs">
+      <span class="eyebrow">NEXO DOCUMENTATION</span>
+      <h1>A workspace that works your way.</h1>
+      <p class="lead">
+        One workflow for your desktop and your server. Your collections stay portable.
+      </p>
+      <section>
+        <h2>Send a request</h2>
+        <p>
+          Open the workspace, enter an HTTP URL, choose a method and click Send. Add headers, query
+          parameters, authentication and a body. Inspect the response, headers, cookies and test
+          results below the editor.
+        </p>
+      </section>
+      <section>
+        <h2>Collections and environments</h2>
+        <p>
+          Create a collection or import a portable collection, an environment, OpenAPI, HAR or a
+          cURL command. Save requests into folders. Choose an environment to resolve variables such
+          as <code>{{'{{base_url}}'}}</code>. Export your collection at any time.
+        </p>
+      </section>
+      <section>
+        <h2>Scripts and collection runs</h2>
+        <p>
+          Write JavaScript pre-request and post-response scripts with <code>pm.test</code>,
+          <code>pm.expect</code> and scoped variables. The runner executes collections with
+          iterations and JSON data, records assertions, and supports cancellation.
+        </p>
+        <pre>
+pm.test('Successful response', () => {{ '{' }}
+  pm.expect(pm.response.code).to.be.within(200, 299);
+{{ '}' }});</pre>
+      </section>
+      <section>
+        <h2>Protocols and local services</h2>
+        <p>
+          Use the Protocols panel for WebSocket, Socket.IO, MQTT and gRPC. Provide a .proto
+          definition for gRPC. Mocks listen on the machine running the engine; datasets accept JSON
+          and CSV and can be queried with SQL. Git exports live in your Nexo project directory.
+        </p>
+      </section>
+      <section>
+        <h2>Hosting your workspace</h2>
+        <p>
+          The server edition uses account authentication, workspace membership and document
+          revisions. Public pages render on the server; the private workspace is excluded from
+          indexing. In server mode, API requests execute from the server network. In desktop mode,
+          they execute from your computer.
+        </p>
+      </section>
+      <a class="button primary" routerLink="/workspace">Start building ↗</a>
+    </main>
+  } @else {
+    <main class="site-hero">
+      <div class="hero-copy">
+        <span class="eyebrow"
+          ><span class="connection-dot"></span> LOCAL DESKTOP · YOUR OWN SERVER</span
+        >
+        <h1>Your APIs.<br />Your workspace.<br /><em>Your rules.</em></h1>
+        <p>
+          Send requests, test ideas, and keep your API work together. A capable workspace on your
+          desktop and on the server you control.
+        </p>
+        <div class="hero-actions">
+          <a class="button primary large" routerLink="/workspace">Open your workspace ↗</a
+          ><a class="button large" routerLink="/docs">Explore the docs</a>
+        </div>
+        <div class="hero-protocols">
+          HTTP <span>·</span> GraphQL <span>·</span> gRPC <span>·</span> WebSocket
+          <span>·</span> MQTT
+        </div>
+      </div>
+      <div class="hero-preview">
+        <div class="preview-top">
+          <span class="brand-mark">n</span><span>My workspace</span
+          ><span class="connection-dot"></span>
+        </div>
+        <div class="preview-url">
+          <b>GET</b><code>{{'{{base_url}}'}}/v1/ideas</code
+          ><span class="button primary">Send ↗</span>
+        </div>
+        <div class="preview-tabs">
+          Params <span>Authorization</span> Headers <span>Body</span> Scripts
+        </div>
+        <div class="preview-response">
+          <div><b>200 OK</b><span>128 ms · 0.24 KB</span></div>
+          <pre>{{
+            '{\n  "workspace": "yours",\n  "possibilities": "unlimited",\n  "next_idea": {\n    "status": "ready to build",\n    "location": "anywhere"\n  }\n}'
+          }}</pre>
+        </div>
+        <div class="preview-bottom">✓ All tests passed <span>Saved to your workspace</span></div>
+      </div>
+    </main>
+    <section class="site-features">
+      <article>
+        <span>01 / BUILD</span>
+        <h2>From first request<br />to full collection.</h2>
+        <p>Organize requests, manage environments and carry your existing collections with you.</p>
+      </article>
+      <article>
+        <span>02 / TEST</span>
+        <h2>Confidence in<br />every response.</h2>
+        <p>
+          Pre-request scripts, assertions, data-driven runs and the same execution rules across your
+          workspace.
+        </p>
+      </article>
+      <article>
+        <span>03 / OWN</span>
+        <h2>A home for your work.<br />On your terms.</h2>
+        <p>Use the desktop application locally, or share workspaces on your own server.</p>
+      </article>
+    </section>
+  }
+  <footer class="site-footer">
+    <span>Nexo API</span><span>Build something worth connecting.</span
+    ><a routerLink="/docs">Documentation ↗</a>
+  </footer>
+</div>

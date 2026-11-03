@@ -1,0 +1,106 @@
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">MORE THAN REQUEST AND RESPONSE.</span>
+    <h1>Protocol studio</h1>
+    <p>Connect, send messages and inspect live events.</p>
+  </div>
+  <span class="status-pill" [class.failed]="status() === 'error'">{{ status() }}</span>
+</div>
+<div class="feature-card">
+  <div class="row">
+    <select [formField]="fields.protocol" aria-label="Protocol">
+      <option value="websocket">WebSocket</option>
+      <option value="socketio">Socket.IO</option>
+      <option value="mqtt">MQTT</option>
+      <option value="grpc">gRPC</option></select
+    ><input
+      class="grow"
+      [formField]="fields.url"
+      aria-label="Connection URL"
+      placeholder="Enter connection URL"
+    />
+    @if (model().protocol !== 'grpc') {
+      @if (connection()) {
+        <button class="button" (click)="disconnect()">Disconnect</button>
+      } @else {
+        <button class="button primary" (click)="connect()">Connect ↗</button>
+      }
+    }
+  </div>
+</div>
+<div class="feature-columns">
+  <section class="feature-card grow">
+    <h2>{{ model().protocol === 'grpc' ? 'Service definition' : 'Compose message' }}</h2>
+    @if (model().protocol === 'grpc') {
+      <label class="field"
+        >Proto definition<textarea
+          class="code-editor"
+          [formField]="fields.proto"
+          spellcheck="false"
+        ></textarea>
+      </label>
+      <div class="row">
+        <label class="field grow">Service<input [formField]="fields.service" /></label
+        ><label class="field grow">Method<input [formField]="fields.method" /></label>
+      </div>
+      <label class="check-field"><input type="checkbox" [formField]="fields.tls" /> Use TLS</label
+      ><label class="field"
+        >Metadata (JSON key/value array)<input [formField]="fields.metadata"
+      /></label>
+    }
+    @if (model().protocol === 'mqtt') {
+      <label class="field">Topic<input [formField]="fields.topic" /></label>
+      <div class="row">
+        <label class="field"
+          >QoS<select [formField]="fields.qos">
+            <option [value]="0">0</option>
+            <option [value]="1">1</option>
+            <option [value]="2">2</option>
+          </select></label
+        ><button class="button" (click)="send('subscribe')" [disabled]="!connection()">
+          Subscribe</button
+        ><button class="button" (click)="send('unsubscribe')" [disabled]="!connection()">
+          Unsubscribe
+        </button>
+      </div>
+    }
+    @if (model().protocol === 'socketio') {
+      <label class="field">Event<input [formField]="fields.event" /></label>
+    }
+    <label class="field"
+      >{{ model().protocol === 'grpc' ? 'Request message (JSON)' : 'Message'
+      }}<textarea
+        class="code-editor small"
+        [formField]="fields.message"
+        spellcheck="false"
+      ></textarea>
+    </label>
+    @if (model().protocol === 'grpc') {
+      <button class="button primary" (click)="invoke()">Invoke method ↗</button>
+    } @else {
+      <button class="button primary" (click)="send()" [disabled]="status() !== 'connected'">
+        Send message ↗
+      </button>
+    }
+  </section>
+  <section class="feature-card grow">
+    <h2>{{ model().protocol === 'grpc' ? 'Response' : 'Live messages' }}</h2>
+    @if (model().protocol === 'grpc') {
+      <pre class="response-code">{{ result() || 'Invoke a method to see its response.' }}</pre>
+    } @else {
+      @for (event of events(); track event.sequence) {
+        <div class="stream-event">
+          <span class="status-pill">{{ event.type }}</span>
+          <pre>{{ json(event.data) }}</pre>
+        </div>
+      }
+      @if (!events().length) {
+        <div class="empty-response">
+          <span class="large-symbol">⇄</span>
+          <h3>Ready to connect</h3>
+          <p>Incoming events and messages appear here.</p>
+        </div>
+      }
+    }
+  </section>
+</div>

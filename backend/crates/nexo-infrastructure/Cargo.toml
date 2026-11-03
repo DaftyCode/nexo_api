@@ -1,0 +1,22 @@
+[package]
+name = "nexo-infrastructure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+[dependencies]
+nexo-domain = { path = "../nexo-domain" }
+nexo-application = { path = "../nexo-application" }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+rusqlite.workspace = true
+reqwest.workspace = true
+argon2.workspace = true
+rand.workspace = true
+sha2.workspace = true
+hex.workspace = true
+keyring.workspace = true
+tracing.workspace = true

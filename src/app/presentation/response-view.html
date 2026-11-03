@@ -1,0 +1,124 @@
+<section class="response-section" aria-label="Response">
+  <div class="response-toolbar">
+    <nav class="editor-tabs response-tabs" aria-label="Response sections">
+      @for (t of ['body', 'headers', 'cookies', 'tests', 'console']; track t) {
+        <button [class.active]="tab() === t" (click)="tab.set(t)">
+          {{
+            t === 'body'
+              ? 'Body'
+              : t === 'headers'
+                ? 'Headers'
+                : t === 'cookies'
+                  ? 'Cookies'
+                  : t === 'tests'
+                    ? 'Test results'
+                    : 'Console'
+          }}
+          @if (t === 'tests' && response()?.assertions?.length) {
+            <span class="count">{{ passed() }}/{{ response()?.assertions?.length }}</span>
+          }
+        </button>
+      }
+    </nav>
+    @if (response(); as r) {
+      <div class="response-meta">
+        <span
+          [class.success]="r.status < 400 && r.status > 0"
+          [class.danger]="r.status >= 400 || r.error"
+          >{{ r.status }} {{ r.statusText }}</span
+        ><span>{{ r.time }} ms</span><span>{{ (r.size / 1024).toFixed(2) }} KB</span>
+      </div>
+    }
+  </div>
+  @if (running()) {
+    <div class="empty-response">
+      <div class="spinner"></div>
+      <h3>Sending your request</h3>
+      <p>Waiting for a response…</p>
+    </div>
+  } @else if (response(); as r) {
+    @if (r.error) {
+      <div class="alert error">{{ r.error }}</div>
+    }
+    @switch (tab()) {
+      @case ('body') {
+        <div class="response-actions">
+          <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">Pretty</button
+          ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">Raw</button
+          ><span class="muted">{{ r.truncated ? 'Preview limited to 8 MB' : '' }}</span>
+        </div>
+        <pre class="response-code">{{ text() }}</pre>
+      }
+      @case ('headers') {
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Header</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (h of r.headers; track $index) {
+              <tr>
+                <td>{{ h.key }}</td>
+                <td>{{ h.value }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      @case ('cookies') {
+        <pre class="response-code">{{ r.cookies | json }}</pre>
+      }
+      @case ('tests') {
+        @if (!r.assertions.length) {
+          <div class="empty-inline">Add post-response scripts to test this request.</div>
+        }
+        @for (test of r.assertions; track $index) {
+          <div class="assertion">
+            <span class="status-pill" [class.failed]="!test.passed">{{
+              test.skipped ? 'SKIP' : test.passed ? 'PASS' : 'FAIL'
+            }}</span>
+            <div>
+              {{ test.name }}
+              @if (test.error) {
+                <p class="danger">{{ test.error }}</p>
+              }
+            </div>
+          </div>
+        }
+      }
+      @case ('console') {
+        @for (log of r.logs; track $index) {
+          <pre class="console-line" [class.danger]="log.level === 'error'">
+[{{ log.level }}] {{ log.values.join(' ') }}</pre>
+        }
+        @if (!r.logs.length) {
+          <div class="empty-inline">No console messages for this request.</div>
+        }
+      }
+    }
+  } @else {
+    <div class="empty-response">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+        <path
+          d="M10 18h36v28H10zM18 10h20M18 28h20M18 35h12"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+        <circle
+          cx="42"
+          cy="14"
+          r="8"
+          fill="var(--panel)"
+          stroke="currentColor"
+          stroke-width="1.5"
+        />
+        <path d="m39 14 2 2 4-5" stroke="currentColor" stroke-width="1.5" />
+      </svg>
+      <h3>Your response will appear here</h3>
+      <p>Enter a URL and send your first request.</p>
+      <span class="keyboard-tip"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>
+    </div>
+  }
+</section>

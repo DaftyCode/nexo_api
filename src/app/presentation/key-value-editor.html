@@ -1,0 +1,12 @@
+<div class="kv-table">
+  <div class="kv-head"><span></span><span>Key</span><span>Value</span><span></span></div>
+  @for (field of fields; track field; let index = $index) {
+    <div class="kv-row">
+      <input type="checkbox" [formField]="field.enabled" aria-label="Enable row" />
+      <input [formField]="field.key" placeholder="Key" aria-label="Key" spellcheck="false" />
+      <input [formField]="field.value" placeholder="Value" aria-label="Value" spellcheck="false" />
+      <button class="icon-button" (click)="remove(index)" aria-label="Remove row">×</button>
+    </div>
+  }
+  <button class="text-button kv-add" (click)="add()">+ Add row</button>
+</div>

@@ -1,0 +1,34 @@
+services:
+  backend:
+    build:
+      context: .
+      target: backend
+    restart: unless-stopped
+    init: true
+    environment:
+      NEXO_MODE: server
+      NEXO_ALLOW_SIGNUP: ${NEXO_ALLOW_SIGNUP:-false}
+      NEXO_MASTER_KEY: ${NEXO_MASTER_KEY:-}
+      NEXO_ORIGINS: ${NEXO_ORIGINS:-http://localhost:4000}
+    volumes:
+      - nexo-data:/data
+    expose:
+      - '8080'
+    security_opt:
+      - no-new-privileges:true
+  web:
+    build:
+      context: .
+      target: web
+    restart: unless-stopped
+    init: true
+    ports:
+      - '${NEXO_WEB_BIND:-127.0.0.1}:4000:4000'
+    environment:
+      NEXO_API_URL: http://backend:8080
+      NG_ALLOWED_HOSTS: ${NEXO_PUBLIC_HOSTS:-localhost,127.0.0.1}
+    depends_on:
+      backend:
+        condition: service_healthy
+volumes:
+  nexo-data:

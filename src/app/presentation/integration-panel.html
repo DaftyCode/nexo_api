@@ -1,0 +1,261 @@
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">CONNECTED TO YOUR WORKFLOW.</span>
+    <h1>
+      {{
+        section() === 'git'
+          ? 'Git projects'
+          : section() === 'mcp'
+            ? 'MCP client'
+            : section() === 'code'
+              ? 'Generate code'
+              : section() === 'team'
+                ? 'Workspace members'
+                : 'Workspace settings'
+      }}
+    </h1>
+    <p>
+      {{
+        section() === 'git'
+          ? 'Export collections to a local repository and version your work.'
+          : section() === 'mcp'
+            ? 'Inspect and call tools using Streamable HTTP.'
+            : section() === 'team'
+              ? 'Share a server workspace with existing accounts.'
+              : 'Configure integrations, credentials and reusable API definitions.'
+      }}
+    </p>
+  </div>
+</div>
+<div class="feature-columns">
+  <section class="feature-card grow">
+    @switch (section()) {
+      @case ('git') {
+        <h2>Repository</h2>
+        <p class="muted">Each workspace has a dedicated project directory on the engine machine.</p>
+        <div class="button-grid">
+          @for (op of ['init', 'export', 'status', 'diff', 'log', 'branches', 'stash']; track op) {
+            <button class="button" (click)="git(op)">
+              {{ op === 'init' ? 'Initialize' : op === 'export' ? 'Export collections' : op }}
+            </button>
+          }
+        </div>
+        <label class="field"
+          >Branch<input [formField]="fields.branch" placeholder="feature/my-api"
+        /></label>
+        <div class="row">
+          <button class="button" (click)="git('branch')">Create branch</button
+          ><button class="button" (click)="git('checkout')">Switch branch</button>
+        </div>
+        <label class="field">Commit message<input [formField]="fields.message" /></label
+        ><button class="button primary" (click)="git('commit')">Commit changes</button>
+      }
+      @case ('mcp') {
+        <label class="field">Server URL<input [formField]="fields.url" /></label
+        ><label class="field"
+          >Method<select [formField]="fields.method">
+            <option value="initialize">initialize</option>
+            <option value="tools/list">tools/list</option>
+            <option value="tools/call">tools/call</option>
+            <option value="resources/list">resources/list</option>
+            <option value="prompts/list">prompts/list</option>
+          </select></label
+        ><label class="field"
+          >Parameters (JSON)<textarea
+            class="code-editor small"
+            [formField]="fields.params"
+          ></textarea></label
+        ><app-key-value-editor [(rows)]="headers" /><button class="button primary" (click)="mcp()">
+          Send JSON-RPC ↗
+        </button>
+      }
+      @case ('code') {
+        <h2>Request code</h2>
+        <p class="muted">Generate a snippet for the request in your active tab.</p>
+        <label class="field"
+          >Language<select [formField]="fields.language">
+            <option value="curl">cURL</option>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="go">Go</option>
+            <option value="csharp">C#</option>
+            <option value="rust">Rust</option>
+            <option value="powershell">PowerShell</option>
+          </select></label
+        ><label class="field"
+          >Variant<input
+            [formField]="fields.variant"
+            placeholder="Default generator for selected language" /></label
+        ><button class="button primary" (click)="code()">Generate snippet</button>
+        <p class="muted">
+          Native generators: cURL · JavaScript Fetch · Python http.client · Java HttpClient · Go
+          net/http · C# HttpClient · Rust reqwest · PowerShell.
+        </p>
+      }
+      @case ('team') {
+        <label class="field">Account email<input type="email" [formField]="fields.email" /></label
+        ><label class="field"
+          >Role<select [formField]="fields.role">
+            <option value="editor">Editor</option>
+            <option value="viewer">Viewer</option>
+            <option value="remove">Remove membership</option>
+          </select></label
+        >
+        <div class="row">
+          <button class="button primary" (click)="invite()">Update membership</button
+          ><button class="button" (click)="members()">List members</button>
+        </div>
+        <p class="muted">
+          The account must already exist on this server. Only workspace owners can change
+          membership.
+        </p>
+      }
+      @default {
+        <div class="button-grid settings-nav">
+          @for (t of ['general', 'vault', 'oauth', 'revisions', 'apis', 'performance']; track t) {
+            <button class="button" [class.selected]="tab() === t" (click)="tab.set(t)">
+              {{ t }}
+            </button>
+          }
+        </div>
+        @switch (tab()) {
+          @case ('general') {
+            <h2>Your workspace, everywhere</h2>
+            <p>
+              Mode: <strong>{{ state.health()?.mode }}</strong>
+            </p>
+            <p>Version: {{ state.health()?.version }}</p>
+            <p class="muted">
+              The desktop application sends requests from this computer. Server workspaces send
+              requests from the server network. Public documentation is rendered on the server;
+              private workspace data isn't indexed.
+            </p>
+            <div class="button-grid">
+              <button class="button" (click)="state.refresh()">Refresh workspace</button>
+              @if (state.health()?.mode === 'server') {
+                <button class="button" (click)="state.signOut()">Sign out</button>
+              }
+            </div>
+          }
+          @case ('vault') {
+            <h2>Secret vault</h2>
+            <label class="field">Secret name<input [formField]="fields.secretName" /></label
+            ><label class="field"
+              >Value<input type="password" [formField]="fields.secretValue" autocomplete="off"
+            /></label>
+            <div class="row">
+              <button class="button primary" (click)="secret()">Save secret</button
+              ><button class="button danger" (click)="secret(true)">Remove secret</button>
+            </div>
+            <p class="muted">
+              Values are encrypted at rest. The desktop master key lives in the operating system
+              credential store. Vault values aren't included in collection exports.
+            </p>
+          }
+          @case ('oauth') {
+            <h2>OAuth 2.0 token</h2>
+            <label class="field">Token endpoint<input [formField]="fields.tokenUrl" /></label
+            ><label class="field"
+              >Grant type<select [formField]="fields.grant">
+                <option value="client_credentials">Client credentials</option>
+                <option value="authorization_code">Authorization code / PKCE</option>
+                <option value="refresh_token">Refresh token</option>
+              </select></label
+            >
+            <div class="row">
+              <label class="field grow">Client ID<input [formField]="fields.clientId" /></label
+              ><label class="field grow"
+                >Client secret<input type="password" [formField]="fields.clientSecret"
+              /></label>
+            </div>
+            <label class="field">Scope<input [formField]="fields.scope" /></label>
+            @if (model().grant !== 'client_credentials') {
+              <label class="field"
+                >{{ model().grant === 'refresh_token' ? 'Refresh token' : 'Authorization code'
+                }}<input [formField]="fields.code" /></label
+              ><label class="field">Redirect URI<input [formField]="fields.redirectUri" /></label
+              ><label class="field"
+                >PKCE code verifier<input [formField]="fields.verifier"
+              /></label>
+            }
+            <button class="button primary" (click)="oauth()">Get token and use in request</button>
+          }
+          @case ('revisions') {
+            <h2>Document history</h2>
+            <label class="field"
+              >Document<select [formField]="fields.documentId">
+                <option value="">Choose a resource</option>
+                @for (d of state.documents(); track d.id) {
+                  <option [value]="d.id">{{ d.name }} · r{{ d.revision }}</option>
+                }
+              </select></label
+            ><button class="button" (click)="revisionList()">Load revisions</button>
+            @for (revision of revisions(); track revision.revision) {
+              <div class="run-result">
+                <span>Revision {{ revision.revision }}</span
+                ><button class="button" (click)="restore(revision.value)">
+                  Restore as new revision
+                </button>
+              </div>
+            }
+          }
+          @case ('apis') {
+            <h2>API definitions</h2>
+            <label class="field">Name<input [formField]="fields.apiName" /></label
+            ><label class="field"
+              >OpenAPI definition<textarea
+                class="code-editor"
+                [formField]="fields.apiSpec"
+                spellcheck="false"
+              ></textarea>
+            </label>
+            <div class="row">
+              <button class="button primary" (click)="apiSpec()">Save definition</button
+              ><button class="button" (click)="importApi()">Generate collection</button>
+            </div>
+          }
+          @case ('performance') {
+            <h2>Performance run</h2>
+            <p class="muted">
+              Runs the active request repeatedly. This version supports up to four virtual users and
+              120 seconds.
+            </p>
+            <div class="row">
+              <label class="field"
+                >Virtual users<input type="number" [formField]="fields.users" /></label
+              ><label class="field"
+                >Duration (seconds)<input type="number" [formField]="fields.duration"
+              /></label>
+            </div>
+            <label class="field"
+              >Profile<select [formField]="fields.profile">
+                <option value="fixed">Fixed</option>
+                <option value="ramp-up">Ramp up</option>
+              </select></label
+            >
+            <div class="row">
+              <button class="button primary" (click)="performance()">Start run</button
+              ><button class="button" (click)="stopPerformance()">Stop</button>
+            </div>
+          }
+        }
+      }
+    }
+  </section>
+  <section class="feature-card grow">
+    <div class="row between">
+      <h2>{{ section() === 'code' ? 'Generated snippet' : 'Output' }}</h2>
+      <button
+        class="button"
+        (click)="state.cases.files.download('nexo-output.txt', output(), 'text/plain')"
+        [disabled]="!output()"
+      >
+        Save output
+      </button>
+    </div>
+    <pre class="tool-output">{{
+      output() || 'Results appear here when you run an operation.'
+    }}</pre>
+  </section>
+</div>

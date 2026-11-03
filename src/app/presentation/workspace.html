@@ -1,0 +1,352 @@
+<div class="studio">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Nexo home"
+      ><span class="brand-mark">n</span>nexo<span class="brand-api">API</span></a
+    >
+    <div class="top-links">
+      <span class="top-link active">Workspace</span
+      ><a class="top-link" href="/docs">Documentation</a>
+    </div>
+    <div class="top-search"><span>⌕</span> Find anything in your workspace <kbd>Ctrl K</kbd></div>
+    <div class="top-right">
+      <span class="connection-dot"></span
+      ><span>{{ state.health()?.mode === 'server' ? 'Server workspace' : 'Local workspace' }}</span
+      ><span class="avatar">N</span>
+    </div>
+  </header>
+  @if (state.error()) {
+    <div class="global-alert" role="alert">
+      <span>{{ state.error() }}</span
+      ><button class="icon-button" (click)="state.error.set('')" aria-label="Dismiss error">
+        ×
+      </button>
+    </div>
+  }
+  @if (!state.ready()) {
+    <div class="startup">
+      <div class="spinner"></div>
+      <h2>Opening your workspace</h2>
+      <p>Connecting to Nexo…</p>
+      @if (state.error()) {
+        <button class="button" (click)="state.initialize()">Retry connection</button>
+      }
+    </div>
+  } @else if (!state.authenticated()) {
+    <main class="auth-screen">
+      <div class="auth-card">
+        <span class="eyebrow">YOUR APIS. YOUR WORKSPACE.</span>
+        <h1>{{ state.health()?.setupRequired ? 'Set up your Nexo server' : 'Welcome back' }}</h1>
+        <p class="muted">
+          {{
+            state.health()?.setupRequired
+              ? 'Create the first account to own this server.'
+              : 'Sign in to your server workspace.'
+          }}
+        </p>
+        @if (state.health()?.setupRequired || formModel().authMode === 'register') {
+          <label class="field">Name<input [formField]="fields.name" autocomplete="name" /></label>
+        }
+        <label class="field"
+          >Email<input type="email" [formField]="fields.email" autocomplete="username" /></label
+        ><label class="field"
+          >Password<input
+            type="password"
+            [formField]="fields.password"
+            autocomplete="current-password"
+            (keydown.enter)="login()"
+        /></label>
+        <p class="muted">Use at least 12 characters for a new account.</p>
+        <button class="button primary wide" (click)="login()" [disabled]="state.busy()">
+          {{
+            state.health()?.setupRequired
+              ? 'Create server account'
+              : formModel().authMode === 'register'
+                ? 'Create account'
+                : 'Sign in'
+          }}
+        </button>
+        @if (state.health()?.allowSignup && !state.health()?.setupRequired) {
+          <select [formField]="fields.authMode" aria-label="Account action">
+            <option value="login">Sign in</option>
+            <option value="register">Create account</option>
+          </select>
+        }
+      </div>
+    </main>
+  } @else {
+    <div class="workspace-bar">
+      <div class="row">
+        <span class="workspace-icon">◈</span
+        ><select
+          class="workspace-select"
+          aria-label="Workspace"
+          [value]="state.workspaceId()"
+          (change)="selectWorkspace($event)"
+        >
+          @for (workspace of state.workspaces(); track workspace.id) {
+            <option [value]="workspace.id">{{ workspace.name }}</option>
+          }</select
+        ><button
+          class="icon-button"
+          (click)="dialogs.set('workspace')"
+          aria-label="Create workspace"
+        >
+          +</button
+        ><span class="vertical-divider"></span
+        ><button class="button small" (click)="state.newTab()">New</button
+        ><button class="button small" (click)="dialogs.set('import')">Import</button>
+      </div>
+      <div class="row">
+        <select
+          class="environment-select"
+          aria-label="Active environment"
+          [value]="state.environmentId()"
+          (change)="selectEnvironment($event)"
+        >
+          <option value="">No environment</option>
+          @for (env of state.environments(); track env.id) {
+            <option [value]="env.id">{{ env.name }}</option>
+          }</select
+        ><button class="button small" (click)="state.section.set('team')">♧ Invite</button>
+      </div>
+    </div>
+    <div class="studio-body">
+      <nav class="rail" aria-label="Workspace sections">
+        @for (item of nav; track item.id) {
+          <button
+            [class.active]="state.section() === item.id"
+            (click)="setSection(item.id)"
+            [attr.title]="item.label"
+          >
+            <span class="rail-icon">{{ item.icon }}</span
+            ><span>{{ item.label }}</span>
+          </button>
+        }
+      </nav>
+      @if (state.section() === 'collections' || state.section() === 'history') {
+        <aside class="sidebar">
+          <div class="sidebar-heading">
+            <strong>{{ state.section() === 'history' ? 'History' : 'Collections' }}</strong
+            ><button
+              class="icon-button"
+              (click)="dialogs.set('collection')"
+              aria-label="Create collection"
+            >
+              +
+            </button>
+          </div>
+          <div class="sidebar-search">
+            <span>⌕</span
+            ><input
+              placeholder="Filter collections"
+              aria-label="Filter collections"
+              [value]="state.filter()"
+              (input)="search($event)"
+            />
+          </div>
+          @if (state.section() === 'history') {
+            @for (history of state.history(); track history.id) {
+              <button class="history-item" (click)="state.openHistory(history)">
+                <span>{{ history.name }}</span
+                ><small>{{ history.updated_at * 1000 | date: 'short' }}</small>
+              </button>
+            }
+            @if (!state.history().length) {
+              <div class="sidebar-empty">Your requests will appear here as you send them.</div>
+            }
+          } @else {
+            @for (collection of state.collections(); track collection.id) {
+              <div class="collection">
+                <div class="collection-title">
+                  <button
+                    class="tree-toggle"
+                    (click)="toggle(collection.id)"
+                    [attr.aria-expanded]="!collapsed().includes(collection.id)"
+                  >
+                    {{ collapsed().includes(collection.id) ? '›' : '⌄' }}</button
+                  ><button class="collection-name" (click)="toggle(collection.id)">
+                    <span class="folder-icon">▱</span>{{ collection.name }}
+                  </button>
+                  <details class="collection-menu">
+                    <summary aria-label="Collection actions">···</summary>
+                    <div>
+                      <button (click)="state.addRequest(collection)">Add request</button
+                      ><button (click)="folder(collection)">Add folder</button
+                      ><button (click)="state.export(collection)">Export collection</button
+                      ><button (click)="duplicate(collection)">Duplicate</button
+                      ><button (click)="state.section.set('runner')">Run collection</button
+                      ><button class="danger" (click)="state.remove(collection)">
+                        Delete collection
+                      </button>
+                    </div>
+                  </details>
+                </div>
+                @if (!collapsed().includes(collection.id)) {
+                  @for (entry of state.collectionItems(collection); track entry.path.join('.')) {
+                    <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 14">
+                      @if (entry.item.item) {
+                        <span class="folder-icon">▱</span><span>{{ entry.item.name }}</span
+                        ><button
+                          class="icon-button"
+                          (click)="state.addRequest(collection, entry.path)"
+                          aria-label="Add request in folder"
+                        >
+                          +
+                        </button>
+                      } @else {
+                        <button
+                          class="request-leaf"
+                          (click)="state.openItem(collection, entry.item, entry.path)"
+                        >
+                          <span
+                            class="method-tag"
+                            [class.post]="method(entry.item) === 'POST'"
+                            [class.delete]="method(entry.item) === 'DELETE'"
+                            >{{ method(entry.item) }}</span
+                          ><span>{{ entry.item.name }}</span>
+                        </button>
+                      }
+                    </div>
+                  }
+                  <button class="add-request" (click)="state.addRequest(collection)">
+                    + Add request
+                  </button>
+                }
+              </div>
+            }
+            @if (!state.collections().length) {
+              <div class="sidebar-empty">
+                <span class="empty-folder">▱</span><strong>A place for your APIs</strong>
+                <p>Organize requests into collections and keep your work together.</p>
+                <button class="button" (click)="dialogs.set('collection')">Create collection</button
+                ><button class="text-button" (click)="dialogs.set('import')">
+                  or import existing work
+                </button>
+              </div>
+            }
+          }
+          <div class="sidebar-bottom">
+            <span class="connection-dot"></span>Changes saved on your
+            {{ state.health()?.mode === 'server' ? 'server' : 'device' }}
+          </div>
+        </aside>
+      }
+      <main class="main-workspace">
+        @if (state.section() === 'collections' || state.section() === 'history') {
+          <div class="request-tabbar">
+            @for (tab of state.tabs(); track tab.id) {
+              <div class="request-tab" [class.active]="state.activeTabId() === tab.id">
+                <button (click)="state.activeTabId.set(tab.id)">
+                  <span class="method-tag" [class.post]="tab.request.method === 'POST'">{{
+                    tab.request.method
+                  }}</span
+                  ><span>{{ tab.request.name }}</span>
+                  @if (tab.dirty) {
+                    <span class="dirty-dot"></span>
+                  }</button
+                ><button
+                  class="tab-close"
+                  aria-label="Close request"
+                  (click)="state.closeTab(tab.id)"
+                >
+                  ×
+                </button>
+              </div>
+            }
+            <button class="icon-button" (click)="state.newTab()" aria-label="New request tab">
+              +
+            </button>
+          </div>
+          @if (state.active(); as tab) {
+            <app-request-editor
+              [request]="tab.request"
+              (requestChange)="state.edit($event)"
+              [running]="state.running()"
+              [readonly]="!state.writable()"
+              (send)="state.send()"
+              (cancel)="state.cancel()"
+              (save)="state.saveActive()"
+              (code)="state.section.set('code')"
+            />
+          }
+          <app-response-view [response]="state.response()" [running]="state.running()" />
+        } @else {
+          <app-tools-panel [section]="state.section()" />
+        }
+      </main>
+    </div>
+    <footer class="statusbar">
+      <button (click)="state.consoleOpen.set(!state.consoleOpen())">▣ Console</button
+      ><span>{{ state.notice() || 'All systems ready' }}</span>
+      <div class="statusbar-right">
+        <span>{{ state.documents().length }} resources</span><span>UTF-8</span
+        ><span>Nexo {{ state.health()?.version }}</span>
+      </div>
+    </footer>
+    @if (state.consoleOpen()) {
+      <div class="floating-console">
+        <div class="row between">
+          <strong>Console</strong
+          ><button
+            class="icon-button"
+            (click)="state.consoleOpen.set(false)"
+            aria-label="Close console"
+          >
+            ×
+          </button>
+        </div>
+        @for (log of state.response()?.logs ?? []; track $index) {
+          <pre>[{{ log.level }}] {{ log.values.join(' ') }}</pre>
+        }
+        @if (!state.response()?.logs?.length) {
+          <p class="muted">Logs from your request scripts appear here.</p>
+        }
+      </div>
+    }
+  }
+  @if (dialogs()) {
+    <div class="modal-backdrop">
+      <section
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        [attr.aria-label]="dialogs() === 'import' ? 'Import' : 'Create ' + dialogs()"
+      >
+        <div class="modal-heading">
+          <h2>{{ dialogs() === 'import' ? 'Import your work' : 'Create ' + dialogs() }}</h2>
+          <button class="icon-button" (click)="dialogs.set('')" aria-label="Close dialog">×</button>
+        </div>
+        @if (dialogs() === 'import') {
+          <p class="muted">
+            Portable collections and environments, OpenAPI, HAR or a cURL command.
+          </p>
+          <label class="file-drop"
+            >↑ Choose a file<input
+              type="file"
+              accept=".json,.yaml,.yml,.har,.txt"
+              (change)="file($event)" /></label
+          ><span class="divider-label">or paste content</span
+          ><textarea
+            class="code-editor"
+            [formField]="fields.content"
+            aria-label="Import content"
+            placeholder="Paste a collection, OpenAPI specification, HAR or cURL command"
+          ></textarea>
+        } @else {
+          <label class="field"
+            >Name<input
+              [formField]="fields.name"
+              placeholder="Give it a name"
+              (keydown.enter)="submitDialog()"
+          /></label>
+        }
+        <div class="modal-actions">
+          <button class="button" (click)="dialogs.set('')">Cancel</button
+          ><button class="button primary" (click)="submitDialog()" [disabled]="state.busy()">
+            {{ dialogs() === 'import' ? 'Import' : 'Create' }}
+          </button>
+        </div>
+      </section>
+    </div>
+  }
+</div>
