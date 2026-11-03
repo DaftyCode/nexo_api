@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1080" height="430" viewBox="0 0 1080 430" role="img" aria-labelledby="title description">
-  <title id="title">Cómo funciona Nexo API</title>
-  <desc id="description">La interfaz Angular y el escritorio Tauri conectan con Rust. Rust coordina la base de datos SQLite, el vault de secretos y un motor auxiliar que ejecuta peticiones y scripts.</desc>
+  <title id="title">How Nexo API works</title>
+  <desc id="description">The Angular interface and Tauri desktop connect to Rust. Rust coordinates the SQLite database, encrypted secrets and an auxiliary engine that runs requests and scripts.</desc>
   <defs>
     <marker id="arrow" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto" markerUnits="userSpaceOnUse">
       <path d="M1 1 L8 4.5 L1 8" fill="none" stroke="#a7b5ca" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
@@ -25,28 +25,28 @@
   <path class="line" d="M820 310 H848 V351 H885"/>
   <rect class="box" x="28" y="131" width="190" height="84" rx="12"/>
   <text class="heading" x="123" y="166">Angular</text>
-  <text class="detail" x="123" y="190">Interfaz y workspace</text>
+  <text class="detail" x="123" y="190">Interface and workspace</text>
   <rect class="native" x="28" y="264" width="190" height="78" rx="12"/>
   <text class="heading" x="123" y="297">Tauri</text>
-  <text class="detail" x="123" y="321">Integración de escritorio</text>
+  <text class="detail" x="123" y="321">Desktop integration</text>
   <rect class="native" x="306" y="143" width="230" height="106" rx="12"/>
   <text class="heading" x="421" y="181">Rust</text>
-  <text class="detail" x="421" y="206">Backend y casos de uso</text>
-  <text class="detail" x="421" y="227">Permisos y coordinación</text>
+  <text class="detail" x="421" y="206">Backend and use cases</text>
+  <text class="detail" x="421" y="227">Permissions and orchestration</text>
   <rect class="box" x="638" y="58" width="182" height="72" rx="12"/>
   <text class="heading" x="729" y="89">SQLite</text>
-  <text class="detail" x="729" y="112">Datos y revisiones</text>
+  <text class="detail" x="729" y="112">Data and revisions</text>
   <rect class="box" x="638" y="160" width="182" height="72" rx="12"/>
   <text class="heading" x="729" y="191">Vault</text>
-  <text class="detail" x="729" y="214">Secretos cifrados</text>
+  <text class="detail" x="729" y="214">Encrypted secrets</text>
   <rect class="box" x="638" y="263" width="182" height="76" rx="12"/>
-  <text class="heading" x="729" y="294">Motor Nexo</text>
-  <text class="detail" x="729" y="317">Runtime auxiliar Node</text>
+  <text class="heading" x="729" y="294">Nexo engine</text>
+  <text class="detail" x="729" y="317">Auxiliary Node runtime</text>
   <rect class="box" x="885" y="208" width="168" height="72" rx="12"/>
   <text class="heading" x="969" y="239">APIs</text>
-  <text class="detail" x="969" y="262">HTTP y protocolos</text>
+  <text class="detail" x="969" y="262">HTTP and protocols</text>
   <rect class="box" x="885" y="315" width="168" height="72" rx="12"/>
   <text class="heading" x="969" y="346">Scripts</text>
-  <text class="detail" x="969" y="369">Procesos limitados</text>
-  <text x="30" y="403" fill="#879bb5" font-family="system-ui, sans-serif" font-size="12">Escritorio local o servidor propio · Mismos casos de uso y reglas de acceso</text>
+  <text class="detail" x="969" y="369">Limited processes</text>
+  <text x="30" y="403" fill="#879bb5" font-family="system-ui, sans-serif" font-size="12">Local desktop or self-hosted server · Shared use cases and access rules</text>
 </svg>

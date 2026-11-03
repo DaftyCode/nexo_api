@@ -1,129 +1,137 @@
+<details>
+<summary>🌐 Language: <strong>English</strong></summary>
+
+- **English** — selected
+- [Español](README.es.md)
+
+</details>
+
 # Nexo API
 
-**Tus APIs. Tu workspace. Tu infraestructura.**
+**Your APIs. Your workspace. Your infrastructure.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Desktop packages](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml/badge.svg)](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml)
 [![Downloads](https://img.shields.io/badge/Downloads-GitHub_Releases-blue)](https://github.com/DaftyCode/nexo_api/releases)
 
-Nexo API es una aplicación **100% open source**, con licencia MIT, para construir, organizar, ejecutar y probar APIs desde tu equipo o desde tu propio servidor.
+Nexo API is a **100% open source** application, licensed under MIT, for building, organizing, running and testing APIs on your computer or your own server.
 
-Nos inspiramos en Postman y en la comodidad de reunir peticiones, colecciones, entornos y pruebas en un mismo lugar. A partir de esa inspiración estamos construyendo un proyecto independiente, con implementación propia y una arquitectura basada en **Tauri + Rust + Angular**.
+We take inspiration from Postman and the convenience of keeping requests, collections, environments and tests in one place. From that inspiration, we are building an independent project with its own implementation and an architecture based on **Tauri + Rust + Angular**.
 
-Queremos una herramienta ágil, que arranque rápido, responda con fluidez y mantenga tus datos bajo tu control. Rust ejecuta el backend nativo y Tauri integra el WebView del sistema para el escritorio. El motor de peticiones y scripts todavía utiliza un runtime Node auxiliar, incluido en el instalador; seguir trasladando trabajo a Rust forma parte de la hoja de ruta. Publicaremos mediciones reproducibles de arranque, memoria y latencia a medida que avance el proyecto.
+Our goal is a responsive tool that starts quickly, feels smooth and keeps you in control of your data. Rust runs the native backend, while Tauri integrates the operating system's WebView for the desktop interface. The request and scripting engine currently uses an auxiliary Node runtime, included in the installer; moving more work to Rust is part of our roadmap. We will publish reproducible startup, memory and latency benchmarks as the project develops.
 
-El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revisiones son bienvenidas.
+The project is at an early stage. Contributions, ideas, testing and code reviews are welcome.
 
-## Qué puedes hacer
+## What you can do
 
-| Área               | Disponible                                                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Peticiones         | HTTP/HTTPS, métodos, parámetros, cabeceras y respuestas; cuerpos raw, JSON, formularios de texto y GraphQL sobre HTTP.               |
-| Organización       | Colecciones y carpetas, pestañas, entornos, variables, historial y documentos persistidos en SQLite.                                 |
-| Autenticación HTTP | Basic, Bearer, API key, Digest MD5/SHA-256 y uso de tokens OAuth2; intercambio de tokens en el panel de integraciones.               |
-| Scripts y pruebas  | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones. |
-| Runner             | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, cancelación y reportes JSON/JUnit desde CLI.              |
-| Protocolos         | Clientes WebSocket, Socket.IO, MQTT y gRPC con proto proporcionado.                                                                  |
-| Importación        | Colecciones JSON portables, entornos, OpenAPI/Swagger JSON o YAML, HAR y cURL.                                                       |
-| Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                             |
-| Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, Git local y cliente/servidor MCP.                                |
-| Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}` y redacción de secretos en resultados.                                     |
-| Servidor           | Cuentas, sesiones revocables, workspaces, miembros, roles y revisiones para evitar sobrescrituras.                                   |
-| Escritorio y web   | Aplicación local con Tauri; web con Angular SSR para portada/documentación y editor privado en cliente.                              |
+| Area                | Available features                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Requests            | HTTP/HTTPS, methods, query parameters, headers and responses; raw, JSON, text form bodies and GraphQL over HTTP.          |
+| Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite.                        |
+| HTTP authentication | Basic, Bearer, API key, MD5/SHA-256 Digest and OAuth2 tokens; token exchange in the integrations panel.                   |
+| Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. |
+| Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, cancellation and JSON/JUnit reports from the CLI.  |
+| Protocols           | WebSocket, Socket.IO, MQTT and gRPC clients with a supplied proto.                                                        |
+| Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                      |
+| Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
+| Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, local Git and MCP client/server support.                  |
+| Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references and secret redaction in results.                                     |
+| Server              | Accounts, revocable sessions, workspaces, members, roles and revisions that prevent lost updates.                         |
+| Desktop and web     | Local Tauri application; Angular SSR for the public website/documentation and a client-rendered private editor.           |
 
-Las peticiones se envían desde el motor local o desde el servidor donde lo despliegues. En modo servidor, una URL de red privada se interpreta desde la red de ese servidor.
+Requests originate from the local engine or the server where you deploy it. In server mode, private network URLs are resolved from that server's network.
 
-## Descargar e instalar
+## Download and install
 
-Las versiones se distribuirán en [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Consulta los assets de cada versión: una plataforma preparada en CI no implica que ya exista un instalador publicado para ella.
+Versions are distributed through [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Check each release's assets: a platform configured in CI does not automatically mean an installer has been published for it.
 
-| Sistema | Arquitectura                        | Paquetes preparados en CI                          |
-| ------- | ----------------------------------- | -------------------------------------------------- |
-| Windows | x64                                 | Instalador NSIS `.exe` y Windows Installer `.msi`. |
-| macOS   | Apple Silicon e Intel, por separado | Aplicación `.app` dentro de `.dmg`.                |
-| Linux   | x64                                 | `.deb`, `.rpm` y `.AppImage`.                      |
+| Operating system | Architecture                              | Packages configured in CI                           |
+| ---------------- | ----------------------------------------- | --------------------------------------------------- |
+| Windows          | x64                                       | NSIS `.exe` installer and Windows Installer `.msi`. |
+| macOS            | Apple Silicon and Intel, built separately | `.app` application inside a `.dmg`.                 |
+| Linux            | x64                                       | `.deb`, `.rpm` and `.AppImage`.                     |
 
-Cada compilación se realiza en un runner del sistema correspondiente. Los instaladores incluyen el runtime auxiliar, por lo que los usuarios finales no necesitan instalar Node ni Rust.
+Each build runs on a runner for its operating system. Installers include the auxiliary runtime, so end users do not need to install Node or Rust.
 
-### WinGet y despliegue empresarial
+### WinGet and enterprise deployment
 
-El pipeline genera manifiestos WinGet con el identificador propuesto `DaftyCode.NexoAPI`, URLs de la release y SHA-256 calculados sobre el MSI real. **La entrada en el catálogo público está pendiente**: primero hay que publicar una versión y enviar los manifiestos a [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs).
+The pipeline generates WinGet manifests with the proposed identifier `DaftyCode.NexoAPI`, release URLs and SHA-256 hashes calculated from the actual MSI. **Public catalog registration is pending**: a version must be published first, then its manifests submitted to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs).
 
-Después de su aceptación, el comando previsto será:
+After acceptance, the intended command will be:
 
 ```powershell
 winget install --exact --id DaftyCode.NexoAPI --source winget
 ```
 
-El MSI también permite a los equipos de IT desplegar el software con sus herramientas habituales. WinGet sigue utilizando un instalador y respeta las políticas de la empresa; no evita restricciones de ejecución o de confianza en el editor. La firma de Windows y la validación en entornos corporativos están pendientes.
+The MSI also lets IT teams deploy the application with their usual management tools. WinGet still uses an installer and follows company policies; it does not bypass execution restrictions or publisher trust requirements. Windows signing and enterprise environment validation are pending.
 
-### Homebrew en macOS
+### Homebrew on macOS
 
-Al publicar una release, el workflow `Update package manager index` genera el cask con checksums para Apple Silicon e Intel y lo incorpora a este repositorio. **Hasta la primera release publicada y la ejecución correcta de ese workflow, el cask todavía no estará disponible.** Después:
+Publishing a release triggers `Update package manager index`, which generates a cask with checksums for Apple Silicon and Intel and adds it to this repository. **The cask becomes available after the first release is published and that workflow succeeds.** Then:
 
 ```bash
 brew tap daftycode/nexo https://github.com/DaftyCode/nexo_api
 brew install --cask daftycode/nexo/nexo-api
 ```
 
-Usaremos un tap propio; la inclusión en el catálogo central de Homebrew es un paso distinto. Los builds de CI usan firma ad hoc en macOS. La firma Developer ID y la notarización de Apple requieren configurar los certificados y credenciales de distribución; siguen pendientes.
+We use our own tap; inclusion in Homebrew's central catalog is a separate step. CI builds use ad hoc signing on macOS. Apple Developer ID signing and notarization require distribution certificates and credentials, which still need to be configured.
 
-### Linux con APT o DNF
+### Linux with APT or DNF
 
-Cuando estén publicados, los paquetes descargados de una release podrán instalarse con el gestor de la distribución:
+Once published, packages downloaded from a release can be installed using your distribution's package manager:
 
 ```bash
-# Debian / Ubuntu, desde la carpeta de descarga:
+# Debian / Ubuntu, from your download directory:
 sudo apt install ./Nexo*.deb
 
-# Fedora / distribuciones compatibles con RPM:
+# Fedora / compatible RPM distributions:
 sudo dnf install ./Nexo*.rpm
 ```
 
-Los equipos de IT pueden distribuir estos paquetes mediante sus repositorios internos. Un repositorio APT/YUM público, con índices y firma propios, está pendiente; todavía no existe un `apt install nexo-api` desde los repositorios del sistema. Flatpak y otros catálogos están en la hoja de ruta.
+IT teams can distribute these packages through their internal repositories. A public APT/YUM repository with its own indexes and signing is pending; `apt install nexo-api` is not yet available from system repositories. Flatpak and other catalogs are on the roadmap.
 
-## Cómo funciona
+## How it works
 
-![Arquitectura de Nexo: Angular y Tauri conectan con el backend Rust, que coordina SQLite, el vault y el motor de peticiones y scripts.](public/architecture.svg)
+![Nexo architecture: Angular and Tauri connect to the Rust backend, which coordinates SQLite, the vault and the request and scripting engine.](public/architecture.svg)
 
-El escritorio inicia un servicio Rust en un puerto aleatorio de loopback y utiliza un token propio. Conserva sus datos en el equipo y funciona sin cuenta. El modo servidor añade autenticación y permisos por workspace, y puede desplegarse en infraestructura propia.
+The desktop application starts a Rust service on a random loopback port and authenticates with its own token. It stores data locally and works without an account. Server mode adds authentication and workspace permissions and can run on your own infrastructure.
 
-La portada y `/docs` se renderizan en servidor. El editor `/workspace` se renderiza en cliente, lleva `noindex` y excluye los datos privados del transfer cache de Angular.
+The public website and `/docs` use server rendering. The `/workspace` editor uses client rendering, carries `noindex` and excludes private data from Angular's transfer cache.
 
-## Arquitectura que queremos mantener
+## Architecture we want to preserve
 
-### Backend: hexagonal
+### Backend: hexagonal architecture
 
 ```text
 backend/crates/
-  nexo-domain/          Entidades, reglas y errores del dominio
-  nexo-application/     Casos de uso y puertos
-  nexo-infrastructure/  Adaptadores SQLite, ejecución, Git y vault
-  nexo-http/            Adaptador HTTP
-  nexo-server/          Raíz de composición y CLI
-src-tauri/             Raíz de composición de escritorio
+  nexo-domain/          Domain entities, rules and errors
+  nexo-application/     Use cases and ports
+  nexo-infrastructure/  SQLite, execution, Git and vault adapters
+  nexo-http/            HTTP adapter
+  nexo-server/          Composition root and CLI
+src-tauri/             Desktop composition root
 ```
 
-El dominio no conoce HTTP, bases de datos ni interfaz gráfica. Los casos de uso dependen de contratos; los adaptadores implementan esos contratos. Tauri y el servidor componen las mismas capacidades.
+The domain has no knowledge of HTTP, databases or graphical interfaces. Use cases depend on contracts; adapters implement those contracts. Tauri and the server compose the same capabilities.
 
 ### Frontend: Clean Architecture
 
 ```text
 src/app/
-  domain/          Modelos y reglas independientes de Angular
-  application/     Casos de uso y contratos
-  infrastructure/  Implementaciones de los contratos
-  presentation/    Componentes, estado y vistas Angular
-  composition/     Inyección y configuración de dependencias
+  domain/          Angular-independent models and rules
+  application/     Use cases and contracts
+  infrastructure/  Contract implementations
+  presentation/    Angular components, state and views
+  composition/     Dependency injection and configuration
 ```
 
-La presentación llama a los casos de uso. Los detalles HTTP y de archivos quedan en infraestructura. Usamos componentes standalone, signals, OnPush, Signal Forms y rutas lazy.
+Presentation calls use cases. HTTP and file handling stay in infrastructure. We use standalone components, signals, OnPush, Signal Forms and lazy routes.
 
-Aplicamos **SOLID y Clean Code**: una responsabilidad clara por módulo; puertos pequeños; dependencias hacia las capas interiores; implementaciones intercambiables; nombres concretos y funciones que hagan una sola cosa. Las abstracciones deben resolver una necesidad real. `npm run test:architecture` comprueba límites entre capas.
+We follow **SOLID and Clean Code**: clear module responsibilities, small ports, inward dependencies, interchangeable implementations, concrete names and focused functions. Abstractions should solve a real need. `npm run test:architecture` checks layer boundaries.
 
-## Ejecutar desde el código
+## Run from source
 
-Requisitos: Node LTS 26.13 o superior, npm y la toolchain Rust fijada en `rust-toolchain.toml`. El escritorio necesita las [dependencias de Tauri del sistema](https://v2.tauri.app/start/prerequisites/): MSVC/WebView2 en Windows, Xcode Command Line Tools en macOS y bibliotecas de WebKitGTK en Linux.
+Requirements: Node LTS 26.13 or newer, npm and the Rust toolchain pinned in `rust-toolchain.toml`. Desktop development also requires [Tauri's platform prerequisites](https://v2.tauri.app/start/prerequisites/): MSVC/WebView2 on Windows, Xcode Command Line Tools on macOS and WebKitGTK libraries on Linux.
 
 ```bash
 npm ci
@@ -131,19 +139,19 @@ npm run engine:build
 npm run dev
 ```
 
-Desarrollo web: [http://localhost:4200/workspace](http://localhost:4200/workspace), con backend local en loopback 8080.
+Web development: [http://localhost:4200/workspace](http://localhost:4200/workspace), with a local backend on loopback port 8080.
 
 ```bash
-# Escritorio en desarrollo:
+# Desktop development:
 npm run desktop:dev
 
-# Instaladores nativos del sistema actual:
+# Native installers for your current operating system:
 npm run desktop:build
 ```
 
-En Windows, `node tools/ensure-node.mjs` descarga y verifica el runtime Node oficial que se incluirá en el instalador. En macOS y Linux se incluye el Node utilizado para compilar.
+On Windows, `node tools/ensure-node.mjs` downloads and verifies the official Node runtime included in the installer. macOS and Linux builds include the Node executable used during the build.
 
-### Servidor propio
+### Self-hosted server
 
 ```bash
 npm run build
@@ -151,15 +159,15 @@ npm run backend:build
 npm run preview:server
 ```
 
-Abrir [http://localhost:4000](http://localhost:4000). Este comando inicia SSR y un backend de servidor en loopback 8081, con datos separados en `.nexo-server`. El primer acceso permite crear la cuenta propietaria; el registro posterior está deshabilitado por defecto.
+Open [http://localhost:4000](http://localhost:4000). This command starts SSR and a server-mode backend on loopback port 8081, with separate data in `.nexo-server`. The first visit lets you create the owner account; subsequent registration is disabled by default.
 
-También puedes usar `npm run server:start` y `npm run serve:ssr:nexo` como procesos separados. La web utiliza `NEXO_API_URL`, por defecto `http://127.0.0.1:8080`.
+You can also run `npm run server:start` and `npm run serve:ssr:nexo` as separate processes. The web server uses `NEXO_API_URL`, defaulting to `http://127.0.0.1:8080`.
 
 ```bash
 docker compose up --build -d
 ```
 
-Configura `.env` a partir de `.env.example`, los orígenes permitidos y un proxy HTTPS para tu dominio. El volumen `nexo-data` conserva documentos, usuarios, revisiones y secretos. La configuración de Compose está validada; queda pendiente verificar el contenedor en ejecución.
+Create `.env` from `.env.example`, configure allowed origins and use an HTTPS reverse proxy for your domain. The `nexo-data` volume persists documents, users, revisions and secrets. The Compose configuration has been validated; running the container still needs verification.
 
 ### CLI
 
@@ -169,37 +177,37 @@ npm run nexo -- request request.json
 npm run nexo -- import specification.yaml --report collection.json
 ```
 
-La CLI comparte el motor de ejecución con el escritorio y el servidor y devuelve un código de error cuando falla una ejecución o una aserción.
+The CLI shares the execution engine with the desktop and server and returns an error exit code when a run or assertion fails.
 
-## Estado y siguientes pasos
+## Current status and next steps
 
-Ya hay pruebas de peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, gRPC unary, WebSocket, Socket.IO, MQTT, permisos, revisiones y SSR.
+Tests already cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, unary gRPC, WebSocket, Socket.IO, MQTT, permissions, revisions and SSR.
 
-Quedan áreas importantes por completar:
+Important work remains:
 
-- Validar los instaladores nuevos en máquinas limpias de Windows, macOS y Linux; firma, notarización, actualización automática y publicación en catálogos.
-- Medir rendimiento y seguir trasladando capacidades del runtime auxiliar a Rust.
-- Subida de archivos binarios, gestión persistente de cookies y más ayudas de autenticación.
-- Flujo OAuth con navegador/callback automático, introspección y subscriptions GraphQL, reflexión gRPC y más variantes de protocolos.
-- Pausa/reanudación del runner, más funciones de scripts y pruebas completas de proxy y mTLS.
-- Colaboración en tiempo real, comentarios, sincronización entre instalaciones y monitorización programada.
-- Repositorios APT/YUM firmados y distribución Flatpak.
+- Validate the new installers on clean Windows, macOS and Linux machines; signing, notarization, automatic updates and catalog publication.
+- Benchmark performance and move more capabilities from the auxiliary runtime into Rust.
+- Binary file uploads, persistent cookie management and additional authentication helpers.
+- Automatic OAuth browser/callback flows, GraphQL introspection/subscriptions, gRPC reflection and more protocol variants.
+- Runner pause/resume, expanded scripting APIs and comprehensive proxy/mTLS tests.
+- Real-time collaboration, comments, synchronization between installations and scheduled monitoring.
+- Signed APT/YUM repositories and Flatpak distribution.
 
-Los límites actuales incluyen 5 segundos por evaluación de script, procesos de ejecución de 256 MB y respuestas limitadas para la interfaz. Las cookies duran mientras vive el motor. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los helpers HTTP aún no implementados se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
+Current limits include 5 seconds per script evaluation, 256 MB execution processes and response size limits for the interface. Cookies last for the engine's lifetime. External OpenAPI `$ref` references must be bundled before import. Unimplemented HTTP authentication helpers are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
 
-## Colaborar
+## Contributing
 
-Puedes abrir una [issue](https://github.com/DaftyCode/nexo_api/issues), proponer una mejora, corregir un fallo, ampliar pruebas o enviar una pull request. No necesitas permiso previo para empezar. Para cambios grandes, una issue con el problema y la propuesta ayuda a coordinar el trabajo.
+You can open an [issue](https://github.com/DaftyCode/nexo_api/issues), propose an improvement, fix a bug, expand tests or submit a pull request. You do not need permission to get started. For larger changes, an issue describing the problem and proposal helps coordinate the work.
 
-1. Haz un fork y crea una rama corta: `feat/http-history`, `fix/runner-cancel` o similar.
-2. Mantén cada cambio centrado en un problema y respeta las capas y responsabilidades.
-3. Añade pruebas de comportamiento cuando cambies reglas o adaptadores. Incluye un caso que reproduzca el fallo si corriges uno.
-4. Ejecuta las comprobaciones relevantes y explica en la PR el problema, el resultado y cómo lo verificaste.
-5. Conserva los avisos y licencias de las dependencias. Evita incluir datos locales, credenciales o artefactos generados.
+1. Fork the repository and create a focused branch, such as `feat/http-history` or `fix/runner-cancel`.
+2. Keep each change focused on one problem and respect layer boundaries and responsibilities.
+3. Add behavior tests when changing rules or adapters. Include a reproduction test when fixing a bug.
+4. Run the relevant checks and explain the problem, resulting behavior and validation in your PR.
+5. Preserve dependency notices and licenses. Keep local data, credentials and generated artifacts out of Git.
 
 ### Commits
 
-Usamos Conventional Commits, con asunto breve y alcance cuando ayude:
+We use Conventional Commits with a short subject and a scope where useful:
 
 ```text
 feat(runner): support data-driven iterations
@@ -210,9 +218,9 @@ docs(readme): explain self-hosted setup
 chore(packages): update installer manifests
 ```
 
-Un commit debe tener una intención clara. Explica el motivo en el cuerpo si no se deduce del cambio. Usa `!` y `BREAKING CHANGE:` cuando cambies un contrato de forma incompatible. Las PR deben mantener la arquitectura hexagonal del backend, Clean Architecture en frontend y los principios SOLID.
+Each commit should have one clear purpose. Explain the motivation in the body when it is not obvious from the change. Use `!` and `BREAKING CHANGE:` for incompatible contract changes. PRs should preserve backend hexagonal architecture, frontend Clean Architecture and SOLID principles.
 
-### Comprobaciones
+### Checks
 
 ```bash
 npm run test:architecture
@@ -227,14 +235,14 @@ npm run test:server
 npm run test:ssr
 ```
 
-`test:server` necesita el backend release; `test:ssr` necesita el build SSR, backend local en 8080 y el puerto 4000 libre. Los informes se generan en `.verification`, fuera de Git. La carpeta local `docs/` también está excluida y no forma parte del repositorio.
+`test:server` requires a release backend build. `test:ssr` requires the SSR build, a local backend on port 8080 and port 4000 available. Reports are generated in `.verification`, outside Git. The local `docs/` directory is also excluded from the repository.
 
-## Publicar una versión
+## Publishing a version
 
-`Desktop packages` puede ejecutarse manualmente desde Actions para comprobar los cuatro builds sin publicar una release. Un tag `vX.Y.Z` que coincida con las versiones del proyecto genera un **borrador de GitHub Release**, instaladores, `SHA256SUMS` y manifiestos WinGet/Homebrew. Después de revisar y publicar el borrador, el workflow del índice añade el cask y los manifiestos al repositorio. Las ramas protegidas pueden requerir adaptar ese paso a una PR.
+Run `Desktop packages` manually from Actions to check all four builds without publishing a release. A `vX.Y.Z` tag matching the project versions creates a **GitHub Release draft** with installers, `SHA256SUMS` and WinGet/Homebrew manifests. After reviewing and publishing the draft, the package index workflow adds the cask and manifests to the repository. Protected branches may require adapting that step to open a PR.
 
-El registro público en WinGet necesita una PR independiente al catálogo oficial. La preparación de paquetes y manifiestos no equivale a su aceptación en un gestor.
+Public WinGet registration requires a separate PR to its official catalog. Generating packages and manifests does not mean they have been accepted into a package manager.
 
-## Licencia
+## License
 
-Nexo API se distribuye bajo [MIT](LICENSE): puedes usarlo, estudiarlo, modificarlo, redistribuirlo y colaborar, también en entornos comerciales. Las dependencias mantienen sus respectivas licencias.
+Nexo API is distributed under [MIT](LICENSE): you can use, study, modify, redistribute and contribute to it, including in commercial environments. Dependencies retain their own licenses.
