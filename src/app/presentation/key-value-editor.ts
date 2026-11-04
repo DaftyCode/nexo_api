@@ -1,9 +1,10 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, model } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { KeyValue, row } from '../domain/models';
 
 @Component({
-  imports: [FormField],
+  imports: [TranslocoPipe, FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-key-value-editor',
   styleUrl: './key-value-editor.scss',

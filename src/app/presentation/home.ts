@@ -1,9 +1,11 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Meta } from '@angular/platform-browser';
+import { LanguageSelector } from './language-selector';
 
 @Component({
-  imports: [RouterLink],
+  imports: [TranslocoPipe, RouterLink, LanguageSelector],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-home',
   styleUrl: './home.scss',

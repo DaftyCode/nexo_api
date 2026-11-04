@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import { visualTemplates } from '../domain/appearance';
@@ -5,7 +6,7 @@ import { AppearanceState } from './appearance-state';
 
 @Component({
   selector: 'app-appearance-selector',
-  imports: [FormField],
+  imports: [TranslocoPipe, FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <label class="template-selector">
@@ -17,8 +18,8 @@ import { AppearanceState } from './appearance-state';
           stroke-linejoin="round"
         />
       </svg>
-      <span>Template</span>
-      <select [formField]="fields.template" aria-label="Visual template">
+      <span>{{ 'Template' | transloco }}</span>
+      <select [formField]="fields.template" [attr.aria-label]="'Visual template' | transloco">
         @for (template of templates; track template.id) {
           <option [value]="template.id">{{ template.name }}</option>
         }

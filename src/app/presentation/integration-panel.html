@@ -1,28 +1,28 @@
 <div class="feature-heading">
   <div>
-    <span class="eyebrow">CONNECTED TO YOUR WORKFLOW.</span>
+    <span class="eyebrow">{{ 'CONNECTED TO YOUR WORKFLOW.' | transloco }}</span>
     <h1>
       {{
         section() === 'git'
-          ? 'Git projects'
+          ? ('Git projects' | transloco)
           : section() === 'mcp'
-            ? 'MCP client'
+            ? ('MCP client' | transloco)
             : section() === 'code'
-              ? 'Generate code'
+              ? ('Generate code' | transloco)
               : section() === 'team'
-                ? 'Workspace members'
-                : 'Workspace settings'
+                ? ('Workspace members' | transloco)
+                : ('Workspace settings' | transloco)
       }}
     </h1>
     <p>
       {{
         section() === 'git'
-          ? 'Export collections to a local repository and version your work.'
+          ? ('Export collections to a local repository and version your work.' | transloco)
           : section() === 'mcp'
-            ? 'Inspect and call tools using Streamable HTTP.'
+            ? ('Inspect and call tools using Streamable HTTP.' | transloco)
             : section() === 'team'
-              ? 'Share a server workspace with existing accounts.'
-              : 'Configure integrations, credentials and reusable API definitions.'
+              ? ('Share a server workspace with existing accounts.' | transloco)
+              : ('Configure integrations, credentials and reusable API definitions.' | transloco)
       }}
     </p>
   </div>
@@ -31,49 +31,67 @@
   <section class="feature-card grow">
     @switch (section()) {
       @case ('git') {
-        <h2>Repository</h2>
-        <p class="muted">Each workspace has a dedicated project directory on the engine machine.</p>
+        <h2>{{ 'Repository' | transloco }}</h2>
+        <p class="muted">
+          {{
+            'Each workspace has a dedicated project directory on the engine machine.' | transloco
+          }}
+        </p>
         <div class="button-grid">
           @for (op of ['init', 'export', 'status', 'diff', 'log', 'branches', 'stash']; track op) {
             <button class="button" (click)="git(op)">
-              {{ op === 'init' ? 'Initialize' : op === 'export' ? 'Export collections' : op }}
+              {{
+                op === 'init'
+                  ? ('Initialize' | transloco)
+                  : op === 'export'
+                    ? ('Export collections' | transloco)
+                    : op
+              }}
             </button>
           }
         </div>
         <label class="field"
-          >Branch<input [formField]="fields.branch" placeholder="feature/my-api"
+          >{{ 'Branch' | transloco
+          }}<input [formField]="fields.branch" placeholder="feature/my-api"
         /></label>
         <div class="row">
-          <button class="button" (click)="git('branch')">Create branch</button
-          ><button class="button" (click)="git('checkout')">Switch branch</button>
+          <button class="button" (click)="git('branch')">{{ 'Create branch' | transloco }}</button
+          ><button class="button" (click)="git('checkout')">
+            {{ 'Switch branch' | transloco }}
+          </button>
         </div>
-        <label class="field">Commit message<input [formField]="fields.message" /></label
-        ><button class="button primary" (click)="git('commit')">Commit changes</button>
+        <label class="field"
+          >{{ 'Commit message' | transloco }}<input [formField]="fields.message" /></label
+        ><button class="button primary" (click)="git('commit')">
+          {{ 'Commit changes' | transloco }}
+        </button>
       }
       @case ('mcp') {
-        <label class="field">Server URL<input [formField]="fields.url" /></label
+        <label class="field">{{ 'Server URL' | transloco }}<input [formField]="fields.url" /></label
         ><label class="field"
-          >Method<select [formField]="fields.method">
-            <option value="initialize">initialize</option>
-            <option value="tools/list">tools/list</option>
-            <option value="tools/call">tools/call</option>
-            <option value="resources/list">resources/list</option>
-            <option value="prompts/list">prompts/list</option>
+          >{{ 'Method' | transloco
+          }}<select [formField]="fields.method">
+            <option value="initialize">{{ 'initialize' | transloco }}</option>
+            <option value="tools/list">{{ 'tools/list' | transloco }}</option>
+            <option value="tools/call">{{ 'tools/call' | transloco }}</option>
+            <option value="resources/list">{{ 'resources/list' | transloco }}</option>
+            <option value="prompts/list">{{ 'prompts/list' | transloco }}</option>
           </select></label
         ><label class="field"
-          >Parameters (JSON)<textarea
-            class="code-editor small"
-            [formField]="fields.params"
-          ></textarea></label
+          >{{ 'Parameters (JSON)' | transloco
+          }}<textarea class="code-editor small" [formField]="fields.params"></textarea></label
         ><app-key-value-editor [(rows)]="headers" /><button class="button primary" (click)="mcp()">
-          Send JSON-RPC ↗
+          {{ 'Send JSON-RPC ↗' | transloco }}
         </button>
       }
       @case ('code') {
-        <h2>Request code</h2>
-        <p class="muted">Generate a snippet for the request in your active tab.</p>
+        <h2>{{ 'Request code' | transloco }}</h2>
+        <p class="muted">
+          {{ 'Generate a snippet for the request in your active tab.' | transloco }}
+        </p>
         <label class="field"
-          >Language<select [formField]="fields.language">
+          >{{ 'Language' | transloco
+          }}<select [formField]="fields.language">
             <option value="curl">cURL</option>
             <option value="javascript">JavaScript</option>
             <option value="python">Python</option>
@@ -84,31 +102,41 @@
             <option value="powershell">PowerShell</option>
           </select></label
         ><label class="field"
-          >Variant<input
+          >{{ 'Variant' | transloco
+          }}<input
             [formField]="fields.variant"
-            placeholder="Default generator for selected language" /></label
-        ><button class="button primary" (click)="code()">Generate snippet</button>
+            [placeholder]="'Default generator for selected language' | transloco" /></label
+        ><button class="button primary" (click)="code()">
+          {{ 'Generate snippet' | transloco }}
+        </button>
         <p class="muted">
-          Native generators: cURL · JavaScript Fetch · Python http.client · Java HttpClient · Go
-          net/http · C# HttpClient · Rust reqwest · PowerShell.
+          {{
+            'Native generators: cURL · JavaScript Fetch · Python http.client · Java HttpClient · Go net/http · C# HttpClient · Rust reqwest · PowerShell.'
+              | transloco
+          }}
         </p>
       }
       @case ('team') {
-        <label class="field">Account email<input type="email" [formField]="fields.email" /></label
+        <label class="field"
+          >{{ 'Account email' | transloco }}<input type="email" [formField]="fields.email" /></label
         ><label class="field"
-          >Role<select [formField]="fields.role">
-            <option value="editor">Editor</option>
-            <option value="viewer">Viewer</option>
-            <option value="remove">Remove membership</option>
+          >{{ 'Role' | transloco
+          }}<select [formField]="fields.role">
+            <option value="editor">{{ 'Editor' | transloco }}</option>
+            <option value="viewer">{{ 'Viewer' | transloco }}</option>
+            <option value="remove">{{ 'Remove membership' | transloco }}</option>
           </select></label
         >
         <div class="row">
-          <button class="button primary" (click)="invite()">Update membership</button
-          ><button class="button" (click)="members()">List members</button>
+          <button class="button primary" (click)="invite()">
+            {{ 'Update membership' | transloco }}</button
+          ><button class="button" (click)="members()">{{ 'List members' | transloco }}</button>
         </div>
         <p class="muted">
-          The account must already exist on this server. Only workspace owners can change
-          membership.
+          {{
+            'The account must already exist on this server. Only workspace owners can change membership.'
+              | transloco
+          }}
         </p>
       }
       @default {
@@ -121,122 +149,164 @@
         </div>
         @switch (tab()) {
           @case ('general') {
-            <h2>Your workspace, everywhere</h2>
+            <h2>{{ 'Your workspace, everywhere' | transloco }}</h2>
             <p>
-              Mode: <strong>{{ state.health()?.mode }}</strong>
+              {{ 'Mode:' | transloco }} <strong>{{ state.health()?.mode }}</strong>
             </p>
-            <p>Version: {{ state.health()?.version }}</p>
+            <p>{{ 'app.version' | transloco: { v0: state.health()?.version } }}</p>
             <p class="muted">
-              The desktop application sends requests from this computer. Server workspaces send
-              requests from the server network. Public documentation is rendered on the server;
-              private workspace data isn't indexed.
+              {{
+                "The desktop application sends requests from this computer. Server workspaces send requests from the server network. Public documentation is rendered on the server; private workspace data isn't indexed."
+                  | transloco
+              }}
             </p>
             <div class="button-grid">
-              <button class="button" (click)="state.refresh()">Refresh workspace</button>
+              <button class="button" (click)="state.refresh()">
+                {{ 'Refresh workspace' | transloco }}
+              </button>
               @if (state.health()?.mode === 'server') {
-                <button class="button" (click)="state.signOut()">Sign out</button>
+                <button class="button" (click)="state.signOut()">
+                  {{ 'Sign out' | transloco }}
+                </button>
               }
             </div>
           }
           @case ('vault') {
-            <h2>Secret vault</h2>
-            <label class="field">Secret name<input [formField]="fields.secretName" /></label
+            <h2>{{ 'Secret vault' | transloco }}</h2>
+            <label class="field"
+              >{{ 'Secret name' | transloco }}<input [formField]="fields.secretName" /></label
             ><label class="field"
-              >Value<input type="password" [formField]="fields.secretValue" autocomplete="off"
+              >{{ 'Value' | transloco
+              }}<input type="password" [formField]="fields.secretValue" autocomplete="off"
             /></label>
             <div class="row">
-              <button class="button primary" (click)="secret()">Save secret</button
-              ><button class="button danger" (click)="secret(true)">Remove secret</button>
+              <button class="button primary" (click)="secret()">
+                {{ 'Save secret' | transloco }}</button
+              ><button class="button danger" (click)="secret(true)">
+                {{ 'Remove secret' | transloco }}
+              </button>
             </div>
             <p class="muted">
-              Values are encrypted at rest. The desktop master key lives in the operating system
-              credential store. Vault values aren't included in collection exports.
+              {{
+                "Values are encrypted at rest. The desktop master key lives in the operating system credential store. Vault values aren't included in collection exports."
+                  | transloco
+              }}
             </p>
           }
           @case ('oauth') {
-            <h2>OAuth 2.0 token</h2>
-            <label class="field">Token endpoint<input [formField]="fields.tokenUrl" /></label
+            <h2>{{ 'OAuth 2.0 token' | transloco }}</h2>
+            <label class="field"
+              >{{ 'Token endpoint' | transloco }}<input [formField]="fields.tokenUrl" /></label
             ><label class="field"
-              >Grant type<select [formField]="fields.grant">
-                <option value="client_credentials">Client credentials</option>
-                <option value="authorization_code">Authorization code / PKCE</option>
-                <option value="refresh_token">Refresh token</option>
+              >{{ 'Grant type' | transloco
+              }}<select [formField]="fields.grant">
+                <option value="client_credentials">{{ 'Client credentials' | transloco }}</option>
+                <option value="authorization_code">
+                  {{ 'Authorization code / PKCE' | transloco }}
+                </option>
+                <option value="refresh_token">{{ 'Refresh token' | transloco }}</option>
               </select></label
             >
             <div class="row">
-              <label class="field grow">Client ID<input [formField]="fields.clientId" /></label
+              <label class="field grow"
+                >{{ 'Client ID' | transloco }}<input [formField]="fields.clientId" /></label
               ><label class="field grow"
-                >Client secret<input type="password" [formField]="fields.clientSecret"
+                >{{ 'Client secret' | transloco
+                }}<input type="password" [formField]="fields.clientSecret"
               /></label>
             </div>
-            <label class="field">Scope<input [formField]="fields.scope" /></label>
+            <label class="field"
+              >{{ 'Scope' | transloco }}<input [formField]="fields.scope"
+            /></label>
             @if (model().grant !== 'client_credentials') {
               <label class="field"
-                >{{ model().grant === 'refresh_token' ? 'Refresh token' : 'Authorization code'
+                >{{
+                  model().grant === 'refresh_token'
+                    ? ('Refresh token' | transloco)
+                    : ('Authorization code' | transloco)
                 }}<input [formField]="fields.code" /></label
-              ><label class="field">Redirect URI<input [formField]="fields.redirectUri" /></label
               ><label class="field"
-                >PKCE code verifier<input [formField]="fields.verifier"
+                >{{ 'Redirect URI' | transloco }}<input [formField]="fields.redirectUri" /></label
+              ><label class="field"
+                >{{ 'PKCE code verifier' | transloco }}<input [formField]="fields.verifier"
               /></label>
             }
-            <button class="button primary" (click)="oauth()">Get token and use in request</button>
+            <button class="button primary" (click)="oauth()">
+              {{ 'Get token and use in request' | transloco }}
+            </button>
           }
           @case ('revisions') {
-            <h2>Document history</h2>
+            <h2>{{ 'Document history' | transloco }}</h2>
             <label class="field"
-              >Document<select [formField]="fields.documentId">
-                <option value="">Choose a resource</option>
+              >{{ 'Document' | transloco
+              }}<select [formField]="fields.documentId">
+                <option value="">{{ 'Choose a resource' | transloco }}</option>
                 @for (d of state.documents(); track d.id) {
-                  <option [value]="d.id">{{ d.name }} · r{{ d.revision }}</option>
+                  <option [value]="d.id">
+                    {{ 'document.resourceRevision' | transloco: { v0: d.name, v1: d.revision } }}
+                  </option>
                 }
               </select></label
-            ><button class="button" (click)="revisionList()">Load revisions</button>
+            ><button class="button" (click)="revisionList()">
+              {{ 'Load revisions' | transloco }}
+            </button>
             @for (revision of revisions(); track revision.revision) {
               <div class="run-result">
-                <span>Revision {{ revision.revision }}</span
+                <span>{{ 'document.revision' | transloco: { v0: revision.revision } }}</span
                 ><button class="button" (click)="restore(revision.value)">
-                  Restore as new revision
+                  {{ 'Restore as new revision' | transloco }}
                 </button>
               </div>
             }
           }
           @case ('apis') {
-            <h2>API definitions</h2>
-            <label class="field">Name<input [formField]="fields.apiName" /></label
+            <h2>{{ 'API definitions' | transloco }}</h2>
+            <label class="field"
+              >{{ 'Name' | transloco }}<input [formField]="fields.apiName" /></label
             ><label class="field"
-              >OpenAPI definition<textarea
+              >{{ 'OpenAPI definition' | transloco
+              }}<textarea
                 class="code-editor"
                 [formField]="fields.apiSpec"
                 spellcheck="false"
               ></textarea>
             </label>
             <div class="row">
-              <button class="button primary" (click)="apiSpec()">Save definition</button
-              ><button class="button" (click)="importApi()">Generate collection</button>
+              <button class="button primary" (click)="apiSpec()">
+                {{ 'Save definition' | transloco }}</button
+              ><button class="button" (click)="importApi()">
+                {{ 'Generate collection' | transloco }}
+              </button>
             </div>
           }
           @case ('performance') {
-            <h2>Performance run</h2>
+            <h2>{{ 'Performance run' | transloco }}</h2>
             <p class="muted">
-              Runs the active request repeatedly. This version supports up to four virtual users and
-              120 seconds.
+              {{
+                'Runs the active request repeatedly. This version supports up to four virtual users and 120 seconds.'
+                  | transloco
+              }}
             </p>
             <div class="row">
               <label class="field"
-                >Virtual users<input type="number" [formField]="fields.users" /></label
+                >{{ 'Virtual users' | transloco
+                }}<input type="number" [formField]="fields.users" /></label
               ><label class="field"
-                >Duration (seconds)<input type="number" [formField]="fields.duration"
+                >{{ 'Duration (seconds)' | transloco
+                }}<input type="number" [formField]="fields.duration"
               /></label>
             </div>
             <label class="field"
-              >Profile<select [formField]="fields.profile">
-                <option value="fixed">Fixed</option>
-                <option value="ramp-up">Ramp up</option>
+              >{{ 'Profile' | transloco
+              }}<select [formField]="fields.profile">
+                <option value="fixed">{{ 'Fixed' | transloco }}</option>
+                <option value="ramp-up">{{ 'Ramp up' | transloco }}</option>
               </select></label
             >
             <div class="row">
-              <button class="button primary" (click)="performance()">Start run</button
-              ><button class="button" (click)="stopPerformance()">Stop</button>
+              <button class="button primary" (click)="performance()">
+                {{ 'Start run' | transloco }}</button
+              ><button class="button" (click)="stopPerformance()">{{ 'Stop' | transloco }}</button>
             </div>
           }
         }
@@ -245,17 +315,19 @@
   </section>
   <section class="feature-card grow">
     <div class="row between">
-      <h2>{{ section() === 'code' ? 'Generated snippet' : 'Output' }}</h2>
+      <h2>
+        {{ section() === 'code' ? ('Generated snippet' | transloco) : ('Output' | transloco) }}
+      </h2>
       <button
         class="button"
         (click)="state.cases.files.download('nexo-output.txt', output(), 'text/plain')"
         [disabled]="!output()"
       >
-        Save output
+        {{ 'Save output' | transloco }}
       </button>
     </div>
     <pre class="tool-output">{{
-      output() || 'Results appear here when you run an operation.'
+      output() || ('Results appear here when you run an operation.' | transloco)
     }}</pre>
   </section>
 </div>

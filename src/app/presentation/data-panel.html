@@ -1,14 +1,16 @@
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{
-      section() === 'mocks' ? 'BUILD BEFORE YOUR API IS READY.' : 'TURN RESPONSE DATA INTO ANSWERS.'
+      section() === 'mocks'
+        ? ('BUILD BEFORE YOUR API IS READY.' | transloco)
+        : ('TURN RESPONSE DATA INTO ANSWERS.' | transloco)
     }}</span>
-    <h1>{{ section() === 'mocks' ? 'Mock servers' : 'Datasets' }}</h1>
+    <h1>{{ section() === 'mocks' ? ('Mock servers' | transloco) : ('Datasets' | transloco) }}</h1>
     <p>
       {{
         section() === 'mocks'
-          ? 'Define examples and start an HTTP mock on the engine machine.'
-          : 'Import JSON or CSV, then explore it with read-only SQL.'
+          ? ('Define examples and start an HTTP mock on the engine machine.' | transloco)
+          : ('Import JSON or CSV, then explore it with read-only SQL.' | transloco)
       }}
     </p>
   </div>
@@ -20,37 +22,40 @@
         class="grow"
         (change)="selectDataset($event)"
         [value]="model().id"
-        aria-label="Dataset"
+        [attr.aria-label]="'Dataset' | transloco"
       >
-        <option value="">New dataset</option>
+        <option value="">{{ 'New dataset' | transloco }}</option>
         @for (d of state.documents(); track d.id) {
           @if (d.kind === 'dataset') {
             <option [value]="d.id">{{ d.name }}</option>
           }
         }</select
-      ><input [formField]="fields.name" aria-label="Dataset name" /><label class="file-label"
-        >Choose file<input type="file" accept=".csv,.json" (change)="file($event)"
+      ><input [formField]="fields.name" [attr.aria-label]="'Dataset name' | transloco" /><label
+        class="file-label"
+        >{{ 'Choose file' | transloco
+        }}<input type="file" accept=".csv,.json" (change)="file($event)"
       /></label>
     </div>
     <label class="field"
-      >Dataset content<textarea
-        class="code-editor small"
-        [formField]="fields.content"
-      ></textarea></label
-    ><button class="button" (click)="import()">Import dataset</button>
+      >{{ 'Dataset content' | transloco
+      }}<textarea class="code-editor small" [formField]="fields.content"></textarea></label
+    ><button class="button" (click)="import()">{{ 'Import dataset' | transloco }}</button>
   </div>
   <div class="feature-card">
     <div class="row between">
-      <h2>SQL query</h2>
-      <button class="button primary" (click)="query()">▷ Run query</button>
+      <h2>{{ 'SQL query' | transloco }}</h2>
+      <button class="button primary" (click)="query()">{{ '▷ Run query' | transloco }}</button>
     </div>
     <textarea
       class="code-editor small"
       [formField]="fields.sql"
-      aria-label="SQL query"
+      [attr.aria-label]="'SQL query' | transloco"
       spellcheck="false"
     ></textarea>
-    <p class="muted">Query the <code>data</code> table. Results are limited to 10,000 rows.</p>
+    <p class="muted">
+      {{ 'Query the' | transloco }} <code>data</code>
+      {{ 'table. Results are limited to 10,000 rows.' | transloco }}
+    </p>
     <div class="result-note">{{ output() }}</div>
     @if (table().columns.length) {
       <div class="table-scroll">
@@ -78,45 +83,51 @@
 } @else {
   <div class="feature-columns">
     <section class="feature-card grow">
-      <h2>Response examples</h2>
+      <h2>{{ 'Response examples' | transloco }}</h2>
       <p class="muted">
-        Each example matches a method and path. Set status, headers, body and an optional delay in
-        milliseconds.
+        {{
+          'Each example matches a method and path. Set status, headers, body and an optional delay in milliseconds.'
+            | transloco
+        }}
       </p>
       <textarea
         class="code-editor"
         [formField]="fields.examples"
-        aria-label="Mock examples JSON"
+        [attr.aria-label]="'Mock examples JSON' | transloco"
         spellcheck="false"
       ></textarea>
       <div class="row">
         <label class="field"
-          >Port (0 chooses a free port)<input type="number" [formField]="fields.port" /></label
-        ><button class="button primary" (click)="startMock()">Start mock ↗</button>
+          >{{ 'Port (0 chooses a free port)' | transloco
+          }}<input type="number" [formField]="fields.port" /></label
+        ><button class="button primary" (click)="startMock()">
+          {{ 'Start mock ↗' | transloco }}
+        </button>
       </div>
       @if (mockUrl()) {
         <div class="success-card">
-          <strong>Mock is listening</strong><code>{{ mockUrl() }}</code
-          ><span>Reachable from the engine machine.</span>
+          <strong>{{ 'Mock is listening' | transloco }}</strong
+          ><code>{{ mockUrl() }}</code
+          ><span>{{ 'Reachable from the engine machine.' | transloco }}</span>
         </div>
       }
     </section>
     <section class="feature-card grow">
       <div class="row between">
-        <h2>Active mocks</h2>
-        <button class="button" (click)="listMocks()">Refresh</button>
+        <h2>{{ 'Active mocks' | transloco }}</h2>
+        <button class="button" (click)="listMocks()">{{ 'Refresh' | transloco }}</button>
       </div>
       @for (mock of mocks(); track mock.id) {
         <div class="run-result">
           <span class="connection-dot"></span><code>{{ mock.url }}</code
-          ><button class="button" (click)="stop(mock.id)">Stop</button>
+          ><button class="button" (click)="stop(mock.id)">{{ 'Stop' | transloco }}</button>
         </div>
       }
       @if (!mocks().length) {
         <div class="empty-response">
           <span class="large-symbol">◇</span>
-          <h3>Your API, before it's built</h3>
-          <p>Start a mock to test your client against realistic responses.</p>
+          <h3>{{ "Your API, before it's built" | transloco }}</h3>
+          <p>{{ 'Start a mock to test your client against realistic responses.' | transloco }}</p>
         </div>
       }
     </section>

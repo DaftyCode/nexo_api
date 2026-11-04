@@ -53,6 +53,7 @@ jobs:
       - run: npm run test:architecture
       - run: npm run test:packages
       - run: npm run test:bootstrap
+      - run: npm run i18n:check
       - run: npm run engine:test
       - run: npm run engine:build
       - run: npm run desktop:prepare

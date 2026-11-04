@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
@@ -5,7 +6,7 @@ import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, row } from '../domain/models';
 
 @Component({
-  imports: [FormField, KeyValueEditor],
+  imports: [TranslocoPipe, FormField, KeyValueEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-environment-panel',
   styleUrl: './environment-panel.scss',

@@ -1,9 +1,10 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Component, ChangeDetectionStrategy, inject, signal, DestroyRef } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 
 @Component({
-  imports: [FormField],
+  imports: [TranslocoPipe, FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-protocol-panel',
   styleUrl: './protocol-panel.scss',

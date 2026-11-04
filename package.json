@@ -28,7 +28,8 @@
     "nexo": "node tools/cli.mjs",
     "preview:server": "node tools/preview-server.mjs",
     "test:packages": "node --test tools/package-manifests.test.mjs",
-    "test:bootstrap": "node --test tools/bootstrap/*.test.mjs"
+    "test:bootstrap": "node --test tools/bootstrap/*.test.mjs",
+    "i18n:check": "node tools/check-i18n.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.0",
@@ -41,6 +42,7 @@
     "@angular/platform-server": "22.2.4",
     "@angular/router": "22.2.4",
     "@angular/ssr": "22.2.5",
+    "@jsverse/transloco": "8.4.0",
     "@tauri-apps/api": "2.12.4",
     "express": "5.3.0",
     "http-proxy-middleware": "4.2.1",

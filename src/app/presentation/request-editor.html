@@ -1,21 +1,22 @@
 <div class="request-chrome">
   <div class="request-title">
     <div class="breadcrumb">
-      Collections <span>/</span> <input [formField]="fields.name" aria-label="Request name" />
+      {{ 'Collections' | transloco }} <span>/</span>
+      <input [formField]="fields.name" [attr.aria-label]="'Request name' | transloco" />
     </div>
     <div class="row">
       <button class="button subtle" (click)="code.emit()">
         <app-studio-icon name="code" />
-        Code</button
+        {{ 'Code' | transloco }}</button
       ><button class="button" (click)="save.emit()" [disabled]="readonly()">
-        <app-studio-icon name="save" />Save <kbd>Ctrl S</kbd>
+        <app-studio-icon name="save" />{{ 'Save' | transloco }} <kbd>Ctrl S</kbd>
       </button>
     </div>
   </div>
   <div class="url-toolbar">
     <select
       [formField]="fields.method"
-      aria-label="HTTP method"
+      [attr.aria-label]="'HTTP method' | transloco"
       class="method-select"
       [class.post]="request().method === 'POST'"
     >
@@ -26,16 +27,16 @@
     <input
       class="url-input"
       [formField]="fields.url"
-      placeholder="Enter URL or paste a cURL command"
-      aria-label="Request URL"
+      [placeholder]="'Enter URL or paste a cURL command' | transloco"
+      [attr.aria-label]="'Request URL' | transloco"
       spellcheck="false"
       (keydown.enter)="send.emit()"
     />
     @if (running()) {
-      <button class="button primary" (click)="cancel.emit()">Cancel</button>
+      <button class="button primary" (click)="cancel.emit()">{{ 'Cancel' | transloco }}</button>
     } @else {
       <button class="button primary send" (click)="send.emit()">
-        <app-studio-icon name="send" />Send
+        <app-studio-icon name="send" />{{ 'Send' | transloco }}
       </button>
     }
   </div>
@@ -43,24 +44,24 @@
 <div class="request-configuration">
   <div class="request-panel-heading">
     <span aria-hidden="true">↗</span>
-    <h2>Request</h2>
+    <h2>{{ 'Request' | transloco }}</h2>
   </div>
-  <nav class="editor-tabs" aria-label="Request configuration">
+  <nav class="editor-tabs" [attr.aria-label]="'Request configuration' | transloco">
     @for (t of tabs; track t) {
       <button [class.active]="tab() === t" (click)="tab.set(t)">
         <app-studio-icon [name]="t" />
         {{
           t === 'params'
-            ? 'Params'
+            ? ('Params' | transloco)
             : t === 'authorization'
-              ? 'Authorization'
+              ? ('Authorization' | transloco)
               : t === 'headers'
-                ? 'Headers'
+                ? ('Headers' | transloco)
                 : t === 'body'
-                  ? 'Body'
+                  ? ('Body' | transloco)
                   : t === 'scripts'
-                    ? 'Scripts'
-                    : 'Settings'
+                    ? ('Scripts' | transloco)
+                    : ('Settings' | transloco)
         }}
         @if (t === 'headers' && request().headers.length > 1) {
           <span class="count">{{ request().headers.length }}</span>
@@ -72,41 +73,44 @@
     @switch (tab()) {
       @case ('params') {
         <div class="section-caption">
-          Query parameters
+          {{ 'Query parameters' | transloco }}
           <span
-            >Use <code>{{ '{{variable}}' }}</code> to reference environment values.</span
+            >{{ 'Use' | transloco }} <code>{{ '{{variable}}' }}</code>
+            {{ 'to reference environment values.' | transloco }}</span
           >
         </div>
         <app-key-value-editor [rows]="request().query" (rowsChange)="rows('query', $event)" />
       }
       @case ('headers') {
-        <div class="section-caption">Request headers</div>
+        <div class="section-caption">{{ 'Request headers' | transloco }}</div>
         <app-key-value-editor [rows]="request().headers" (rowsChange)="rows('headers', $event)" />
       }
       @case ('body') {
         <div class="body-options">
           <label
-            >Body type<select [formField]="fields.bodyMode">
-              <option value="raw">Raw</option>
-              <option value="urlencoded">x-www-form-urlencoded</option>
-              <option value="formdata">Form data</option>
+            >{{ 'Body type' | transloco
+            }}<select [formField]="fields.bodyMode">
+              <option value="raw">{{ 'Raw' | transloco }}</option>
+              <option value="urlencoded">{{ 'x-www-form-urlencoded' | transloco }}</option>
+              <option value="formdata">{{ 'Form data' | transloco }}</option>
             </select></label
           ><label
-            >Format<select [formField]="fields.bodyLanguage">
+            >{{ 'Format' | transloco
+            }}<select [formField]="fields.bodyLanguage">
               <option value="json">JSON</option>
-              <option value="text">Text</option>
+              <option value="text">{{ 'Text' | transloco }}</option>
               <option value="xml">XML</option>
               <option value="html">HTML</option>
               <option value="javascript">JavaScript</option>
             </select></label
-          ><button class="text-button" (click)="format()">Beautify</button>
+          ><button class="text-button" (click)="format()">{{ 'Beautify' | transloco }}</button>
         </div>
         @if (request().bodyMode === 'raw') {
           <textarea
             class="code-editor"
             [formField]="fields.body"
-            aria-label="Request body"
-            placeholder="Enter your request body"
+            [attr.aria-label]="'Request body' | transloco"
+            [placeholder]="'Enter your request body' | transloco"
             spellcheck="false"
           ></textarea>
         } @else {
@@ -114,10 +118,11 @@
         }
         @if (request().protocol === 'graphql') {
           <label class="field"
-            >GraphQL variables<textarea
+            >{{ 'GraphQL variables' | transloco
+            }}<textarea
               class="code-editor small"
               [formField]="fields.graphqlVariables"
-              aria-label="GraphQL variables"
+              [attr.aria-label]="'GraphQL variables' | transloco"
             ></textarea>
           </label>
         }
@@ -126,61 +131,73 @@
         <div class="auth-grid">
           <div>
             <label class="field"
-              >Authorization type<select [formField]="fields.auth.type">
-                <option value="inherit">Inherit from collection</option>
-                <option value="noauth">No auth</option>
-                <option value="bearer">Bearer token</option>
-                <option value="basic">Basic auth</option>
-                <option value="apikey">API key</option>
-                <option value="digest">Digest auth</option>
-                <option value="oauth1" disabled>OAuth 1.0 (planned)</option>
-                <option value="oauth2">OAuth 2.0</option>
-                <option value="awsv4" disabled>AWS Signature (planned)</option>
-                <option value="ntlm" disabled>NTLM (planned)</option>
-                <option value="hawk" disabled>Hawk (planned)</option>
+              >{{ 'Authorization type' | transloco
+              }}<select [formField]="fields.auth.type">
+                <option value="inherit">{{ 'Inherit from collection' | transloco }}</option>
+                <option value="noauth">{{ 'No auth' | transloco }}</option>
+                <option value="bearer">{{ 'Bearer token' | transloco }}</option>
+                <option value="basic">{{ 'Basic auth' | transloco }}</option>
+                <option value="apikey">{{ 'API key' | transloco }}</option>
+                <option value="digest">{{ 'Digest auth' | transloco }}</option>
+                <option value="oauth1" disabled>{{ 'OAuth 1.0 (planned)' | transloco }}</option>
+                <option value="oauth2">{{ 'OAuth 2.0' | transloco }}</option>
+                <option value="awsv4" disabled>{{ 'AWS Signature (planned)' | transloco }}</option>
+                <option value="ntlm" disabled>{{ 'NTLM (planned)' | transloco }}</option>
+                <option value="hawk" disabled>{{ 'Hawk (planned)' | transloco }}</option>
               </select></label
             >
             <p class="muted">
-              Authorization is applied when the request runs. You can use environment variables in
-              these fields.
+              {{
+                'Authorization is applied when the request runs. You can use environment variables in these fields.'
+                  | transloco
+              }}
             </p>
           </div>
           <div>
             @switch (request().auth.type) {
               @case ('noauth') {
-                <div class="empty-inline">This request doesn't use authorization.</div>
+                <div class="empty-inline">
+                  {{ "This request doesn't use authorization." | transloco }}
+                </div>
               }
               @case ('bearer') {
                 <label class="field"
-                  >Token<input
-                    [formField]="fields.auth.token"
-                    placeholder="{{ '{{access_token}}' }}"
+                  >{{ 'Token' | transloco
+                  }}<input [formField]="fields.auth.token" placeholder="{{ '{{access_token}}' }}"
                 /></label>
               }
               @case ('apikey') {
-                <label class="field">Key<input [formField]="fields.auth.key" /></label
-                ><label class="field">Value<input [formField]="fields.auth.value" /></label
+                <label class="field"
+                  >{{ 'Key' | transloco }}<input [formField]="fields.auth.key" /></label
                 ><label class="field"
-                  >Add to<select [formField]="fields.auth.in">
-                    <option value="header">Header</option>
-                    <option value="query">Query params</option>
+                  >{{ 'Value' | transloco }}<input [formField]="fields.auth.value" /></label
+                ><label class="field"
+                  >{{ 'Add to' | transloco
+                  }}<select [formField]="fields.auth.in">
+                    <option value="header">{{ 'Header' | transloco }}</option>
+                    <option value="query">{{ 'Query params' | transloco }}</option>
                   </select></label
                 >
               }
               @default {
-                <label class="field">Username<input [formField]="fields.auth.username" /></label
+                <label class="field"
+                  >{{ 'Username' | transloco }}<input [formField]="fields.auth.username" /></label
                 ><label class="field"
-                  >Password<input type="password" [formField]="fields.auth.password" /></label
+                  >{{ 'Password' | transloco
+                  }}<input type="password" [formField]="fields.auth.password" /></label
                 ><label class="field"
-                  >Provider parameters (JSON)<textarea
+                  >{{ 'Provider parameters (JSON)' | transloco
+                  }}<textarea
                     class="code-editor small"
                     [formField]="fields.auth.parameters"
-                    placeholder="Additional fields for this authorization type"
+                    [placeholder]="'Additional fields for this authorization type' | transloco"
                   ></textarea>
                 </label>
                 <p class="muted">
-                  Digest uses the username and password fields. OAuth 2 accepts an accessToken in
-                  the JSON parameters. Additional signing helpers are planned.
+                  {{
+                    'Digest uses the username and password fields. OAuth 2 accepts an accessToken in the JSON parameters. Additional signing helpers are planned.'
+                      | transloco
+                  }}
                 </p>
               }
             }
@@ -194,20 +211,22 @@
             [class.selected]="scriptTab() === 'prerequest'"
             (click)="scriptTab.set('prerequest')"
           >
-            Pre-request</button
+            {{ 'Pre-request' | transloco }}</button
           ><button
             class="button"
             [class.selected]="scriptTab() === 'tests'"
             (click)="scriptTab.set('tests')"
           >
-            Post-response tests</button
-          ><button class="text-button" (click)="addTest()">+ Status assertion</button>
+            {{ 'Post-response tests' | transloco }}</button
+          ><button class="text-button" (click)="addTest()">
+            {{ '+ Status assertion' | transloco }}
+          </button>
         </div>
         @if (scriptTab() === 'tests') {
           <textarea
             class="code-editor"
             [formField]="fields.tests"
-            aria-label="Test scripts"
+            [attr.aria-label]="'Test scripts' | transloco"
             spellcheck="false"
             placeholder="nx.test('Status is 200', () => nx.response.to.have.status(200));"
           ></textarea>
@@ -215,27 +234,31 @@
           <textarea
             class="code-editor"
             [formField]="fields.prerequest"
-            aria-label="Pre-request scripts"
+            [attr.aria-label]="'Pre-request scripts' | transloco"
             spellcheck="false"
             placeholder="nx.environment.set('timestamp', Date.now());"
           ></textarea>
         }
         <p class="editor-hint">
-          Use <code>nx.test</code>, <code>nx.expect</code>, <code>nx.environment</code> and
-          <code>nx.sendRequest</code>. Results appear with the response.
+          {{ 'Use' | transloco }} <code>nx.test</code>, <code>nx.expect</code>,
+          <code>nx.environment</code> {{ 'and' | transloco }} <code>nx.sendRequest</code
+          >{{ '. Results appear with the response.' | transloco }}
         </p>
       }
       @case ('settings') {
         <div class="settings-grid">
           <label class="field"
-            >Request timeout (ms)<input type="number" [formField]="fields.timeout" /></label
+            >{{ 'Request timeout (ms)' | transloco
+            }}<input type="number" [formField]="fields.timeout" /></label
           ><label class="check-field"
-            ><input type="checkbox" [formField]="fields.followRedirects" /> Automatically follow
-            redirects</label
+            ><input type="checkbox" [formField]="fields.followRedirects" />
+            {{ 'Automatically follow redirects' | transloco }}</label
           ><label class="check-field"
-            ><input type="checkbox" [formField]="fields.strictSSL" /> Verify TLS certificates</label
+            ><input type="checkbox" [formField]="fields.strictSSL" />
+            {{ 'Verify TLS certificates' | transloco }}</label
           ><label class="field"
-            >Protocol<select [formField]="fields.protocol">
+            >{{ 'Protocol' | transloco
+            }}<select [formField]="fields.protocol">
               <option value="http">HTTP</option>
               <option value="graphql">GraphQL</option>
               <option value="grpc">gRPC</option>
@@ -246,16 +269,19 @@
           >
         </div>
         <label class="field"
-          >Proxy and client TLS (JSON)<textarea
+          >{{ 'Proxy and client TLS (JSON)' | transloco
+          }}<textarea
             class="code-editor small"
             [formField]="fields.transport"
-            aria-label="Transport configuration"
-            placeholder="Optional proxy, caPem and clientTls settings"
+            [attr.aria-label]="'Transport configuration' | transloco"
+            [placeholder]="'Optional proxy, caPem and clientTls settings' | transloco"
           ></textarea>
         </label>
         <p class="editor-hint">
-          Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates
-          are supplied in memory; server file paths are never read.
+          {{
+            'Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates are supplied in memory; server file paths are never read.'
+              | transloco
+          }}
         </p>
       }
     }

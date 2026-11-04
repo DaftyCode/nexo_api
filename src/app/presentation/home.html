@@ -1,81 +1,102 @@
 <div class="website">
   <nav class="site-nav">
     <a class="brand" routerLink="/"
-      ><span class="brand-mark">n</span>nexo<span class="brand-api">API</span></a
+      ><span class="brand-mark">{{ 'n' | transloco }}</span
+      >{{ 'nexo' | transloco }}<span class="brand-api">API</span></a
     >
     <div>
-      <a routerLink="/docs">Documentation</a
-      ><a class="button primary" routerLink="/workspace">Open workspace ↗</a>
+      <app-language-selector />
+      <a routerLink="/docs">{{ 'Documentation' | transloco }}</a
+      ><a class="button primary" routerLink="/workspace">{{ 'Open workspace ↗' | transloco }}</a>
     </div>
   </nav>
   @if (docs) {
     <main class="docs">
-      <span class="eyebrow">NEXO DOCUMENTATION</span>
-      <h1>A workspace that works your way.</h1>
+      <span class="eyebrow">{{ 'NEXO DOCUMENTATION' | transloco }}</span>
+      <h1>{{ 'A workspace that works your way.' | transloco }}</h1>
       <p class="lead">
-        One workflow for your desktop and your server. Your collections stay portable.
+        {{
+          'One workflow for your desktop and your server. Your collections stay portable.'
+            | transloco
+        }}
       </p>
       <section>
-        <h2>Send a request</h2>
+        <h2>{{ 'Send a request' | transloco }}</h2>
         <p>
-          Open the workspace, enter an HTTP URL, choose a method and click Send. Add headers, query
-          parameters, authentication and a body. Inspect the response, headers, cookies and test
-          results below the editor.
+          {{
+            'Open the workspace, enter an HTTP URL, choose a method and click Send. Add headers, query parameters, authentication and a body. Inspect the response, headers, cookies and test results below the editor.'
+              | transloco
+          }}
         </p>
       </section>
       <section>
-        <h2>Collections and environments</h2>
+        <h2>{{ 'Collections and environments' | transloco }}</h2>
         <p>
-          Create a collection or import a portable collection, an environment, OpenAPI, HAR or a
-          cURL command. Save requests into folders. Choose an environment to resolve variables such
-          as <code>{{'{{base_url}}'}}</code>. Export your collection at any time.
+          {{
+            'Create a collection or import a portable collection, an environment, OpenAPI, HAR or a cURL command. Save requests into folders. Choose an environment to resolve variables such as'
+              | transloco
+          }}
+          <code>{{'{{base_url}}'}}</code>{{ '. Export your collection at any time.' | transloco }}
         </p>
       </section>
       <section>
-        <h2>Scripts and collection runs</h2>
+        <h2>{{ 'Scripts and collection runs' | transloco }}</h2>
         <p>
-          Write JavaScript pre-request and post-response scripts with <code>pm.test</code>,
-          <code>pm.expect</code> and scoped variables. The runner executes collections with
-          iterations and JSON data, records assertions, and supports cancellation.
+          {{ 'Write JavaScript pre-request and post-response scripts with' | transloco }}
+          <code>nx.test</code>, <code>nx.expect</code>
+          {{
+            'and scoped variables. The runner executes collections with iterations and JSON data, records assertions, and supports cancellation.'
+              | transloco
+          }}
         </p>
         <pre>
-pm.test('Successful response', () => {{ '{' }}
-  pm.expect(pm.response.code).to.be.within(200, 299);
+nx.test('Successful response', () => {{ '{' }}
+  nx.expect(nx.response.code).to.be.within(200, 299);
 {{ '}' }});</pre>
       </section>
       <section>
-        <h2>Protocols and local services</h2>
+        <h2>{{ 'Protocols and local services' | transloco }}</h2>
         <p>
-          Use the Protocols panel for WebSocket, Socket.IO, MQTT and gRPC. Provide a .proto
-          definition for gRPC. Mocks listen on the machine running the engine; datasets accept JSON
-          and CSV and can be queried with SQL. Git exports live in your Nexo project directory.
+          {{
+            'Use the Protocols panel for WebSocket, Socket.IO, MQTT and gRPC. Provide a .proto definition for gRPC. Mocks listen on the machine running the engine; datasets accept JSON and CSV and can be queried with SQL. Git exports live in your Nexo project directory.'
+              | transloco
+          }}
         </p>
       </section>
       <section>
-        <h2>Hosting your workspace</h2>
+        <h2>{{ 'Hosting your workspace' | transloco }}</h2>
         <p>
-          The server edition uses account authentication, workspace membership and document
-          revisions. Public pages render on the server; the private workspace is excluded from
-          indexing. In server mode, API requests execute from the server network. In desktop mode,
-          they execute from your computer.
+          {{
+            'The server edition uses account authentication, workspace membership and document revisions. Public pages render on the server; the private workspace is excluded from indexing. In server mode, API requests execute from the server network. In desktop mode, they execute from your computer.'
+              | transloco
+          }}
         </p>
       </section>
-      <a class="button primary" routerLink="/workspace">Start building ↗</a>
+      <a class="button primary" routerLink="/workspace">{{ 'Start building ↗' | transloco }}</a>
     </main>
   } @else {
     <main class="site-hero">
       <div class="hero-copy">
         <span class="eyebrow"
-          ><span class="connection-dot"></span> LOCAL DESKTOP · YOUR OWN SERVER</span
+          ><span class="connection-dot"></span>
+          {{ 'LOCAL DESKTOP · YOUR OWN SERVER' | transloco }}</span
         >
-        <h1>Your APIs.<br />Your workspace.<br /><em>Your rules.</em></h1>
+        <h1>
+          {{ 'Your APIs.' | transloco }}<br />{{ 'Your workspace.' | transloco }}<br /><em>{{
+            'Your rules.' | transloco
+          }}</em>
+        </h1>
         <p>
-          Send requests, test ideas, and keep your API work together. A capable workspace on your
-          desktop and on the server you control.
+          {{
+            'Send requests, test ideas, and keep your API work together. A capable workspace on your desktop and on the server you control.'
+              | transloco
+          }}
         </p>
         <div class="hero-actions">
-          <a class="button primary large" routerLink="/workspace">Open your workspace ↗</a
-          ><a class="button large" routerLink="/docs">Explore the docs</a>
+          <a class="button primary large" routerLink="/workspace">{{
+            'Open your workspace ↗' | transloco
+          }}</a
+          ><a class="button large" routerLink="/docs">{{ 'Explore the docs' | transloco }}</a>
         </div>
         <div class="hero-protocols">
           HTTP <span>·</span> GraphQL <span>·</span> gRPC <span>·</span> WebSocket
@@ -84,48 +105,69 @@ pm.test('Successful response', () => {{ '{' }}
       </div>
       <div class="hero-preview">
         <div class="preview-top">
-          <span class="brand-mark">n</span><span>My workspace</span
+          <span class="brand-mark">{{ 'n' | transloco }}</span
+          ><span>{{ 'My workspace' | transloco }}</span
           ><span class="connection-dot"></span>
         </div>
         <div class="preview-url">
           <b>GET</b><code>{{'{{base_url}}'}}/v1/ideas</code
-          ><span class="button primary">Send ↗</span>
+          ><span class="button primary">{{ 'Send ↗' | transloco }}</span>
         </div>
         <div class="preview-tabs">
-          Params <span>Authorization</span> Headers <span>Body</span> Scripts
+          {{ 'Params' | transloco }} <span>{{ 'Authorization' | transloco }}</span>
+          {{ 'Headers' | transloco }} <span>{{ 'Body' | transloco }}</span>
+          {{ 'Scripts' | transloco }}
         </div>
         <div class="preview-response">
-          <div><b>200 OK</b><span>128 ms · 0.24 KB</span></div>
+          <div>
+            <b>{{ '200 OK' | transloco }}</b
+            ><span>{{ '128 ms · 0.24 KB' | transloco }}</span>
+          </div>
           <pre>{{
             '{\n  "workspace": "yours",\n  "possibilities": "unlimited",\n  "next_idea": {\n    "status": "ready to build",\n    "location": "anywhere"\n  }\n}'
           }}</pre>
         </div>
-        <div class="preview-bottom">✓ All tests passed <span>Saved to your workspace</span></div>
+        <div class="preview-bottom">
+          {{ '✓ All tests passed' | transloco }}
+          <span>{{ 'Saved to your workspace' | transloco }}</span>
+        </div>
       </div>
     </main>
     <section class="site-features">
       <article>
-        <span>01 / BUILD</span>
-        <h2>From first request<br />to full collection.</h2>
-        <p>Organize requests, manage environments and carry your existing collections with you.</p>
-      </article>
-      <article>
-        <span>02 / TEST</span>
-        <h2>Confidence in<br />every response.</h2>
+        <span>{{ '01 / BUILD' | transloco }}</span>
+        <h2>{{ 'From first request' | transloco }}<br />{{ 'to full collection.' | transloco }}</h2>
         <p>
-          Pre-request scripts, assertions, data-driven runs and the same execution rules across your
-          workspace.
+          {{
+            'Organize requests, manage environments and carry your existing collections with you.'
+              | transloco
+          }}
         </p>
       </article>
       <article>
-        <span>03 / OWN</span>
-        <h2>A home for your work.<br />On your terms.</h2>
-        <p>Use the desktop application locally, or share workspaces on your own server.</p>
+        <span>{{ '02 / TEST' | transloco }}</span>
+        <h2>{{ 'Confidence in' | transloco }}<br />{{ 'every response.' | transloco }}</h2>
+        <p>
+          {{
+            'Pre-request scripts, assertions, data-driven runs and the same execution rules across your workspace.'
+              | transloco
+          }}
+        </p>
+      </article>
+      <article>
+        <span>{{ '03 / OWN' | transloco }}</span>
+        <h2>{{ 'A home for your work.' | transloco }}<br />{{ 'On your terms.' | transloco }}</h2>
+        <p>
+          {{
+            'Use the desktop application locally, or share workspaces on your own server.'
+              | transloco
+          }}
+        </p>
       </article>
     </section>
   }
   <footer class="site-footer">
-    <span>Nexo API</span><span>Build something worth connecting.</span
-    ><a routerLink="/docs">Documentation ↗</a>
+    <span>Nexo API</span><span>{{ 'Build something worth connecting.' | transloco }}</span
+    ><a routerLink="/docs">{{ 'Documentation ↗' | transloco }}</a>
   </footer>
 </div>

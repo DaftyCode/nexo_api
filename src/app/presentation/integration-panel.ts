@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import {
   Component,
   ChangeDetectionStrategy,
@@ -12,7 +13,7 @@ import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, row } from '../domain/models';
 
 @Component({
-  imports: [FormField, KeyValueEditor],
+  imports: [TranslocoPipe, FormField, KeyValueEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',
   styleUrl: './integration-panel.scss',

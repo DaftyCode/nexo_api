@@ -1,23 +1,23 @@
-<section class="response-section" aria-label="Response">
+<section class="response-section" [attr.aria-label]="'Response' | transloco">
   <div class="response-panel-heading">
     <span aria-hidden="true">✓</span>
-    <h2>Response</h2>
+    <h2>{{ 'Response' | transloco }}</h2>
   </div>
   <div class="response-toolbar">
-    <nav class="editor-tabs response-tabs" aria-label="Response sections">
+    <nav class="editor-tabs response-tabs" [attr.aria-label]="'Response sections' | transloco">
       @for (t of ['body', 'headers', 'cookies', 'tests', 'console']; track t) {
         <button [class.active]="tab() === t" (click)="tab.set(t)">
           <app-studio-icon [name]="t === 'body' ? 'console' : t" />
           {{
             t === 'body'
-              ? 'Body'
+              ? ('Body' | transloco)
               : t === 'headers'
-                ? 'Headers'
+                ? ('Headers' | transloco)
                 : t === 'cookies'
-                  ? 'Cookies'
+                  ? ('Cookies' | transloco)
                   : t === 'tests'
-                    ? 'Test results'
-                    : 'Console'
+                    ? ('Test results' | transloco)
+                    : ('Console' | transloco)
           }}
           @if (t === 'tests' && response()?.assertions?.length) {
             <span class="count">{{ passed() }}/{{ response()?.assertions?.length }}</span>
@@ -31,15 +31,16 @@
           [class.success]="r.status < 400 && r.status > 0"
           [class.danger]="r.status >= 400 || r.error"
           >{{ r.status }} {{ r.statusText }}</span
-        ><span>{{ r.time }} ms</span><span>{{ (r.size / 1024).toFixed(2) }} KB</span>
+        ><span>{{ 'units.duration' | transloco: { v0: r.time } }}</span
+        ><span>{{ 'units.size' | transloco: { v0: (r.size / 1024).toFixed(2) } }}</span>
       </div>
     }
   </div>
   @if (running()) {
     <div class="empty-response">
       <div class="spinner"></div>
-      <h3>Sending your request</h3>
-      <p>Waiting for a response…</p>
+      <h3>{{ 'Sending your request' | transloco }}</h3>
+      <p>{{ 'Waiting for a response…' | transloco }}</p>
     </div>
   } @else if (response(); as r) {
     @if (r.error) {
@@ -48,9 +49,13 @@
     @switch (tab()) {
       @case ('body') {
         <div class="response-actions">
-          <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">Pretty</button
-          ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">Raw</button
-          ><span class="muted">{{ r.truncated ? 'Preview limited to 8 MB' : '' }}</span>
+          <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">
+            {{ 'Pretty' | transloco }}</button
+          ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
+            {{ 'Raw' | transloco }}</button
+          ><span class="muted">{{
+            r.truncated ? ('Preview limited to 8 MB' | transloco) : ''
+          }}</span>
         </div>
         <pre class="response-code">{{ text() }}</pre>
       }
@@ -58,8 +63,8 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Header</th>
-              <th>Value</th>
+              <th>{{ 'Header' | transloco }}</th>
+              <th>{{ 'Value' | transloco }}</th>
             </tr>
           </thead>
           <tbody>
@@ -77,12 +82,18 @@
       }
       @case ('tests') {
         @if (!r.assertions.length) {
-          <div class="empty-inline">Add post-response scripts to test this request.</div>
+          <div class="empty-inline">
+            {{ 'Add post-response scripts to test this request.' | transloco }}
+          </div>
         }
         @for (test of r.assertions; track $index) {
           <div class="assertion">
             <span class="status-pill" [class.failed]="!test.passed">{{
-              test.skipped ? 'SKIP' : test.passed ? 'PASS' : 'FAIL'
+              test.skipped
+                ? ('SKIP' | transloco)
+                : test.passed
+                  ? ('PASS' | transloco)
+                  : ('FAIL' | transloco)
             }}</span>
             <div>
               {{ test.name }}
@@ -99,7 +110,7 @@
 [{{ log.level }}] {{ log.values.join(' ') }}</pre>
         }
         @if (!r.logs.length) {
-          <div class="empty-inline">No console messages for this request.</div>
+          <div class="empty-inline">{{ 'No console messages for this request.' | transloco }}</div>
         }
       }
     }
@@ -113,9 +124,11 @@
         alt=""
       />
 
-      <h3>Your response will appear here</h3>
-      <p>Enter a URL and send your first request.</p>
-      <span class="keyboard-tip"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>
+      <h3>{{ 'Your response will appear here' | transloco }}</h3>
+      <p>{{ 'Enter a URL and send your first request.' | transloco }}</p>
+      <span class="keyboard-tip"
+        ><kbd>Ctrl</kbd> + <kbd>Enter</kbd> {{ 'to send' | transloco }}</span
+      >
     </div>
   }
 </section>

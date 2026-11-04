@@ -22,6 +22,64 @@ describe('Workspace', () => {
     expect(component).toBeTruthy();
   });
 
+  it('changes English and Spanish in every template without changing request data or environment', async () => {
+    const state = TestBed.inject(WorkspaceState);
+    await state.initialize();
+    state.documents.set([
+      {
+        id: 'env-language-test',
+        workspace_id: 'local',
+        kind: 'environment',
+        name: 'My environment',
+        revision: 1,
+        updated_at: 1,
+        value: { values: [{ key: 'baseUrl', value: 'https://example.test' }] },
+      },
+    ]);
+    state.environmentId.set('env-language-test');
+    state.edit({
+      ...state.active()!.request,
+      url: 'https://example.test/do-not-translate',
+      body: '{"message":"Send"}',
+    });
+    state.response.set({
+      status: 200,
+      statusText: 'OK',
+      time: 1,
+      size: 1,
+      body: '{"message":"English"}',
+      headers: [],
+      assertions: [],
+      logs: [],
+    });
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    const language = root.querySelector<HTMLSelectElement>(
+      'select[aria-label="Language / Idioma"]',
+    )!;
+    const template = root.querySelector<HTMLSelectElement>('app-appearance-selector select')!;
+    for (const layout of ['aurora', 'studio', 'canvas']) {
+      template.value = layout;
+      template.dispatchEvent(new Event('input', { bubbles: true }));
+      template.dispatchEvent(new Event('change', { bubbles: true }));
+      await fixture.whenStable();
+      for (const [code, send] of [
+        ['es', 'Enviar'],
+        ['en', 'Send'],
+      ]) {
+        language.value = code;
+        language.dispatchEvent(new Event('input', { bubbles: true }));
+        language.dispatchEvent(new Event('change', { bubbles: true }));
+        await fixture.whenStable();
+        expect(root.querySelector('.url-toolbar .send')?.textContent?.trim()).toBe(send);
+        expect(state.active()?.request.url).toBe('https://example.test/do-not-translate');
+        expect(state.active()?.request.body).toBe('{"message":"Send"}');
+        expect(state.response()?.body).toBe('{"message":"English"}');
+        expect(state.environmentId()).toBe('env-language-test');
+      }
+    }
+  });
+
   it('switches templates immediately without replacing the active request', async () => {
     await TestBed.inject(WorkspaceState).initialize();
     await fixture.whenStable();

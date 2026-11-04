@@ -1,12 +1,36 @@
 <div class="kv-table">
-  <div class="kv-head"><span></span><span>Key</span><span>Value</span><span></span></div>
+  <div class="kv-head">
+    <span></span><span>{{ 'Key' | transloco }}</span
+    ><span>{{ 'Value' | transloco }}</span
+    ><span></span>
+  </div>
   @for (field of fields; track field; let index = $index) {
     <div class="kv-row">
-      <input type="checkbox" [formField]="field.enabled" aria-label="Enable row" />
-      <input [formField]="field.key" placeholder="Key" aria-label="Key" spellcheck="false" />
-      <input [formField]="field.value" placeholder="Value" aria-label="Value" spellcheck="false" />
-      <button class="icon-button" (click)="remove(index)" aria-label="Remove row">×</button>
+      <input
+        type="checkbox"
+        [formField]="field.enabled"
+        [attr.aria-label]="'Enable row' | transloco"
+      />
+      <input
+        [formField]="field.key"
+        [placeholder]="'Key' | transloco"
+        [attr.aria-label]="'Key' | transloco"
+        spellcheck="false"
+      />
+      <input
+        [formField]="field.value"
+        [placeholder]="'Value' | transloco"
+        [attr.aria-label]="'Value' | transloco"
+        spellcheck="false"
+      />
+      <button
+        class="icon-button"
+        (click)="remove(index)"
+        [attr.aria-label]="'Remove row' | transloco"
+      >
+        ×
+      </button>
     </div>
   }
-  <button class="text-button kv-add" (click)="add()">+ Add row</button>
+  <button class="text-button kv-add" (click)="add()">{{ '+ Add row' | transloco }}</button>
 </div>

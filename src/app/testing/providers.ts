@@ -1,4 +1,6 @@
 import { provideRouter } from '@angular/router';
+import { LANGUAGE, languageProviders } from '../composition/language-providers';
+import { LanguageUseCases } from '../application/language-use-cases';
 import { APPEARANCE, WORKSPACE } from '../composition/providers';
 import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
@@ -69,6 +71,8 @@ export function testProviders() {
   };
   return [
     provideRouter([]),
+    ...languageProviders(),
+    { provide: LANGUAGE, useValue: new LanguageUseCases({ load: () => 'en', save() {} }) },
     { provide: WORKSPACE, useValue: new WorkspaceUseCases(api, files) },
     {
       provide: APPEARANCE,

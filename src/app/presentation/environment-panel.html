@@ -1,43 +1,49 @@
 <div class="feature-heading">
   <div>
-    <span class="eyebrow">CONFIGURE ONCE. REUSE EVERYWHERE.</span>
-    <h1>Environments</h1>
-    <p>Keep variables together and switch context without changing your requests.</p>
+    <span class="eyebrow">{{ 'CONFIGURE ONCE. REUSE EVERYWHERE.' | transloco }}</span>
+    <h1>{{ 'Environments' | transloco }}</h1>
+    <p>
+      {{ 'Keep variables together and switch context without changing your requests.' | transloco }}
+    </p>
   </div>
-  <button class="button primary" (click)="load('')">+ New environment</button>
+  <button class="button primary" (click)="load('')">{{ '+ New environment' | transloco }}</button>
 </div>
 <div class="feature-columns">
   <aside class="resource-list">
     @for (env of state.environments(); track env.id) {
       <button [class.active]="model().id === env.id" (click)="load(env.id)">
         <span>◫</span>{{ env.name
-        }}<small>{{ env.id === state.environmentId() ? 'Active' : '' }}</small>
+        }}<small>{{ env.id === state.environmentId() ? ('Active' | transloco) : '' }}</small>
       </button>
     }
     @if (!state.environments().length) {
-      <p class="muted">Create your first environment.</p>
+      <p class="muted">{{ 'Create your first environment.' | transloco }}</p>
     }
   </aside>
   <section class="feature-card grow">
     <div class="row between">
-      <label class="field grow">Environment name<input [formField]="fields.name" /></label
-      ><button class="button primary" (click)="save()">Save environment</button>
+      <label class="field grow"
+        >{{ 'Environment name' | transloco }}<input [formField]="fields.name" /></label
+      ><button class="button primary" (click)="save()">{{ 'Save environment' | transloco }}</button>
     </div>
     <app-key-value-editor [rows]="model().values" (rowsChange)="rows($event)" />
     <p class="editor-hint">
-      Reference values with <code>{{'{{variable_name}}'}}</code>. Choose the active environment from
-      the workspace toolbar. Values saved here are part of exports; keep secrets in the vault.
+      {{ 'Reference values with' | transloco }} <code>{{'{{variable_name}}'}}</code
+      >{{
+        '. Choose the active environment from the workspace toolbar. Values saved here are part of exports; keep secrets in the vault.'
+          | transloco
+      }}
     </p>
     @if (model().id) {
       <div class="row">
         <button class="button" (click)="state.environmentId.set(model().id)">
-          Use environment
+          {{ 'Use environment' | transloco }}
         </button>
         @for (env of state.environments(); track env.id) {
           @if (env.id === model().id) {
-            <button class="button" (click)="state.export(env)">Export</button
+            <button class="button" (click)="state.export(env)">{{ 'Export' | transloco }}</button
             ><button class="text-button danger" (click)="state.remove(env); load('')">
-              Delete
+              {{ 'Delete' | transloco }}
             </button>
           }
         }

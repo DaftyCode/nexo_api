@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, model, signal, output, input } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { RequestDraft, KeyValue, newRequest, formatJson } from '../domain/models';
@@ -5,7 +6,7 @@ import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
 
 @Component({
-  imports: [FormField, KeyValueEditor, StudioIcon],
+  imports: [TranslocoPipe, FormField, KeyValueEditor, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-request-editor',
   styleUrl: './request-editor.scss',

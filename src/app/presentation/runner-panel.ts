@@ -1,10 +1,11 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 
 import { WorkspaceState } from './workspace-state';
 
 @Component({
-  imports: [FormField],
+  imports: [TranslocoPipe, FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-runner-panel',
   styleUrl: './runner-panel.scss',

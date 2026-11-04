@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -17,17 +18,21 @@ import { ToolsPanel } from './tools-panel';
 import { WorkspaceDocument, CollectionItem } from '../domain/models';
 import { AppearanceState } from './appearance-state';
 import { AppearanceSelector } from './appearance-selector';
+import { LanguageSelector } from './language-selector';
+import { LanguageState } from './language-state';
 import { StudioIcon } from './studio-icon';
 import { WorkspaceContext } from './workspace-context';
 
 @Component({
   imports: [
+    TranslocoPipe,
     FormField,
     DatePipe,
     RequestEditor,
     ResponseView,
     ToolsPanel,
     AppearanceSelector,
+    LanguageSelector,
     StudioIcon,
     WorkspaceContext,
   ],
@@ -39,6 +44,7 @@ import { WorkspaceContext } from './workspace-context';
 export class Workspace {
   protected readonly state = inject(WorkspaceState);
   protected readonly appearance = inject(AppearanceState);
+  protected readonly language = inject(LanguageState);
   private readonly workspaceSearch = viewChild<ElementRef<HTMLInputElement>>('workspaceSearch');
   private readonly collectionSearch = viewChild<ElementRef<HTMLInputElement>>('collectionSearch');
   protected readonly dialogs = signal('');

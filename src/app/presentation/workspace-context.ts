@@ -1,3 +1,4 @@
+import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,6 +12,7 @@ import { form, FormField } from '@angular/forms/signals';
 import { asCollection, items, WorkspaceDocument } from '../domain/models';
 import { WorkspaceState } from './workspace-state';
 import { StudioIcon } from './studio-icon';
+import { LanguageState } from './language-state';
 
 export function environmentPreview(
   value: unknown,
@@ -39,38 +41,45 @@ export function environmentPreview(
 
 @Component({
   selector: 'app-workspace-context',
-  imports: [FormField, StudioIcon, DatePipe],
+  imports: [TranslocoPipe, FormField, StudioIcon, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (layout() === 'strip') {
-      <section class="recent-strip" aria-label="Recent requests">
-        <strong>Recent</strong>
+      <section class="recent-strip" [attr.aria-label]="'Recent requests' | transloco">
+        <strong>{{ 'Recent' | transloco }}</strong>
         @for (entry of recent(); track entry.document.id) {
           <button (click)="state.openHistory(entry.document)">
             <span class="method-tag" [class.post]="entry.method === 'POST'">{{ entry.method }}</span
             ><span>{{ entry.document.name }}</span>
           </button>
         } @empty {
-          <span class="context-empty">Send a request to start your history.</span>
+          <span class="context-empty">{{
+            'Send a request to start your history.' | transloco
+          }}</span>
         }
-        <button class="recent-view-all" (click)="state.section.set('history')">View all →</button>
+        <button class="recent-view-all" (click)="state.section.set('history')">
+          {{ 'View all →' | transloco }}
+        </button>
       </section>
     } @else {
-      <aside class="context-panel" aria-label="Workspace context">
+      <aside class="context-panel" [attr.aria-label]="'Workspace context' | transloco">
         <section class="context-card">
-          <h2><app-studio-icon name="environments" />Environment</h2>
+          <h2><app-studio-icon name="environments" />{{ 'Environment' | transloco }}</h2>
           <div class="context-environment">
             <span class="connection-dot"></span>
-            <select [formField]="fields.environment" aria-label="Context environment">
-              <option value="">No environment</option>
+            <select
+              [formField]="fields.environment"
+              [attr.aria-label]="'Context environment' | transloco"
+            >
+              <option value="">{{ 'No environment' | transloco }}</option>
               @for (environment of state.environments(); track environment.id) {
                 <option [value]="environment.id">{{ environment.name }}</option>
               }
             </select>
             <button
               class="icon-button"
-              aria-label="Manage environments"
-              title="Manage environments"
+              [attr.aria-label]="'Manage environments' | transloco"
+              [title]="'Manage environments' | transloco"
               (click)="state.section.set('environments')"
             >
               <app-studio-icon name="settings" />
@@ -78,28 +87,32 @@ export function environmentPreview(
           </div>
         </section>
         <section class="context-card">
-          <h2><app-studio-icon name="collections" />Current collection</h2>
+          <h2><app-studio-icon name="collections" />{{ 'Current collection' | transloco }}</h2>
           @if (collection(); as current) {
             <strong class="context-collection-name">{{ current.name }}</strong>
             <div class="row between">
-              <span class="muted">{{ requestCount() }} requests</span
+              <span class="muted">{{ 'counts.requests' | transloco: { v0: requestCount() } }}</span
               ><button
                 class="icon-button"
-                title="Open runner"
-                aria-label="Open runner"
+                [title]="'Open runner' | transloco"
+                [attr.aria-label]="'Open runner' | transloco"
                 (click)="state.section.set('runner')"
               >
                 <app-studio-icon name="runner" />
               </button>
             </div>
           } @else {
-            <p class="context-empty">Open a saved request to see its collection.</p>
+            <p class="context-empty">
+              {{ 'Open a saved request to see its collection.' | transloco }}
+            </p>
           }
         </section>
         <section class="context-card">
           <div class="context-heading">
-            <h2><app-studio-icon name="history" />Recent history</h2>
-            <button class="text-button" (click)="state.section.set('history')">View all</button>
+            <h2><app-studio-icon name="history" />{{ 'Recent history' | transloco }}</h2>
+            <button class="text-button" (click)="state.section.set('history')">
+              {{ 'View all' | transloco }}
+            </button>
           </div>
           @for (entry of recent(); track entry.document.id) {
             <button class="context-history-row" (click)="state.openHistory(entry.document)">
@@ -112,14 +125,17 @@ export function environmentPreview(
                   entry.status
                 }}</span>
               }
-              <small>{{ entry.document.updated_at * 1000 | date: 'shortTime' }}</small>
+              <small>{{
+                entry.document.updated_at * 1000
+                  | date: 'shortTime' : undefined : language.model().language
+              }}</small>
             </button>
           } @empty {
-            <p class="context-empty">Your sent requests will appear here.</p>
+            <p class="context-empty">{{ 'Your sent requests will appear here.' | transloco }}</p>
           }
         </section>
         <section class="context-card">
-          <h2><app-studio-icon name="body" />Environment variables</h2>
+          <h2><app-studio-icon name="body" />{{ 'Environment variables' | transloco }}</h2>
           @if (variables().length) {
             <div class="context-variable-list">
               @for (variable of variables(); track $index) {
@@ -127,20 +143,24 @@ export function environmentPreview(
                   <span>{{ variable.key }}</span
                   ><code
                     [class.masked]="variable.secret"
-                    [attr.title]="variable.secret ? 'Sensitive value hidden' : variable.text"
+                    [attr.title]="
+                      variable.secret ? ('Sensitive value hidden' | transloco) : variable.text
+                    "
                     >{{ variable.text }}</code
                   >
                 </div>
               }
             </div>
-            <p class="context-privacy">Sensitive values are hidden.</p>
+            <p class="context-privacy">{{ 'Sensitive values are hidden.' | transloco }}</p>
           } @else {
-            <p class="context-empty">Select an environment with variables.</p>
+            <p class="context-empty">{{ 'Select an environment with variables.' | transloco }}</p>
           }
         </section>
         <a class="context-card context-docs" href="/docs"
-          ><h2><app-studio-icon name="headers" />Documentation</h2>
-          <span>Explore Nexo's features <span aria-hidden="true">↗</span></span></a
+          ><h2><app-studio-icon name="headers" />{{ 'Documentation' | transloco }}</h2>
+          <span
+            >{{ "Explore Nexo's features" | transloco }} <span aria-hidden="true">↗</span></span
+          ></a
         >
       </aside>
     }
@@ -150,6 +170,7 @@ export function environmentPreview(
 export class WorkspaceContext {
   readonly layout = input<'sidebar' | 'strip'>('sidebar');
   protected readonly state = inject(WorkspaceState);
+  protected readonly language = inject(LanguageState);
   protected readonly model = linkedSignal(() => ({ environment: this.state.environmentId() }), {
     set: (value) => this.state.environmentId.set(value.environment),
   });

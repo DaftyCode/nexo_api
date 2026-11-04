@@ -6,7 +6,7 @@
   "
 >
   <header class="topbar">
-    <a class="brand" href="/" aria-label="Nexo home">
+    <a class="brand" href="/" [attr.aria-label]="'Nexo home' | transloco">
       <img
         class="aurora-brand-mark"
         src="/templates/aurora/mark.svg"
@@ -19,48 +19,67 @@
     @if (appearance.current() === 'canvas') {
       <button
         class="button canvas-tools-toggle"
-        aria-label="Open workspace tools"
+        [attr.aria-label]="'Open workspace tools' | transloco"
         [attr.aria-expanded]="navigationOpen()"
         (click)="navigationOpen.set(!navigationOpen())"
       >
-        <app-studio-icon name="collections" /> Tools
+        <app-studio-icon name="collections" /> {{ 'Tools' | transloco }}
       </button>
     }
     <div class="top-links">
       @if (appearance.current() === 'canvas') {
-        <button class="top-link active" (click)="setSection('collections')">API Studio</button>
-        <button class="top-link" (click)="browseCollections()">Collections</button>
-        <button class="top-link" (click)="setSection('environments')">Environments</button>
-        <button class="top-link wide-nav" (click)="setSection('history')">History</button>
-        <button class="top-link wide-nav" (click)="setSection('runner')">Runner</button>
+        <button class="top-link active" (click)="setSection('collections')">
+          {{ 'API Studio' | transloco }}
+        </button>
+        <button class="top-link" (click)="browseCollections()">
+          {{ 'Collections' | transloco }}
+        </button>
+        <button class="top-link" (click)="setSection('environments')">
+          {{ 'Environments' | transloco }}
+        </button>
+        <button class="top-link wide-nav" (click)="setSection('history')">
+          {{ 'History' | transloco }}
+        </button>
+        <button class="top-link wide-nav" (click)="setSection('runner')">
+          {{ 'Runner' | transloco }}
+        </button>
       } @else {
-        <span class="top-link active">Workspace</span>
+        <span class="top-link active">{{ 'Workspace' | transloco }}</span>
       }
-      <a class="top-link" href="/docs">Documentation</a>
+      <a class="top-link" href="/docs">{{ 'Documentation' | transloco }}</a>
     </div>
     <label class="top-search">
       <app-studio-icon name="search" />
       <input
         #workspaceSearch
         [formField]="fields.search"
-        aria-label="Search requests"
-        placeholder="Search requests…"
+        [attr.aria-label]="'Search requests' | transloco"
+        [placeholder]="'Search requests…' | transloco"
         (input)="search($event)"
         (focus)="browseCollections()"
       />
       <kbd>Ctrl K</kbd>
     </label>
     <app-appearance-selector />
+    <app-language-selector />
     <div class="top-right">
       <span class="connection-dot"></span
-      ><span>{{ state.health()?.mode === 'server' ? 'Server workspace' : 'Local workspace' }}</span
-      ><span class="avatar">N</span>
+      ><span>{{
+        state.health()?.mode === 'server'
+          ? ('Server workspace' | transloco)
+          : ('Local workspace' | transloco)
+      }}</span
+      ><span class="avatar">{{ 'N' | transloco }}</span>
     </div>
   </header>
   @if (state.error()) {
     <div class="global-alert" role="alert">
-      <span>{{ state.error() }}</span
-      ><button class="icon-button" (click)="state.error.set('')" aria-label="Dismiss error">
+      <span>{{ state.error() | transloco }}</span
+      ><button
+        class="icon-button"
+        (click)="state.error.set('')"
+        [attr.aria-label]="'Dismiss error' | transloco"
+      >
         ×
       </button>
     </div>
@@ -68,50 +87,62 @@
   @if (!state.ready()) {
     <div class="startup">
       <div class="spinner"></div>
-      <h2>Opening your workspace</h2>
-      <p>Connecting to Nexo…</p>
+      <h2>{{ 'Opening your workspace' | transloco }}</h2>
+      <p>{{ 'Connecting to Nexo…' | transloco }}</p>
       @if (state.error()) {
-        <button class="button" (click)="state.initialize()">Retry connection</button>
+        <button class="button" (click)="state.initialize()">
+          {{ 'Retry connection' | transloco }}
+        </button>
       }
     </div>
   } @else if (!state.authenticated()) {
     <main class="auth-screen">
       <div class="auth-card">
-        <span class="eyebrow">YOUR APIS. YOUR WORKSPACE.</span>
-        <h1>{{ state.health()?.setupRequired ? 'Set up your Nexo server' : 'Welcome back' }}</h1>
+        <span class="eyebrow">{{ 'YOUR APIS. YOUR WORKSPACE.' | transloco }}</span>
+        <h1>
+          {{
+            state.health()?.setupRequired
+              ? ('Set up your Nexo server' | transloco)
+              : ('Welcome back' | transloco)
+          }}
+        </h1>
         <p class="muted">
           {{
             state.health()?.setupRequired
-              ? 'Create the first account to own this server.'
-              : 'Sign in to your server workspace.'
+              ? ('Create the first account to own this server.' | transloco)
+              : ('Sign in to your server workspace.' | transloco)
           }}
         </p>
         @if (state.health()?.setupRequired || formModel().authMode === 'register') {
-          <label class="field">Name<input [formField]="fields.name" autocomplete="name" /></label>
+          <label class="field"
+            >{{ 'Name' | transloco }}<input [formField]="fields.name" autocomplete="name"
+          /></label>
         }
         <label class="field"
-          >Email<input type="email" [formField]="fields.email" autocomplete="username" /></label
+          >{{ 'Email' | transloco
+          }}<input type="email" [formField]="fields.email" autocomplete="username" /></label
         ><label class="field"
-          >Password<input
+          >{{ 'Password' | transloco
+          }}<input
             type="password"
             [formField]="fields.password"
             autocomplete="current-password"
             (keydown.enter)="login()"
         /></label>
-        <p class="muted">Use at least 12 characters for a new account.</p>
+        <p class="muted">{{ 'Use at least 12 characters for a new account.' | transloco }}</p>
         <button class="button primary wide" (click)="login()" [disabled]="state.busy()">
           {{
             state.health()?.setupRequired
-              ? 'Create server account'
+              ? ('Create server account' | transloco)
               : formModel().authMode === 'register'
-                ? 'Create account'
-                : 'Sign in'
+                ? ('Create account' | transloco)
+                : ('Sign in' | transloco)
           }}
         </button>
         @if (state.health()?.allowSignup && !state.health()?.setupRequired) {
-          <select [formField]="fields.authMode" aria-label="Account action">
-            <option value="login">Sign in</option>
-            <option value="register">Create account</option>
+          <select [formField]="fields.authMode" [attr.aria-label]="'Account action' | transloco">
+            <option value="login">{{ 'Sign in' | transloco }}</option>
+            <option value="register">{{ 'Create account' | transloco }}</option>
           </select>
         }
       </div>
@@ -122,7 +153,7 @@
         <span class="workspace-icon">◈</span
         ><select
           class="workspace-select"
-          aria-label="Workspace"
+          [attr.aria-label]="'Workspace' | transloco"
           [value]="state.workspaceId()"
           (change)="selectWorkspace($event)"
         >
@@ -132,35 +163,39 @@
         ><button
           class="icon-button"
           (click)="dialogs.set('workspace')"
-          aria-label="Create workspace"
+          [attr.aria-label]="'Create workspace' | transloco"
         >
           +</button
         ><span class="vertical-divider"></span
-        ><button class="button small" (click)="state.newTab()">New</button
-        ><button class="button small" (click)="dialogs.set('import')">Import</button>
+        ><button class="button small" (click)="state.newTab()">{{ 'New' | transloco }}</button
+        ><button class="button small" (click)="dialogs.set('import')">
+          {{ 'Import' | transloco }}
+        </button>
       </div>
       <div class="row">
         <select
           class="environment-select"
-          aria-label="Active environment"
+          [attr.aria-label]="'Active environment' | transloco"
           [value]="state.environmentId()"
           (change)="selectEnvironment($event)"
         >
-          <option value="">No environment</option>
+          <option value="">{{ 'No environment' | transloco }}</option>
           @for (env of state.environments(); track env.id) {
             <option [value]="env.id">{{ env.name }}</option>
           }</select
-        ><button class="button small" (click)="state.section.set('team')">♧ Invite</button>
+        ><button class="button small" (click)="state.section.set('team')">
+          {{ '♧ Invite' | transloco }}
+        </button>
       </div>
     </div>
     <div class="studio-body">
       <div class="workspace-navigation">
         @if (appearance.current() === 'canvas') {
           <div class="canvas-navigation-heading">
-            <strong>Workspace</strong
+            <strong>{{ 'Workspace' | transloco }}</strong
             ><button
               class="icon-button"
-              aria-label="Close workspace navigation"
+              [attr.aria-label]="'Close workspace navigation' | transloco"
               (click)="closeNavigation()"
             >
               ×
@@ -169,29 +204,35 @@
         }
         @if (appearance.current() === 'studio') {
           <div class="studio-sidebar-controls">
-            <button class="button primary" (click)="state.newTab()">＋ New request</button>
+            <button class="button primary" (click)="state.newTab()">
+              {{ '＋ New request' | transloco }}
+            </button>
           </div>
         }
-        <nav class="rail" aria-label="Workspace sections">
+        <nav class="rail" [attr.aria-label]="'Workspace sections' | transloco">
           @for (item of nav; track item.id) {
             <button
               [class.active]="state.section() === item.id"
               (click)="setSection(item.id)"
-              [attr.title]="item.label"
+              [attr.title]="item.label | transloco"
             >
               <app-studio-icon class="rail-vector" [name]="item.id" />
-              <span>{{ item.label }}</span>
+              <span>{{ item.label | transloco }}</span>
             </button>
           }
         </nav>
         @if (state.section() === 'collections' || state.section() === 'history') {
           <aside class="sidebar">
             <div class="sidebar-heading">
-              <strong>{{ state.section() === 'history' ? 'History' : 'Collections' }}</strong
+              <strong>{{
+                state.section() === 'history'
+                  ? ('History' | transloco)
+                  : ('Collections' | transloco)
+              }}</strong
               ><button
                 class="icon-button"
                 (click)="dialogs.set('collection')"
-                aria-label="Create collection"
+                [attr.aria-label]="'Create collection' | transloco"
               >
                 +
               </button>
@@ -200,8 +241,8 @@
               <span>⌕</span
               ><input
                 #collectionSearch
-                placeholder="Filter collections"
-                aria-label="Filter collections"
+                [placeholder]="'Filter collections' | transloco"
+                [attr.aria-label]="'Filter collections' | transloco"
                 [value]="state.filter()"
                 (input)="search($event)"
               />
@@ -210,11 +251,16 @@
               @for (history of state.history(); track history.id) {
                 <button class="history-item" (click)="state.openHistory(history)">
                   <span>{{ history.name }}</span
-                  ><small>{{ history.updated_at * 1000 | date: 'short' }}</small>
+                  ><small>{{
+                    history.updated_at * 1000
+                      | date: 'short' : undefined : language.model().language
+                  }}</small>
                 </button>
               }
               @if (!state.history().length) {
-                <div class="sidebar-empty">Your requests will appear here as you send them.</div>
+                <div class="sidebar-empty">
+                  {{ 'Your requests will appear here as you send them.' | transloco }}
+                </div>
               }
             } @else {
               @for (collection of state.collections(); track collection.id) {
@@ -230,15 +276,19 @@
                       <span class="folder-icon">▱</span>{{ collection.name }}
                     </button>
                     <details class="collection-menu">
-                      <summary aria-label="Collection actions">···</summary>
+                      <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
                       <div>
-                        <button (click)="state.addRequest(collection)">Add request</button
-                        ><button (click)="folder(collection)">Add folder</button
-                        ><button (click)="state.export(collection)">Export collection</button
-                        ><button (click)="duplicate(collection)">Duplicate</button
-                        ><button (click)="state.section.set('runner')">Run collection</button
+                        <button (click)="state.addRequest(collection)">
+                          {{ 'Add request' | transloco }}</button
+                        ><button (click)="folder(collection)">{{ 'Add folder' | transloco }}</button
+                        ><button (click)="state.export(collection)">
+                          {{ 'Export collection' | transloco }}</button
+                        ><button (click)="duplicate(collection)">
+                          {{ 'Duplicate' | transloco }}</button
+                        ><button (click)="state.section.set('runner')">
+                          {{ 'Run collection' | transloco }}</button
                         ><button class="danger" (click)="state.remove(collection)">
-                          Delete collection
+                          {{ 'Delete collection' | transloco }}
                         </button>
                       </div>
                     </details>
@@ -251,7 +301,7 @@
                           ><button
                             class="icon-button"
                             (click)="state.addRequest(collection, entry.path)"
-                            aria-label="Add request in folder"
+                            [attr.aria-label]="'Add request in folder' | transloco"
                           >
                             +
                           </button>
@@ -271,7 +321,7 @@
                       </div>
                     }
                     <button class="add-request" (click)="state.addRequest(collection)">
-                      + Add request
+                      {{ '+ Add request' | transloco }}
                     </button>
                   }
                 </div>
@@ -285,19 +335,32 @@
                     height="120"
                     alt=""
                   />
-                  <strong>A place for your APIs</strong>
-                  <p>Organize requests into collections and keep your work together.</p>
+                  <strong>{{ 'A place for your APIs' | transloco }}</strong>
+                  <p>
+                    {{
+                      'Organize requests into collections and keep your work together.' | transloco
+                    }}
+                  </p>
                   <button class="button" (click)="dialogs.set('collection')">
-                    Create collection</button
+                    {{ 'Create collection' | transloco }}</button
                   ><button class="text-button" (click)="dialogs.set('import')">
-                    or import existing work
+                    {{ 'or import existing work' | transloco }}
                   </button>
                 </div>
               }
             }
             <div class="sidebar-bottom">
-              <span class="connection-dot"></span>Changes saved on your
-              {{ state.health()?.mode === 'server' ? 'server' : 'device' }}
+              <span class="connection-dot"></span
+              >{{
+                'workspace.savedOn'
+                  | transloco
+                    : {
+                        v0:
+                          state.health()?.mode === 'server'
+                            ? ('server' | transloco)
+                            : ('device' | transloco),
+                      }
+              }}
             </div>
           </aside>
         }
@@ -309,9 +372,9 @@
         ) {
           <div class="canvas-intro">
             <div>
-              <span class="canvas-eyebrow">MY WORKSPACE</span>
-              <h1>Your space to test APIs</h1>
-              <p>Build a request and explore its response, side by side.</p>
+              <span class="canvas-eyebrow">{{ 'MY WORKSPACE' | transloco }}</span>
+              <h1>{{ 'Your space to test APIs' | transloco }}</h1>
+              <p>{{ 'Build a request and explore its response, side by side.' | transloco }}</p>
             </div>
             <div class="row">
               <button
@@ -319,8 +382,10 @@
                 (click)="browseCollections()"
                 [attr.aria-expanded]="navigationOpen()"
               >
-                Browse collections</button
-              ><button class="button canvas-new" (click)="state.newTab()">＋ New</button>
+                {{ 'Browse collections' | transloco }}</button
+              ><button class="button canvas-new" (click)="state.newTab()">
+                {{ '＋ New' | transloco }}
+              </button>
             </div>
           </div>
         }
@@ -338,14 +403,18 @@
                   }</button
                 ><button
                   class="tab-close"
-                  aria-label="Close request"
+                  [attr.aria-label]="'Close request' | transloco"
                   (click)="state.closeTab(tab.id)"
                 >
                   ×
                 </button>
               </div>
             }
-            <button class="icon-button" (click)="state.newTab()" aria-label="New request tab">
+            <button
+              class="icon-button"
+              (click)="state.newTab()"
+              [attr.aria-label]="'New request tab' | transloco"
+            >
               +
             </button>
           </div>
@@ -374,21 +443,22 @@
       }
     </div>
     <footer class="statusbar">
-      <button (click)="state.consoleOpen.set(!state.consoleOpen())">▣ Console</button
-      ><span>{{ state.notice() || 'All systems ready' }}</span>
+      <button (click)="state.consoleOpen.set(!state.consoleOpen())">
+        {{ '▣ Console' | transloco }}</button
+      ><span>{{ state.notice() || 'All systems ready' | transloco }}</span>
       <div class="statusbar-right">
-        <span>{{ state.documents().length }} resources</span><span>UTF-8</span
-        ><span>Nexo {{ state.health()?.version }}</span>
+        <span>{{ 'counts.resources' | transloco: { v0: state.documents().length } }}</span
+        ><span>UTF-8</span><span>Nexo {{ state.health()?.version }}</span>
       </div>
     </footer>
     @if (state.consoleOpen()) {
       <div class="floating-console">
         <div class="row between">
-          <strong>Console</strong
+          <strong>{{ 'Console' | transloco }}</strong
           ><button
             class="icon-button"
             (click)="state.consoleOpen.set(false)"
-            aria-label="Close console"
+            [attr.aria-label]="'Close console' | transloco"
           >
             ×
           </button>
@@ -397,7 +467,7 @@
           <pre>[{{ log.level }}] {{ log.values.join(' ') }}</pre>
         }
         @if (!state.response()?.logs?.length) {
-          <p class="muted">Logs from your request scripts appear here.</p>
+          <p class="muted">{{ 'Logs from your request scripts appear here.' | transloco }}</p>
         }
       </div>
     }
@@ -411,37 +481,51 @@
         [attr.aria-label]="dialogs() === 'import' ? 'Import' : 'Create ' + dialogs()"
       >
         <div class="modal-heading">
-          <h2>{{ dialogs() === 'import' ? 'Import your work' : 'Create ' + dialogs() }}</h2>
-          <button class="icon-button" (click)="dialogs.set('')" aria-label="Close dialog">×</button>
+          <h2>
+            {{ dialogs() === 'import' ? ('Import your work' | transloco) : 'Create ' + dialogs() }}
+          </h2>
+          <button
+            class="icon-button"
+            (click)="dialogs.set('')"
+            [attr.aria-label]="'Close dialog' | transloco"
+          >
+            ×
+          </button>
         </div>
         @if (dialogs() === 'import') {
           <p class="muted">
-            Portable collections and environments, OpenAPI, HAR or a cURL command.
+            {{
+              'Portable collections and environments, OpenAPI, HAR or a cURL command.' | transloco
+            }}
           </p>
           <label class="file-drop"
-            >↑ Choose a file<input
+            >{{ '↑ Choose a file' | transloco
+            }}<input
               type="file"
               accept=".json,.yaml,.yml,.har,.txt"
               (change)="file($event)" /></label
-          ><span class="divider-label">or paste content</span
+          ><span class="divider-label">{{ 'or paste content' | transloco }}</span
           ><textarea
             class="code-editor"
             [formField]="fields.content"
-            aria-label="Import content"
-            placeholder="Paste a collection, OpenAPI specification, HAR or cURL command"
+            [attr.aria-label]="'Import content' | transloco"
+            [placeholder]="
+              'Paste a collection, OpenAPI specification, HAR or cURL command' | transloco
+            "
           ></textarea>
         } @else {
           <label class="field"
-            >Name<input
+            >{{ 'Name' | transloco
+            }}<input
               [formField]="fields.name"
-              placeholder="Give it a name"
+              [placeholder]="'Give it a name' | transloco"
               (keydown.enter)="submitDialog()"
           /></label>
         }
         <div class="modal-actions">
-          <button class="button" (click)="dialogs.set('')">Cancel</button
+          <button class="button" (click)="dialogs.set('')">{{ 'Cancel' | transloco }}</button
           ><button class="button primary" (click)="submitDialog()" [disabled]="state.busy()">
-            {{ dialogs() === 'import' ? 'Import' : 'Create' }}
+            {{ dialogs() === 'import' ? ('Import' | transloco) : ('Create' | transloco) }}
           </button>
         </div>
       </section>

@@ -1,42 +1,47 @@
 <div class="feature-heading">
   <div>
-    <span class="eyebrow">REPEATABLE. TESTABLE. RELIABLE.</span>
-    <h1>Collection runner</h1>
-    <p>Run requests in order, execute scripts and see every assertion.</p>
+    <span class="eyebrow">{{ 'REPEATABLE. TESTABLE. RELIABLE.' | transloco }}</span>
+    <h1>{{ 'Collection runner' | transloco }}</h1>
+    <p>{{ 'Run requests in order, execute scripts and see every assertion.' | transloco }}</p>
   </div>
 </div>
 <div class="feature-columns">
   <section class="feature-card runner-config">
-    <h2>Configure run</h2>
+    <h2>{{ 'Configure run' | transloco }}</h2>
     <label class="field"
-      >Collection<select [formField]="fields.collection">
-        <option value="">Choose a collection</option>
+      >{{ 'Collection' | transloco
+      }}<select [formField]="fields.collection">
+        <option value="">{{ 'Choose a collection' | transloco }}</option>
         @for (collection of state.collections(); track collection.id) {
           <option [value]="collection.id">{{ collection.name }}</option>
         }
       </select></label
-    ><label class="field">Iterations<input type="number" [formField]="fields.iterations" /></label
     ><label class="field"
-      >Iteration data (JSON array)<textarea
-        class="code-editor small"
-        [formField]="fields.data"
-      ></textarea></label
+      >{{ 'Iterations' | transloco }}<input type="number" [formField]="fields.iterations" /></label
+    ><label class="field"
+      >{{ 'Iteration data (JSON array)' | transloco
+      }}<textarea class="code-editor small" [formField]="fields.data"></textarea></label
     ><label class="file-label"
-      >Import JSON / CSV<input type="file" accept=".json,.csv" (change)="file($event)"
+      >{{ 'Import JSON / CSV' | transloco
+      }}<input type="file" accept=".json,.csv" (change)="file($event)"
     /></label>
     <p class="muted">
-      Active environment: {{ state.environmentId() ? 'selected' : 'none' }}. Use
-      <code>pm.iterationData</code> in scripts.
+      {{ 'Active environment' | transloco }}:
+      {{ (state.environmentId() ? 'selected' : 'none') | transloco }}. {{ 'Use' | transloco }}
+      <code>nx.iterationData</code>
+      {{ 'in scripts.' | transloco }}
     </p>
     @if (state.run()?.state === 'running') {
-      <button class="button danger" (click)="state.cancelRun()">Stop run</button>
+      <button class="button danger" (click)="state.cancelRun()">
+        {{ 'Stop run' | transloco }}
+      </button>
     } @else {
       <button
         class="button primary wide"
         (click)="start()"
         [disabled]="!state.collections().length"
       >
-        ▷ Run collection
+        {{ '▷ Run collection' | transloco }}
       </button>
     }
   </section>
@@ -46,26 +51,29 @@
         <h2>
           {{
             run.state === 'running'
-              ? 'Running collection'
+              ? ('Running collection' | transloco)
               : run.state === 'completed'
-                ? 'Run completed'
-                : run.state
+                ? ('Run completed' | transloco)
+                : (run.state | transloco)
           }}
         </h2>
-        <span class="status-pill" [class.failed]="run.state === 'failed'">{{ run.state }}</span>
+        <span class="status-pill" [class.failed]="run.state === 'failed'">{{
+          run.state | transloco
+        }}</span>
       </div>
       <div class="metric-grid">
         <div>
           <strong>{{ run.results.length }}</strong
-          ><span>Requests</span>
+          ><span>{{ 'Requests' | transloco }}</span>
         </div>
         <div>
           <strong>{{ run.assertions.length }}</strong
-          ><span>Assertions</span>
+          ><span>{{ 'Assertions' | transloco }}</span>
         </div>
         <div>
-          <strong>{{ run.duration ?? 0 }}<small> ms</small></strong
-          ><span>Total time</span>
+          <strong
+            >{{ run.duration ?? 0 }}<small> {{ 'ms' | transloco }}</small></strong
+          ><span>{{ 'Total time' | transloco }}</span>
         </div>
       </div>
       @if (run.error) {
@@ -77,13 +85,13 @@
             result.status || 'ERR'
           }}</span
           ><span>{{ result.statusText }}</span
-          ><span class="muted">{{ result.time }} ms</span>
+          ><span class="muted">{{ 'units.duration' | transloco: { v0: result.time } }}</span>
         </div>
       }
       @for (test of run.assertions; track $index) {
         <div class="assertion">
           <span class="status-pill" [class.failed]="!test.passed">{{
-            test.passed ? 'PASS' : 'FAIL'
+            test.passed ? ('PASS' | transloco) : ('FAIL' | transloco)
           }}</span>
           <div>
             {{ test.name }}
@@ -96,8 +104,8 @@
     } @else {
       <div class="empty-response">
         <span class="large-symbol">▷</span>
-        <h3>Make every request count</h3>
-        <p>Choose a collection to run its requests and tests.</p>
+        <h3>{{ 'Make every request count' | transloco }}</h3>
+        <p>{{ 'Choose a collection to run its requests and tests.' | transloco }}</p>
       </div>
     }
   </section>
