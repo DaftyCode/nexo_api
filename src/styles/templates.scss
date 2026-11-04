@@ -1,0 +1,26 @@
+@use './templates/aurora';
+@use './templates/studio';
+@use './templates/canvas';
+
+.studio {
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
+
+  * {
+    scrollbar-width: thin;
+  }
+
+  .request-tabbar,
+  .editor-tabs {
+    overflow-y: hidden;
+  }
+}
+
+.workspace-navigation {
+  display: contents;
+}
+.request-panel-heading,
+.response-panel-heading,
+.canvas-navigation-heading {
+  display: none;
+}

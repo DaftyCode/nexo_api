@@ -1,5 +1,6 @@
 import { provideRouter } from '@angular/router';
-import { WORKSPACE } from '../composition/providers';
+import { APPEARANCE, WORKSPACE } from '../composition/providers';
+import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
 import { ApiPort, FilePort } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
@@ -66,5 +67,12 @@ export function testProviders() {
     },
     download() {},
   };
-  return [provideRouter([]), { provide: WORKSPACE, useValue: new WorkspaceUseCases(api, files) }];
+  return [
+    provideRouter([]),
+    { provide: WORKSPACE, useValue: new WorkspaceUseCases(api, files) },
+    {
+      provide: APPEARANCE,
+      useValue: new AppearanceUseCases({ loadTemplate: () => undefined, saveTemplate() {} }),
+    },
+  ];
 }

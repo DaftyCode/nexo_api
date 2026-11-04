@@ -1,0 +1,209 @@
+:host {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.context-panel {
+  width: 100%;
+  padding: 14px 12px;
+  overflow-y: auto;
+  background: linear-gradient(155deg, #141d32, #151b39 65%, #282459);
+  border: 1px solid #324164;
+  border-radius: 18px;
+}
+.context-card {
+  display: block;
+  margin-bottom: 12px;
+  padding: 15px 14px;
+  border: 1px solid #3b4a6b;
+  background: linear-gradient(130deg, #202a42, #182239);
+  border-radius: 13px;
+  box-shadow: inset 0 1px #ffffff05;
+}
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 13px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+}
+h2 app-studio-icon {
+  width: 21px;
+  height: 21px;
+  color: #dfe4ff;
+}
+.context-environment {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.context-environment > select {
+  min-width: 0;
+  width: 100%;
+  background: #263251;
+  padding: 8px;
+  font-size: 11px;
+  border-color: #52648b;
+  border-radius: 7px;
+}
+.context-environment .connection-dot {
+  width: 7px;
+}
+.context-environment .icon-button {
+  width: 24px;
+}
+.context-collection-name {
+  font-size: 12px;
+  display: block;
+  margin: 3px 0 7px;
+  overflow-wrap: anywhere;
+}
+.context-collection-name::before {
+  content: '▱';
+  color: #b287ff;
+  font-size: 19px;
+  margin-right: 7px;
+}
+.context-empty {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 0;
+}
+.context-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 7px;
+}
+.context-heading > .text-button {
+  padding: 3px 0;
+  font-size: 10px;
+}
+.context-history-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  text-align: left;
+  border-bottom: 1px solid #33415e;
+}
+.context-history-row:last-child {
+  border: 0;
+}
+.context-history-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.context-history-row small {
+  font-size: 9px;
+  color: var(--muted);
+}
+.context-status {
+  color: #9af2b8;
+  background: #1e6d3d70;
+  border-radius: 5px;
+  padding: 3px 4px;
+  font-size: 10px;
+}
+.context-status.danger {
+  color: var(--red);
+  background: #74314955;
+}
+.context-variable-list {
+  border: 1px solid #384763;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.context-variable {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  border-bottom: 1px solid #354260;
+  font-size: 10px;
+}
+.context-variable:last-child {
+  border: 0;
+}
+.context-variable > span,
+.context-variable > code {
+  padding: 9px 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.context-variable > code {
+  border-left: 1px solid #354260;
+  color: #b9c8ed;
+  font-size: 10px;
+}
+.context-variable .masked {
+  letter-spacing: 1px;
+}
+.context-privacy {
+  color: #8f9fbe;
+  font-size: 9px;
+  margin: 9px 0 0;
+}
+.context-docs > span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+.context-docs:hover {
+  border-color: #956af0;
+}
+.recent-strip {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 14px;
+  padding: 13px 0 5px;
+  border-top: 1px solid #e3e8f4;
+}
+.recent-strip > strong {
+  font-size: 12px;
+  color: #7d89a3;
+}
+.recent-strip > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e0e5f0;
+  border-radius: 11px;
+  background: #fff;
+  color: #435372;
+  padding: 9px 13px;
+  min-width: 0;
+  font-size: 11px;
+}
+.recent-strip > button > span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 190px;
+}
+.recent-strip .method-tag {
+  background: #e8f7f0;
+  color: #009976;
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 9px;
+}
+.recent-strip .recent-view-all {
+  margin-left: auto;
+  background: #eeecff;
+  color: #6551ea;
+  border-color: transparent;
+  white-space: nowrap;
+}
+.recent-strip .context-empty {
+  color: #8490aa;
+  font-size: 11px;
+}

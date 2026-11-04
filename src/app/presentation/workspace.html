@@ -1,13 +1,56 @@
-<div class="studio">
+<div
+  class="studio"
+  [attr.data-template]="appearance.current()"
+  [class.canvas-navigation-visible]="
+    navigationOpen() || (appearance.current() === 'canvas' && state.section() === 'history')
+  "
+>
   <header class="topbar">
-    <a class="brand" href="/" aria-label="Nexo home"
-      ><span class="brand-mark">n</span>nexo<span class="brand-api">API</span></a
-    >
+    <a class="brand" href="/" aria-label="Nexo home">
+      <img
+        class="aurora-brand-mark"
+        src="/templates/aurora/mark.svg"
+        width="44"
+        height="38"
+        alt=""
+      />
+      <span class="aurora-wordmark">Nexo <span>API</span></span>
+    </a>
+    @if (appearance.current() === 'canvas') {
+      <button
+        class="button canvas-tools-toggle"
+        aria-label="Open workspace tools"
+        [attr.aria-expanded]="navigationOpen()"
+        (click)="navigationOpen.set(!navigationOpen())"
+      >
+        <app-studio-icon name="collections" /> Tools
+      </button>
+    }
     <div class="top-links">
-      <span class="top-link active">Workspace</span
-      ><a class="top-link" href="/docs">Documentation</a>
+      @if (appearance.current() === 'canvas') {
+        <button class="top-link active" (click)="setSection('collections')">API Studio</button>
+        <button class="top-link" (click)="browseCollections()">Collections</button>
+        <button class="top-link" (click)="setSection('environments')">Environments</button>
+        <button class="top-link wide-nav" (click)="setSection('history')">History</button>
+        <button class="top-link wide-nav" (click)="setSection('runner')">Runner</button>
+      } @else {
+        <span class="top-link active">Workspace</span>
+      }
+      <a class="top-link" href="/docs">Documentation</a>
     </div>
-    <div class="top-search"><span>⌕</span> Find anything in your workspace <kbd>Ctrl K</kbd></div>
+    <label class="top-search">
+      <app-studio-icon name="search" />
+      <input
+        #workspaceSearch
+        [formField]="fields.search"
+        aria-label="Search requests"
+        placeholder="Search requests…"
+        (input)="search($event)"
+        (focus)="browseCollections()"
+      />
+      <kbd>Ctrl K</kbd>
+    </label>
+    <app-appearance-selector />
     <div class="top-right">
       <span class="connection-dot"></span
       ><span>{{ state.health()?.mode === 'server' ? 'Server workspace' : 'Local workspace' }}</span
@@ -111,127 +154,176 @@
       </div>
     </div>
     <div class="studio-body">
-      <nav class="rail" aria-label="Workspace sections">
-        @for (item of nav; track item.id) {
-          <button
-            [class.active]="state.section() === item.id"
-            (click)="setSection(item.id)"
-            [attr.title]="item.label"
-          >
-            <span class="rail-icon">{{ item.icon }}</span
-            ><span>{{ item.label }}</span>
-          </button>
-        }
-      </nav>
-      @if (state.section() === 'collections' || state.section() === 'history') {
-        <aside class="sidebar">
-          <div class="sidebar-heading">
-            <strong>{{ state.section() === 'history' ? 'History' : 'Collections' }}</strong
+      <div class="workspace-navigation">
+        @if (appearance.current() === 'canvas') {
+          <div class="canvas-navigation-heading">
+            <strong>Workspace</strong
             ><button
               class="icon-button"
-              (click)="dialogs.set('collection')"
-              aria-label="Create collection"
+              aria-label="Close workspace navigation"
+              (click)="closeNavigation()"
             >
-              +
+              ×
             </button>
           </div>
-          <div class="sidebar-search">
-            <span>⌕</span
-            ><input
-              placeholder="Filter collections"
-              aria-label="Filter collections"
-              [value]="state.filter()"
-              (input)="search($event)"
-            />
+        }
+        @if (appearance.current() === 'studio') {
+          <div class="studio-sidebar-controls">
+            <button class="button primary" (click)="state.newTab()">＋ New request</button>
           </div>
-          @if (state.section() === 'history') {
-            @for (history of state.history(); track history.id) {
-              <button class="history-item" (click)="state.openHistory(history)">
-                <span>{{ history.name }}</span
-                ><small>{{ history.updated_at * 1000 | date: 'short' }}</small>
-              </button>
-            }
-            @if (!state.history().length) {
-              <div class="sidebar-empty">Your requests will appear here as you send them.</div>
-            }
-          } @else {
-            @for (collection of state.collections(); track collection.id) {
-              <div class="collection">
-                <div class="collection-title">
-                  <button
-                    class="tree-toggle"
-                    (click)="toggle(collection.id)"
-                    [attr.aria-expanded]="!collapsed().includes(collection.id)"
-                  >
-                    {{ collapsed().includes(collection.id) ? '›' : '⌄' }}</button
-                  ><button class="collection-name" (click)="toggle(collection.id)">
-                    <span class="folder-icon">▱</span>{{ collection.name }}
-                  </button>
-                  <details class="collection-menu">
-                    <summary aria-label="Collection actions">···</summary>
-                    <div>
-                      <button (click)="state.addRequest(collection)">Add request</button
-                      ><button (click)="folder(collection)">Add folder</button
-                      ><button (click)="state.export(collection)">Export collection</button
-                      ><button (click)="duplicate(collection)">Duplicate</button
-                      ><button (click)="state.section.set('runner')">Run collection</button
-                      ><button class="danger" (click)="state.remove(collection)">
-                        Delete collection
-                      </button>
-                    </div>
-                  </details>
-                </div>
-                @if (!collapsed().includes(collection.id)) {
-                  @for (entry of state.collectionItems(collection); track entry.path.join('.')) {
-                    <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 14">
-                      @if (entry.item.item) {
-                        <span class="folder-icon">▱</span><span>{{ entry.item.name }}</span
-                        ><button
-                          class="icon-button"
-                          (click)="state.addRequest(collection, entry.path)"
-                          aria-label="Add request in folder"
-                        >
-                          +
-                        </button>
-                      } @else {
-                        <button
-                          class="request-leaf"
-                          (click)="state.openItem(collection, entry.item, entry.path)"
-                        >
-                          <span
-                            class="method-tag"
-                            [class.post]="method(entry.item) === 'POST'"
-                            [class.delete]="method(entry.item) === 'DELETE'"
-                            >{{ method(entry.item) }}</span
-                          ><span>{{ entry.item.name }}</span>
-                        </button>
-                      }
-                    </div>
-                  }
-                  <button class="add-request" (click)="state.addRequest(collection)">
-                    + Add request
-                  </button>
-                }
-              </div>
-            }
-            @if (!state.collections().length) {
-              <div class="sidebar-empty">
-                <span class="empty-folder">▱</span><strong>A place for your APIs</strong>
-                <p>Organize requests into collections and keep your work together.</p>
-                <button class="button" (click)="dialogs.set('collection')">Create collection</button
-                ><button class="text-button" (click)="dialogs.set('import')">
-                  or import existing work
-                </button>
-              </div>
-            }
+        }
+        <nav class="rail" aria-label="Workspace sections">
+          @for (item of nav; track item.id) {
+            <button
+              [class.active]="state.section() === item.id"
+              (click)="setSection(item.id)"
+              [attr.title]="item.label"
+            >
+              <app-studio-icon class="rail-vector" [name]="item.id" />
+              <span>{{ item.label }}</span>
+            </button>
           }
-          <div class="sidebar-bottom">
-            <span class="connection-dot"></span>Changes saved on your
-            {{ state.health()?.mode === 'server' ? 'server' : 'device' }}
-          </div>
-        </aside>
-      }
+        </nav>
+        @if (state.section() === 'collections' || state.section() === 'history') {
+          <aside class="sidebar">
+            <div class="sidebar-heading">
+              <strong>{{ state.section() === 'history' ? 'History' : 'Collections' }}</strong
+              ><button
+                class="icon-button"
+                (click)="dialogs.set('collection')"
+                aria-label="Create collection"
+              >
+                +
+              </button>
+            </div>
+            <div class="sidebar-search">
+              <span>⌕</span
+              ><input
+                #collectionSearch
+                placeholder="Filter collections"
+                aria-label="Filter collections"
+                [value]="state.filter()"
+                (input)="search($event)"
+              />
+            </div>
+            @if (state.section() === 'history') {
+              @for (history of state.history(); track history.id) {
+                <button class="history-item" (click)="state.openHistory(history)">
+                  <span>{{ history.name }}</span
+                  ><small>{{ history.updated_at * 1000 | date: 'short' }}</small>
+                </button>
+              }
+              @if (!state.history().length) {
+                <div class="sidebar-empty">Your requests will appear here as you send them.</div>
+              }
+            } @else {
+              @for (collection of state.collections(); track collection.id) {
+                <div class="collection">
+                  <div class="collection-title">
+                    <button
+                      class="tree-toggle"
+                      (click)="toggle(collection.id)"
+                      [attr.aria-expanded]="!collapsed().includes(collection.id)"
+                    >
+                      {{ collapsed().includes(collection.id) ? '›' : '⌄' }}</button
+                    ><button class="collection-name" (click)="toggle(collection.id)">
+                      <span class="folder-icon">▱</span>{{ collection.name }}
+                    </button>
+                    <details class="collection-menu">
+                      <summary aria-label="Collection actions">···</summary>
+                      <div>
+                        <button (click)="state.addRequest(collection)">Add request</button
+                        ><button (click)="folder(collection)">Add folder</button
+                        ><button (click)="state.export(collection)">Export collection</button
+                        ><button (click)="duplicate(collection)">Duplicate</button
+                        ><button (click)="state.section.set('runner')">Run collection</button
+                        ><button class="danger" (click)="state.remove(collection)">
+                          Delete collection
+                        </button>
+                      </div>
+                    </details>
+                  </div>
+                  @if (!collapsed().includes(collection.id)) {
+                    @for (entry of state.collectionItems(collection); track entry.path.join('.')) {
+                      <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 14">
+                        @if (entry.item.item) {
+                          <span class="folder-icon">▱</span><span>{{ entry.item.name }}</span
+                          ><button
+                            class="icon-button"
+                            (click)="state.addRequest(collection, entry.path)"
+                            aria-label="Add request in folder"
+                          >
+                            +
+                          </button>
+                        } @else {
+                          <button
+                            class="request-leaf"
+                            (click)="state.openItem(collection, entry.item, entry.path)"
+                          >
+                            <span
+                              class="method-tag"
+                              [class.post]="method(entry.item) === 'POST'"
+                              [class.delete]="method(entry.item) === 'DELETE'"
+                              >{{ method(entry.item) }}</span
+                            ><span>{{ entry.item.name }}</span>
+                          </button>
+                        }
+                      </div>
+                    }
+                    <button class="add-request" (click)="state.addRequest(collection)">
+                      + Add request
+                    </button>
+                  }
+                </div>
+              }
+              @if (!state.collections().length) {
+                <div class="sidebar-empty">
+                  <img
+                    class="collection-art"
+                    src="/templates/aurora/collections.svg"
+                    width="112"
+                    height="120"
+                    alt=""
+                  />
+                  <strong>A place for your APIs</strong>
+                  <p>Organize requests into collections and keep your work together.</p>
+                  <button class="button" (click)="dialogs.set('collection')">
+                    Create collection</button
+                  ><button class="text-button" (click)="dialogs.set('import')">
+                    or import existing work
+                  </button>
+                </div>
+              }
+            }
+            <div class="sidebar-bottom">
+              <span class="connection-dot"></span>Changes saved on your
+              {{ state.health()?.mode === 'server' ? 'server' : 'device' }}
+            </div>
+          </aside>
+        }
+      </div>
       <main class="main-workspace">
+        @if (
+          appearance.current() === 'canvas' &&
+          (state.section() === 'collections' || state.section() === 'history')
+        ) {
+          <div class="canvas-intro">
+            <div>
+              <span class="canvas-eyebrow">MY WORKSPACE</span>
+              <h1>Your space to test APIs</h1>
+              <p>Build a request and explore its response, side by side.</p>
+            </div>
+            <div class="row">
+              <button
+                class="button"
+                (click)="browseCollections()"
+                [attr.aria-expanded]="navigationOpen()"
+              >
+                Browse collections</button
+              ><button class="button canvas-new" (click)="state.newTab()">＋ New</button>
+            </div>
+          </div>
+        }
         @if (state.section() === 'collections' || state.section() === 'history') {
           <div class="request-tabbar">
             @for (tab of state.tabs(); track tab.id) {
@@ -274,6 +366,12 @@
           <app-tools-panel [section]="state.section()" />
         }
       </main>
+      @if (appearance.current() === 'studio') {
+        <app-workspace-context />
+      }
+      @if (appearance.current() === 'canvas') {
+        <app-workspace-context layout="strip" />
+      }
     </div>
     <footer class="statusbar">
       <button (click)="state.consoleOpen.set(!state.consoleOpen())">▣ Console</button

@@ -1,9 +1,10 @@
 import { ChangeDetectionStrategy, Component, input, signal, computed } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { ExecutionResponse, formatJson } from '../domain/models';
+import { StudioIcon } from './studio-icon';
 
 @Component({
-  imports: [JsonPipe],
+  imports: [JsonPipe, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-response-view',
   styleUrl: './response-view.scss',

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" fill="none" preserveAspectRatio="none">
+  <defs>
+    <linearGradient id="blue" x1="1190" y1="175" x2="830" y2="400" gradientUnits="userSpaceOnUse"><stop stop-color="#174aa3" stop-opacity=".85"/><stop offset="1" stop-color="#2348a4" stop-opacity=".1"/></linearGradient>
+    <linearGradient id="purple" x1="45" y1="265" x2="570" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#7335d2" stop-opacity=".6"/><stop offset="1" stop-color="#4b31ab" stop-opacity=".05"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#4545c3" stop-opacity=".45"/><stop offset="1" stop-color="#4545c3" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="660" cy="420" rx="550" ry="270" fill="url(#glow)"/>
+  <path d="M0 326c130-77 215 22 342 54s245 44 402-26 262-192 456-191v237H0V326Z" fill="url(#purple)"/>
+  <path d="M0 326c130-77 215 22 342 54" stroke="#9a55fc" stroke-opacity=".5" stroke-width="1.4"/>
+  <path d="M465 400c182-1 259-13 388-97s199-146 347-139v236H465Z" fill="url(#blue)" stroke="#3b72db" stroke-opacity=".35"/>
+  <path d="M608 400c125-15 222-50 324-110s170-93 268-80v190H608Z" fill="url(#blue)" stroke="#4c82e7" stroke-opacity=".4"/>
+  <path d="M788 400c157-41 246-99 412-81v81H788Z" fill="#3544af" fill-opacity=".17"/>
+</svg>

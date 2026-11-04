@@ -1,8 +1,13 @@
 <section class="response-section" aria-label="Response">
+  <div class="response-panel-heading">
+    <span aria-hidden="true">✓</span>
+    <h2>Response</h2>
+  </div>
   <div class="response-toolbar">
     <nav class="editor-tabs response-tabs" aria-label="Response sections">
       @for (t of ['body', 'headers', 'cookies', 'tests', 'console']; track t) {
         <button [class.active]="tab() === t" (click)="tab.set(t)">
+          <app-studio-icon [name]="t === 'body' ? 'console' : t" />
           {{
             t === 'body'
               ? 'Body'
@@ -99,23 +104,15 @@
       }
     }
   } @else {
-    <div class="empty-response">
-      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
-        <path
-          d="M10 18h36v28H10zM18 10h20M18 28h20M18 35h12"
-          stroke="currentColor"
-          stroke-width="1.5"
-        />
-        <circle
-          cx="42"
-          cy="14"
-          r="8"
-          fill="var(--panel)"
-          stroke="currentColor"
-          stroke-width="1.5"
-        />
-        <path d="m39 14 2 2 4-5" stroke="currentColor" stroke-width="1.5" />
-      </svg>
+    <div class="empty-response response-placeholder">
+      <img
+        class="response-art"
+        src="/templates/aurora/response.svg"
+        width="90"
+        height="88"
+        alt=""
+      />
+
       <h3>Your response will appear here</h3>
       <p>Enter a URL and send your first request.</p>
       <span class="keyboard-tip"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to send</span>

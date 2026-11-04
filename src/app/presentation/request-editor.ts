@@ -2,9 +2,10 @@ import { ChangeDetectionStrategy, Component, model, signal, output, input } from
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { RequestDraft, KeyValue, newRequest, formatJson } from '../domain/models';
 import { KeyValueEditor } from './key-value-editor';
+import { StudioIcon } from './studio-icon';
 
 @Component({
-  imports: [FormField, KeyValueEditor],
+  imports: [FormField, KeyValueEditor, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-request-editor',
   styleUrl: './request-editor.scss',

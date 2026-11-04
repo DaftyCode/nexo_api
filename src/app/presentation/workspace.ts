@@ -5,6 +5,8 @@ import {
   afterNextRender,
   signal,
   HostListener,
+  viewChild,
+  ElementRef,
 } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormField, form } from '@angular/forms/signals';
@@ -13,9 +15,22 @@ import { RequestEditor } from './request-editor';
 import { ResponseView } from './response-view';
 import { ToolsPanel } from './tools-panel';
 import { WorkspaceDocument, CollectionItem } from '../domain/models';
+import { AppearanceState } from './appearance-state';
+import { AppearanceSelector } from './appearance-selector';
+import { StudioIcon } from './studio-icon';
+import { WorkspaceContext } from './workspace-context';
 
 @Component({
-  imports: [FormField, DatePipe, RequestEditor, ResponseView, ToolsPanel],
+  imports: [
+    FormField,
+    DatePipe,
+    RequestEditor,
+    ResponseView,
+    ToolsPanel,
+    AppearanceSelector,
+    StudioIcon,
+    WorkspaceContext,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-workspace',
   styleUrl: './workspace.scss',
@@ -23,7 +38,11 @@ import { WorkspaceDocument, CollectionItem } from '../domain/models';
 })
 export class Workspace {
   protected readonly state = inject(WorkspaceState);
+  protected readonly appearance = inject(AppearanceState);
+  private readonly workspaceSearch = viewChild<ElementRef<HTMLInputElement>>('workspaceSearch');
+  private readonly collectionSearch = viewChild<ElementRef<HTMLInputElement>>('collectionSearch');
   protected readonly dialogs = signal('');
+  protected readonly navigationOpen = signal(false);
   protected readonly formModel = signal({
     name: '',
     content: '',
@@ -52,6 +71,11 @@ export class Workspace {
     afterNextRender(() => void this.state.initialize());
   }
   @HostListener('window:keydown', ['$event']) protected shortcuts(event: KeyboardEvent) {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+      event.preventDefault();
+      this.state.section.set('collections');
+      (this.workspaceSearch() ?? this.collectionSearch())?.nativeElement.focus();
+    }
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
       event.preventDefault();
       void this.state.send();
@@ -67,6 +91,17 @@ export class Workspace {
   }
   protected setSection(id: string) {
     this.state.section.set(id);
+    this.navigationOpen.set(false);
+  }
+  protected browseCollections() {
+    this.state.section.set('collections');
+    this.navigationOpen.set(true);
+  }
+  protected closeNavigation() {
+    this.navigationOpen.set(false);
+    if (this.appearance.current() === 'canvas' && this.state.section() === 'history') {
+      this.state.section.set('collections');
+    }
   }
   protected toggle(id: string) {
     this.collapsed.update((list) =>
@@ -110,7 +145,9 @@ export class Workspace {
     this.state.environmentId.set((event.target as HTMLSelectElement).value);
   }
   protected search(event: Event) {
-    this.state.filter.set((event.target as HTMLInputElement).value);
+    const value = (event.target as HTMLInputElement).value;
+    this.state.filter.set(value);
+    this.formModel.update((model) => ({ ...model, search: value }));
   }
   protected duplicate(document: WorkspaceDocument) {
     void this.state.guard(async () => {
