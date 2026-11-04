@@ -55,13 +55,16 @@ jobs:
       - run: npm run test:bootstrap
       - run: npm run i18n:check
       - run: npm run engine:test
-      - run: npm run engine:build
-      - run: npm run desktop:prepare
-      - name: Build native installers
+      - name: Build with the Windows bootstrap
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\build.ps1 -SkipSystemInstall -Bundles '${{ matrix.bundles }}'
+      - name: Build with the macOS or Linux bootstrap
+        if: runner.os != 'Windows'
         env:
           APPLE_SIGNING_IDENTITY: '-'
           NO_STRIP: 'true'
-        run: node tools/tauri.mjs build --bundles ${{ matrix.bundles }}
+        run: bash build.sh --skip-system-install --bundles '${{ matrix.bundles }}'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: nexo-${{ matrix.name }}
