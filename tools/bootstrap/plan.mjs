@@ -62,3 +62,11 @@ export function checksumFrom(text) {
   if (!/^[a-f\d]{64}$/i.test(hash)) throw new Error('Invalid official SHA-256 checksum');
   return hash.toLowerCase();
 }
+
+export function validateNativeToolchain(active, platform, architecture) {
+  const target = rustupTarget(platform, architecture);
+  if (!active.includes(target))
+    throw new Error(
+      `Node and Rust must use the same native architecture (${target}). Use a native terminal, not Rosetta or a cross-compilation override.`,
+    );
+}

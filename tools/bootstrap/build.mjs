@@ -4,7 +4,7 @@ import { chmod, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { optionsFor, rustupTarget } from './plan.mjs';
+import { optionsFor, rustupTarget, validateNativeToolchain } from './plan.mjs';
 import { verifiedDownload } from './download.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -72,10 +72,7 @@ async function systemDependencies() {
       [
         visualStudio(),
         'Microsoft.VisualStudio.2022.BuildTools',
-        [
-          '--override',
-          '--wait --passive --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended',
-        ],
+        ['--override', '--wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended'],
       ],
       [webview(), 'Microsoft.EdgeWebView2Runtime', []],
       [has('git'), 'Git.Git', []],
@@ -203,7 +200,9 @@ async function rustDependencies() {
       'rustfmt',
     ]);
   }
-  run('rustup', ['show', 'active-toolchain']);
+  const active = probe('rustup', ['show', 'active-toolchain']);
+  validateNativeToolchain(active.stdout ?? '', process.platform, process.arch);
+  console.log(active.stdout.trim());
 }
 async function npmCli() {
   const candidates = [
