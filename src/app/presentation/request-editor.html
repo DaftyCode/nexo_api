@@ -33,13 +33,35 @@
       (keydown.enter)="send.emit()"
     />
     @if (running()) {
-      <button class="button primary" (click)="cancel.emit()">{{ 'Cancel' | transloco }}</button>
+      <button class="button primary" (click)="cancelRequest.emit()">
+        {{ 'Cancel' | transloco }}
+      </button>
     } @else {
       <button class="button primary send" (click)="send.emit()">
         <app-studio-icon name="send" />{{ 'Send' | transloco }}
       </button>
     }
   </div>
+  @if (variables().length) {
+    <div class="variable-strip" [attr.aria-label]="'Variables used by this request' | transloco">
+      <span class="variable-strip-label">{{ 'Variables' | transloco }}</span>
+      @for (variable of variables(); track variable.name) {
+        <button
+          type="button"
+          class="variable-chip"
+          [class.undefined]="!variable.defined"
+          [attr.data-scope]="variable.scope ?? 'missing'"
+          [title]="variableTitle(variable) | transloco"
+          (click)="manageVariables.emit()"
+        >
+          <code>{{ variable.name }}</code>
+          <span>{{
+            variable.defined ? ('scope.' + variable.scope | transloco) : ('Not defined' | transloco)
+          }}</span>
+        </button>
+      }
+    </div>
+  }
 </div>
 <div class="request-configuration">
   <div class="request-panel-heading">

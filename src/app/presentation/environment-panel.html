@@ -1,19 +1,32 @@
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{ 'CONFIGURE ONCE. REUSE EVERYWHERE.' | transloco }}</span>
-    <h1>{{ 'Environments' | transloco }}</h1>
+    <h1>{{ 'Environments & variables' | transloco }}</h1>
     <p>
-      {{ 'Keep variables together and switch context without changing your requests.' | transloco }}
+      {{ 'Reference values with' | transloco }} <code>{{ '{{variable_name}}' }}</code>
+      {{
+        'in URLs, params, headers, bodies and auth. Environment values override collection variables, which override globals.'
+          | transloco
+      }}
     </p>
   </div>
   <button class="button primary" (click)="load('')">{{ '+ New environment' | transloco }}</button>
 </div>
 <div class="feature-columns">
-  <aside class="resource-list">
+  <aside class="resource-list" [attr.aria-label]="'Variable sets' | transloco">
+    <button [class.active]="isGlobals()" (click)="load(globalsId)">
+      <span>◎</span>{{ 'Global variables' | transloco }}
+      <small>{{ 'counts.variables' | transloco: { v0: state.globalRows().length } }}</small>
+    </button>
+    <span class="list-label">{{ 'Environments' | transloco }}</span>
     @for (env of state.environments(); track env.id) {
       <button [class.active]="model().id === env.id" (click)="load(env.id)">
-        <span>◫</span>{{ env.name
-        }}<small>{{ env.id === state.environmentId() ? ('Active' | transloco) : '' }}</small>
+        <span aria-hidden="true">◫</span>{{ env.name }}
+        <small>{{
+          env.id === state.environmentId()
+            ? ('Active' | transloco)
+            : ('counts.variables' | transloco: { v0: count(env.value) })
+        }}</small>
       </button>
     }
     @if (!state.environments().length) {
@@ -22,31 +35,59 @@
   </aside>
   <section class="feature-card grow">
     <div class="row between">
-      <label class="field grow"
-        >{{ 'Environment name' | transloco }}<input [formField]="fields.name" /></label
-      ><button class="button primary" (click)="save()">{{ 'Save environment' | transloco }}</button>
+      @if (isGlobals()) {
+        <div class="grow">
+          <h2>{{ 'Global variables' | transloco }}</h2>
+          <p class="muted">
+            {{
+              'Available to every request in this workspace, whatever environment is active.'
+                | transloco
+            }}
+          </p>
+        </div>
+      } @else {
+        <label class="field grow"
+          >{{ 'Environment name' | transloco }}<input [formField]="fields.name"
+        /></label>
+      }
+      <button class="button primary" (click)="save()" [disabled]="state.busy()">
+        {{ isGlobals() ? ('Save globals' | transloco) : ('Save environment' | transloco) }}
+      </button>
     </div>
-    <app-key-value-editor [rows]="model().values" (rowsChange)="rows($event)" />
+    @if (!isGlobals() && model().id) {
+      <div class="environment-status" [class.active]="model().id === state.environmentId()">
+        @if (model().id === state.environmentId()) {
+          <span class="connection-dot"></span>{{ 'This environment is active.' | transloco }}
+          <button class="text-button" (click)="state.selectEnvironment('')">
+            {{ 'Deactivate' | transloco }}
+          </button>
+        } @else {
+          <span>{{ 'This environment is not active.' | transloco }}</span>
+          <button class="button small" (click)="activate()">
+            {{ 'Use environment' | transloco }}
+          </button>
+        }
+      </div>
+    }
+    <app-variable-editor [rows]="rows()" (rowsChange)="editRows($event)" />
+    @if (dirty()) {
+      <p class="unsaved">{{ 'Unsaved changes' | transloco }}</p>
+    }
     <p class="editor-hint">
-      {{ 'Reference values with' | transloco }} <code>{{'{{variable_name}}'}}</code
-      >{{
-        '. Choose the active environment from the workspace toolbar. Values saved here are part of exports; keep secrets in the vault.'
+      {{
+        'Values marked as secret are hidden on screen. Saved values are part of exports; keep credentials in the vault and reference them with'
           | transloco
       }}
+      <code>{{ '{{vault:name}}' }}</code>
     </p>
-    @if (model().id) {
+    @if (current(); as env) {
       <div class="row">
-        <button class="button" (click)="state.environmentId.set(model().id)">
-          {{ 'Use environment' | transloco }}
+        <button class="button" (click)="duplicate()">
+          {{ 'Duplicate' | transloco }}</button
+        ><button class="button" (click)="state.export(env)">{{ 'Export' | transloco }}</button
+        ><button class="text-button danger" (click)="remove()">
+          {{ 'Delete' | transloco }}
         </button>
-        @for (env of state.environments(); track env.id) {
-          @if (env.id === model().id) {
-            <button class="button" (click)="state.export(env)">{{ 'Export' | transloco }}</button
-            ><button class="text-button danger" (click)="state.remove(env); load('')">
-              {{ 'Delete' | transloco }}
-            </button>
-          }
-        }
       </div>
     }
   </section>

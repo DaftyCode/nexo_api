@@ -1,3 +1,15 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{ 'REPEATABLE. TESTABLE. RELIABLE.' | transloco }}</span>
@@ -31,8 +43,8 @@
       <code>nx.iterationData</code>
       {{ 'in scripts.' | transloco }}
     </p>
-    @if (state.run()?.state === 'running') {
-      <button class="button danger" (click)="state.cancelRun()">
+    @if (runner.run()?.state === 'running') {
+      <button class="button danger" (click)="runner.cancel()">
         {{ 'Stop run' | transloco }}
       </button>
     } @else {
@@ -46,7 +58,7 @@
     }
   </section>
   <section class="feature-card grow">
-    @if (state.run(); as run) {
+    @if (runner.run(); as run) {
       <div class="row between">
         <h2>
           {{

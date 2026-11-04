@@ -1,0 +1,66 @@
+<div class="environment-control">
+  <label class="environment-label" for="active-environment">{{ 'Environment' | transloco }}</label>
+  <select id="active-environment" class="environment-picker" (change)="select($event)">
+    <option value="" [selected]="!state.environmentId()">{{ 'No environment' | transloco }}</option>
+    @for (env of state.environments(); track env.id) {
+      <option [value]="env.id" [selected]="env.id === state.environmentId()">{{ env.name }}</option>
+    }
+  </select>
+  <button
+    class="icon-button quick-look-toggle"
+    type="button"
+    [class.active]="open()"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="'Variables quick look' | transloco"
+    [title]="'Variables quick look' | transloco"
+    (click)="open.set(!open())"
+  >
+    {{ '{ }' }}
+  </button>
+</div>
+@if (open()) {
+  <section class="quick-look" role="dialog" [attr.aria-label]="'Variables quick look' | transloco">
+    <header class="row between">
+      <strong>{{ 'Variables in scope' | transloco }}</strong>
+      <button class="text-button" type="button" (click)="revealed.set(!revealed())">
+        {{ revealed() ? ('Hide secrets' | transloco) : ('Show secrets' | transloco) }}
+      </button>
+    </header>
+    @for (scope of scopes(); track scope.id) {
+      <div class="scope">
+        <div class="scope-heading">
+          <span class="scope-title">{{ scope.title | transloco }}</span>
+          @if (scope.name) {
+            <span class="scope-name">{{ scope.name }}</span>
+          }
+          <button class="text-button" type="button" (click)="edit(scope.id)">
+            {{ 'Edit' | transloco }}
+          </button>
+        </div>
+        @for (row of scope.rows; track $index) {
+          <div class="scope-row" [class.disabled]="!row.enabled">
+            <code class="scope-key">{{ row.key }}</code>
+            <span class="scope-value" [title]="display(row)">{{ display(row) }}</span>
+          </div>
+        } @empty {
+          <p class="scope-empty">
+            @switch (scope.id) {
+              @case ('environment') {
+                {{ 'Select or create an environment.' | transloco }}
+              }
+              @case ('collection') {
+                {{ 'Open a saved request to see its collection variables.' | transloco }}
+              }
+              @default {
+                {{ 'No global variables yet.' | transloco }}
+              }
+            }
+          </p>
+        }
+      </div>
+    }
+    <p class="quick-look-hint">
+      {{ 'Precedence: environment, then collection, then globals.' | transloco }}
+    </p>
+  </section>
+}

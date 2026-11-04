@@ -1,5 +1,3 @@
-@use './styles/templates';
-
 :root {
   color-scheme: dark;
   --bg: #16181c;
@@ -9,7 +7,7 @@
   --border: #30343c;
   --text: #e4e6ea;
   --muted: #8e959f;
-  --dim: #626b78;
+  --dim: #838d9a; // 4.8:1 on panels (WCAG AA)
   --accent: #ff825c;
   --accent-hover: #ff9576;
   --green: #6bd5a1;
@@ -1920,4 +1918,11 @@ small {
     animation-duration: 0.01ms !important;
     transition: none !important;
   }
+}
+
+/* Errors raised by a tool panel are shown inside that panel. */
+.panel-alert {
+  border: 1px solid #773d45;
+  border-radius: 6px;
+  margin-bottom: 12px;
 }

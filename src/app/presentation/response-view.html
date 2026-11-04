@@ -26,7 +26,7 @@
       }
     </nav>
     @if (response(); as r) {
-      <div class="response-meta">
+      <div class="response-meta" role="status" aria-live="polite">
         <span
           [class.success]="r.status < 400 && r.status > 0"
           [class.danger]="r.status >= 400 || r.error"
@@ -37,7 +37,7 @@
     }
   </div>
   @if (running()) {
-    <div class="empty-response">
+    <div class="empty-response" role="status" aria-live="polite">
       <div class="spinner"></div>
       <h3>{{ 'Sending your request' | transloco }}</h3>
       <p>{{ 'Waiting for a response…' | transloco }}</p>
@@ -53,11 +53,41 @@
             {{ 'Pretty' | transloco }}</button
           ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
             {{ 'Raw' | transloco }}</button
+          ><button class="pill" (click)="download()">{{ 'Download' | transloco }}</button
           ><span class="muted">{{
-            r.truncated ? ('Preview limited to 8 MB' | transloco) : ''
+            r.truncated
+              ? ('Preview limited to 8 MB' | transloco)
+              : large()
+                ? ('Large body shown without formatting' | transloco)
+                : ''
           }}</span>
         </div>
-        <pre class="response-code">{{ text() }}</pre>
+        @for (warning of r.warnings ?? []; track warning) {
+          <div class="alert">{{ warning }}</div>
+        }
+        @if (binary()) {
+          @if (imageUrl()) {
+            <img class="response-image" [src]="imageUrl()" [alt]="'Response image' | transloco" />
+          } @else {
+            <div class="empty-response">
+              <h3>{{ 'Binary response' | transloco }}</h3>
+              <p>{{ contentType() }}</p>
+              <button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+            </div>
+          }
+        } @else {
+          <pre class="response-code">{{ text() }}</pre>
+          @if (truncated()) {
+            <div class="row">
+              <span class="muted">{{
+                'Only the beginning of this response is shown.' | transloco
+              }}</span
+              ><button class="button" (click)="showAll()">
+                {{ 'Show full response' | transloco }}</button
+              ><button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+            </div>
+          }
+        }
       }
       @case ('headers') {
         <table class="data-table">

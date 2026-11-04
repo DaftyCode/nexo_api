@@ -1,0 +1,108 @@
+:host {
+  position: relative;
+  display: inline-flex;
+}
+.environment-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 4px 2px 10px;
+  background: var(--panel);
+}
+.environment-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.environment-picker {
+  min-width: 150px;
+  max-width: 220px;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: inherit;
+}
+.quick-look-toggle {
+  white-space: nowrap;
+  min-width: 30px;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+.quick-look-toggle.active {
+  background: #27b39133;
+}
+.quick-look {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 50;
+  width: min(440px, 90vw);
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: inherit;
+  box-shadow: 0 16px 40px #0007;
+  font-size: 12px;
+}
+.scope {
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.scope-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.scope-title {
+  font-weight: 700;
+}
+.scope-name {
+  color: var(--muted);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scope-heading .text-button {
+  margin-left: auto;
+}
+.scope-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 40%) 1fr;
+  gap: 10px;
+  padding: 3px 0;
+}
+.scope-row.disabled {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.scope-key {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.scope-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.scope-empty,
+.quick-look-hint {
+  margin: 2px 0;
+  color: var(--muted);
+}
+.quick-look-hint {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+}

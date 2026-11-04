@@ -1,0 +1,122 @@
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">{{ 'SHARED BY EVERY REQUEST' | transloco }}</span>
+    <h1>{{ 'Collection settings' | transloco }}</h1>
+    <p>
+      {{
+        'Variables, authorization and scripts defined here apply to every request in the collection.'
+          | transloco
+      }}
+    </p>
+  </div>
+  <select
+    class="collection-picker"
+    [attr.aria-label]="'Collection' | transloco"
+    (change)="select($event)"
+  >
+    <option value="">{{ 'Choose a collection' | transloco }}</option>
+    @for (collection of state.collections(); track collection.id) {
+      <option [value]="collection.id" [selected]="collection.id === state.settingsCollectionId()">
+        {{ collection.name }}
+      </option>
+    }
+  </select>
+</div>
+@if (collection(); as current) {
+  <section class="feature-card">
+    <nav class="editor-tabs" [attr.aria-label]="'Collection settings' | transloco">
+      <button [class.active]="tab() === 'variables'" (click)="tab.set('variables')">
+        {{ 'Variables' | transloco }}</button
+      ><button [class.active]="tab() === 'authorization'" (click)="tab.set('authorization')">
+        {{ 'Authorization' | transloco }}</button
+      ><button [class.active]="tab() === 'scripts'" (click)="tab.set('scripts')">
+        {{ 'Scripts' | transloco }}
+      </button>
+    </nav>
+    <div class="settings-content" (input)="markDirty()" (change)="markDirty()">
+      @switch (tab()) {
+        @case ('variables') {
+          <p class="muted">
+            {{
+              'Collection variables are shared by its requests. The active environment overrides them.'
+                | transloco
+            }}
+          </p>
+          <app-variable-editor [rows]="rows()" (rowsChange)="editRows($event)" />
+        }
+        @case ('authorization') {
+          <p class="muted">
+            {{ 'Requests set to "Inherit from collection" use this authorization.' | transloco }}
+          </p>
+          <label class="field"
+            >{{ 'Authorization type' | transloco
+            }}<select [formField]="fields.authType">
+              <option value="noauth">{{ 'No auth' | transloco }}</option>
+              <option value="bearer">{{ 'Bearer token' | transloco }}</option>
+              <option value="basic">{{ 'Basic auth' | transloco }}</option>
+              <option value="apikey">{{ 'API key' | transloco }}</option>
+            </select></label
+          >
+          @switch (model().authType) {
+            @case ('bearer') {
+              <label class="field"
+                >{{ 'Token' | transloco
+                }}<input [formField]="fields.token" spellcheck="false" autocomplete="off"
+              /></label>
+            }
+            @case ('basic') {
+              <label class="field"
+                >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+              ><label class="field"
+                >{{ 'Password' | transloco
+                }}<input type="password" [formField]="fields.password" autocomplete="off"
+              /></label>
+            }
+            @case ('apikey') {
+              <label class="field"
+                >{{ 'Key' | transloco }}<input [formField]="fields.key" spellcheck="false" /></label
+              ><label class="field"
+                >{{ 'Value' | transloco
+                }}<input [formField]="fields.value" spellcheck="false" autocomplete="off" /></label
+              ><label class="field"
+                >{{ 'Add to' | transloco
+                }}<select [formField]="fields.in">
+                  <option value="header">{{ 'Header' | transloco }}</option>
+                  <option value="query">{{ 'Query params' | transloco }}</option>
+                </select></label
+              >
+            }
+          }
+        }
+        @case ('scripts') {
+          <label class="field"
+            >{{ 'Pre-request script' | transloco
+            }}<textarea
+              class="code-editor"
+              [formField]="fields.prerequest"
+              spellcheck="false"
+            ></textarea></label
+          ><label class="field"
+            >{{ 'Tests' | transloco
+            }}<textarea
+              class="code-editor"
+              [formField]="fields.tests"
+              spellcheck="false"
+            ></textarea>
+          </label>
+          <p class="editor-hint">
+            {{ 'Collection scripts run before the scripts of folders and requests.' | transloco }}
+          </p>
+        }
+      }
+    </div>
+    <div class="row between settings-actions">
+      <span class="unsaved">{{ dirty() ? ('Unsaved changes' | transloco) : '' }}</span>
+      <button class="button primary" (click)="save()" [disabled]="state.busy()">
+        {{ 'Save collection' | transloco }}
+      </button>
+    </div>
+  </section>
+} @else {
+  <p class="muted">{{ 'Choose a collection to edit its settings.' | transloco }}</p>
+}

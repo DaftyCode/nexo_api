@@ -1,4 +1,16 @@
-import { asCollection, fromItem, toItem, updateItem, newRequest, schema } from './models';
+import {
+  asCollection,
+  fromItem,
+  toItem,
+  updateItem,
+  newRequest,
+  schema,
+  encodeQueryPart,
+  splitQuery,
+  RequestDraft,
+  Run,
+  mergeRun,
+} from './models';
 describe('Collection editing', () => {
   it('preserves examples and unknown item metadata while editing a request', () => {
     const item = {
@@ -40,5 +52,195 @@ describe('Collection editing', () => {
   });
   it('rejects invalid collections at the domain boundary', () => {
     expect(() => asCollection({ info: {} })).toThrow('Invalid collection');
+  });
+});
+
+describe('query parameters', () => {
+  it('keep variable placeholders while encoding the rest', () => {
+    expect(encodeQueryPart('{{tenant}}')).toBe('{{tenant}}');
+    expect(encodeQueryPart('a b&{{x}}')).toBe('a%20b%26{{x}}');
+  });
+});
+
+describe('collection item conversion', () => {
+  function draft(change: (d: RequestDraft) => void): RequestDraft {
+    const d = newRequest('r1');
+    change(d);
+    return d;
+  }
+  const cases: [string, RequestDraft][] = [
+    ['plain GET', draft((d) => (d.url = 'https://api.test/users'))],
+    [
+      'query rows with placeholders and encoded text',
+      draft((d) => {
+        d.url = '{{base}}/search';
+        d.query = [
+          { key: 'q', value: 'a b&c', enabled: true },
+          { key: 'tenant', value: '{{tenant}}', enabled: true },
+          { key: 'debug', value: '1', enabled: false },
+        ];
+      }),
+    ],
+    [
+      'JSON body, headers and bearer auth',
+      draft((d) => {
+        d.method = 'POST';
+        d.url = 'https://api.test/items';
+        d.headers = [
+          { key: 'X-Trace', value: '1', enabled: true },
+          { key: 'X-Off', value: '0', enabled: false },
+        ];
+        d.body = '{"ñ":1}';
+        d.auth.type = 'bearer';
+        d.auth.token = '{{token}}';
+        d.prerequest = 'pm.variables.set("a", 1);';
+        d.tests = ['pm.test("ok", () => {});', 'console.log(1);'].join('\n');
+      }),
+    ],
+    [
+      'form body and basic auth',
+      draft((d) => {
+        d.method = 'PUT';
+        d.url = 'https://api.test/form';
+        d.bodyMode = 'urlencoded';
+        d.form = [{ key: 'name', value: 'Ana', enabled: true }];
+        d.auth.type = 'basic';
+        d.auth.username = 'u';
+        d.auth.password = 'p';
+      }),
+    ],
+    [
+      'GraphQL with an API key in the query',
+      draft((d) => {
+        d.protocol = 'graphql';
+        d.method = 'POST';
+        d.url = 'https://api.test/graphql';
+        d.body = '{ me { id } }';
+        d.graphqlVariables = '{"a":1}';
+        d.auth.type = 'apikey';
+        d.auth.key = 'key';
+        d.auth.value = 'secret';
+        d.auth.in = 'query';
+      }),
+    ],
+  ];
+  const significant = (d: RequestDraft) => ({
+    method: d.method,
+    url: d.url,
+    headers: d.headers.filter((h) => h.key),
+    query: d.query.filter((q) => q.key),
+    body: d.body,
+    bodyMode: d.bodyMode,
+    form: d.bodyMode === 'raw' ? [] : d.form.filter((f) => f.key),
+    protocol: d.protocol,
+    graphqlVariables: d.protocol === 'graphql' ? d.graphqlVariables : '{}',
+    auth: {
+      type: d.auth.type,
+      token: d.auth.token,
+      username: d.auth.username,
+      password: d.auth.password,
+      key: d.auth.key,
+      value: d.auth.value,
+      in: d.auth.in,
+    },
+    prerequest: d.prerequest,
+    tests: d.tests,
+  });
+  for (const [name, original] of cases)
+    it(`round-trips ${name}`, () => {
+      const item = toItem(original);
+      expect(significant(fromItem(item, original.id))).toEqual(significant(original));
+      expect(toItem(fromItem(item, original.id), item)).toEqual(item);
+    });
+  it('keeps URLs whose query cannot be written back identically', () => {
+    for (const url of [
+      'https://x/a?b=1+2',
+      'https://x/a?flag',
+      'https://x/a?b=1#top',
+      'https://x/a?b=%41',
+    ])
+      expect(splitQuery(url)).toEqual({ url, query: [] });
+    expect(splitQuery('https://x/a?b=a%20b&c={{v}}')).toEqual({
+      url: 'https://x/a',
+      query: [
+        { key: 'b', value: 'a b', enabled: true },
+        { key: 'c', value: '{{v}}', enabled: true },
+      ],
+    });
+  });
+  it('reports invalid authorization parameters clearly', () => {
+    const d = draft((x) => {
+      x.auth.type = 'oauth2';
+      x.auth.parameters = '{oops';
+    });
+    expect(() => toItem(d)).toThrowError('Authorization parameters must be a JSON object');
+  });
+});
+
+describe('incremental runs', () => {
+  it('appends only the entries received after the cursor', () => {
+    const first = {
+      id: 'r',
+      state: 'running',
+      results: [{ status: 200 }],
+      assertions: [],
+      logs: ['a'],
+      counts: { results: 1, assertions: 0, logs: 1 },
+    } as unknown as Run;
+    const update = {
+      id: 'r',
+      state: 'completed',
+      results: [{ status: 201 }],
+      assertions: [{ name: 't', passed: true }],
+      logs: [],
+      counts: { results: 2, assertions: 1, logs: 1 },
+    } as unknown as Run;
+    const merged = mergeRun(first, update);
+    expect(merged.results.map((r) => r.status)).toEqual([200, 201]);
+    expect(merged.logs).toEqual(['a']);
+    expect(merged.state).toBe('completed');
+    expect(merged.counts).toEqual({ results: 2, assertions: 1, logs: 1 });
+  });
+});
+
+describe('protocol requests in collections', () => {
+  const settings = {
+    protocol: 'grpc' as const,
+    url: 'localhost:50051',
+    message: '',
+    grpcMessage: '{"name":"Nexo"}',
+    topic: '',
+    event: 'message',
+    proto: 'syntax = "proto3"; service Greeter { rpc Hello (A) returns (B); }',
+    service: 'demo.Greeter',
+    method: 'Hello',
+    metadata: '[]',
+    tls: false,
+    strictSSL: true,
+    caPem: '',
+    username: 'user',
+    password: 'literal-secret',
+    qos: '0',
+    headers: [],
+  };
+  it('reopen with their proto, service and method, without literal passwords', () => {
+    const draft = newRequest('g1');
+    draft.realtime = settings;
+    draft.protocol = 'grpc';
+    const item = toItem(draft);
+    expect(JSON.stringify(item)).not.toContain('literal-secret');
+    const reopened = fromItem(item, 'g1');
+    expect(reopened.protocol).toBe('grpc');
+    expect(reopened.realtime).toMatchObject({
+      proto: settings.proto,
+      service: 'demo.Greeter',
+      method: 'Hello',
+      password: '',
+    });
+  });
+  it('keep password references to variables', () => {
+    const draft = newRequest('m1');
+    draft.realtime = { ...settings, protocol: 'mqtt', password: '{{vault:mqtt}}' };
+    expect(fromItem(toItem(draft), 'm1').realtime?.password).toBe('{{vault:mqtt}}');
   });
 });

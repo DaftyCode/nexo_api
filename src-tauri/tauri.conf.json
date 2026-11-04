@@ -30,8 +30,6 @@
     "publisher": "DaftyCode",
     "license": "MIT",
     "icon": ["icons/icon.ico", "icons/icon.icns", "icons/icon.png"],
-    "externalBin": ["binaries/nexo-node"],
-    "resources": { "runtime/": "runtime/" },
     "shortDescription": "Your APIs. Your workspace.",
     "category": "DeveloperTool"
   }

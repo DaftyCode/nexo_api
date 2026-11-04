@@ -1,0 +1,18 @@
+.collection-picker {
+  min-width: 220px;
+}
+.settings-content {
+  display: grid;
+  gap: 12px;
+  padding: 14px 0;
+}
+.settings-content .code-editor {
+  min-height: 140px;
+}
+.settings-actions {
+  margin-top: 8px;
+}
+.unsaved {
+  font-size: 11px;
+  color: #e7b45a;
+}

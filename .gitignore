@@ -46,8 +46,6 @@ Thumbs.db
 # Nexo build output and private data
 /target/
 /.nexo*/
-/engine/dist/
-/src-tauri/runtime/
 /src-tauri/binaries/
 /src-tauri/gen/
 /*.log
@@ -56,3 +54,5 @@ Thumbs.db
 /docs/
 /tools/runtime/
 /.build-tools/
+/test-results/
+/playwright-report/

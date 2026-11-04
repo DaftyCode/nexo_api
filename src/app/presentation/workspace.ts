@@ -15,13 +15,15 @@ import { WorkspaceState } from './workspace-state';
 import { RequestEditor } from './request-editor';
 import { ResponseView } from './response-view';
 import { ToolsPanel } from './tools-panel';
-import { WorkspaceDocument, CollectionItem } from '../domain/models';
+import { WorkspaceDocument, CollectionItem, asCollection } from '../domain/models';
+import { folders } from '../domain/collection-tree';
 import { AppearanceState } from './appearance-state';
 import { AppearanceSelector } from './appearance-selector';
 import { LanguageSelector } from './language-selector';
 import { LanguageState } from './language-state';
 import { StudioIcon } from './studio-icon';
 import { WorkspaceContext } from './workspace-context';
+import { VariableQuickLook } from './variable-quick-look';
 
 @Component({
   imports: [
@@ -35,6 +37,7 @@ import { WorkspaceContext } from './workspace-context';
     LanguageSelector,
     StudioIcon,
     WorkspaceContext,
+    VariableQuickLook,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-workspace',
@@ -48,16 +51,17 @@ export class Workspace {
   private readonly workspaceSearch = viewChild<ElementRef<HTMLInputElement>>('workspaceSearch');
   private readonly collectionSearch = viewChild<ElementRef<HTMLInputElement>>('collectionSearch');
   protected readonly dialogs = signal('');
+  /** Collection item a folder or rename dialog applies to. */
+  private readonly dialogTarget = signal<
+    { document: WorkspaceDocument; path: number[] } | undefined
+  >(undefined);
   protected readonly navigationOpen = signal(false);
   protected readonly formModel = signal({
     name: '',
     content: '',
-    email: '',
-    password: '',
     workspace: '',
     environment: '',
     search: '',
-    authMode: 'login',
   });
   protected readonly fields = form(this.formModel);
   protected readonly nav = [
@@ -77,12 +81,20 @@ export class Workspace {
     afterNextRender(() => void this.state.initialize());
   }
   @HostListener('window:keydown', ['$event']) protected shortcuts(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null;
+    // Inside text areas and code editors, Enter and T keep their editing meaning.
+    const editing = !!target?.closest('textarea, [contenteditable="true"], .code-editor');
+    if (event.key === 'F1' || ((event.ctrlKey || event.metaKey) && event.key === '/')) {
+      event.preventDefault();
+      this.dialogs.set('shortcuts');
+      return;
+    }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
       event.preventDefault();
       this.state.section.set('collections');
       (this.workspaceSearch() ?? this.collectionSearch())?.nativeElement.focus();
     }
-    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+    if ((event.ctrlKey || event.metaKey) && event.key === 'Enter' && !editing) {
       event.preventDefault();
       void this.state.send();
     }
@@ -90,7 +102,7 @@ export class Workspace {
       event.preventDefault();
       void this.state.saveActive();
     }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 't') {
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 't' && !editing) {
       event.preventDefault();
       this.state.newTab();
     }
@@ -117,15 +129,34 @@ export class Workspace {
   protected method(item: CollectionItem) {
     return typeof item.request === 'object' ? String(item.request['method'] ?? 'GET') : 'GET';
   }
+  /** Closes an actions menu after one of its buttons is used. */
+  @HostListener('click', ['$event']) protected closeMenu(event: Event) {
+    const target = event.target as HTMLElement;
+    const menu = target.closest('details.collection-menu');
+    if (menu && target.closest('button') && !target.closest('summary'))
+      menu.removeAttribute('open');
+  }
+  protected dialogTitle() {
+    const titles: Record<string, string> = {
+      import: 'Import your work',
+      collection: 'Create collection',
+      workspace: 'Create workspace',
+      folder: 'Create folder',
+      rename: 'Rename',
+      shortcuts: 'Keyboard shortcuts',
+    };
+    return titles[this.dialogs()] ?? '';
+  }
   protected async submitDialog() {
     const m = this.formModel();
     if (this.dialogs() === 'collection') await this.state.createCollection(m.name);
     if (this.dialogs() === 'import') await this.state.importContent(m.content);
-    if (this.dialogs() === 'workspace')
-      await this.state.guard(async () => {
-        await this.state.cases.api.createWorkspace(m.name);
-        this.state.workspaces.set(await this.state.cases.api.workspaces());
-      });
+    if (this.dialogs() === 'workspace') await this.state.createWorkspace(m.name);
+    const target = this.dialogTarget();
+    if (target && this.dialogs() === 'folder')
+      await this.state.addFolder(target.document, m.name, target.path);
+    if (target && this.dialogs() === 'rename')
+      await this.state.renameItem(target.document, target.path, m.name);
     if (!this.state.error()) this.dialogs.set('');
   }
   protected async file(event: Event) {
@@ -137,18 +168,11 @@ export class Workspace {
       if (!this.state.error()) this.dialogs.set('');
     }
   }
-  protected async login() {
-    const m = this.formModel();
-    await this.state.authenticate(
-      this.state.health()?.setupRequired ? 'register' : (m.authMode as 'login' | 'register'),
-      { name: m.name, email: m.email, password: m.password },
-    );
-  }
   protected async selectWorkspace(event: Event) {
     await this.state.selectWorkspace((event.target as HTMLSelectElement).value);
   }
   protected selectEnvironment(event: Event) {
-    this.state.environmentId.set((event.target as HTMLSelectElement).value);
+    this.state.selectEnvironment((event.target as HTMLSelectElement).value);
   }
   protected search(event: Event) {
     const value = (event.target as HTMLInputElement).value;
@@ -166,7 +190,29 @@ export class Workspace {
       await this.state.refresh();
     });
   }
-  protected folder(document: WorkspaceDocument) {
-    void this.state.addFolder(document, 'New folder');
+  protected folder(document: WorkspaceDocument, path: number[] = []) {
+    this.dialogTarget.set({ document, path });
+    this.formModel.update((m) => ({ ...m, name: '' }));
+    this.dialogs.set('folder');
+  }
+  protected rename(document: WorkspaceDocument, path: number[], name: string) {
+    this.dialogTarget.set({ document, path });
+    this.formModel.update((m) => ({ ...m, name }));
+    this.dialogs.set('rename');
+  }
+  protected folderChoices(document: WorkspaceDocument, path: number[]) {
+    const all = folders(asCollection(document.value));
+    // A folder cannot move into itself or one of its own folders.
+    return all.filter(
+      (folder) =>
+        !(folder.path.length >= path.length && path.every((index, i) => folder.path[i] === index)),
+    );
+  }
+  protected moveTo(document: WorkspaceDocument, path: number[], event: Event) {
+    const select = event.target as HTMLSelectElement;
+    const value = select.value;
+    select.value = '';
+    if (value === '') return;
+    void this.state.moveItem(document, path, value === 'root' ? [] : value.split('.').map(Number));
   }
 }

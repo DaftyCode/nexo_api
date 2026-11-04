@@ -1,9 +1,11 @@
 import { Routes } from '@angular/router';
+import { templateStyles } from './presentation/template-styles';
 
 export const routes: Routes = [
   {
     path: 'workspace',
     loadComponent: () => import('./presentation/workspace').then((m) => m.Workspace),
+    resolve: { styles: templateStyles },
     title: 'Workspace · Nexo API',
   },
   {

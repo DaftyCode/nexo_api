@@ -1,0 +1,32 @@
+.list-label {
+  display: block;
+  margin: 14px 10px 4px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.environment-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.environment-status.active {
+  color: inherit;
+  border-color: #27b39166;
+}
+.unsaved {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #e7b45a;
+}
+h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}

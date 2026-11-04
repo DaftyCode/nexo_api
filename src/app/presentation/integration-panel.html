@@ -1,3 +1,15 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{ 'CONNECTED TO YOUR WORKFLOW.' | transloco }}</span>
@@ -9,9 +21,7 @@
             ? ('MCP client' | transloco)
             : section() === 'code'
               ? ('Generate code' | transloco)
-              : section() === 'team'
-                ? ('Workspace members' | transloco)
-                : ('Workspace settings' | transloco)
+              : ('Workspace settings' | transloco)
       }}
     </h1>
     <p>
@@ -20,9 +30,7 @@
           ? ('Export collections to a local repository and version your work.' | transloco)
           : section() === 'mcp'
             ? ('Inspect and call tools using Streamable HTTP.' | transloco)
-            : section() === 'team'
-              ? ('Share a server workspace with existing accounts.' | transloco)
-              : ('Configure integrations, credentials and reusable API definitions.' | transloco)
+            : ('Configure integrations, credentials and reusable API definitions.' | transloco)
       }}
     </p>
   </div>
@@ -38,7 +46,7 @@
           }}
         </p>
         <div class="button-grid">
-          @for (op of ['init', 'export', 'status', 'diff', 'log', 'branches', 'stash']; track op) {
+          @for (op of gitActions; track op) {
             <button class="button" (click)="git(op)">
               {{
                 op === 'init'
@@ -116,29 +124,6 @@
           }}
         </p>
       }
-      @case ('team') {
-        <label class="field"
-          >{{ 'Account email' | transloco }}<input type="email" [formField]="fields.email" /></label
-        ><label class="field"
-          >{{ 'Role' | transloco
-          }}<select [formField]="fields.role">
-            <option value="editor">{{ 'Editor' | transloco }}</option>
-            <option value="viewer">{{ 'Viewer' | transloco }}</option>
-            <option value="remove">{{ 'Remove membership' | transloco }}</option>
-          </select></label
-        >
-        <div class="row">
-          <button class="button primary" (click)="invite()">
-            {{ 'Update membership' | transloco }}</button
-          ><button class="button" (click)="members()">{{ 'List members' | transloco }}</button>
-        </div>
-        <p class="muted">
-          {{
-            'The account must already exist on this server. Only workspace owners can change membership.'
-              | transloco
-          }}
-        </p>
-      }
       @default {
         <div class="button-grid settings-nav">
           @for (t of ['general', 'vault', 'oauth', 'revisions', 'apis', 'performance']; track t) {
@@ -156,7 +141,7 @@
             <p>{{ 'app.version' | transloco: { v0: state.health()?.version } }}</p>
             <p class="muted">
               {{
-                "The desktop application sends requests from this computer. Server workspaces send requests from the server network. Public documentation is rendered on the server; private workspace data isn't indexed."
+                'Nexo runs only on this computer and sends requests from it. Your data stays in this device, and only you can open it.'
                   | transloco
               }}
             </p>
@@ -164,12 +149,24 @@
               <button class="button" (click)="state.refresh()">
                 {{ 'Refresh workspace' | transloco }}
               </button>
-              @if (state.health()?.mode === 'server') {
+              @if (state.health()?.mode === 'web') {
                 <button class="button" (click)="state.signOut()">
-                  {{ 'Sign out' | transloco }}
+                  {{ 'Close browser session' | transloco }}
                 </button>
               }
             </div>
+            <h3>{{ 'Workspace' | transloco }}</h3>
+            <div class="row">
+              <label class="field grow"
+                >{{ 'Workspace name' | transloco }}<input [formField]="fields.workspaceName"
+              /></label>
+              <button class="button" (click)="renameWorkspace()">
+                {{ 'Rename' | transloco }}
+              </button>
+            </div>
+            <button class="text-button danger" (click)="state.deleteWorkspace()">
+              {{ 'Delete workspace' | transloco }}
+            </button>
           }
           @case ('vault') {
             <h2>{{ 'Secret vault' | transloco }}</h2>
@@ -192,6 +189,25 @@
                   | transloco
               }}
             </p>
+            <p class="muted">
+              {{
+                'Secrets are only placed in the request you send. Scripts cannot read them.'
+                  | transloco
+              }}
+            </p>
+            <h3>{{ 'Saved secrets' | transloco }}</h3>
+            <ul class="secret-list">
+              @for (name of secretNames(); track name) {
+                <li>
+                  <code>{{ '{{vault:' + name + '}}' }}</code>
+                  <button class="text-button danger" (click)="secret(true, name)">
+                    {{ 'Remove' | transloco }}
+                  </button>
+                </li>
+              } @empty {
+                <li class="muted">{{ 'No secrets saved yet.' | transloco }}</li>
+              }
+            </ul>
           }
           @case ('oauth') {
             <h2>{{ 'OAuth 2.0 token' | transloco }}</h2>
@@ -308,6 +324,22 @@
                 {{ 'Start run' | transloco }}</button
               ><button class="button" (click)="stopPerformance()">{{ 'Stop' | transloco }}</button>
             </div>
+            @if (performanceStatus(); as status) {
+              <dl class="performance-stats">
+                <dt>{{ 'State' | transloco }}</dt>
+                <dd>{{ status.state }}</dd>
+                <dt>{{ 'Requests' | transloco }}</dt>
+                <dd>{{ status.summary?.requests ?? status.completed ?? 0 }}</dd>
+                <dt>{{ 'Errors' | transloco }}</dt>
+                <dd>{{ status.summary?.errors ?? status.errors ?? 0 }}</dd>
+                <dt>{{ 'Average' | transloco }}</dt>
+                <dd>
+                  {{ 'units.duration' | transloco: { v0: (status.average ?? 0).toFixed(0) } }}
+                </dd>
+                <dt>p95</dt>
+                <dd>{{ 'units.duration' | transloco: { v0: status.p95 ?? 0 } }}</dd>
+              </dl>
+            }
           }
         }
       }
@@ -326,8 +358,76 @@
         {{ 'Save output' | transloco }}
       </button>
     </div>
-    <pre class="tool-output">{{
-      output() || ('Results appear here when you run an operation.' | transloco)
-    }}</pre>
+    @switch (view()?.kind) {
+      @case ('git') {
+        @if (view(); as v) {
+          @if (v.kind === 'git') {
+            <p>
+              {{ 'Branch' | transloco }}: <strong>{{ v.status.branch || '—' }}</strong>
+              @if (v.status.ahead || v.status.behind) {
+                · ↑{{ v.status.ahead }} ↓{{ v.status.behind }}
+              }
+            </p>
+            @for (file of v.status.files; track file.path) {
+              <div class="run-result">
+                <span class="method-tag">{{ file.change | transloco }}</span
+                ><code>{{ file.path }}</code>
+              </div>
+            } @empty {
+              <p class="muted">{{ 'No changes.' | transloco }}</p>
+            }
+          }
+        }
+      }
+      @case ('mcp') {
+        @if (view(); as v) {
+          @if (v.kind === 'mcp') {
+            <p>
+              HTTP {{ v.view.status }}
+              @if (v.view.session) {
+                · {{ 'Session' | transloco }} <code>{{ v.view.session }}</code>
+              }
+            </p>
+            @if (v.view.error) {
+              <p class="danger" role="alert">{{ v.view.error }}</p>
+            }
+            @for (tool of v.view.tools; track tool.name) {
+              <div class="run-result">
+                <strong>{{ tool.name }}</strong
+                ><span class="muted">{{ tool.description }}</span>
+              </div>
+            }
+            @for (text of v.view.texts; track $index) {
+              <pre class="tool-output">{{ text }}</pre>
+            }
+          }
+        }
+      }
+      @case ('token') {
+        @if (view(); as v) {
+          @if (v.kind === 'token') {
+            <p>HTTP {{ v.view.status }}</p>
+            <dl class="key-values">
+              @for (field of v.view.fields; track field.key) {
+                <dt>{{ field.key }}</dt>
+                <dd>
+                  <code>{{ field.value }}</code>
+                </dd>
+              }
+            </dl>
+          }
+        }
+      }
+    }
+    @if (view()) {
+      <details>
+        <summary>{{ 'Raw output' | transloco }}</summary>
+        <pre class="tool-output">{{ output() }}</pre>
+      </details>
+    } @else {
+      <pre class="tool-output">{{
+        output() || ('Results appear here when you run an operation.' | transloco)
+      }}</pre>
+    }
   </section>
 </div>

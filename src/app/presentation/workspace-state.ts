@@ -1,329 +1,282 @@
-import { Injectable, computed, inject, signal, DestroyRef } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { WORKSPACE } from '../composition/providers';
+import { ExecutionOperation } from '../application/operations';
+import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
 import {
-  CollectionItem,
-  ExecutionResponse,
-  Health,
-  KeyValue,
-  RequestDraft,
-  RequestTab,
-  Run,
-  Workspace,
-  WorkspaceDocument,
-  asCollection,
-  fromItem,
-  items,
-  newRequest,
-  toItem,
-} from '../domain/models';
+  ResolvedVariable,
+  VariableRow,
+  VariableScopes,
+  inheritedCollectionVariables,
+  requestVariables,
+  resolveVariable,
+} from '../domain/variables';
+import { TabsStore } from './tabs-store';
+import { CollectionsStore } from './state/collections-store';
+import { DocumentsStore } from './state/documents-store';
+import { RequestsStore } from './state/requests-store';
+import { SessionStore } from './state/session-store';
+import { StateContext, StatusStore } from './state/state-context';
+import { VariablesStore } from './state/variables-store';
+
+/**
+ * The workspace seen by the components. Each concern lives in its own store
+ * (`state/`); this facade wires them together and keeps the names templates use.
+ */
 @Injectable({ providedIn: 'root' })
 export class WorkspaceState {
   readonly cases = inject(WORKSPACE);
-  private readonly destroy = inject(DestroyRef);
-  readonly ready = signal(false);
-  readonly health = signal<Health | undefined>(undefined);
-  readonly authenticated = signal(false);
-  readonly error = signal('');
-  readonly notice = signal('');
-  readonly busy = signal(false);
-  readonly running = signal(false);
-  readonly workspaces = signal<Workspace[]>([]);
+  private readonly i18n = inject(TranslocoService);
+  /** Asks the user to confirm a destructive action; replaced in tests. */
+  confirm: (message: string) => boolean = (message) =>
+    typeof globalThis.confirm === 'function'
+      ? globalThis.confirm(this.i18n.translate(message))
+      : true;
+
   readonly workspaceId = signal('');
-  readonly documents = signal<WorkspaceDocument[]>([]);
   readonly section = signal('collections');
-  readonly filter = signal('');
-  readonly environmentId = signal('');
-  readonly tabs = signal<RequestTab[]>([]);
-  readonly activeTabId = signal('');
-  readonly response = signal<ExecutionResponse | undefined>(undefined);
-  readonly active = computed(() => this.tabs().find((t) => t.id === this.activeTabId()));
-  readonly collections = computed(() => this.documents().filter((d) => d.kind === 'collection'));
-  readonly environments = computed(() => this.documents().filter((d) => d.kind === 'environment'));
-  readonly history = computed(() => this.documents().filter((d) => d.kind === 'history'));
-  readonly variables = computed(() => {
-    const d = this.environments().find((d) => d.id === this.environmentId());
-    return (d?.value as { values?: KeyValue[] } | undefined)?.values ?? [];
-  });
-  readonly writable = computed(
-    () => this.workspaces().find((w) => w.id === this.workspaceId())?.role !== 'viewer',
-  );
-  readonly run = signal<Run | undefined>(undefined);
   readonly consoleOpen = signal(false);
-  private requestExecution = '';
-  private runTimer: ReturnType<typeof setInterval> | undefined;
-  constructor() {
-    this.destroy.onDestroy(() => {
-      if (this.runTimer) clearInterval(this.runTimer);
+  /** Collection whose variables, auth and scripts are edited in the collection settings view. */
+  readonly settingsCollectionId = signal('');
+
+  private readonly status = new StatusStore();
+  readonly tabsStore = new TabsStore(() => this.cases.files.id());
+  private readonly context: StateContext = {
+    cases: this.cases,
+    status: this.status,
+    tabs: this.tabsStore,
+    workspaceId: this.workspaceId,
+    section: this.section,
+    confirm: (message) => this.confirm(message),
+  };
+  private readonly store = new DocumentsStore(this.context);
+  private readonly variableStore = new VariablesStore(this.context, this.store);
+  private readonly collectionStore = new CollectionsStore(this.context, this.store);
+  private readonly requests = new RequestsStore(
+    this.context,
+    this.store,
+    this.variableStore,
+    this.collectionStore,
+  );
+  private readonly session = new SessionStore(this.context, this.store, this.variableStore);
+
+  // Feedback.
+  readonly error = this.status.error;
+  readonly notice = this.status.notice;
+  readonly busy = this.status.busy;
+  readonly running = this.requests.running;
+  // Session.
+  readonly ready = this.session.ready;
+  readonly health = this.session.health;
+  readonly authenticated = this.session.authenticated;
+  readonly workspaces = this.session.workspaces;
+  // Documents and variables.
+  readonly documents = this.store.documents;
+  readonly collections = this.store.collections;
+  readonly environments = this.store.environments;
+  readonly history = this.store.history;
+  readonly globalsDocument = this.store.globalsDocument;
+  readonly environmentId = this.variableStore.environmentId;
+  readonly environmentDocument = this.variableStore.environmentDocument;
+  readonly environmentRows = this.variableStore.environmentRows;
+  readonly globalRows = this.variableStore.globalRows;
+  readonly variables = this.variableStore.variables;
+  // Tabs and collections.
+  readonly tabs = this.tabsStore.tabs;
+  readonly activeTabId = this.tabsStore.activeId;
+  readonly response = this.tabsStore.response;
+  readonly active = this.tabsStore.active;
+  readonly filter = this.collectionStore.filter;
+  readonly trees = this.collectionStore.trees;
+  readonly activeCollection = this.collectionStore.activeCollection;
+  readonly activeAncestors = this.collectionStore.activeAncestors;
+  readonly scopes = computed<VariableScopes>(() => ({
+    environment: this.environmentRows(),
+    collection: inheritedCollectionVariables(this.activeAncestors()),
+    globals: this.globalRows(),
+  }));
+  /** Every `{{variable}}` the active request uses and where its value comes from. */
+  readonly activeVariables = computed<ResolvedVariable[]>(() => {
+    const tab = this.active();
+    if (!tab) return [];
+    const scopes = this.scopes();
+    return requestVariables(tab.request).map((name) => resolveVariable(name, scopes));
+  });
+
+  guard(action: () => Promise<unknown>) {
+    return this.status.guard(action);
+  }
+  describe(error: unknown) {
+    return this.status.describe(error);
+  }
+  /** Runs an engine operation inside the current workspace. */
+  execute<T>(operation: ExecutionOperation, payload: Record<string, unknown> = {}): Promise<T> {
+    return this.cases.execute<T>(this.workspaceId(), operation, payload);
+  }
+
+  // Session and workspaces.
+  initialize() {
+    return this.guard(() => this.session.initialize());
+  }
+  signOut() {
+    return this.guard(() => this.session.signOut());
+  }
+  createWorkspace(name: string) {
+    return this.guard(async () => {
+      await this.session.create(name);
+      this.notice.set('Workspace created');
     });
   }
-  async initialize() {
-    await this.guard(async () => {
-      await this.cases.api.initialize();
-      this.health.set(await this.cases.api.health());
-      try {
-        await this.loadWorkspaces();
-        this.authenticated.set(true);
-      } catch {
-        this.authenticated.set(false);
-      }
-      this.ready.set(true);
+  renameWorkspace(name: string) {
+    return this.guard(async () => {
+      await this.session.rename(name);
+      this.notice.set('Workspace renamed');
     });
   }
-  async authenticate(
-    mode: 'login' | 'register',
-    credentials: { name: string; email: string; password: string },
-  ) {
-    await this.guard(async () => {
-      await this.cases.api.authenticate(mode, credentials);
-      await this.loadWorkspaces();
-      this.authenticated.set(true);
-      this.health.update((h) => (h ? { ...h, setupRequired: false } : h));
+  deleteWorkspace() {
+    return this.guard(async () => {
+      if (await this.session.remove()) this.notice.set('Workspace deleted');
     });
   }
-  async signOut() {
-    await this.guard(async () => {
-      await this.cases.api.signOut();
-      this.authenticated.set(false);
-      this.documents.set([]);
-      this.tabs.set([]);
-    });
-  }
-  private async loadWorkspaces() {
-    this.workspaces.set(await this.cases.api.workspaces());
-    if (!this.workspaces().some((w) => w.id === this.workspaceId()))
-      this.workspaceId.set(this.workspaces()[0]?.id ?? '');
-    await this.refresh();
-    if (!this.tabs().length) this.newTab();
-  }
-  async selectWorkspace(id: string) {
-    this.workspaceId.set(id);
-    this.tabs.set([]);
-    this.environmentId.set('');
-    this.response.set(undefined);
-    await this.guard(() => this.refresh());
-    this.newTab();
+  selectWorkspace(id: string) {
+    return this.session.select(id);
   }
   async refresh() {
-    this.documents.set(await this.cases.api.documents(this.workspaceId()));
+    await this.store.refresh();
+    this.variableStore.validate();
   }
+
+  // Tabs.
   newTab(request?: RequestDraft, documentId = '', path: number[] = []) {
-    const id = this.cases.files.id();
-    this.tabs.update((t) => [
-      ...t,
-      { id, request: request ?? newRequest(id), documentId, path, dirty: false },
-    ]);
-    this.activeTabId.set(id);
-    this.response.set(undefined);
+    this.tabsStore.open(request, documentId, path);
     this.section.set('collections');
   }
   closeTab(id: string) {
-    this.tabs.update((t) => t.filter((x) => x.id !== id));
-    if (this.activeTabId() === id) this.activeTabId.set(this.tabs().at(-1)?.id ?? '');
+    const tab = this.tabs().find((t) => t.id === id);
+    if (tab?.dirty && !this.confirm('Discard unsaved changes in this request?')) return;
+    this.tabsStore.close(id);
     if (!this.tabs().length) this.newTab();
   }
   edit(request: RequestDraft) {
-    const id = this.activeTabId();
-    this.tabs.update((t) =>
-      t.map((tab) => (tab.id === id ? { ...tab, request, dirty: true } : tab)),
-    );
+    this.tabsStore.edit(request);
   }
+
+  // Collections.
   openItem(document: WorkspaceDocument, item: CollectionItem, path: number[]) {
-    if (item.item) return;
-    const open = this.tabs().find(
-      (t) => t.documentId === document.id && JSON.stringify(t.path) === JSON.stringify(path),
-    );
-    if (open) {
-      this.activeTabId.set(open.id);
-      this.section.set('collections');
-      return;
-    }
-    this.newTab(fromItem(item, this.cases.files.id()), document.id, path);
+    this.collectionStore.open(document, item, path);
   }
   collectionItems(document: WorkspaceDocument) {
-    try {
-      return items(asCollection(document.value)).filter(
-        (x) => !this.filter() || x.item.name.toLowerCase().includes(this.filter().toLowerCase()),
-      );
-    } catch {
-      return [];
-    }
+    return this.collectionStore.rows(document);
   }
-  async createCollection(name: string) {
-    await this.guard(async () => {
-      const d = await this.cases.createCollection(this.workspaceId(), name);
-      this.documents.update((docs) => [...docs, d]);
+  createCollection(name: string) {
+    return this.guard(async () => {
+      await this.store.createCollection(name);
       this.notice.set('Collection created');
     });
   }
-  async addRequest(document: WorkspaceDocument, folderPath: number[] = []) {
-    const value = structuredClone(asCollection(document.value));
-    let target = value.item;
-    for (const index of folderPath) target = target[index].item ??= [];
-    const draft = newRequest(this.cases.files.id());
-    draft.name = 'New request';
-    const index = target.push(toItem(draft)) - 1;
-    await this.guard(async () => {
-      const saved = await this.cases.api.save({ ...document, value });
-      await this.refresh();
-      this.newTab(draft, saved.id, [...folderPath, index]);
+  addRequest(document: WorkspaceDocument, folderPath: number[] = []) {
+    return this.guard(() => this.collectionStore.addRequest(document, folderPath));
+  }
+  addFolder(document: WorkspaceDocument, name: string, parent: number[] = []) {
+    return this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.addFolder(collection, parent, name, this.cases.files.id()),
+      ),
+    );
+  }
+  renameItem(document: WorkspaceDocument, path: number[], name: string) {
+    return this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.renameItem(collection, path, name),
+      ),
+    );
+  }
+  async removeItem(document: WorkspaceDocument, path: number[]) {
+    if (!this.confirm('Delete this item and everything inside it?')) return;
+    await this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.removeItem(collection, path),
+      ),
+    );
+  }
+  reorderItem(document: WorkspaceDocument, path: number[], offset: -1 | 1) {
+    return this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.reorderItem(collection, path, offset),
+      ),
+    );
+  }
+  moveItem(document: WorkspaceDocument, path: number[], folder: number[]) {
+    return this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.moveInto(collection, path, folder),
+      ),
+    );
+  }
+  saveActive(targetDocumentId?: string) {
+    return this.guard(() => this.collectionStore.saveActive(targetDocumentId));
+  }
+  openCollectionSettings(id: string) {
+    this.settingsCollectionId.set(id);
+    this.section.set('collection-settings');
+  }
+  saveCollectionSettings(
+    id: string,
+    settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+  ) {
+    return this.guard(async () => {
+      await this.store.saveCollectionSettings(id, settings);
+      this.notice.set('Collection saved');
     });
   }
-  async addFolder(document: WorkspaceDocument, name: string) {
-    await this.guard(async () => {
-      const value = structuredClone(asCollection(document.value));
-      value.item.push({ name, item: [] });
-      await this.cases.api.save({ ...document, value });
-      await this.refresh();
-    });
+
+  // Requests and history.
+  send() {
+    return this.requests.send();
   }
-  async saveActive(targetDocumentId?: string) {
-    const tab = this.active();
-    if (!tab) return;
-    await this.guard(async () => {
-      let document = this.collections().find((d) => d.id === (targetDocumentId ?? tab.documentId));
-      if (!document)
-        document = await this.cases.createCollection(this.workspaceId(), 'My collection');
-      const path =
-        tab.documentId === document.id && tab.path.length
-          ? tab.path
-          : [asCollection(document.value).item.length];
-      const saved = await this.cases.saveRequest(document, path, tab.request);
-      await this.refresh();
-      this.tabs.update((t) =>
-        t.map((x) => (x.id === tab.id ? { ...x, documentId: saved.id, path, dirty: false } : x)),
-      );
-      this.notice.set('Request saved');
-    });
-  }
-  async send() {
-    const tab = this.active();
-    if (!tab || this.running()) return;
-    this.running.set(true);
-    this.error.set('');
-    this.requestExecution = this.cases.files.id();
-    try {
-      if (['websocket', 'socketio', 'mqtt', 'grpc'].includes(tab.request.protocol)) {
-        this.section.set('realtime');
-        return;
-      }
-      const response = await this.cases.send(tab.request, this.variables(), this.requestExecution);
-      this.response.set(response);
-      await this.cases.createDocument(
-        this.workspaceId(),
-        'history',
-        `${tab.request.method} ${tab.request.url}`,
-        { request: tab.request, response },
-      );
-      await this.refresh();
-    } catch (error) {
-      this.error.set(this.message(error));
-    } finally {
-      this.running.set(false);
-    }
-  }
-  async cancel() {
-    if (this.requestExecution)
-      await this.guard(async () => {
-        await this.cases.api.execute('cancel', { id: this.requestExecution });
-        this.running.set(false);
-      });
+  cancel() {
+    return this.guard(() => this.requests.cancel());
   }
   openHistory(document: WorkspaceDocument) {
-    const v = document.value as { request: RequestDraft; response: ExecutionResponse };
-    this.newTab(v.request);
-    this.response.set(v.response);
+    return this.guard(() => this.requests.openHistory(document));
   }
-  async importContent(content: string) {
-    await this.guard(async () => {
-      await this.cases.import(this.workspaceId(), content);
-      await this.refresh();
+  recordRun(run: Run, collectionId: string) {
+    return this.requests.recordRun(run, collectionId);
+  }
+
+  // Documents and variables.
+  importContent(content: string) {
+    return this.guard(async () => {
+      await this.store.importContent(content);
+      this.variableStore.validate();
       this.notice.set('Import completed');
     });
   }
   export(document: WorkspaceDocument) {
     this.cases.export(document);
   }
-  async remove(document: WorkspaceDocument) {
-    await this.guard(async () => {
-      await this.cases.api.remove(document);
-      await this.refresh();
+  remove(document: WorkspaceDocument) {
+    return this.guard(async () => {
+      await this.store.remove(document);
+      if (this.environmentId() === document.id) this.selectEnvironment('');
       this.notice.set('Deleted');
     });
   }
-  async saveEnvironment(id: string, name: string, values: KeyValue[]) {
+  selectEnvironment(id: string) {
+    this.variableStore.select(id);
+  }
+  async saveEnvironment(id: string, name: string, rows: readonly VariableRow[]) {
+    let saved: WorkspaceDocument | undefined;
     await this.guard(async () => {
-      const existing = this.environments().find((d) => d.id === id);
-      const d = existing
-        ? await this.cases.api.save({
-            ...existing,
-            name,
-            value: { ...(existing.value as Record<string, unknown>), name, values },
-          })
-        : await this.cases.createDocument(this.workspaceId(), 'environment', name, {
-            name,
-            values,
-          });
-      await this.refresh();
-      this.environmentId.set(d.id);
+      saved = await this.variableStore.saveEnvironment(id, name, rows);
       this.notice.set('Environment saved');
     });
+    return saved;
   }
-  async startRun(collectionId: string, iterations: number, data: unknown[]) {
-    await this.guard(async () => {
-      const d = this.collections().find((d) => d.id === collectionId);
-      if (!d) throw new Error('Choose a collection');
-      const r = await this.cases.api.execute<{ id: string; state: string }>('run', {
-        collection: d.value,
-        variables: this.variables(),
-        iterations,
-        data,
-      });
-      this.run.set({ ...r, results: [], assertions: [], logs: [] });
-      if (this.runTimer) clearInterval(this.runTimer);
-      this.runTimer = setInterval(() => void this.pollRun(), 400);
+  saveGlobals(rows: readonly VariableRow[]) {
+    return this.guard(async () => {
+      await this.variableStore.saveGlobals(rows);
+      this.notice.set('Global variables saved');
     });
-  }
-  private async pollRun() {
-    const run = this.run();
-    if (!run) return;
-    try {
-      const r = await this.cases.api.execute<Run>('run', { action: 'status', id: run.id });
-      this.run.set(r);
-      if (r.state !== 'running') {
-        clearInterval(this.runTimer);
-        this.runTimer = undefined;
-        await this.cases.createDocument(
-          this.workspaceId(),
-          'run',
-          `Collection run ${new Date().toLocaleString()}`,
-          r,
-        );
-        await this.refresh();
-      }
-    } catch (error) {
-      clearInterval(this.runTimer);
-      this.error.set(this.message(error));
-    }
-  }
-  async cancelRun() {
-    const r = this.run();
-    if (r)
-      await this.guard(async () => {
-        this.run.set(await this.cases.api.execute<Run>('cancel', { id: r.id }));
-      });
-  }
-  async guard(action: () => Promise<unknown>) {
-    this.error.set('');
-    this.busy.set(true);
-    try {
-      await action();
-    } catch (error) {
-      this.error.set(this.message(error));
-    } finally {
-      this.busy.set(false);
-    }
-  }
-  private message(error: unknown) {
-    return error instanceof Error ? error.message : String(error);
   }
 }

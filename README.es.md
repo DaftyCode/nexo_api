@@ -9,11 +9,11 @@
 [![Desktop packages](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml/badge.svg)](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml)
 [![Downloads](https://img.shields.io/badge/Downloads-GitHub_Releases-blue)](https://github.com/DaftyCode/nexo_api/releases)
 
-Nexo API es una aplicación **100% open source**, con licencia MIT, para construir, organizar, ejecutar y probar APIs desde tu equipo o desde tu propio servidor.
+Nexo API es una aplicación **100% open source**, con licencia MIT, para construir, organizar, ejecutar y probar APIs desde tu equipo.
 
 Nos inspiramos en Postman y en la comodidad de reunir peticiones, colecciones, entornos y pruebas en un mismo lugar. A partir de esa inspiración estamos construyendo un proyecto independiente, con implementación propia y una arquitectura basada en **Tauri + Rust + Angular**.
 
-Queremos una herramienta ágil, que arranque rápido, responda con fluidez y mantenga tus datos bajo tu control. Rust ejecuta el backend nativo y Tauri integra el WebView del sistema para el escritorio. El motor de peticiones y scripts todavía utiliza un runtime Node auxiliar, incluido en el instalador; seguir trasladando trabajo a Rust forma parte de la hoja de ruta. Publicaremos mediciones reproducibles de arranque, memoria y latencia a medida que avance el proyecto.
+Queremos una herramienta ágil, que arranque rápido, responda con fluidez y mantenga tus datos bajo tu control. Rust ejecuta el backend nativo y Tauri integra el WebView del sistema para el escritorio. Las peticiones, los scripts, los protocolos, los mocks y los datasets también se ejecutan en Rust, dentro del mismo proceso; los scripts usan un sandbox QuickJS embebido. Node solo hace falta para compilar la interfaz, nunca para ejecutar la aplicación. Publicaremos mediciones reproducibles de arranque, memoria y latencia a medida que avance el proyecto.
 
 El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revisiones son bienvenidas.
 
@@ -31,10 +31,10 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 | Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                             |
 | Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, Git local y cliente/servidor MCP.                                |
 | Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}` y redacción de secretos en resultados.                                     |
-| Servidor           | Cuentas, sesiones revocables, workspaces, miembros, roles y revisiones para evitar sobrescrituras.                                   |
-| Escritorio y web   | Aplicación local con Tauri; web con Angular SSR para portada/documentación y editor privado en cliente.                              |
+| Workspaces         | Varios workspaces locales, historial de documentos y revisiones para evitar sobrescrituras.                                          |
+| Escritorio y web   | Aplicación de escritorio con Tauri o la misma interfaz en el navegador mediante un lanzador local si no puedes instalar la app.       |
 
-Las peticiones se envían desde el motor local o desde el servidor donde lo despliegues. En modo servidor, una URL de red privada se interpreta desde la red de ese servidor.
+Las peticiones salen desde tu equipo. Con `NEXO_EGRESS=deny-private` se rechazan destinos privados y de loopback, salvo tus propios mocks; `NEXO_EGRESS_ALLOW` define excepciones.
 
 ### Plantillas del workspace
 
@@ -58,7 +58,11 @@ Las versiones se distribuirán en [GitHub Releases](https://github.com/DaftyCode
 | macOS   | Apple Silicon e Intel, por separado | Aplicación `.app` dentro de `.dmg`.                |
 | Linux   | x64                                 | `.deb`, `.rpm` y `.AppImage`.                      |
 
-Cada compilación se realiza en un runner del sistema correspondiente. Los instaladores incluyen el runtime auxiliar, por lo que los usuarios finales no necesitan instalar Node ni Rust.
+Cada compilación se realiza en un runner del sistema correspondiente. Los instaladores son autosuficientes: los usuarios finales no necesitan instalar Node ni Rust.
+
+### Microsoft Store
+
+La publicación en Microsoft Store está en preparación. La Store firma el paquete y mantiene la app actualizada, así que no hace falta un certificado de firma. `npm run desktop:msix` compila la app de escritorio y la empaqueta como MSIX con `makeappx` del Windows SDK (`winget install --id Microsoft.WindowsSDK.10.0.26100 --exact` si falta). La identidad de la Store viene de Partner Center mediante `NEXO_MSIX_NAME`, `NEXO_MSIX_PUBLISHER` y `NEXO_MSIX_PUBLISHER_NAME`, que en la CI son variables del repositorio. Sin ellas, el script genera un paquete local de prueba.
 
 ### WinGet y despliegue empresarial
 
@@ -101,9 +105,7 @@ Los equipos de IT pueden distribuir estos paquetes mediante sus repositorios int
 
 ![Arquitectura de Nexo: Angular y Tauri conectan con el backend Rust, que coordina SQLite, el vault y el motor de peticiones y scripts.](public/architecture.es.svg)
 
-El escritorio inicia un servicio Rust en un puerto aleatorio de loopback y utiliza un token propio. Conserva sus datos en el equipo y funciona sin cuenta. El modo servidor añade autenticación y permisos por workspace, y puede desplegarse en infraestructura propia.
-
-La portada y `/docs` se renderizan en servidor. El editor `/workspace` se renderiza en cliente, lleva `noindex` y excluye los datos privados del transfer cache de Angular.
+Nexo funciona para una persona en su equipo. El escritorio inicia un servicio Rust en un puerto aleatorio de loopback y se autentica con un token propio de cada ejecución. La versión web usa el mismo servicio: su lanzador solo escucha en loopback y abre el navegador con un enlace de un solo uso que se convierte en una cookie de sesión HttpOnly. Las peticiones necesitan un Host de loopback, un Origin permitido y la cabecera del cliente Nexo, de modo que otras webs y otros equipos no pueden usar el servicio. Los datos se guardan en la carpeta de datos de la aplicación; los secretos se cifran con una clave guardada en el almacén de credenciales del sistema.
 
 ## Arquitectura que queremos mantener
 
@@ -113,7 +115,8 @@ La portada y `/docs` se renderizan en servidor. El editor `/workspace` se render
 backend/crates/
   nexo-domain/          Entidades, reglas y errores del dominio
   nexo-application/     Casos de uso y puertos
-  nexo-infrastructure/  Adaptadores SQLite, ejecución, Git y vault
+  nexo-infrastructure/  Adaptadores SQLite, Git y almacén de credenciales
+  nexo-engine/          Adaptador de ejecución: HTTP, scripts QuickJS, protocolos, mocks, datasets, vault
   nexo-http/            Adaptador HTTP
   nexo-server/          Raíz de composición y CLI
 src-tauri/             Raíz de composición de escritorio
@@ -147,13 +150,48 @@ cd nexo_api
 
 Ejecuta los comandos desde la raíz del repositorio, donde está `package.json`. **Compila en el sistema operativo y la arquitectura que quieras distribuir.** La CI genera por separado Windows x64, macOS Apple Silicon, macOS Intel y Linux x64. Los scripts no implementan compilación cruzada ni un paquete universal para macOS.
 
+### Instalación en un paso en este equipo
+
+Descarga o clona el repositorio, abre una terminal en su carpeta y ejecuta el script de tu sistema operativo. No hace falta instalar nada antes ni se abre ningún instalador `.exe`, así que también sirve en equipos de empresa que solo permiten las herramientas de paquetes del sistema.
+
+| Objetivo | Windows (PowerShell) | macOS / Linux (Terminal) |
+| --- | --- | --- |
+| Instalar la app de escritorio | `.\install-desktop.ps1` | `bash install-desktop.sh` |
+| Instalar y abrir la versión web | `.\install-web.ps1` | `bash install-web.sh` |
+
+Si PowerShell no permite ejecutar scripts en este equipo, lánzalos solo para esta ejecución con `powershell -ExecutionPolicy Bypass -File .\install-desktop.ps1` (o `install-web.ps1`). Si tu empresa también lo bloquea, pide a IT que despliegue el `.msi` de las releases.
+
+**Qué preparan los scripts si falta algo.** Node (el archivo oficial, con su checksum verificado) y Rustup se descargan dentro del proyecto. Los requisitos del sistema se instalan con las herramientas de paquetes del sistema operativo:
+
+- Windows: WinGet instala las C++ Build Tools, el runtime WebView2 y Git.
+- macOS: las Xcode Command Line Tools.
+- Linux: APT o DNF instalan el compilador, WebKitGTK y las herramientas de empaquetado.
+
+Pueden aparecer avisos de administrador, licencias o un reinicio. Acéptalos y vuelve a ejecutar el mismo comando. En Windows, WinGet viene con el Instalador de aplicaciones de Microsoft Store. Si tu empresa lo ha retirado, instala los requisitos a través del departamento de IT o usa `-SkipSystemInstall`.
+
+**Escritorio** (`install-desktop`) detecta el sistema operativo y compila solo su paquete:
+
+- Windows: el `.msi`, instalado con `msiexec` (Windows Installer). Windows pide permisos de administrador una vez.
+- Linux: el `.deb` con APT, o el `.rpm` con DNF o Zypper. En otras distribuciones, el AppImage se instala en `~/.local/bin` con una entrada en el menú.
+- macOS: la `.app`, copiada en Aplicaciones.
+
+Después abre la app. Opciones: `-Package`/`--package <archivo>` instala un paquete que ya tengas, `-NoLaunch`/`--no-launch` no la abre y `-SkipSystemInstall`/`--skip-system-install` usa las herramientas ya instaladas.
+
+**Web** (`install-web`) es para equipos donde no se puede instalar la app de escritorio:
+
+- Si no está instalada: compila la interfaz y el servidor local, lo arranca en segundo plano en `http://127.0.0.1:4000` y abre el navegador con la sesión iniciada.
+- Si está instalada pero parada: la arranca en unos segundos, sin compilar nada.
+- Si ya está en marcha: solo abre una sesión nueva en el navegador.
+
+Si el código cambió desde la instalación, el script lo avisa; actualiza con `-Rebuild`/`--rebuild`. Otras opciones: `-Stop`/`--stop`, `-Status`/`--status` y `-NoOpen`/`--no-open`, que muestra el enlace de acceso en lugar de abrir el navegador. `NEXO_WEB_PORT` cambia el puerto. La versión web solo escucha en este equipo y comparte los datos con la app de escritorio; los registros están en `.nexo-web/logs`.
+
 ### Preparación y compilación automáticas
 
 No tienes que descargar Node, Rust ni las dependencias npm a mano. Los scripts:
 
 1. Reutilizan la versión Node fijada en [.node-version](.node-version), o descargan su archivo oficial y verifican el SHA-256 antes de extraerlo.
 2. Comprueban las herramientas nativas y preparan las dependencias que falten mediante WinGet en Windows, el instalador de Apple en macOS o APT/DNF en Linux.
-3. Instalan Rustup si falta, verificando su descarga oficial, y preparan la versión Rust de [rust-toolchain.toml](rust-toolchain.toml).
+3. Instalan Rustup si falta, verificando su descarga oficial, y preparan la versión Rust de [rust-toolchain.toml](rust-toolchain.toml) para el compilador nativo (MSVC en Windows).
 4. Ejecutan `npm ci`, preparan el motor incluido, compilan Angular y Rust y generan los paquetes nativos.
 
 La primera ejecución necesita Internet y puede descargar varios GB de SDK y toolchains. Los instaladores del sistema pueden pedir permisos de administrador, aceptar sus condiciones o reiniciar. Completa esos pasos y vuelve a ejecutar el mismo comando si la preparación se detiene. El script no acepta acuerdos de Microsoft o Apple por ti. Una compilación desde cero **no funciona sin conexión**.
@@ -165,6 +203,8 @@ La primera ejecución necesita Internet y puede descargar varios GB de SDK y too
 ```
 
 WinGet debe estar disponible mediante el [Instalador de aplicación de Microsoft](https://learn.microsoft.com/es-es/windows/package-manager/winget/). El script lo usa para preparar C++, WebView2 y Git cuando falten. Si tu organización bloquea scripts PowerShell o instalaciones, utiliza su procedimiento autorizado o la opción de GitHub Actions indicada más abajo.
+
+Puedes conservar una instalación Rust GNU/MinGW existente. El script selecciona la versión fijada de `x86_64-pc-windows-msvc` para la compilación y sus procesos hijos, y la instala si falta. No cambia el Rust predeterminado global ni las excepciones por directorio. Si existe `RUSTUP_TOOLCHAIN`, sustituye su selección solo dentro del proceso de compilación y lo indica en la salida; si `CARGO_BUILD_TARGET` solicita otro destino, se detiene con un mensaje específico.
 
 **macOS — Terminal, en Apple Silicon o Intel**
 
@@ -206,6 +246,8 @@ Node y las herramientas descargadas se guardan en `.build-tools/`, excluida de G
 
 Las opciones pueden combinarse. El modo de comprobación informa si falta la versión de Node y no la descarga. Los MSI necesitan la característica opcional VBScript de Windows; si WiX muestra `failed to run light.exe`, consulta los [requisitos de MSI de Tauri](https://v2.tauri.app/distribute/windows-installer/#building) o genera solo NSIS con `-Bundles nsis`. Si falla `link.exe`, revisa la carga de trabajo de C++ y Windows SDK. Para errores `pkg-config` en Linux, comprueba los paquetes de desarrollo WebKitGTK **4.1**.
 
+Si una versión anterior se detiene con `Node and Rust must use the same native architecture`, actualiza el repositorio y repite la compilación. Esa comprobación también presentaba los fallos de Rustup o una instalación GNU como errores de arquitectura. El script actual comprueba el compilador nativo seleccionado mediante `rustc -vV` y conserva el detalle de Rustup si no puede ejecutarlo. En equipos corporativos, las descargas necesitan acceso mediante la configuración de red o proxy autorizada por tu organización.
+
 Si `npm ci` muestra `EBUSY` sobre Sass o esbuild en Windows, detén las sesiones `npm run dev`, `ng serve`, desarrollo de escritorio y watch/tests de este repositorio antes de repetirlo. No ejecutes la preparación a la vez que el servidor de desarrollo: `npm ci` reemplaza `node_modules`. El aviso `EBADENGINE` con Node 24 indica que la terminal usa otra versión; `build.ps1` utiliza el Node 26.13 preparado sin sustituir la instalación global de tu equipo.
 
 ### Compilación manual y desarrollo
@@ -236,49 +278,29 @@ NO_STRIP=true npm run desktop:build -- --bundles appimage,deb,rpm
 
 `desktop:build` genera instaladores nativos. `build:desktop` solo compila la interfaz Angular y **no** genera un instalador. No ejecutes varias compilaciones a la vez sobre el mismo repositorio.
 
-Para desarrollar el escritorio, después de `npm ci`:
+Para desarrollar el escritorio, después de `npm ci`, ejecuta `npm run desktop:dev`.
 
-```bash
-npm run engine:build
-npm run desktop:prepare
-npm run desktop:dev
-```
-
-Para desarrollo web ejecuta `npm run engine:build` y `npm run dev`. Abre [http://localhost:4200/workspace](http://localhost:4200/workspace); el backend utiliza loopback en 8080. Detén el desarrollo web antes de iniciar `desktop:dev`, porque ambos usan el puerto 4200.
+Para desarrollo web ejecuta `npm run dev`. Abre [http://localhost:4200/workspace](http://localhost:4200/workspace); el backend utiliza loopback en 8080 y guarda sus datos en `.nexo/`. Detén el desarrollo web antes de iniciar `desktop:dev`, porque ambos usan el puerto 4200.
 
 ### Compilar todas las plataformas sin instalar herramientas locales
 
 Haz un fork, entra en **Actions → Desktop packages → Run workflow** y elige tu rama. El workflow compila los cuatro destinos nativos en los runners Windows, macOS y Linux de GitHub. Descarga los artefactos `nexo-*` al terminar; se conservan durante 14 días. Una ejecución manual no publica una release. Actions debe estar habilitado en el fork y se aplican los límites de uso de GitHub.
 
-### Por qué sigue incluido Node
+### Node solo se usa para compilar
 
-| Uso                         | Responsabilidad actual                                                                                                                                                                                                                                                                                 |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Compilación                 | npm, Angular CLI y la compilación del frontend y el motor. Se ejecutan en el equipo de desarrollo o en CI.                                                                                                                                                                                             |
-| App instalada / backend API | Motor auxiliar privado en `engine/src/`: peticiones HTTP/GraphQL, ayudas de autenticación, cookies, scripts/tests JavaScript, runner y rendimiento, protocolos, importación/generación de código, mocks, datasets, MCP y cifrado del vault. Rust delega estas operaciones mediante `ExecutionGateway`. |
-| Web en servidor propio      | Angular SSR y su proxy HTTP utilizan Node. El renderizado público es independiente del servicio API Rust.                                                                                                                                                                                              |
+npm y Angular CLI compilan la interfaz en el equipo de desarrollo o en CI, con la versión de [.node-version](.node-version). La aplicación instalada, el lanzador web y la CLI no incluyen ningún runtime Node: el crate Rust `nexo-engine` ejecuta peticiones, scripts (QuickJS con límites de memoria y tiempo y sin acceso al sistema), WebSocket, Socket.IO, MQTT, gRPC, mocks, datasets, llamadas OAuth/MCP y el vault cifrado. Los vaults creados por versiones anteriores siguen siendo legibles.
 
-Rust ya se ocupa de la aplicación nativa, el servicio API, documentos/revisiones SQLite, usuarios/sesiones/permisos y el adaptador Git local. Quitar Node del ejecutable requiere implementar las operaciones delegadas en Rust manteniendo sus contratos. Los scripts JavaScript necesitan un motor JavaScript embebido o una alternativa compatible y los datos del vault necesitan una migración que los conserve. Borrar Node ahora rompería esas funciones.
+### Versión web local
 
-La migración prevista consiste en sustituir adaptadores detrás de los puertos existentes: primero transporte y servicios locales, después protocolos y scripting, validando cada sustitución con las pruebas de contrato actuales. Es viable un escritorio sin runtime Node; compilar Angular seguiría requiriéndolo y Angular SSR también, salvo que cambiemos el renderizado de la web. **Los scripts de preparación no eliminan Node del runtime de la aplicación.**
-
-### Servidor propio
+Si el equipo de la empresa no permite instalar la app de escritorio, ejecuta `.\install-web.ps1` o `bash install-web.sh`, o arranca el lanzador directamente:
 
 ```bash
 npm run build
 npm run backend:build
-npm run preview:server
+target/release/nexo-server --web dist/nexo/browser
 ```
 
-Abrir [http://localhost:4000](http://localhost:4000). Este comando inicia SSR y un backend de servidor en loopback 8081, con datos separados en `.nexo-server`. El primer acceso permite crear la cuenta propietaria; el registro posterior está deshabilitado por defecto.
-
-También puedes usar `npm run server:start` y `npm run serve:ssr:nexo` como procesos separados. La web utiliza `NEXO_API_URL`, por defecto `http://127.0.0.1:8080`.
-
-```bash
-docker compose up --build -d
-```
-
-Configura `.env` a partir de `.env.example`, los orígenes permitidos y un proxy HTTPS para tu dominio. El volumen `nexo-data` conserva documentos, usuarios, revisiones y secretos. La configuración de Compose está validada; queda pendiente verificar el contenedor en ejecución.
+El lanzador solo escucha en `127.0.0.1` y muestra un enlace de acceso válido una vez durante dos minutos. Si lo ejecutas de nuevo mientras está activo, abre una sesión nueva en la instancia existente. No es un servidor multiusuario: no lo publiques detrás de un proxy.
 
 ### CLI
 
@@ -288,23 +310,23 @@ npm run nexo -- request request.json
 npm run nexo -- import specification.yaml --report collection.json
 ```
 
-La CLI comparte el motor de ejecución con el escritorio y el servidor y devuelve un código de error cuando falla una ejecución o una aserción.
+La CLI ejecuta el mismo motor Rust en su propio proceso y devuelve un código de error cuando falla una ejecución o una aserción.
 
 ## Estado y siguientes pasos
 
-Ya hay pruebas de peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, gRPC unary, WebSocket, Socket.IO, MQTT, permisos, revisiones y SSR.
+Ya hay pruebas de peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, gRPC unary y streaming, WebSocket, Socket.IO, MQTT, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor.
 
 Quedan áreas importantes por completar:
 
 - Validar los instaladores nuevos en máquinas limpias de Windows, macOS y Linux; firma, notarización, actualización automática y publicación en catálogos.
-- Medir rendimiento y seguir trasladando capacidades del runtime auxiliar a Rust.
+- Publicar mediciones de arranque, memoria y latencia.
 - Subida de archivos binarios, gestión persistente de cookies y más ayudas de autenticación.
 - Flujo OAuth con navegador/callback automático, introspección y subscriptions GraphQL, reflexión gRPC y más variantes de protocolos.
 - Pausa/reanudación del runner, más funciones de scripts y pruebas completas de proxy y mTLS.
 - Colaboración en tiempo real, comentarios, sincronización entre instalaciones y monitorización programada.
 - Repositorios APT/YUM firmados y distribución Flatpak.
 
-Los límites actuales incluyen 5 segundos por evaluación de script, procesos de ejecución de 256 MB y respuestas limitadas para la interfaz. Las cookies duran mientras vive el motor. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los helpers HTTP aún no implementados se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
+Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de script, ocho ejecuciones activas y respuestas limitadas para la interfaz. Las cookies se guardan por workspace en la carpeta de datos. Aún no se admiten eventos binarios de Socket.IO ni MQTT 5. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los helpers HTTP aún no implementados se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
 
 ## Colaborar
 
@@ -325,7 +347,7 @@ feat(runner): support data-driven iterations
 fix(vault): redact secrets from execution logs
 refactor(domain): separate request validation
 test(http): cover cross-origin redirects
-docs(readme): explain self-hosted setup
+docs(readme): explain the local web version
 chore(packages): update installer manifests
 ```
 
@@ -341,18 +363,19 @@ Para incorporar mantenedores, invítalos con permiso de escritura y añade sus u
 
 ```bash
 npm run test:architecture
+npm run lint
 npm test -- --watch=false
 npm run engine:test
+npm run e2e
 npm run test:packages
 npm run backend:test
 npm run backend:clippy
 npm run build
 npm run build:desktop
 npm run test:server
-npm run test:ssr
 ```
 
-`test:server` necesita el backend release; `test:ssr` necesita el build SSR, backend local en 8080 y el puerto 4000 libre. Los informes se generan en `.verification`, fuera de Git. La carpeta local `docs/` también está excluida y no forma parte del repositorio.
+`engine:test` compila `nexo-server` y ejecuta contra él las pruebas de contrato. `e2e` prueba la interfaz compilada (`npm run build`) con Playwright y revisa la accesibilidad con axe; ejecuta una vez `npx playwright install chromium`. `test:server` necesita el backend release. Los informes se generan en `.verification`, fuera de Git. La carpeta local `docs/` también está excluida y no forma parte del repositorio.
 
 ## Publicar una versión
 

@@ -13,4 +13,6 @@ tauri-build.workspace = true
 tauri.workspace = true
 serde.workspace = true
 uuid.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 nexo-server = { path = "../backend/crates/nexo-server" }

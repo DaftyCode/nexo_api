@@ -11,17 +11,15 @@ license = "MIT"
 
 [workspace.dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
 async-trait = "0.1.92"
 thiserror = "2.0.21"
 uuid = { version = "1.29.0", features = ["v4", "serde"] }
 tokio = { version = "1.54.1", features = ["full"] }
 axum = { version = "0.8.9", features = ["ws", "macros"] }
-tower-http = { version = "0.7.1", features = ["cors", "trace", "limit", "fs"] }
-rusqlite = { version = "0.41.1", features = ["bundled"] }
+tower-http = { version = "0.7.1", features = ["cors", "trace", "limit", "fs", "request-id"] }
+rusqlite = { version = "0.41.1", features = ["bundled", "hooks"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
-argon2 = "0.6.0"
-rand = "0.10.3"
 sha2 = "0.11.1"
 hex = "0.4.3"
 keyring = { version = "4.2.0", features = ["v1"] }

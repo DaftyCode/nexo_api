@@ -6,11 +6,32 @@ import {
   signal,
   input,
   DestroyRef,
+  effect,
+  untracked,
 } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
+import { PanelTask } from './panel-task';
 import { KeyValueEditor } from './key-value-editor';
-import { KeyValue, row } from '../domain/models';
+import { KeyValue, WorkspaceDocument, row } from '../domain/models';
+import { GitOperation } from '../application/operations';
+import { toPortableRows } from '../domain/variables';
+import { RevisionEntry } from '../application/ports';
+import { PerformanceStatus } from '../application/integration-use-cases';
+import { INTEGRATION } from '../composition/providers';
+import {
+  GitStatus,
+  McpView,
+  mcpView,
+  parseGitStatus,
+  tokenView,
+} from '../domain/integration-views';
+
+/** Structured result shown above the raw output. */
+type View =
+  | { kind: 'git'; status: GitStatus }
+  | { kind: 'mcp'; view: McpView }
+  | { kind: 'token'; view: ReturnType<typeof tokenView> };
 
 @Component({
   imports: [TranslocoPipe, FormField, KeyValueEditor],
@@ -22,6 +43,9 @@ import { KeyValue, row } from '../domain/models';
 export class IntegrationPanel {
   readonly section = input('settings');
   protected readonly state = inject(WorkspaceState);
+  protected readonly task = new PanelTask(this.state);
+  private readonly integration = inject(INTEGRATION);
+  protected readonly view = signal<View | undefined>(undefined);
   private readonly destroy = inject(DestroyRef);
   protected readonly tab = signal('general');
   protected readonly output = signal('');
@@ -35,8 +59,6 @@ export class IntegrationPanel {
     variant: 'cURL',
     secretName: 'api_token',
     secretValue: '',
-    email: '',
-    role: 'editor',
     documentId: '',
     apiName: 'My API',
     apiSpec: 'openapi: 3.1.0\ninfo:\n  title: My API\n  version: 1.0.0\npaths: {}',
@@ -51,6 +73,7 @@ export class IntegrationPanel {
     users: 1,
     duration: 10,
     profile: 'fixed',
+    workspaceName: '',
   });
   protected readonly fields = form(this.model, (p) => {
     min(p.users, 1);
@@ -59,106 +82,133 @@ export class IntegrationPanel {
     max(p.duration, 120);
   });
   protected readonly headers = signal<KeyValue[]>([row()]);
-  protected readonly revisions = signal<
-    {
-      revision: number;
-      changed_at: number;
-      actor_id: string;
-      value: import('../domain/models').WorkspaceDocument;
-    }[]
-  >([]);
-  private timer: ReturnType<typeof setInterval> | undefined;
+  protected readonly revisions = signal<RevisionEntry[]>([]);
+  protected readonly secretNames = signal<string[]>([]);
+  protected readonly performanceStatus = signal<PerformanceStatus | undefined>(undefined);
+  private timer: ReturnType<typeof setTimeout> | undefined;
   private performanceId = '';
   constructor() {
-    this.destroy.onDestroy(() => {
-      if (this.timer) clearInterval(this.timer);
+    this.destroy.onDestroy(() => clearTimeout(this.timer));
+    effect(() => {
+      const name = this.state.workspaces().find((w) => w.id === this.state.workspaceId())?.name;
+      untracked(() => this.model.update((m) => ({ ...m, workspaceName: name ?? '' })));
+    });
+    effect(() => {
+      const section = this.section();
+      const tab = this.tab();
+      untracked(() => {
+        if (section !== 'git' && section !== 'mcp' && tab === 'vault') void this.loadSecrets();
+      });
     });
   }
-  protected git(operation: string) {
-    void this.state.guard(async () => {
+  protected readonly gitActions: readonly GitOperation[] = [
+    'init',
+    'export',
+    'status',
+    'diff',
+    'log',
+    'branches',
+    'stash',
+  ];
+  protected git(operation: GitOperation) {
+    this.view.set(undefined);
+    void this.task.run(async () => {
+      const workspace = this.state.workspaceId();
       if (operation === 'export') {
-        await this.state.cases.api.git('export', {
-          workspace: this.state.workspaceId(),
-          files: this.state.collections().map((d) => ({ id: d.id, value: d.value })),
-        });
-        this.output.set('Collections exported to the workspace project directory.');
+        await this.integration.exportCollections(workspace, this.state.collections());
+        this.output.set(
+          'Collections exported to the workspace project directory without literal credentials.',
+        );
         return;
       }
-      const result = await this.state.cases.api.git(operation, {
-        workspace: this.state.workspaceId(),
+      const result = await this.integration.git(workspace, operation, {
         branch: this.model().branch,
         message: this.model().message,
       });
-      this.output.set(JSON.stringify(result, null, 2));
+      if (operation === 'status' && result.success)
+        this.view.set({ kind: 'git', status: parseGitStatus(result.stdout) });
+      this.output.set(
+        [result.stdout, result.stderr].filter(Boolean).join('\n').trim() ||
+          (result.success ? 'Done.' : 'Git reported an error.'),
+      );
     });
   }
+  private parseJson(text: string, label: string) {
+    try {
+      return JSON.parse(text || '{}');
+    } catch {
+      throw new Error(`${label} must be valid JSON`);
+    }
+  }
   protected mcp() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const m = this.model();
-      const result = await this.state.cases.api.execute('mcp.request', {
+      const result = await this.integration.mcp(this.state.workspaceId(), {
         url: m.url,
         method: m.method,
-        params: JSON.parse(m.params),
+        params: this.parseJson(m.params, 'Parameters'),
         headers: Object.fromEntries(
           this.headers()
             .filter((h) => h.key && h.enabled)
             .map((h) => [h.key, h.value]),
         ),
       });
+      this.view.set({ kind: 'mcp', view: mcpView(result) });
       this.output.set(JSON.stringify(result, null, 2));
     });
   }
   protected code() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const request = this.state.active()?.request;
       if (!request) throw new Error('Open a request first');
-      const result = await this.state.cases.api.execute<{ code: string }>('codegen', {
-        request,
-        language: this.model().language,
-        variant: this.model().variant,
-      });
-      this.output.set(result.code);
-    });
-  }
-  protected secret(remove = false) {
-    void this.state.guard(async () => {
-      if (remove) await this.state.cases.api.removeSecret(this.model().secretName);
-      else await this.state.cases.api.putSecret(this.model().secretName, this.model().secretValue);
-      this.model.update((m) => ({ ...m, secretValue: '' }));
-      this.output.set(remove ? 'Secret removed.' : 'Secret encrypted and saved.');
-    });
-  }
-  protected invite() {
-    void this.state.guard(async () => {
-      await this.state.cases.api.addMember(
-        this.state.workspaceId(),
-        this.model().email,
-        this.model().role,
+      this.output.set(
+        await this.integration.generateCode(
+          this.state.workspaceId(),
+          request,
+          this.model().language,
+          this.model().variant,
+        ),
       );
-      await this.members();
     });
   }
-  protected async members() {
-    this.output.set(
-      JSON.stringify(await this.state.cases.api.members(this.state.workspaceId()), null, 2),
-    );
+  protected async loadSecrets() {
+    try {
+      this.secretNames.set(await this.integration.secretNames());
+    } catch {
+      this.secretNames.set([]);
+    }
+  }
+  protected secret(remove = false, name = this.model().secretName) {
+    void this.task.run(async () => {
+      if (remove) await this.integration.removeSecret(name);
+      else await this.integration.saveSecret(name, this.model().secretValue);
+      this.model.update((m) => ({ ...m, secretValue: '' }));
+      this.output.set(
+        remove
+          ? 'Secret removed.'
+          : `Secret encrypted and saved. Reference it with {{vault:${name}}}.`,
+      );
+      await this.loadSecrets();
+    });
+  }
+  protected renameWorkspace() {
+    void this.state.renameWorkspace(this.model().workspaceName);
   }
   protected revisionList() {
-    void this.state.guard(async () =>
-      this.revisions.set(await this.state.cases.api.revisions(this.model().documentId)),
-    );
+    void this.task.run(async () => {
+      this.revisions.set(await this.integration.revisions(this.model().documentId));
+    });
   }
-  protected restore(value: import('../domain/models').WorkspaceDocument) {
-    void this.state.guard(async () => {
+  protected restore(value: WorkspaceDocument) {
+    void this.task.run(async () => {
       const current = this.state.documents().find((d) => d.id === value.id);
-      if (!current) throw new Error('Document no longer exists');
-      await this.state.cases.api.save({ ...value, revision: current.revision });
+      await this.integration.restoreRevision(value, current);
       await this.state.refresh();
       this.output.set('Revision restored as a new revision.');
     });
   }
   protected apiSpec() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       await this.state.cases.createDocument(this.state.workspaceId(), 'api', this.model().apiName, {
         source: this.model().apiSpec,
       });
@@ -170,21 +220,19 @@ export class IntegrationPanel {
     void this.state.importContent(this.model().apiSpec);
   }
   protected oauth() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const m = this.model();
-      const fields: Record<string, string> = {
-        grant_type: m.grant,
-        client_id: m.clientId,
-        client_secret: m.clientSecret,
+      const result = await this.integration.exchangeToken(this.state.workspaceId(), {
+        url: m.tokenUrl,
+        grant: m.grant,
+        clientId: m.clientId,
+        clientSecret: m.clientSecret,
         scope: m.scope,
-      };
-      if (m.code) fields[m.grant === 'refresh_token' ? 'refresh_token' : 'code'] = m.code;
-      if (m.redirectUri) fields['redirect_uri'] = m.redirectUri;
-      if (m.verifier) fields['code_verifier'] = m.verifier;
-      const result = await this.state.cases.api.execute<{ body: Record<string, unknown> }>(
-        'oauth.token',
-        { url: m.tokenUrl, fields },
-      );
+        code: m.code,
+        redirectUri: m.redirectUri,
+        verifier: m.verifier,
+      });
+      this.view.set({ kind: 'token', view: tokenView(result) });
       this.output.set(JSON.stringify(result, null, 2));
       const token = result.body?.['access_token'];
       const active = this.state.active();
@@ -196,35 +244,43 @@ export class IntegrationPanel {
     });
   }
   protected performance() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const request = this.state.active()?.request;
       if (!request) throw new Error('Open a request first');
-      const result = await this.state.cases.api.execute<{ id: string }>('performance', {
-        ...this.model(),
+      const m = this.model();
+      const result = await this.integration.startLoadTest(this.state.workspaceId(), {
+        users: m.users,
+        duration: m.duration,
+        profile: m.profile,
         request,
         variables: this.state.variables(),
+        globals: toPortableRows(this.state.globalRows()),
+        ancestors: this.state.activeAncestors(),
       });
       this.performanceId = result.id;
-      clearInterval(this.timer);
-      this.timer = setInterval(() => void this.pollPerformance(), 500);
+      this.performanceStatus.set({ state: 'running' });
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => void this.pollPerformance(), 500);
     });
   }
   private async pollPerformance() {
     try {
-      const result = await this.state.cases.api.execute<{ state: string }>('performance', {
-        id: this.performanceId,
-        action: 'status',
-      });
-      this.output.set(JSON.stringify(result, null, 2));
-      if (result.state !== 'running') clearInterval(this.timer);
-    } catch {
-      clearInterval(this.timer);
+      const result = await this.integration.loadTestStatus(
+        this.state.workspaceId(),
+        this.performanceId,
+      );
+      this.performanceStatus.set(result);
+      this.output.set(JSON.stringify(result.summary ?? result, null, 2));
+      if (result.state === 'running')
+        this.timer = setTimeout(() => void this.pollPerformance(), 500);
+    } catch (error) {
+      this.output.set(error instanceof Error ? error.message : String(error));
     }
   }
   protected stopPerformance() {
-    void this.state.guard(async () => {
-      await this.state.cases.api.execute('performance.cancel', { id: this.performanceId });
-      clearInterval(this.timer);
+    void this.task.run(async () => {
+      if (!this.performanceId) return;
+      await this.integration.cancelLoadTest(this.state.workspaceId(), this.performanceId);
     });
   }
 }

@@ -4,8 +4,9 @@ import { chmod, readFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { optionsFor, rustupTarget, validateNativeToolchain } from './plan.mjs';
+import { optionsFor, rustupTarget } from './plan.mjs';
 import { verifiedDownload } from './download.mjs';
+import { prepareNativeRust } from './rust.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 process.chdir(root);
@@ -15,7 +16,6 @@ if (process.version !== `v${nodeVersion}`)
   throw new Error(`Use build.ps1 or build.sh to prepare Node ${nodeVersion}`);
 const cargoBin = join(process.env.CARGO_HOME ?? join(homedir(), '.cargo'), 'bin');
 process.env.PATH = `${dirname(process.execPath)}${process.platform === 'win32' ? ';' : ':'}${cargoBin}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`;
-process.env.NEXO_NODE_BINARY = process.execPath;
 
 function probe(command, args = []) {
   return spawnSync(command, args, { encoding: 'utf8', windowsHide: true });
@@ -185,24 +185,16 @@ async function rustDependencies() {
     /^channel\s*=\s*"([^"]+)"/m,
   )?.[1];
   if (!toolchain) throw new Error('Pinned Rust toolchain not found');
-  if (!has('rustup', ['run', toolchain, 'rustc', '--version'])) {
-    if (options.check)
-      throw new Error(`Rust ${toolchain} is missing. Run without --check to prepare it.`);
-    run('rustup', [
-      'toolchain',
-      'install',
-      toolchain,
-      '--profile',
-      'minimal',
-      '--component',
-      'clippy',
-      '--component',
-      'rustfmt',
-    ]);
-  }
-  const active = probe('rustup', ['show', 'active-toolchain']);
-  validateNativeToolchain(active.stdout ?? '', process.platform, process.arch);
-  console.log(active.stdout.trim());
+  prepareNativeRust({
+    version: toolchain,
+    platform: process.platform,
+    arch: process.arch,
+    check: options.check,
+    env: process.env,
+    probe,
+    run,
+    log: console.log,
+  });
 }
 async function npmCli() {
   const candidates = [

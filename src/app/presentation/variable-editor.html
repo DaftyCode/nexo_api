@@ -1,0 +1,69 @@
+<div class="kv-table variable-table" [class.readonly]="readonly()">
+  <div class="kv-head">
+    <span></span><span>{{ 'Variable' | transloco }}</span
+    ><span>{{ 'Value' | transloco }}</span
+    ><span>{{ 'Secret' | transloco }}</span
+    ><span></span>
+  </div>
+  @for (field of fields; track $index; let index = $index) {
+    <div class="kv-row" [class.disabled-row]="!rows()[index].enabled">
+      <input
+        type="checkbox"
+        [formField]="field.enabled"
+        [attr.aria-label]="'Enable variable' | transloco"
+      />
+      <input
+        [formField]="field.key"
+        [placeholder]="'variable_name' | transloco"
+        [attr.aria-label]="'Variable name' | transloco"
+        spellcheck="false"
+      />
+      <div class="value-cell">
+        @if (masked(index)) {
+          <input
+            type="password"
+            [formField]="field.value"
+            [attr.aria-label]="'Variable value' | transloco"
+            autocomplete="off"
+          />
+        } @else {
+          <input
+            [formField]="field.value"
+            [placeholder]="'Value' | transloco"
+            [attr.aria-label]="'Variable value' | transloco"
+            spellcheck="false"
+            autocomplete="off"
+          />
+        }
+        @if (rows()[index].secret) {
+          <button
+            class="icon-button reveal"
+            type="button"
+            (click)="toggleReveal(index)"
+            [attr.aria-label]="(masked(index) ? 'Show value' : 'Hide value') | transloco"
+            [title]="(masked(index) ? 'Show value' : 'Hide value') | transloco"
+          >
+            {{ masked(index) ? '◉' : '◌' }}
+          </button>
+        }
+      </div>
+      <input
+        type="checkbox"
+        [formField]="field.secret"
+        [attr.aria-label]="'Mark as secret' | transloco"
+        [title]="'Mark as secret' | transloco"
+      />
+      <button
+        class="icon-button"
+        type="button"
+        (click)="remove(index)"
+        [attr.aria-label]="'Remove variable' | transloco"
+      >
+        ×
+      </button>
+    </div>
+  }
+  <button class="text-button kv-add" type="button" (click)="add()">
+    {{ '+ Add variable' | transloco }}
+  </button>
+</div>

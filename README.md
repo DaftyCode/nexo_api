@@ -9,11 +9,11 @@
 [![Desktop packages](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml/badge.svg)](https://github.com/DaftyCode/nexo_api/actions/workflows/desktop.yml)
 [![Downloads](https://img.shields.io/badge/Downloads-GitHub_Releases-blue)](https://github.com/DaftyCode/nexo_api/releases)
 
-Nexo API is a **100% open source** application, licensed under MIT, for building, organizing, running and testing APIs on your computer or your own server.
+Nexo API is a **100% open source** application, licensed under MIT, for building, organizing, running and testing APIs on your computer.
 
 We take inspiration from Postman and the convenience of keeping requests, collections, environments and tests in one place. From that inspiration, we are building an independent project with its own implementation and an architecture based on **Tauri + Rust + Angular**.
 
-Our goal is a responsive tool that starts quickly, feels smooth and keeps you in control of your data. Rust runs the native backend, while Tauri integrates the operating system's WebView for the desktop interface. The request and scripting engine currently uses an auxiliary Node runtime, included in the installer; moving more work to Rust is part of our roadmap. We will publish reproducible startup, memory and latency benchmarks as the project develops.
+Our goal is a responsive tool that starts quickly, feels smooth and keeps you in control of your data. Rust runs the native backend, while Tauri integrates the operating system's WebView for the desktop interface. Requests, scripts, protocols, mocks and datasets also run in Rust, inside the same process; scripts run in an embedded QuickJS sandbox. Node is only needed to build the interface, never to run the app. We will publish reproducible startup, memory and latency benchmarks as the project develops.
 
 The project is at an early stage. Contributions, ideas, testing and code reviews are welcome.
 
@@ -31,10 +31,10 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
 | Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, local Git and MCP client/server support.                  |
 | Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references and secret redaction in results.                                     |
-| Server              | Accounts, revocable sessions, workspaces, members, roles and revisions that prevent lost updates.                         |
-| Desktop and web     | Local Tauri application; Angular SSR for the public website/documentation and a client-rendered private editor.           |
+| Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                       |
+| Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.       |
 
-Requests originate from the local engine or the server where you deploy it. In server mode, private network URLs are resolved from that server's network.
+Requests leave from your computer. Set `NEXO_EGRESS=deny-private` to refuse private and loopback destinations, except your own mocks; `NEXO_EGRESS_ALLOW` lists exceptions.
 
 ### Workspace layouts
 
@@ -58,7 +58,11 @@ Versions are distributed through [GitHub Releases](https://github.com/DaftyCode/
 | macOS            | Apple Silicon and Intel, built separately | `.app` application inside a `.dmg`.                 |
 | Linux            | x64                                       | `.deb`, `.rpm` and `.AppImage`.                     |
 
-Each build runs on a runner for its operating system. Installers include the auxiliary runtime, so end users do not need to install Node or Rust.
+Each build runs on a runner for its operating system. Installers are self-contained: end users do not need to install Node or Rust.
+
+### Microsoft Store
+
+Publishing in the Microsoft Store is in preparation. The Store signs the package and keeps the app updated, so no code-signing certificate is needed. `npm run desktop:msix` builds the desktop app and packs it as MSIX with `makeappx` from the Windows SDK (`winget install --id Microsoft.WindowsSDK.10.0.26100 --exact` if it is missing). The Store identity comes from Partner Center through `NEXO_MSIX_NAME`, `NEXO_MSIX_PUBLISHER` and `NEXO_MSIX_PUBLISHER_NAME`, which are repository variables in CI. Without them the script produces a local test package.
 
 ### WinGet and enterprise deployment
 
@@ -101,9 +105,7 @@ IT teams can distribute these packages through their internal repositories. A pu
 
 ![Nexo architecture: Angular and Tauri connect to the Rust backend, which coordinates SQLite, the vault and the request and scripting engine.](public/architecture.svg)
 
-The desktop application starts a Rust service on a random loopback port and authenticates with its own token. It stores data locally and works without an account. Server mode adds authentication and workspace permissions and can run on your own infrastructure.
-
-The public website and `/docs` use server rendering. The `/workspace` editor uses client rendering, carries `noindex` and excludes private data from Angular's transfer cache.
+Nexo runs for one person on one computer. The desktop application starts a Rust service on a random loopback port and authenticates with a per-run token. The web version uses the same service: its launcher listens only on loopback and opens the browser with a one-time link that becomes an HttpOnly session cookie. Requests need a loopback Host header, an allowed Origin and the Nexo client header, so other websites and computers cannot use the service. Data stays in the app data directory; secrets are encrypted with a key kept in the operating system's credential store.
 
 ## Architecture we want to preserve
 
@@ -113,7 +115,8 @@ The public website and `/docs` use server rendering. The `/workspace` editor use
 backend/crates/
   nexo-domain/          Domain entities, rules and errors
   nexo-application/     Use cases and ports
-  nexo-infrastructure/  SQLite, execution, Git and vault adapters
+  nexo-infrastructure/  SQLite, Git and credential store adapters
+  nexo-engine/          Execution adapter: HTTP, QuickJS scripts, protocols, mocks, datasets, vault
   nexo-http/            HTTP adapter
   nexo-server/          Composition root and CLI
 src-tauri/             Desktop composition root
@@ -147,14 +150,49 @@ cd nexo_api
 
 Run the following commands from the repository root, where `package.json` is located. **Build on the operating system and CPU architecture you want to distribute.** Our CI builds Windows x64, macOS Apple Silicon, macOS Intel and Linux x64 separately. The scripts do not implement cross-compilation or a universal macOS bundle.
 
+### One-step install on this computer
+
+Download or clone the repository, open a terminal in its folder and run the script for your operating system. Nothing has to be installed beforehand, and no `.exe` installer is opened, so this also works on company computers that only allow system package tools.
+
+| Goal | Windows (PowerShell) | macOS / Linux (Terminal) |
+| --- | --- | --- |
+| Install the desktop app | `.\install-desktop.ps1` | `bash install-desktop.sh` |
+| Install and open the web version | `.\install-web.ps1` | `bash install-web.sh` |
+
+If PowerShell refuses to run scripts on this computer, start them for this run only with `powershell -ExecutionPolicy Bypass -File .\install-desktop.ps1` (or `install-web.ps1`). If your organization also blocks that, ask IT to deploy the `.msi` from the releases.
+
+**What the scripts prepare when something is missing.** Node (the official archive, checksum verified) and Rustup are downloaded into the project. System prerequisites come from the operating system's package tools:
+
+- Windows: WinGet installs the C++ Build Tools, the WebView2 runtime and Git.
+- macOS: the Xcode Command Line Tools.
+- Linux: APT or DNF install the compiler, WebKitGTK and the packaging tools.
+
+Administrator prompts, licence agreements or a restart may appear. Accept them and run the same command again. On Windows, WinGet comes with the App Installer from the Microsoft Store. If your organization removed it, install the prerequisites through your IT department or use `-SkipSystemInstall`.
+
+**Desktop** (`install-desktop`) detects the operating system and builds only its package:
+
+- Windows: the `.msi`, installed with `msiexec` (Windows Installer). Windows asks for administrator rights once.
+- Linux: the `.deb` with APT, or the `.rpm` with DNF or Zypper. On other distributions the AppImage goes into `~/.local/bin` with a menu entry.
+- macOS: the `.app`, copied into Applications.
+
+Then it starts the app. Options: `-Package`/`--package <file>` installs a package you already have, `-NoLaunch`/`--no-launch` does not start it, and `-SkipSystemInstall`/`--skip-system-install` uses the tools already installed.
+
+**Web** (`install-web`) is for computers where the desktop app cannot be installed:
+
+- Not installed yet: builds the interface and the local server, starts it in the background on `http://127.0.0.1:4000` and opens the browser signed in.
+- Installed but stopped: starts it in a few seconds without building anything.
+- Already running: only opens a new browser session.
+
+When the sources changed since the installation, the script says so; update with `-Rebuild`/`--rebuild`. Other options: `-Stop`/`--stop`, `-Status`/`--status` and `-NoOpen`/`--no-open`, which prints the sign-in link instead of opening the browser. `NEXO_WEB_PORT` changes the port. The web version only listens on this computer and shares its data with the desktop app; logs are in `.nexo-web/logs`.
+
 ### Automatic setup and build
 
 You do not have to download Node, Rust or npm dependencies manually. The bootstrap scripts:
 
 1. Reuse the Node version in [.node-version](.node-version), or download the official archive and verify its SHA-256 before extraction.
 2. Check the native build tools and prepare missing system dependencies through WinGet on Windows, the Apple installer on macOS, or APT/DNF on Linux.
-3. Install Rustup if missing, verifying its official download, and prepare the Rust version in [rust-toolchain.toml](rust-toolchain.toml).
-4. Run `npm ci`, prepare the bundled execution engine, build Angular and Rust, and generate native packages.
+3. Install Rustup if missing, verifying its official download, and prepare the Rust version in [rust-toolchain.toml](rust-toolchain.toml) for the native compiler host (MSVC on Windows).
+4. Run `npm ci`, build Angular and Rust, and generate native packages.
 
 The first run needs Internet access and may download several GB of SDKs and toolchains. System installers can request administrator permission, license acceptance or a restart. Complete those prompts yourself and rerun the same command if setup pauses. The script does not accept Microsoft or Apple agreements on your behalf. A fresh build is **not an offline build**.
 
@@ -165,6 +203,8 @@ The first run needs Internet access and may download several GB of SDKs and tool
 ```
 
 WinGet must be available through Microsoft's [App Installer](https://learn.microsoft.com/en-us/windows/package-manager/winget/). Missing C++ build tools, WebView2 and Git are prepared through it. If your organization blocks PowerShell scripts or software installation, use its approved setup process or the GitHub Actions option below.
+
+An existing GNU/MinGW Rust setup can coexist with this build. The bootstrap selects the pinned `x86_64-pc-windows-msvc` toolchain for itself and its child processes, installing it if missing. It does not change your global Rust default or directory overrides. An existing `RUSTUP_TOOLCHAIN` selection is replaced only inside the build process and reported in the output; conflicting `CARGO_BUILD_TARGET` settings are rejected with a specific message.
 
 **macOS — Terminal, on Apple Silicon or Intel**
 
@@ -190,7 +230,7 @@ The script installs missing compiler, WebKitGTK, OpenSSL, D-Bus and packaging de
 | macOS      | `target/release/bundle/macos/Nexo API.app` and `target/release/bundle/dmg/*.dmg`                                     |
 | Linux      | `target/release/bundle/appimage/*.AppImage`, `target/release/bundle/deb/*.deb` and `target/release/bundle/rpm/*.rpm` |
 
-Install or copy the **generated package**. The raw binary in `target/release/` by itself does not include all runtime resources. The packaged desktop app includes its execution runtime, so end users do not need Node or Rust installed.
+Install or copy the **generated package**. The packaged desktop app is self-contained, so end users do not need Node or Rust installed.
 
 Downloaded Node archives and bootstrap tools are cached in `.build-tools/`, which is ignored by Git. Rustup uses its normal user directories; native SDKs use their system installation locations. Dependencies and build outputs are also ignored. Subsequent builds reuse tools and caches; package managers may still access the network.
 
@@ -205,6 +245,8 @@ Downloaded Node archives and bootstrap tools are cached in `.build-tools/`, whic
 | Generate one package format                                 | `.\build.ps1 -Bundles nsis`      | `bash build.sh --bundles dmg` (macOS) or `bash build.sh --bundles deb` (Linux) |
 
 Options can be combined. Check mode reports a missing Node version without downloading it. For MSI packaging, Windows needs the VBScript optional feature; if WiX reports `failed to run light.exe`, follow [Tauri's MSI prerequisites](https://v2.tauri.app/distribute/windows-installer/#building) or build only NSIS with `-Bundles nsis`. For `link.exe` errors, install the C++ desktop workload and Windows SDK. For Linux `pkg-config` errors, check the WebKitGTK **4.1** development packages.
+
+If an older checkout stops with `Node and Rust must use the same native architecture`, update the checkout and rerun the build. That older check also reported Rustup failures or a GNU toolchain as an architecture error. The current script checks `rustc -vV` for the selected native compiler and preserves Rustup's error details when it cannot run. On managed computers, downloads still need access through your organization's approved network/proxy configuration.
 
 If `npm ci` reports `EBUSY` for Sass or esbuild on Windows, stop this checkout's `npm run dev`, `ng serve`, desktop development and watch/test sessions before retrying. Do not run the bootstrap alongside a development server: `npm ci` replaces `node_modules`. A Node 24 `EBADENGINE` warning means your terminal is using the wrong runtime; `build.ps1` uses the prepared Node 26.13 without replacing your system-wide Node installation.
 
@@ -236,49 +278,29 @@ NO_STRIP=true npm run desktop:build -- --bundles appimage,deb,rpm
 
 `desktop:build` generates native installers. `build:desktop` only compiles the Angular interface and does **not** produce an installer. Do not run multiple builds in the same checkout at the same time.
 
-For desktop development, after `npm ci`:
+For desktop development, after `npm ci`, run `npm run desktop:dev`.
 
-```bash
-npm run engine:build
-npm run desktop:prepare
-npm run desktop:dev
-```
-
-For web development, run `npm run engine:build` and `npm run dev`. Open [http://localhost:4200/workspace](http://localhost:4200/workspace); the backend listens on loopback port 8080. Stop a web development session before starting `desktop:dev`, because both use port 4200.
+For web development, run `npm run dev`. Open [http://localhost:4200/workspace](http://localhost:4200/workspace); the backend listens on loopback port 8080 and keeps its data in `.nexo/`. Stop a web development session before starting `desktop:dev`, because both use port 4200.
 
 ### Build all platforms without installing local tools
 
 Fork the repository, open **Actions → Desktop packages → Run workflow**, and select your branch. The existing workflow builds the four native targets on GitHub's Windows, macOS and Linux runners. Download the `nexo-*` artifacts from the completed run; artifact retention is 14 days. A manual run does not publish a release. Actions must be enabled on the fork and GitHub's usage limits apply.
 
-### Why Node is still included
+### Node is a build tool only
 
-| Use                                 | Current role                                                                                                                                                                                                                                                                                                            |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Build tools                         | npm, Angular CLI and the frontend/engine build pipeline. These run on the developer's machine or CI.                                                                                                                                                                                                                    |
-| Installed desktop app / API backend | The private auxiliary engine in `engine/src/`: HTTP/GraphQL requests, authentication helpers, cookies, JavaScript scripts/tests, runner/performance jobs, real-time protocols, import/code generation, mocks, datasets, MCP and vault encryption. Rust currently delegates these operations through `ExecutionGateway`. |
-| Self-hosted website                 | Angular SSR and its HTTP proxy run in Node. Public page rendering is separate from the Rust API service.                                                                                                                                                                                                                |
+npm and the Angular CLI build the interface on the developer's machine or in CI, using the version in [.node-version](.node-version). The installed app, the web launcher and the CLI contain no Node runtime: the Rust crate `nexo-engine` runs requests, scripts (QuickJS with memory and time limits and no host access), WebSocket, Socket.IO, MQTT, gRPC, mocks, datasets, OAuth/MCP calls and the encrypted vault. Vaults created by earlier versions remain readable.
 
-Rust already handles the native desktop shell, API service, SQLite documents/revisions, users/sessions/permissions and local Git adapter. Removing the bundled Node runtime requires implementing the delegated operations in Rust and preserving their contracts. JavaScript scripts need an embedded JavaScript engine or an explicitly supported replacement, and existing vault data needs a compatible migration. Deleting Node today would break those features.
+### Local web version
 
-Our migration path is to replace adapters behind the existing ports, starting with native transport and local services, then protocols and scripting, with the current contract tests validating each replacement. A desktop runtime without Node is feasible; Angular development would still use Node, and Angular SSR would continue to need it unless the website rendering approach also changes. **The Node runtime has not been removed by the bootstrap scripts.**
-
-### Self-hosted server
+When a company computer does not allow installing the desktop app, run `.\install-web.ps1` or `bash install-web.sh`, or start the launcher directly:
 
 ```bash
 npm run build
 npm run backend:build
-npm run preview:server
+target/release/nexo-server --web dist/nexo/browser
 ```
 
-Open [http://localhost:4000](http://localhost:4000). This command starts SSR and a server-mode backend on loopback port 8081, with separate data in `.nexo-server`. The first visit lets you create the owner account; subsequent registration is disabled by default.
-
-You can also run `npm run server:start` and `npm run serve:ssr:nexo` as separate processes. The web server uses `NEXO_API_URL`, defaulting to `http://127.0.0.1:8080`.
-
-```bash
-docker compose up --build -d
-```
-
-Create `.env` from `.env.example`, configure allowed origins and use an HTTPS reverse proxy for your domain. The `nexo-data` volume persists documents, users, revisions and secrets. The Compose configuration has been validated; running the container still needs verification.
+The launcher listens only on `127.0.0.1` and prints a sign-in link valid once for two minutes. Running it again while it is active opens a new session in the existing instance. It is not a multi-user server: do not expose it through a proxy.
 
 ### CLI
 
@@ -288,23 +310,23 @@ npm run nexo -- request request.json
 npm run nexo -- import specification.yaml --report collection.json
 ```
 
-The CLI shares the execution engine with the desktop and server and returns an error exit code when a run or assertion fails.
+The CLI runs the same Rust engine in its own process and returns an error exit code when a run or assertion fails.
 
 ## Current status and next steps
 
-Tests already cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, unary gRPC, WebSocket, Socket.IO, MQTT, permissions, revisions and SSR.
+Tests already cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, unary and streaming gRPC, WebSocket, Socket.IO, MQTT, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
 
 Important work remains:
 
 - Validate the new installers on clean Windows, macOS and Linux machines; signing, notarization, automatic updates and catalog publication.
-- Benchmark performance and move more capabilities from the auxiliary runtime into Rust.
+- Publish startup, memory and latency benchmarks.
 - Binary file uploads, persistent cookie management and additional authentication helpers.
 - Automatic OAuth browser/callback flows, GraphQL introspection/subscriptions, gRPC reflection and more protocol variants.
 - Runner pause/resume, expanded scripting APIs and comprehensive proxy/mTLS tests.
 - Real-time collaboration, comments, synchronization between installations and scheduled monitoring.
 - Signed APT/YUM repositories and Flatpak distribution.
 
-Current limits include 5 seconds per script evaluation, 256 MB execution processes and response size limits for the interface. Cookies last for the engine's lifetime. External OpenAPI `$ref` references must be bundled before import. Unimplemented HTTP authentication helpers are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
+Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. Socket.IO binary events and MQTT 5 are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unimplemented HTTP authentication helpers are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
 
 ## Contributing
 
@@ -325,7 +347,7 @@ feat(runner): support data-driven iterations
 fix(vault): redact secrets from execution logs
 refactor(domain): separate request validation
 test(http): cover cross-origin redirects
-docs(readme): explain self-hosted setup
+docs(readme): explain the local web version
 chore(packages): update installer manifests
 ```
 
@@ -341,18 +363,19 @@ To add maintainers, invite them with write access and add their GitHub usernames
 
 ```bash
 npm run test:architecture
+npm run lint
 npm test -- --watch=false
 npm run engine:test
+npm run e2e
 npm run test:packages
 npm run backend:test
 npm run backend:clippy
 npm run build
 npm run build:desktop
 npm run test:server
-npm run test:ssr
 ```
 
-`test:server` requires a release backend build. `test:ssr` requires the SSR build, a local backend on port 8080 and port 4000 available. Reports are generated in `.verification`, outside Git. The local `docs/` directory is also excluded from the repository.
+`engine:test` builds `nexo-server` and runs the contract tests against it. `e2e` drives the built interface (`npm run build`) with Playwright and checks accessibility with axe; run `npx playwright install chromium` once. `test:server` requires a release backend build. Reports are generated in `.verification`, outside Git. The local `docs/` directory is also excluded from the repository.
 
 ## Publishing a version
 

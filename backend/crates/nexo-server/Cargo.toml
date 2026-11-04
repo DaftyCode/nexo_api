@@ -10,10 +10,12 @@ nexo-domain = { path = "../nexo-domain" }
 nexo-application = { path = "../nexo-application" }
 nexo-infrastructure = { path = "../nexo-infrastructure" }
 nexo-http = { path = "../nexo-http" }
+nexo-engine = { path = "../nexo-engine" }
 tokio.workspace = true
 axum.workspace = true
 uuid.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 serde_json.workspace = true
+reqwest.workspace = true
 directories.workspace = true

@@ -1,3 +1,15 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{
@@ -40,6 +52,11 @@
       >{{ 'Dataset content' | transloco
       }}<textarea class="code-editor small" [formField]="fields.content"></textarea></label
     ><button class="button" (click)="import()">{{ 'Import dataset' | transloco }}</button>
+    @if (model().id) {
+      <button class="text-button danger" (click)="removeDataset()">
+        {{ 'Delete dataset' | transloco }}
+      </button>
+    }
   </div>
   <div class="feature-card">
     <div class="row between">
@@ -125,11 +142,25 @@
       }
       @if (!mocks().length) {
         <div class="empty-response">
-          <span class="large-symbol">◇</span>
+          <span class="large-symbol" aria-hidden="true">◇</span>
           <h3>{{ "Your API, before it's built" | transloco }}</h3>
           <p>{{ 'Start a mock to test your client against realistic responses.' | transloco }}</p>
         </div>
       }
     </section>
+    @if (savedMocks().length) {
+      <section class="feature-card grow">
+        <h2>{{ 'Saved mocks' | transloco }}</h2>
+        @for (mock of savedMocks(); track mock.id) {
+          <div class="run-result">
+            <span>{{ mock.name }}</span
+            ><button class="button" (click)="restartMock(mock)">{{ 'Start' | transloco }}</button
+            ><button class="button danger" (click)="state.remove(mock)">
+              {{ 'Delete' | transloco }}
+            </button>
+          </div>
+        }
+      </section>
+    }
   </div>
 }

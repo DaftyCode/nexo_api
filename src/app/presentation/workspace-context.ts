@@ -1,14 +1,6 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  linkedSignal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { DatePipe } from '@angular/common';
-import { form, FormField } from '@angular/forms/signals';
 import { asCollection, items, WorkspaceDocument } from '../domain/models';
 import { WorkspaceState } from './workspace-state';
 import { StudioIcon } from './studio-icon';
@@ -41,7 +33,7 @@ export function environmentPreview(
 
 @Component({
   selector: 'app-workspace-context',
-  imports: [TranslocoPipe, FormField, StudioIcon, DatePipe],
+  imports: [TranslocoPipe, StudioIcon, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (layout() === 'strip') {
@@ -68,12 +60,19 @@ export function environmentPreview(
           <div class="context-environment">
             <span class="connection-dot"></span>
             <select
-              [formField]="fields.environment"
+              (change)="selectEnvironment($event)"
               [attr.aria-label]="'Context environment' | transloco"
             >
-              <option value="">{{ 'No environment' | transloco }}</option>
+              <option value="" [selected]="!state.environmentId()">
+                {{ 'No environment' | transloco }}
+              </option>
               @for (environment of state.environments(); track environment.id) {
-                <option [value]="environment.id">{{ environment.name }}</option>
+                <option
+                  [value]="environment.id"
+                  [selected]="environment.id === state.environmentId()"
+                >
+                  {{ environment.name }}
+                </option>
               }
             </select>
             <button
@@ -171,10 +170,9 @@ export class WorkspaceContext {
   readonly layout = input<'sidebar' | 'strip'>('sidebar');
   protected readonly state = inject(WorkspaceState);
   protected readonly language = inject(LanguageState);
-  protected readonly model = linkedSignal(() => ({ environment: this.state.environmentId() }), {
-    set: (value) => this.state.environmentId.set(value.environment),
-  });
-  protected readonly fields = form(this.model);
+  protected selectEnvironment(event: Event) {
+    this.state.selectEnvironment((event.target as HTMLSelectElement).value);
+  }
   protected readonly collection = computed(() => {
     const id = this.state.active()?.documentId;
     return this.state.collections().find((collection) => collection.id === id);
@@ -204,7 +202,8 @@ export class WorkspaceContext {
         };
         return {
           document,
-          method: value?.request?.method ?? 'HTTP',
+          // History is listed without values; its name starts with the method.
+          method: value?.request?.method ?? (document.name.split(' ')[0] || 'HTTP'),
           status: value?.response?.status,
         };
       }),

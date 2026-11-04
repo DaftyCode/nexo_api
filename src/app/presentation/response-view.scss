@@ -1,0 +1,8 @@
+.response-image {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  margin: 12px;
+  object-fit: contain;
+  background: repeating-conic-gradient(#8882 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+}

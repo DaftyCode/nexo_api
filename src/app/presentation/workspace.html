@@ -6,7 +6,7 @@
   "
 >
   <header class="topbar">
-    <a class="brand" href="/" [attr.aria-label]="'Nexo home' | transloco">
+    <a class="brand" href="/" [title]="'Nexo home' | transloco">
       <img
         class="aurora-brand-mark"
         src="/templates/aurora/mark.svg"
@@ -65,8 +65,8 @@
     <div class="top-right">
       <span class="connection-dot"></span
       ><span>{{
-        state.health()?.mode === 'server'
-          ? ('Server workspace' | transloco)
+        state.health()?.mode === 'web'
+          ? ('Local web workspace' | transloco)
           : ('Local workspace' | transloco)
       }}</span
       ><span class="avatar">{{ 'N' | transloco }}</span>
@@ -99,66 +99,34 @@
     <main class="auth-screen">
       <div class="auth-card">
         <span class="eyebrow">{{ 'YOUR APIS. YOUR WORKSPACE.' | transloco }}</span>
-        <h1>
-          {{
-            state.health()?.setupRequired
-              ? ('Set up your Nexo server' | transloco)
-              : ('Welcome back' | transloco)
-          }}
-        </h1>
+        <h1>{{ 'Open Nexo from its launcher' | transloco }}</h1>
         <p class="muted">
           {{
-            state.health()?.setupRequired
-              ? ('Create the first account to own this server.' | transloco)
-              : ('Sign in to your server workspace.' | transloco)
+            'For your privacy, this browser needs the one-time link the launcher opens. Run the launcher again to get a new link:'
+              | transloco
           }}
         </p>
-        @if (state.health()?.setupRequired || formModel().authMode === 'register') {
-          <label class="field"
-            >{{ 'Name' | transloco }}<input [formField]="fields.name" autocomplete="name"
-          /></label>
-        }
-        <label class="field"
-          >{{ 'Email' | transloco
-          }}<input type="email" [formField]="fields.email" autocomplete="username" /></label
-        ><label class="field"
-          >{{ 'Password' | transloco
-          }}<input
-            type="password"
-            [formField]="fields.password"
-            autocomplete="current-password"
-            (keydown.enter)="login()"
-        /></label>
-        <p class="muted">{{ 'Use at least 12 characters for a new account.' | transloco }}</p>
-        <button class="button primary wide" (click)="login()" [disabled]="state.busy()">
-          {{
-            state.health()?.setupRequired
-              ? ('Create server account' | transloco)
-              : formModel().authMode === 'register'
-                ? ('Create account' | transloco)
-                : ('Sign in' | transloco)
-          }}
+        <pre class="launcher-command">
+.\install-web.ps1    (Windows)
+bash install-web.sh  (macOS / Linux)</pre>
+        <button class="button wide" (click)="state.initialize()">
+          {{ 'I opened the link' | transloco }}
         </button>
-        @if (state.health()?.allowSignup && !state.health()?.setupRequired) {
-          <select [formField]="fields.authMode" [attr.aria-label]="'Account action' | transloco">
-            <option value="login">{{ 'Sign in' | transloco }}</option>
-            <option value="register">{{ 'Create account' | transloco }}</option>
-          </select>
-        }
       </div>
     </main>
   } @else {
     <div class="workspace-bar">
       <div class="row">
-        <span class="workspace-icon">◈</span
+        <span class="workspace-icon" aria-hidden="true">◈</span
         ><select
           class="workspace-select"
           [attr.aria-label]="'Workspace' | transloco"
-          [value]="state.workspaceId()"
           (change)="selectWorkspace($event)"
         >
           @for (workspace of state.workspaces(); track workspace.id) {
-            <option [value]="workspace.id">{{ workspace.name }}</option>
+            <option [value]="workspace.id" [selected]="workspace.id === state.workspaceId()">
+              {{ workspace.name }}
+            </option>
           }</select
         ><button
           class="icon-button"
@@ -169,22 +137,22 @@
         ><span class="vertical-divider"></span
         ><button class="button small" (click)="state.newTab()">{{ 'New' | transloco }}</button
         ><button class="button small" (click)="dialogs.set('import')">
-          {{ 'Import' | transloco }}
+          {{ 'Import' | transloco }}</button
+        ><button
+          class="icon-button"
+          (click)="dialogs.set('shortcuts')"
+          [attr.aria-label]="'Keyboard shortcuts' | transloco"
+          [title]="'Keyboard shortcuts' | transloco"
+        >
+          ?
         </button>
       </div>
       <div class="row">
-        <select
-          class="environment-select"
-          [attr.aria-label]="'Active environment' | transloco"
-          [value]="state.environmentId()"
-          (change)="selectEnvironment($event)"
+        <app-variable-quick-look /><button
+          class="button small"
+          (click)="state.section.set('environments')"
         >
-          <option value="">{{ 'No environment' | transloco }}</option>
-          @for (env of state.environments(); track env.id) {
-            <option [value]="env.id">{{ env.name }}</option>
-          }</select
-        ><button class="button small" (click)="state.section.set('team')">
-          {{ '♧ Invite' | transloco }}
+          {{ 'Manage variables' | transloco }}
         </button>
       </div>
     </div>
@@ -273,12 +241,14 @@
                     >
                       {{ collapsed().includes(collection.id) ? '›' : '⌄' }}</button
                     ><button class="collection-name" (click)="toggle(collection.id)">
-                      <span class="folder-icon">▱</span>{{ collection.name }}
+                      <span class="folder-icon" aria-hidden="true">▱</span>{{ collection.name }}
                     </button>
                     <details class="collection-menu">
                       <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
                       <div>
-                        <button (click)="state.addRequest(collection)">
+                        <button (click)="state.openCollectionSettings(collection.id)">
+                          {{ 'Variables & settings' | transloco }}</button
+                        ><button (click)="state.addRequest(collection)">
                           {{ 'Add request' | transloco }}</button
                         ><button (click)="folder(collection)">{{ 'Add folder' | transloco }}</button
                         ><button (click)="state.export(collection)">
@@ -294,10 +264,14 @@
                     </details>
                   </div>
                   @if (!collapsed().includes(collection.id)) {
-                    @for (entry of state.collectionItems(collection); track entry.path.join('.')) {
+                    @for (
+                      entry of state.trees().get(collection.id) ?? [];
+                      track entry.path.join('.')
+                    ) {
                       <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 14">
                         @if (entry.item.item) {
-                          <span class="folder-icon">▱</span><span>{{ entry.item.name }}</span
+                          <span class="folder-icon" aria-hidden="true">▱</span
+                          ><span>{{ entry.item.name }}</span
                           ><button
                             class="icon-button"
                             (click)="state.addRequest(collection, entry.path)"
@@ -318,6 +292,41 @@
                             ><span>{{ entry.item.name }}</span>
                           </button>
                         }
+                        <details class="collection-menu item-menu">
+                          <summary [attr.aria-label]="'Item actions' | transloco">···</summary>
+                          <div>
+                            <button (click)="rename(collection, entry.path, entry.item.name)">
+                              {{ 'Rename' | transloco }}
+                            </button>
+                            @if (entry.item.item) {
+                              <button (click)="folder(collection, entry.path)">
+                                {{ 'Add folder' | transloco }}
+                              </button>
+                            }
+                            <button (click)="state.reorderItem(collection, entry.path, -1)">
+                              {{ 'Move up' | transloco }}</button
+                            ><button (click)="state.reorderItem(collection, entry.path, 1)">
+                              {{ 'Move down' | transloco }}</button
+                            ><label
+                              >{{ 'Move to' | transloco
+                              }}<select (change)="moveTo(collection, entry.path, $event)">
+                                <option value=""></option>
+                                <option value="root">{{ collection.name }}</option>
+                                @for (
+                                  target of folderChoices(collection, entry.path);
+                                  track target.path.join('.')
+                                ) {
+                                  <option [value]="target.path.join('.')">{{ target.name }}</option>
+                                }
+                              </select></label
+                            ><button
+                              class="danger"
+                              (click)="state.removeItem(collection, entry.path)"
+                            >
+                              {{ 'Delete' | transloco }}
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     }
                     <button class="add-request" (click)="state.addRequest(collection)">
@@ -355,10 +364,7 @@
                 'workspace.savedOn'
                   | transloco
                     : {
-                        v0:
-                          state.health()?.mode === 'server'
-                            ? ('server' | transloco)
-                            : ('device' | transloco),
+                        v0: 'device' | transloco,
                       }
               }}
             </div>
@@ -423,9 +429,10 @@
               [request]="tab.request"
               (requestChange)="state.edit($event)"
               [running]="state.running()"
-              [readonly]="!state.writable()"
+              [variables]="state.activeVariables()"
+              (manageVariables)="state.section.set('environments')"
               (send)="state.send()"
-              (cancel)="state.cancel()"
+              (cancelRequest)="state.cancel()"
               (save)="state.saveActive()"
               (code)="state.section.set('code')"
             />
@@ -478,11 +485,11 @@
         class="modal"
         role="dialog"
         aria-modal="true"
-        [attr.aria-label]="dialogs() === 'import' ? 'Import' : 'Create ' + dialogs()"
+        [attr.aria-label]="dialogTitle() | transloco"
       >
         <div class="modal-heading">
           <h2>
-            {{ dialogs() === 'import' ? ('Import your work' | transloco) : 'Create ' + dialogs() }}
+            {{ dialogTitle() | transloco }}
           </h2>
           <button
             class="icon-button"
@@ -492,7 +499,20 @@
             ×
           </button>
         </div>
-        @if (dialogs() === 'import') {
+        @if (dialogs() === 'shortcuts') {
+          <dl class="shortcut-list">
+            <dt><kbd>Ctrl</kbd> + <kbd>Enter</kbd></dt>
+            <dd>{{ 'Send the request (outside script editors)' | transloco }}</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>S</kbd></dt>
+            <dd>{{ 'Save the request' | transloco }}</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>T</kbd></dt>
+            <dd>{{ 'New request tab' | transloco }}</dd>
+            <dt><kbd>Ctrl</kbd> + <kbd>K</kbd></dt>
+            <dd>{{ 'Search collections' | transloco }}</dd>
+            <dt><kbd>F1</kbd> / <kbd>Ctrl</kbd> + <kbd>/</kbd></dt>
+            <dd>{{ 'Show these shortcuts' | transloco }}</dd>
+          </dl>
+        } @else if (dialogs() === 'import') {
           <p class="muted">
             {{
               'Portable collections and environments, OpenAPI, HAR or a cURL command.' | transloco
@@ -523,10 +543,17 @@
           /></label>
         }
         <div class="modal-actions">
-          <button class="button" (click)="dialogs.set('')">{{ 'Cancel' | transloco }}</button
-          ><button class="button primary" (click)="submitDialog()" [disabled]="state.busy()">
-            {{ dialogs() === 'import' ? ('Import' | transloco) : ('Create' | transloco) }}
+          <button class="button" (click)="dialogs.set('')">
+            {{ (dialogs() === 'shortcuts' ? 'Close' : 'Cancel') | transloco }}
           </button>
+          @if (dialogs() !== 'shortcuts') {
+            <button class="button primary" (click)="submitDialog()" [disabled]="state.busy()">
+              {{
+                (dialogs() === 'import' ? 'Import' : dialogs() === 'rename' ? 'Rename' : 'Create')
+                  | transloco
+              }}
+            </button>
+          }
         </div>
       </section>
     </div>

@@ -40,7 +40,6 @@ if ($installedNode -and (& $installedNode.Source --version) -eq "v$nodeVersion" 
 }
 if ((& $nodeExecutable --version) -ne "v$nodeVersion") { throw 'Cached Node version does not match .node-version' }
 $env:PATH = "$(Split-Path $nodeExecutable);$env:PATH"
-$env:NEXO_NODE_BINARY = $nodeExecutable
 $bootstrapArguments = @('tools/bootstrap/build.mjs', '--bundles', $Bundles)
 if ($Check) { $bootstrapArguments += '--check' }
 if ($PrepareOnly) { $bootstrapArguments += '--prepare-only' }

@@ -29,15 +29,14 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"],
-            "server": "src/main.server.ts",
-            "outputMode": "server",
-            "security": {
-              "allowedHosts": []
-            },
-            "ssr": {
-              "entry": "src/server.ts"
-            }
+            "styles": [
+              "src/styles.scss",
+              {
+                "input": "src/styles/templates.scss",
+                "bundleName": "workspace-templates",
+                "inject": false
+              }
+            ]
           },
           "configurations": {
             "production": {
@@ -53,7 +52,15 @@
                   "maximumError": "8kB"
                 }
               ],
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              }
             },
             "development": {
               "optimization": false,
@@ -62,10 +69,14 @@
             },
             "desktop": {
               "outputPath": "dist/desktop",
-              "server": false,
-              "ssr": false,
-              "outputMode": "static",
-              "optimization": true,
+              "optimization": {
+                "scripts": true,
+                "styles": {
+                  "minify": true,
+                  "inlineCritical": false
+                },
+                "fonts": true
+              },
               "outputHashing": "all"
             }
           },
@@ -83,7 +94,7 @@
           },
           "defaultConfiguration": "development",
           "options": {
-            "proxyConfig": "proxy.conf.json"
+            "proxyConfig": "proxy.conf.mjs"
           }
         },
         "test": {

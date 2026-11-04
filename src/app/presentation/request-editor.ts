@@ -2,6 +2,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, model, signal, output, input } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { RequestDraft, KeyValue, newRequest, formatJson } from '../domain/models';
+import { ResolvedVariable } from '../domain/variables';
 import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
 
@@ -16,8 +17,11 @@ export class RequestEditor {
   readonly request = model<RequestDraft>(newRequest('untitled'));
   readonly running = input(false);
   readonly readonly = input(false);
+  /** Variables referenced by the request and the scope that resolves each one. */
+  readonly variables = input<ResolvedVariable[]>([]);
+  readonly manageVariables = output<void>();
   readonly send = output<void>();
-  readonly cancel = output<void>();
+  readonly cancelRequest = output<void>();
   readonly save = output<void>();
   readonly code = output<void>();
   protected readonly fields = form(this.request, (p) => {
@@ -29,6 +33,12 @@ export class RequestEditor {
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
   protected rows(key: 'query' | 'headers' | 'form', rows: KeyValue[]) {
     this.request.update((r) => ({ ...r, [key]: rows }));
+  }
+  protected variableTitle(variable: ResolvedVariable) {
+    if (!variable.defined) return 'Not defined in the active environment, collection or globals';
+    if (variable.scope === 'dynamic') return 'Generated for each request';
+    if (variable.scope === 'vault') return 'Resolved from your vault when sent';
+    return variable.secret ? '••••••••' : (variable.value ?? '');
   }
   protected format() {
     this.request.update((r) => ({ ...r, body: formatJson(r.body) }));

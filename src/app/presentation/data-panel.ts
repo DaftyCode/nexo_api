@@ -1,7 +1,10 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { Component, ChangeDetectionStrategy, inject, signal, input } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, signal, input } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
+import { PanelTask } from './panel-task';
+import { DATA } from '../composition/providers';
+import { WorkspaceDocument } from '../domain/models';
 
 @Component({
   imports: [TranslocoPipe, FormField],
@@ -13,6 +16,8 @@ import { WorkspaceState } from './workspace-state';
 export class DataPanel {
   readonly section = input('datasets');
   protected readonly state = inject(WorkspaceState);
+  protected readonly task = new PanelTask(this.state);
+  private readonly data = inject(DATA);
   protected readonly model = signal({
     id: '',
     name: 'My dataset',
@@ -34,44 +39,48 @@ export class DataPanel {
     columns: [],
     rows: [],
   });
+  constructor() {
+    void this.listMocks();
+  }
+  private examples() {
+    try {
+      const value = JSON.parse(this.model().examples);
+      if (!Array.isArray(value)) throw new Error();
+      return value;
+    } catch {
+      throw new Error('Mock examples must be a JSON array');
+    }
+  }
   protected import() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const m = this.model();
-      const result = await this.state.cases.api.execute<{
-        id: string;
-        rows: number;
-        columns: string[];
-      }>('dataset.import', { id: m.id || undefined, content: m.content });
-      const existing = this.state
-        .documents()
-        .find((d) => d.kind === 'dataset' && d.id === result.id);
-      if (existing) await this.state.cases.api.save({ ...existing, name: m.name, value: result });
-      else
-        await this.state.cases.api.save({
-          id: result.id,
-          workspace_id: this.state.workspaceId(),
-          kind: 'dataset',
-          name: m.name,
-          revision: 0,
-          updated_at: 0,
-          value: result,
-        });
+      const result = await this.data.importDataset(
+        this.state.workspaceId(),
+        { id: m.id, name: m.name, content: m.content },
+        this.state.documents(),
+      );
       this.model.update((x) => ({ ...x, id: result.id }));
       this.output.set(`Imported ${result.rows} rows`);
       await this.state.refresh();
     });
   }
   protected query() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const m = this.model();
-      if (!m.id) throw new Error('Import or choose a dataset first');
-      const result = await this.state.cases.api.execute<{
-        columns: string[];
-        rows: Record<string, unknown>[];
-        truncated: boolean;
-      }>('dataset.query', { id: m.id, sql: m.sql });
+      const result = await this.data.queryDataset(this.state.workspaceId(), m.id, m.sql);
       this.table.set(result);
       this.output.set(`${result.rows.length} rows${result.truncated ? ' (limit reached)' : ''}`);
+    });
+  }
+  protected removeDataset() {
+    void this.task.run(async () => {
+      const m = this.model();
+      const document = this.state.documents().find((d) => d.kind === 'dataset' && d.id === m.id);
+      await this.data.deleteDataset(this.state.workspaceId(), m.id, document);
+      await this.state.refresh();
+      this.model.update((x) => ({ ...x, id: '' }));
+      this.table.set({ columns: [], rows: [] });
+      this.output.set('Dataset deleted');
     });
   }
   protected selectDataset(event: Event) {
@@ -80,30 +89,37 @@ export class DataPanel {
     this.model.update((m) => ({ ...m, id, name: d?.name ?? m.name }));
   }
   protected startMock() {
-    void this.state.guard(async () => {
+    void this.task.run(async () => {
       const m = this.model();
-      const result = await this.state.cases.api.execute<{ id: string; url: string }>('mock.start', {
-        port: m.port,
-        examples: JSON.parse(m.examples),
-      });
+      const examples = this.examples();
+      const result = await this.data.startMock(this.state.workspaceId(), m.port, examples);
       this.model.update((x) => ({ ...x, mockId: result.id }));
       this.mockUrl.set(result.url);
-      await this.state.cases.createDocument(
-        this.state.workspaceId(),
-        'mock',
-        `Mock ${new Date().toLocaleTimeString()}`,
-        { ...result, examples: JSON.parse(m.examples) },
-      );
+      await this.state.refresh();
+      await this.listMocks();
+    });
+  }
+  protected readonly savedMocks = computed(() =>
+    this.state.documents().filter((document) => document.kind === 'mock'),
+  );
+  protected restartMock(document: WorkspaceDocument) {
+    void this.task.run(async () => {
+      const result = await this.data.restartMock(this.state.workspaceId(), document);
+      this.mockUrl.set(result.url);
       await this.state.refresh();
       await this.listMocks();
     });
   }
   protected async listMocks() {
-    this.mocks.set(await this.state.cases.api.execute('mock.list', {}));
+    try {
+      this.mocks.set(await this.data.listMocks(this.state.workspaceId()));
+    } catch {
+      this.mocks.set([]);
+    }
   }
   protected stop(id: string) {
-    void this.state.guard(async () => {
-      await this.state.cases.api.execute('mock.stop', { id });
+    void this.task.run(async () => {
+      await this.data.stopMock(this.state.workspaceId(), id);
       await this.listMocks();
       if (id === this.model().mockId) this.mockUrl.set('');
     });

@@ -43,5 +43,4 @@ elif [ ! -x "$node_executable" ]; then
 fi
 if [ "$("$node_executable" --version)" != "v$node_version" ]; then echo 'Cached Node version does not match .node-version' >&2; exit 1; fi
 export PATH="$(dirname "$node_executable"):$PATH"
-export NEXO_NODE_BINARY="$node_executable"
 exec "$node_executable" tools/bootstrap/build.mjs "$@"

@@ -1,3 +1,15 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{ 'MORE THAN REQUEST AND RESPONSE.' | transloco }}</span>
@@ -23,7 +35,8 @@
       @if (connection()) {
         <button class="button" (click)="disconnect()">{{ 'Disconnect' | transloco }}</button>
       } @else {
-        <button class="button primary" (click)="connect()">{{ 'Connect ↗' | transloco }}</button>
+        <button class="button primary" (click)="connect()">{{ 'Connect ↗' | transloco }}</button
+        ><button class="button" (click)="save()">{{ 'Save to collection' | transloco }}</button>
       }
     }
   </div>
@@ -75,19 +88,60 @@
     @if (model().protocol === 'socketio') {
       <label class="field">{{ 'Event' | transloco }}<input [formField]="fields.event" /></label>
     }
-    <label class="field"
-      >{{
-        model().protocol === 'grpc'
-          ? ('Request message (JSON)' | transloco)
-          : ('Message' | transloco)
-      }}<textarea
-        class="code-editor small"
-        [formField]="fields.message"
-        spellcheck="false"
-      ></textarea>
-    </label>
+    @if (model().protocol === 'mqtt') {
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Username' | transloco
+          }}<input [formField]="fields.username" autocomplete="off" /></label
+        ><label class="field grow"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+      </div>
+    }
+    @if (model().protocol === 'websocket' || model().protocol === 'socketio') {
+      <div class="section-caption">{{ 'Connection headers' | transloco }}</div>
+      <app-key-value-editor [(rows)]="headers" />
+    }
+    <details class="advanced-tls">
+      <summary>{{ 'TLS settings' | transloco }}</summary>
+      @if (model().protocol !== 'grpc') {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.strictSSL" />
+          {{ 'Verify TLS certificates' | transloco }}</label
+        >
+      }
+      <label class="field"
+        >{{ 'Certificate authority (PEM)' | transloco
+        }}<textarea
+          class="code-editor small"
+          [formField]="fields.caPem"
+          spellcheck="false"
+        ></textarea>
+      </label>
+    </details>
     @if (model().protocol === 'grpc') {
-      <button class="button primary" (click)="invoke()">{{ 'Invoke method ↗' | transloco }}</button>
+      <label class="field"
+        >{{ 'Request message (JSON)' | transloco
+        }}<textarea
+          class="code-editor small"
+          [formField]="fields.grpcMessage"
+          spellcheck="false"
+        ></textarea>
+      </label>
+    } @else {
+      <label class="field"
+        >{{ 'Message' | transloco
+        }}<textarea
+          class="code-editor small"
+          [formField]="fields.message"
+          spellcheck="false"
+        ></textarea>
+      </label>
+    }
+    @if (model().protocol === 'grpc') {
+      <button class="button primary" (click)="invoke()">{{ 'Invoke method ↗' | transloco }}</button
+      ><button class="button" (click)="save()">{{ 'Save to collection' | transloco }}</button>
     } @else {
       <button class="button primary" (click)="send()" [disabled]="status() !== 'connected'">
         {{ 'Send message ↗' | transloco }}
@@ -111,7 +165,7 @@
       }
       @if (!events().length) {
         <div class="empty-response">
-          <span class="large-symbol">⇄</span>
+          <span class="large-symbol" aria-hidden="true">⇄</span>
           <h3>{{ 'Ready to connect' | transloco }}</h3>
           <p>{{ 'Incoming events and messages appear here.' | transloco }}</p>
         </div>

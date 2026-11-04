@@ -1,4 +1,3 @@
-pub mod executor;
 pub mod git;
 pub mod sqlite;
 pub mod vault;

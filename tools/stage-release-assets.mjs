@@ -11,7 +11,7 @@ async function stage(directory) {
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) await stage(path);
-    else if (entry.isFile() && /\.(msi|exe|dmg|deb|rpm|AppImage)$/.test(entry.name)) {
+    else if (entry.isFile() && /\.(msi|msix|exe|dmg|deb|rpm|AppImage)$/.test(entry.name)) {
       const name = basename(path).replace(/\s+/g, '.');
       if (names.has(name)) throw new Error(`Duplicate release asset: ${name}`);
       names.add(name);

@@ -1,0 +1,47 @@
+[package]
+name = "nexo-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Request execution engine: HTTP, scripts, protocols, mocks, datasets and vault"
+[dependencies]
+nexo-domain = { path = "../nexo-domain" }
+nexo-application = { path = "../nexo-application" }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+tokio.workspace = true
+reqwest.workspace = true
+rusqlite.workspace = true
+tracing.workspace = true
+futures-util.workspace = true
+base64.workspace = true
+sha2.workspace = true
+hex.workspace = true
+axum.workspace = true
+rquickjs = { version = "0.14.0", default-features = false, features = ["classes", "properties"] }
+aes-gcm = "0.11.1"
+cookie_store = "0.22.1"
+encoding_rs = "0.8.44"
+serde_yaml = "0.9.34"
+shell-words = "1.1.1"
+url = "2.5.8"
+md5 = { package = "md-5", version = "0.11.0" }
+csv = "1.4.0"
+tokio-tungstenite = { version = "0.30.0", features = ["connect", "handshake", "rustls-tls-native-roots"], default-features = false }
+rumqttc = { version = "0.25.1", features = ["websocket"] }
+tonic = { version = "0.14.9", default-features = false, features = ["transport", "tls-ring", "codegen", "tls-native-roots"] }
+prost = "0.14.4"
+prost-reflect = { version = "0.16.5", features = ["serde"] }
+protox = "0.10.0"
+tokio-util = "0.7.20"
+bytes = "1.12.1"
+http = "1.5.0"
+getrandom = "0.4.3"
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls-pki-types = "1.15.1"
+rustls-native-certs = "0.8.5"
+tower = { version = "0.5.3", features = ["util"] }
+hyper-util = { version = "0.1.21", features = ["tokio"] }
