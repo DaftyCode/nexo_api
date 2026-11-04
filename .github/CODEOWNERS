@@ -1,0 +1,7 @@
+# Required reviewers for contributions. Add future maintainers to the first line.
+# Grant write access before adding a GitHub username as a code owner.
+* @DaftyCode
+
+# Changes to review ownership and automation always need the repository owner.
+/.github/CODEOWNERS @DaftyCode
+/.github/workflows/ @DaftyCode

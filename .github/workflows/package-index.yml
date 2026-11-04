@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: package-manager-index
@@ -17,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: master
+          ref: ${{ github.event.repository.default_branch }}
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.13.0'
+          node-version-file: '.node-version'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Download published installers
         env:
@@ -33,7 +34,9 @@ jobs:
         run: node tools/package-manifests.mjs --artifacts .verification/native --version "${RELEASE_TAG#v}" --repository "$GITHUB_REPOSITORY"
       - name: Update Homebrew tap and WinGet manifests
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           mkdir -p Casks packaging/winget
           cp .verification/packages/Casks/nexo-api.rb Casks/nexo-api.rb
@@ -42,5 +45,15 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add Casks packaging/winget
           if git diff --cached --quiet; then exit 0; fi
+          INDEX_BRANCH="automation/packages-${GITHUB_RUN_ID}"
+          git switch -c "$INDEX_BRANCH"
           git commit -m "chore(packages): update installers for $RELEASE_TAG"
-          git push origin HEAD:master
+          git push origin "HEAD:$INDEX_BRANCH"
+          if ! gh pr create --base "$DEFAULT_BRANCH" --head "$INDEX_BRANCH" --title "chore(packages): update installers for $RELEASE_TAG" --body "Updates Homebrew and WinGet manifests from the published installers. Requires maintainer review before merging."; then
+            echo "::notice::Automatic PR creation is disabled or unavailable. Open a PR from $INDEX_BRANCH into $DEFAULT_BRANCH. The branch and manifest artifact are ready for owner review."
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: package-manager-manifests
+          path: .verification/packages
+          retention-days: 14
