@@ -1,9 +1,13 @@
 //! WebSocket, Socket.IO and MQTT connections whose events clients read by polling.
+use crate::mqtt;
 use crate::{egress::Policy, tls::client_config};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use futures_util::{SinkExt, StreamExt};
 use nexo_domain::{Error, Result};
-use rumqttc::{AsyncClient, Event, Incoming, MqttOptions, QoS, TlsConfiguration, Transport};
+use rumqttc::{
+    ConnectReturnCode, Packet, PubAck, PubComp, PubRec, PubRel, Publish, QoS, Subscribe,
+    SubscribeReasonCode, Unsubscribe, mqttbytes::v4::Connect,
+};
 use serde_json::{Value, json};
 use std::{
     collections::{HashMap, VecDeque},
@@ -573,97 +577,196 @@ impl Task {
     }
 
     async fn mqtt(mut self) {
+        let opened = tokio::select! {
+            _ = self.stop.cancelled() => return,
+            opened = self.open_mqtt() => opened,
+        };
+        let mut connection = match opened {
+            Ok(connection) => connection,
+            Err(error) => return self.fail(error.to_string()),
+        };
         let client_id = self.payload["clientId"]
             .as_str()
             .filter(|c| !c.is_empty())
             .map(String::from)
             .unwrap_or_else(|| format!("nexo-{}", self.id));
-        let websocket = matches!(self.url.scheme(), "ws" | "wss");
-        let host = self.url.host_str().unwrap_or_default().to_string();
-        let port = self.addresses.first().map(|a| a.port()).unwrap_or(1883);
-        let mut options = if websocket {
-            MqttOptions::new(client_id, self.url.as_str(), port)
-        } else {
-            MqttOptions::new(client_id, host, port)
-        };
-        options.set_keep_alive(Duration::from_secs(60));
-        options.set_clean_session(self.payload["clean"] != false);
-        options.set_max_packet_size(MAX_MESSAGE, MAX_MESSAGE);
+        let mut connect = Connect::new(client_id);
+        connect.keep_alive = 60;
+        connect.clean_session = self.payload["clean"] != false;
         if let Some(username) = self.payload["username"].as_str().filter(|u| !u.is_empty()) {
-            options.set_credentials(username, self.payload["password"].as_str().unwrap_or(""));
+            connect.set_login(username, self.payload["password"].as_str().unwrap_or(""));
         }
-        let tls = self.tls.clone().map(TlsConfiguration::Rustls);
-        options.set_transport(match (websocket, tls) {
-            (true, Some(tls)) => Transport::Wss(tls),
-            (true, None) => Transport::Ws,
-            (false, Some(tls)) => Transport::Tls(tls),
-            (false, None) => Transport::Tcp,
-        });
-        let (client, mut eventloop) = AsyncClient::new(options, 64);
+        if let Err(error) = connection.send(&Packet::Connect(connect)).await {
+            return self.fail(error);
+        }
         let topic = self.payload["topic"]
             .as_str()
             .filter(|t| !t.is_empty())
             .map(String::from);
         let subscribe_qos = qos(&self.payload["qos"]);
+        let mut packet_id: u16 = 0;
+        let mut next_id = move || {
+            packet_id = packet_id.checked_add(1).unwrap_or(1);
+            packet_id
+        };
         let deadline = tokio::time::sleep(CONNECT_TIMEOUT);
         tokio::pin!(deadline);
+        let mut keep_alive = tokio::time::interval(Duration::from_secs(60));
+        keep_alive.tick().await;
+        enum Step {
+            Stop,
+            Timeout,
+            Command(Option<Command>),
+            Ping,
+            Received(std::result::Result<Option<Packet>, String>),
+        }
         loop {
-            tokio::select! {
-                _ = self.stop.cancelled() => {
-                    let _ = client.try_disconnect();
-                    let _ = tokio::time::timeout(Duration::from_secs(1), eventloop.poll()).await;
+            let step = tokio::select! {
+                _ = self.stop.cancelled() => Step::Stop,
+                _ = &mut deadline, if self.events.state() == "connecting" => Step::Timeout,
+                command = self.commands.recv() => Step::Command(command),
+                _ = keep_alive.tick() => Step::Ping,
+                packet = connection.next() => Step::Received(packet),
+            };
+            let reply = match step {
+                Step::Stop => {
+                    let _ = connection.send(&Packet::Disconnect).await;
                     return;
                 }
-                _ = &mut deadline, if self.events.state() == "connecting" => {
-                    return self.fail("connack timeout".into());
-                }
-                command = self.commands.recv() => {
-                    let sent = match command {
-                        Some(Command::Publish { topic, message, qos, retain }) => client.try_publish(topic, qos, retain, message.into_bytes()),
-                        Some(Command::Subscribe { topic, qos }) => client.try_subscribe(topic, qos),
-                        Some(Command::Unsubscribe(topic)) => client.try_unsubscribe(topic),
-                        _ => Ok(()),
-                    };
-                    if let Err(error) = sent {
-                        self.events.emit("error", json!(error.to_string()));
+                Step::Timeout => return self.fail("connack timeout".into()),
+                Step::Command(None) => continue,
+                Step::Command(Some(command)) => match command {
+                    Command::Publish {
+                        topic,
+                        message,
+                        qos,
+                        retain,
+                    } => {
+                        let mut publish = Publish::new(topic, qos, message.into_bytes());
+                        publish.retain = retain;
+                        if qos != QoS::AtMostOnce {
+                            publish.pkid = next_id();
+                        }
+                        Some(Packet::Publish(publish))
                     }
-                }
-                event = eventloop.poll() => match event {
-                    Ok(Event::Incoming(Incoming::ConnAck(_))) => {
+                    Command::Subscribe { topic, qos } => {
+                        let mut subscribe = Subscribe::new(topic, qos);
+                        subscribe.pkid = next_id();
+                        Some(Packet::Subscribe(subscribe))
+                    }
+                    Command::Unsubscribe(topic) => {
+                        let mut unsubscribe = Unsubscribe::new(topic);
+                        unsubscribe.pkid = next_id();
+                        Some(Packet::Unsubscribe(unsubscribe))
+                    }
+                    _ => None,
+                },
+                Step::Ping => (self.events.state() == "connected").then_some(Packet::PingReq),
+                Step::Received(Ok(Some(packet))) => match packet {
+                    Packet::ConnAck(ack) if ack.code == ConnectReturnCode::Success => {
                         self.events.set("connected");
                         self.events.emit("open", json!("Connected"));
-                        if let Some(topic) = &topic
-                            && let Err(error) = client.try_subscribe(topic.clone(), subscribe_qos)
+                        topic.clone().map(|topic| {
+                            let mut subscribe = Subscribe::new(topic, subscribe_qos);
+                            subscribe.pkid = next_id();
+                            Packet::Subscribe(subscribe)
+                        })
+                    }
+                    Packet::ConnAck(ack) => {
+                        return self
+                            .fail(format!("The broker refused the connection: {:?}", ack.code));
+                    }
+                    Packet::Publish(publish) => {
+                        self.events.emit(
+                            "message",
+                            json!({
+                                "topic": publish.topic,
+                                "text": String::from_utf8_lossy(&publish.payload),
+                                "qos": publish.qos as u8,
+                                "retain": publish.retain,
+                            }),
+                        );
+                        match publish.qos {
+                            QoS::AtMostOnce => None,
+                            QoS::AtLeastOnce => Some(Packet::PubAck(PubAck::new(publish.pkid))),
+                            QoS::ExactlyOnce => Some(Packet::PubRec(PubRec::new(publish.pkid))),
+                        }
+                    }
+                    Packet::PubRec(record) => Some(Packet::PubRel(PubRel::new(record.pkid))),
+                    Packet::PubRel(release) => Some(Packet::PubComp(PubComp::new(release.pkid))),
+                    Packet::SubAck(ack) => {
+                        if ack
+                            .return_codes
+                            .iter()
+                            .any(|code| matches!(code, SubscribeReasonCode::Failure))
                         {
-                            self.events.emit("error", json!(error.to_string()));
+                            self.events
+                                .emit("error", json!("Subscription rejected by the broker"));
                         }
+                        None
                     }
-                    Ok(Event::Incoming(Incoming::Publish(publish))) => self.events.emit("message", json!({
-                        "topic": publish.topic,
-                        "text": String::from_utf8_lossy(&publish.payload),
-                        "qos": publish.qos as u8,
-                        "retain": publish.retain,
-                    })),
-                    Ok(Event::Incoming(Incoming::SubAck(ack))) => {
-                        if ack.return_codes.iter().any(|code| matches!(code, rumqttc::SubscribeReasonCode::Failure)) {
-                            self.events.emit("error", json!("Subscription rejected by the broker"));
-                        }
-                    }
-                    Ok(Event::Incoming(Incoming::Disconnect)) => {
+                    Packet::Disconnect => {
                         self.events.emit("close", json!("Disconnected"));
                         self.events.set("closed");
                         return;
                     }
-                    Ok(_) => {}
-                    Err(error) => {
-                        self.events.emit("error", json!(error.to_string()));
-                        self.events.emit("close", json!("Disconnected"));
-                        self.events.set(if self.events.state() == "connecting" { "error" } else { "closed" });
-                        return;
-                    }
+                    _ => None,
                 },
+                Step::Received(Ok(None)) => {
+                    if self.events.state() == "connecting" {
+                        return self.fail("The broker closed the connection".into());
+                    }
+                    self.events.emit("close", json!("Disconnected"));
+                    self.events.set("closed");
+                    return;
+                }
+                Step::Received(Err(error)) => {
+                    self.events.emit("error", json!(error));
+                    self.events.emit("close", json!("Disconnected"));
+                    self.events.set(if self.events.state() == "connecting" {
+                        "error"
+                    } else {
+                        "closed"
+                    });
+                    return;
+                }
+            };
+            if let Some(packet) = reply
+                && let Err(error) = connection.send(&packet).await
+            {
+                self.events.emit("error", json!(error));
+                self.events.emit("close", json!("Disconnected"));
+                self.events.set("closed");
+                return;
             }
         }
+    }
+    /// Opens TCP, TLS or WebSocket to the addresses the egress policy approved.
+    async fn open_mqtt(&self) -> Result<mqtt::Connection> {
+        if matches!(self.url.scheme(), "ws" | "wss") {
+            let socket = self.open_socket(&self.url, &["mqtt".to_string()]).await?;
+            return Ok(mqtt::Connection::new(mqtt::Link::Socket(Box::new(socket))));
+        }
+        let connect = async {
+            let stream = tokio::net::TcpStream::connect(&self.addresses[..])
+                .await
+                .map_err(|error| invalid(error.to_string()))?;
+            let Some(config) = self.tls.clone() else {
+                return Ok(mqtt::Link::Stream(Box::new(stream)));
+            };
+            let host = self.url.host_str().unwrap_or_default().to_string();
+            let name = rustls_pki_types::ServerName::try_from(host)
+                .map_err(|error| invalid(error.to_string()))?;
+            let secured = tokio_rustls::TlsConnector::from(config)
+                .connect(name, stream)
+                .await
+                .map_err(|error| invalid(error.to_string()))?;
+            Ok(mqtt::Link::Stream(Box::new(secured)))
+        };
+        let link = tokio::time::timeout(CONNECT_TIMEOUT, connect)
+            .await
+            .map_err(|_| invalid("Connection timed out"))??;
+        Ok(mqtt::Connection::new(link))
     }
 }
 

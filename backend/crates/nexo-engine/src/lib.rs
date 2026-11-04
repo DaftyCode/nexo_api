@@ -17,6 +17,7 @@ pub mod egress;
 pub mod grpc;
 pub mod interchange;
 pub mod mocks;
+pub mod mqtt;
 pub mod performance;
 pub mod realtime;
 pub mod runner;

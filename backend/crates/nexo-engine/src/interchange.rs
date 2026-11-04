@@ -28,7 +28,7 @@ pub fn import(payload: &Value) -> Result<Value> {
     }
     let document: Value = match serde_json::from_str(text) {
         Ok(value) => value,
-        Err(_) => serde_yaml::from_str(text)
+        Err(_) => serde_saphyr::from_str::<Value>(text)
             .map_err(|error| Error::Validation(format!("Unsupported import format: {error}")))?,
     };
     if document.get("info").is_some_and(|info| !info.is_null()) && document["item"].is_array() {

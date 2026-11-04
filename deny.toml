@@ -8,7 +8,14 @@ all-features = false
 # Fail on vulnerabilities and on unmaintained or yanked crates reported by RustSec.
 version = 2
 yanked = "deny"
-ignore = []
+ignore = [
+  # zbus 5 split crates, reached only through keyring on Linux (Secret Service). They are
+  # unmaintained because zbus 6 merged them, not because of a vulnerability; keyring 4.2.0
+  # (the latest) still uses zbus 5. Remove when keyring moves to zbus 6.
+  { id = "RUSTSEC-2026-0370", reason = "zvariant via keyring; merged into zbus 6" },
+  { id = "RUSTSEC-2026-0371", reason = "zbus_names via keyring; merged into zbus 6" },
+  { id = "RUSTSEC-2026-0372", reason = "zvariant_derive via keyring; merged into zbus 6" },
+]
 
 [licenses]
 version = 2
@@ -20,7 +27,6 @@ allow = [
   "Apache-2.0 WITH LLVM-exception",
   "BSD-2-Clause",
   "BSD-3-Clause",
-  "0BSD",
   "ISC",
   "Zlib",
   "Unlicense",

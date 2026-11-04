@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
+publish = false
 description = "Request execution engine: HTTP, scripts, protocols, mocks, datasets and vault"
 [dependencies]
 nexo-domain = { path = "../nexo-domain" }
@@ -25,13 +26,15 @@ rquickjs = { version = "0.14.0", default-features = false, features = ["classes"
 aes-gcm = "0.11.1"
 cookie_store = "0.22.1"
 encoding_rs = "0.8.44"
-serde_yaml = "0.9.34"
+serde-saphyr = "2.1.0"
 shell-words = "1.1.1"
 url = "2.5.8"
 md5 = { package = "md-5", version = "0.11.0" }
 csv = "1.4.0"
 tokio-tungstenite = { version = "0.30.0", features = ["connect", "handshake", "rustls-tls-native-roots"], default-features = false }
-rumqttc = { version = "0.25.1", features = ["websocket"] }
+# Only the MQTT packet codec: transports and TLS are this crate's.
+rumqttc = { version = "0.25.1", default-features = false }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12", "logging"] }
 tonic = { version = "0.14.9", default-features = false, features = ["transport", "tls-ring", "codegen", "tls-native-roots"] }
 prost = "0.14.4"
 prost-reflect = { version = "0.16.5", features = ["serde"] }
