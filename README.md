@@ -36,6 +36,12 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 
 Requests originate from the local engine or the server where you deploy it. In server mode, private network URLs are resolved from that server's network.
 
+### Workspace layouts
+
+The source includes three layouts, selectable from **Template**: **Aurora** (the default dark workspace), **Studio** (three columns with environment and request context), and **Canvas** (a light workspace with request and response side by side). They share the same collections, environments, variables, history and tools. Switching layouts keeps the active request and saves your preference on that device. Canvas exposes the workspace navigation through **Tools** and **Browse collections**. Classic has been retired.
+
+These layouts will be included in the next desktop release; the published `v0.1.0` installers retain their original interface.
+
 ## Download and install
 
 Versions are distributed through [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Check each release's assets: a platform configured in CI does not automatically mean an installer has been published for it.
@@ -124,27 +130,131 @@ Presentation calls use cases. HTTP and file handling stay in infrastructure. We 
 
 We follow **SOLID and Clean Code**: clear module responsibilities, small ports, inward dependencies, interchangeable implementations, concrete names and focused functions. Abstractions should solve a real need. `npm run test:architecture` checks layer boundaries.
 
-## Run from source
+## Build the desktop app from a clean checkout
 
-Requirements: Node LTS 26.13 or newer, npm and the Rust toolchain pinned in `rust-toolchain.toml`. Desktop development also requires [Tauri's platform prerequisites](https://v2.tauri.app/start/prerequisites/): MSVC/WebView2 on Windows, Xcode Command Line Tools on macOS and WebKitGTK libraries on Linux.
+Download the repository ZIP and extract it, or clone it:
 
 ```bash
+git clone https://github.com/DaftyCode/nexo_api.git
+cd nexo_api
+```
+
+Run the following commands from the repository root, where `package.json` is located. **Build on the operating system and CPU architecture you want to distribute.** Our CI builds Windows x64, macOS Apple Silicon, macOS Intel and Linux x64 separately. The scripts do not implement cross-compilation or a universal macOS bundle.
+
+### Automatic setup and build
+
+You do not have to download Node, Rust or npm dependencies manually. The bootstrap scripts:
+
+1. Reuse the Node version in [.node-version](.node-version), or download the official archive and verify its SHA-256 before extraction.
+2. Check the native build tools and prepare missing system dependencies through WinGet on Windows, the Apple installer on macOS, or APT/DNF on Linux.
+3. Install Rustup if missing, verifying its official download, and prepare the Rust version in [rust-toolchain.toml](rust-toolchain.toml).
+4. Run `npm ci`, prepare the bundled execution engine, build Angular and Rust, and generate native packages.
+
+The first run needs Internet access and may download several GB of SDKs and toolchains. System installers can request administrator permission, license acceptance or a restart. Complete those prompts yourself and rerun the same command if setup pauses. The script does not accept Microsoft or Apple agreements on your behalf. A fresh build is **not an offline build**.
+
+**Windows x64 — PowerShell**
+
+```powershell
+.\build.ps1
+```
+
+WinGet must be available through Microsoft's [App Installer](https://learn.microsoft.com/en-us/windows/package-manager/winget/). Missing C++ build tools, WebView2 and Git are prepared through it. If your organization blocks PowerShell scripts or software installation, use its approved setup process or the GitHub Actions option below.
+
+**macOS — Terminal, on Apple Silicon or Intel**
+
+```bash
+bash build.sh
+```
+
+If the Apple Command Line Tools installer opens, finish installation and rerun the command. The default local build uses ad hoc signing (`APPLE_SIGNING_IDENTITY=-`), matching CI. It does not create a Developer ID signature or notarize the app; see [Tauri's macOS signing guide](https://v2.tauri.app/distribute/sign/macos/) for distribution credentials.
+
+**Linux — Terminal, on Ubuntu/Debian or Fedora**
+
+```bash
+bash build.sh
+```
+
+The script installs missing compiler, WebKitGTK, OpenSSL, D-Bus and packaging dependencies using APT or DNF and `sudo` when needed. Ubuntu 22.04 x64 is the CI reference. Other distributions need the equivalent [Tauri system prerequisites](https://v2.tauri.app/start/prerequisites/) installed manually, then the same script with `--skip-system-install`. Build AppImages on the oldest distribution you intend to support; see [Tauri's AppImage compatibility guidance](https://v2.tauri.app/distribute/appimage/).
+
+### Where the packages are generated
+
+| Build host | Output relative to the repository root                                                                               |
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
+| Windows    | `target/release/bundle/nsis/*-setup.exe` and `target/release/bundle/msi/*.msi`                                       |
+| macOS      | `target/release/bundle/macos/Nexo API.app` and `target/release/bundle/dmg/*.dmg`                                     |
+| Linux      | `target/release/bundle/appimage/*.AppImage`, `target/release/bundle/deb/*.deb` and `target/release/bundle/rpm/*.rpm` |
+
+Install or copy the **generated package**. The raw binary in `target/release/` by itself does not include all runtime resources. The packaged desktop app includes its execution runtime, so end users do not need Node or Rust installed.
+
+Downloaded Node archives and bootstrap tools are cached in `.build-tools/`, which is ignored by Git. Rustup uses its normal user directories; native SDKs use their system installation locations. Dependencies and build outputs are also ignored. Subsequent builds reuse tools and caches; package managers may still access the network.
+
+### Useful build options
+
+| Purpose                                                     | PowerShell                       | macOS/Linux                                                                    |
+| ----------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------ |
+| Check prerequisites without installing or building          | `.\build.ps1 -Check`             | `bash build.sh --check`                                                        |
+| Prepare tools without installing npm packages or compiling  | `.\build.ps1 -ToolsOnly`         | `bash build.sh --tools-only`                                                   |
+| Prepare tools and npm packages without compiling            | `.\build.ps1 -PrepareOnly`       | `bash build.sh --prepare-only`                                                 |
+| Use existing system SDKs without installing system packages | `.\build.ps1 -SkipSystemInstall` | `bash build.sh --skip-system-install`                                          |
+| Generate one package format                                 | `.\build.ps1 -Bundles nsis`      | `bash build.sh --bundles dmg` (macOS) or `bash build.sh --bundles deb` (Linux) |
+
+Options can be combined. Check mode reports a missing Node version without downloading it. For MSI packaging, Windows needs the VBScript optional feature; if WiX reports `failed to run light.exe`, follow [Tauri's MSI prerequisites](https://v2.tauri.app/distribute/windows-installer/#building) or build only NSIS with `-Bundles nsis`. For `link.exe` errors, install the C++ desktop workload and Windows SDK. For Linux `pkg-config` errors, check the WebKitGTK **4.1** development packages.
+
+If `npm ci` reports `EBUSY` for Sass or esbuild on Windows, stop this checkout's `npm run dev`, `ng serve`, desktop development and watch/test sessions before retrying. Do not run the bootstrap alongside a development server: `npm ci` replaces `node_modules`. A Node 24 `EBADENGINE` warning means your terminal is using the wrong runtime; `build.ps1` uses the prepared Node 26.13 without replacing your system-wide Node installation.
+
+### Manual build and development
+
+If you manage tools yourself, install Git, Node **26.13.0** with npm, Rustup and your [platform's native prerequisites](https://v2.tauri.app/start/prerequisites/). On Windows select **Desktop development with C++**, a Windows SDK and WebView2. On macOS use `xcode-select --install`. Reopen the terminal after installing tools. From the cloned repository:
+
+```bash
+node --version
+npm --version
+rustup show active-toolchain
 npm ci
-npm run engine:build
-npm run dev
 ```
 
-Web development: [http://localhost:4200/workspace](http://localhost:4200/workspace), with a local backend on loopback port 8080.
+Choose the native build command:
+
+```powershell
+# Windows x64:
+npm run desktop:build -- --bundles nsis,msi
+```
 
 ```bash
-# Desktop development:
-npm run desktop:dev
+# macOS (build separately on Apple Silicon and Intel):
+APPLE_SIGNING_IDENTITY=- npm run desktop:build -- --bundles app,dmg
 
-# Native installers for your current operating system:
-npm run desktop:build
+# Linux:
+NO_STRIP=true npm run desktop:build -- --bundles appimage,deb,rpm
 ```
 
-On Windows, `node tools/ensure-node.mjs` downloads and verifies the official Node runtime included in the installer. macOS and Linux builds include the Node executable used during the build.
+`desktop:build` generates native installers. `build:desktop` only compiles the Angular interface and does **not** produce an installer. Do not run multiple builds in the same checkout at the same time.
+
+For desktop development, after `npm ci`:
+
+```bash
+npm run engine:build
+npm run desktop:prepare
+npm run desktop:dev
+```
+
+For web development, run `npm run engine:build` and `npm run dev`. Open [http://localhost:4200/workspace](http://localhost:4200/workspace); the backend listens on loopback port 8080. Stop a web development session before starting `desktop:dev`, because both use port 4200.
+
+### Build all platforms without installing local tools
+
+Fork the repository, open **Actions → Desktop packages → Run workflow**, and select your branch. The existing workflow builds the four native targets on GitHub's Windows, macOS and Linux runners. Download the `nexo-*` artifacts from the completed run; artifact retention is 14 days. A manual run does not publish a release. Actions must be enabled on the fork and GitHub's usage limits apply.
+
+### Why Node is still included
+
+| Use                                 | Current role                                                                                                                                                                                                                                                                                                            |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Build tools                         | npm, Angular CLI and the frontend/engine build pipeline. These run on the developer's machine or CI.                                                                                                                                                                                                                    |
+| Installed desktop app / API backend | The private auxiliary engine in `engine/src/`: HTTP/GraphQL requests, authentication helpers, cookies, JavaScript scripts/tests, runner/performance jobs, real-time protocols, import/code generation, mocks, datasets, MCP and vault encryption. Rust currently delegates these operations through `ExecutionGateway`. |
+| Self-hosted website                 | Angular SSR and its HTTP proxy run in Node. Public page rendering is separate from the Rust API service.                                                                                                                                                                                                                |
+
+Rust already handles the native desktop shell, API service, SQLite documents/revisions, users/sessions/permissions and local Git adapter. Removing the bundled Node runtime requires implementing the delegated operations in Rust and preserving their contracts. JavaScript scripts need an embedded JavaScript engine or an explicitly supported replacement, and existing vault data needs a compatible migration. Deleting Node today would break those features.
+
+Our migration path is to replace adapters behind the existing ports, starting with native transport and local services, then protocols and scripting, with the current contract tests validating each replacement. A desktop runtime without Node is feasible; Angular development would still use Node, and Angular SSR would continue to need it unless the website rendering approach also changes. **The Node runtime has not been removed by the bootstrap scripts.**
 
 ### Self-hosted server
 
@@ -215,6 +325,12 @@ chore(packages): update installer manifests
 
 Each commit should have one clear purpose. Explain the motivation in the body when it is not obvious from the change. Use `!` and `BREAKING CHANGE:` for incompatible contract changes. PRs should preserve backend hexagonal architecture, frontend Clean Architecture and SOLID principles.
 
+### Maintainer review
+
+The default branch is currently `master`. Contributions must use pull requests and require one approval from a code owner; [CODEOWNERS](.github/CODEOWNERS) currently assigns that review to **@DaftyCode**. New commits invalidate previous approvals, review conversations must be resolved, and force pushes and branch deletion are blocked for contributors. The personal repository owner retains an administrator bypass. The rules also cover `main` if that name is used later.
+
+To add maintainers, invite them with write access and add their GitHub usernames to the first ownership pattern. Changes to `CODEOWNERS` and workflows continue to require the owner. Other people may leave reviews, but their approval does not replace the required code-owner approval. Package-index automation submits changes for review instead of pushing to the default branch.
+
 ### Checks
 
 ```bash
@@ -234,7 +350,7 @@ npm run test:ssr
 
 ## Publishing a version
 
-Run `Desktop packages` manually from Actions to check all four builds without publishing a release. A `vX.Y.Z` tag matching the project versions creates a **GitHub Release draft** with installers, `SHA256SUMS` and WinGet/Homebrew manifests. After reviewing and publishing the draft, the package index workflow adds the cask and manifests to the repository. Protected branches may require adapting that step to open a PR.
+Run `Desktop packages` manually from Actions to check all four builds without publishing a release. A `vX.Y.Z` tag matching the project versions creates a **GitHub Release draft** with installers, `SHA256SUMS` and WinGet/Homebrew manifests. After reviewing and publishing the draft, the package index workflow proposes the cask and manifests on a separate branch and opens a PR when repository settings permit it. Otherwise it provides the branch and artifacts for the owner to open the PR. The owner reviews and merges those changes.
 
 Public WinGet registration requires a separate PR to its official catalog. Generating packages and manifests does not mean they have been accepted into a package manager.
 

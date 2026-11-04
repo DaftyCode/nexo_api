@@ -55,3 +55,4 @@ Thumbs.db
 /.verification/
 /docs/
 /tools/runtime/
+/.build-tools/

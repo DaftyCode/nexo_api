@@ -36,6 +36,12 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 
 Las peticiones se envían desde el motor local o desde el servidor donde lo despliegues. En modo servidor, una URL de red privada se interpreta desde la red de ese servidor.
 
+### Plantillas del workspace
+
+El código incluye tres plantillas, seleccionables desde **Template**: **Aurora** (la oscura predeterminada), **Studio** (tres columnas con contexto del entorno y de la petición) y **Canvas** (clara, con petición y respuesta en paralelo). Todas comparten colecciones, entornos, variables, historial y herramientas. Cambiar de plantilla conserva la petición abierta y guarda tu preferencia en ese dispositivo. En Canvas se accede a la navegación desde **Tools** y **Browse collections**. Classic se ha retirado.
+
+Estas plantillas se incluirán en la próxima versión de escritorio; los instaladores publicados de `v0.1.0` conservan su interfaz original.
+
 ## Descargar e instalar
 
 Las versiones se distribuirán en [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Consulta los assets de cada versión: una plataforma preparada en CI no implica que ya exista un instalador publicado para ella.
@@ -124,27 +130,131 @@ La presentación llama a los casos de uso. Los detalles HTTP y de archivos queda
 
 Aplicamos **SOLID y Clean Code**: una responsabilidad clara por módulo; puertos pequeños; dependencias hacia las capas interiores; implementaciones intercambiables; nombres concretos y funciones que hagan una sola cosa. Las abstracciones deben resolver una necesidad real. `npm run test:architecture` comprueba límites entre capas.
 
-## Ejecutar desde el código
+## Compilar el escritorio desde un repositorio recién descargado
 
-Requisitos: Node LTS 26.13 o superior, npm y la toolchain Rust fijada en `rust-toolchain.toml`. El escritorio necesita las [dependencias de Tauri del sistema](https://v2.tauri.app/start/prerequisites/): MSVC/WebView2 en Windows, Xcode Command Line Tools en macOS y bibliotecas de WebKitGTK en Linux.
+Descarga y extrae el ZIP del repositorio, o clónalo:
 
 ```bash
+git clone https://github.com/DaftyCode/nexo_api.git
+cd nexo_api
+```
+
+Ejecuta los comandos desde la raíz del repositorio, donde está `package.json`. **Compila en el sistema operativo y la arquitectura que quieras distribuir.** La CI genera por separado Windows x64, macOS Apple Silicon, macOS Intel y Linux x64. Los scripts no implementan compilación cruzada ni un paquete universal para macOS.
+
+### Preparación y compilación automáticas
+
+No tienes que descargar Node, Rust ni las dependencias npm a mano. Los scripts:
+
+1. Reutilizan la versión Node fijada en [.node-version](.node-version), o descargan su archivo oficial y verifican el SHA-256 antes de extraerlo.
+2. Comprueban las herramientas nativas y preparan las dependencias que falten mediante WinGet en Windows, el instalador de Apple en macOS o APT/DNF en Linux.
+3. Instalan Rustup si falta, verificando su descarga oficial, y preparan la versión Rust de [rust-toolchain.toml](rust-toolchain.toml).
+4. Ejecutan `npm ci`, preparan el motor incluido, compilan Angular y Rust y generan los paquetes nativos.
+
+La primera ejecución necesita Internet y puede descargar varios GB de SDK y toolchains. Los instaladores del sistema pueden pedir permisos de administrador, aceptar sus condiciones o reiniciar. Completa esos pasos y vuelve a ejecutar el mismo comando si la preparación se detiene. El script no acepta acuerdos de Microsoft o Apple por ti. Una compilación desde cero **no funciona sin conexión**.
+
+**Windows x64 — PowerShell**
+
+```powershell
+.\build.ps1
+```
+
+WinGet debe estar disponible mediante el [Instalador de aplicación de Microsoft](https://learn.microsoft.com/es-es/windows/package-manager/winget/). El script lo usa para preparar C++, WebView2 y Git cuando falten. Si tu organización bloquea scripts PowerShell o instalaciones, utiliza su procedimiento autorizado o la opción de GitHub Actions indicada más abajo.
+
+**macOS — Terminal, en Apple Silicon o Intel**
+
+```bash
+bash build.sh
+```
+
+Si aparece el instalador de Command Line Tools de Apple, complétalo y repite el comando. La compilación local usa firma ad hoc por defecto (`APPLE_SIGNING_IDENTITY=-`), igual que la CI. No genera una firma Developer ID ni notariza la app; consulta la [guía de firma de macOS de Tauri](https://v2.tauri.app/distribute/sign/macos/) para las credenciales de distribución.
+
+**Linux — Terminal, en Ubuntu/Debian o Fedora**
+
+```bash
+bash build.sh
+```
+
+El script prepara compilador, WebKitGTK, OpenSSL, D-Bus y herramientas de empaquetado mediante APT o DNF, usando `sudo` si hace falta. Ubuntu 22.04 x64 es la referencia de la CI. En otras distribuciones instala las [dependencias nativas de Tauri](https://v2.tauri.app/start/prerequisites/) y ejecuta el mismo script con `--skip-system-install`. Genera AppImages en la distribución más antigua que quieras admitir; consulta la [compatibilidad de AppImage en Tauri](https://v2.tauri.app/distribute/appimage/).
+
+### Dónde se generan los paquetes
+
+| Sistema de compilación | Salida relativa a la raíz del repositorio                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Windows                | `target/release/bundle/nsis/*-setup.exe` y `target/release/bundle/msi/*.msi`                                       |
+| macOS                  | `target/release/bundle/macos/Nexo API.app` y `target/release/bundle/dmg/*.dmg`                                     |
+| Linux                  | `target/release/bundle/appimage/*.AppImage`, `target/release/bundle/deb/*.deb` y `target/release/bundle/rpm/*.rpm` |
+
+Instala o copia el **paquete generado**. El binario suelto de `target/release/` no incluye por sí solo todos los recursos del runtime. La app empaquetada incluye el motor necesario; sus usuarios no necesitan instalar Node ni Rust.
+
+Node y las herramientas descargadas se guardan en `.build-tools/`, excluida de Git. Rustup utiliza sus directorios habituales del usuario; los SDK nativos se instalan en el sistema. Las dependencias y los resultados de compilación también están excluidos. Las siguientes ejecuciones reutilizan herramientas y cachés; los gestores pueden seguir accediendo a Internet.
+
+### Opciones útiles
+
+| Objetivo                                                    | PowerShell                       | macOS/Linux                                                                   |
+| ----------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------- |
+| Comprobar requisitos sin instalar ni compilar               | `.\build.ps1 -Check`             | `bash build.sh --check`                                                       |
+| Preparar herramientas sin instalar paquetes npm ni compilar | `.\build.ps1 -ToolsOnly`         | `bash build.sh --tools-only`                                                  |
+| Preparar herramientas y paquetes npm sin compilar           | `.\build.ps1 -PrepareOnly`       | `bash build.sh --prepare-only`                                                |
+| Usar los SDK existentes sin instalar paquetes del sistema   | `.\build.ps1 -SkipSystemInstall` | `bash build.sh --skip-system-install`                                         |
+| Generar un único formato                                    | `.\build.ps1 -Bundles nsis`      | `bash build.sh --bundles dmg` (macOS) o `bash build.sh --bundles deb` (Linux) |
+
+Las opciones pueden combinarse. El modo de comprobación informa si falta la versión de Node y no la descarga. Los MSI necesitan la característica opcional VBScript de Windows; si WiX muestra `failed to run light.exe`, consulta los [requisitos de MSI de Tauri](https://v2.tauri.app/distribute/windows-installer/#building) o genera solo NSIS con `-Bundles nsis`. Si falla `link.exe`, revisa la carga de trabajo de C++ y Windows SDK. Para errores `pkg-config` en Linux, comprueba los paquetes de desarrollo WebKitGTK **4.1**.
+
+Si `npm ci` muestra `EBUSY` sobre Sass o esbuild en Windows, detén las sesiones `npm run dev`, `ng serve`, desarrollo de escritorio y watch/tests de este repositorio antes de repetirlo. No ejecutes la preparación a la vez que el servidor de desarrollo: `npm ci` reemplaza `node_modules`. El aviso `EBADENGINE` con Node 24 indica que la terminal usa otra versión; `build.ps1` utiliza el Node 26.13 preparado sin sustituir la instalación global de tu equipo.
+
+### Compilación manual y desarrollo
+
+Si prefieres gestionar las herramientas, instala Git, Node **26.13.0** con npm, Rustup y los [requisitos de tu sistema](https://v2.tauri.app/start/prerequisites/). En Windows selecciona **Desarrollo para el escritorio con C++**, Windows SDK y WebView2. En macOS utiliza `xcode-select --install`. Abre otra terminal después de instalar las herramientas. Desde el repositorio clonado:
+
+```bash
+node --version
+npm --version
+rustup show active-toolchain
 npm ci
-npm run engine:build
-npm run dev
 ```
 
-Desarrollo web: [http://localhost:4200/workspace](http://localhost:4200/workspace), con backend local en loopback 8080.
+Elige el comando nativo correspondiente:
+
+```powershell
+# Windows x64:
+npm run desktop:build -- --bundles nsis,msi
+```
 
 ```bash
-# Escritorio en desarrollo:
-npm run desktop:dev
+# macOS (por separado en Apple Silicon e Intel):
+APPLE_SIGNING_IDENTITY=- npm run desktop:build -- --bundles app,dmg
 
-# Instaladores nativos del sistema actual:
-npm run desktop:build
+# Linux:
+NO_STRIP=true npm run desktop:build -- --bundles appimage,deb,rpm
 ```
 
-En Windows, `node tools/ensure-node.mjs` descarga y verifica el runtime Node oficial que se incluirá en el instalador. En macOS y Linux se incluye el Node utilizado para compilar.
+`desktop:build` genera instaladores nativos. `build:desktop` solo compila la interfaz Angular y **no** genera un instalador. No ejecutes varias compilaciones a la vez sobre el mismo repositorio.
+
+Para desarrollar el escritorio, después de `npm ci`:
+
+```bash
+npm run engine:build
+npm run desktop:prepare
+npm run desktop:dev
+```
+
+Para desarrollo web ejecuta `npm run engine:build` y `npm run dev`. Abre [http://localhost:4200/workspace](http://localhost:4200/workspace); el backend utiliza loopback en 8080. Detén el desarrollo web antes de iniciar `desktop:dev`, porque ambos usan el puerto 4200.
+
+### Compilar todas las plataformas sin instalar herramientas locales
+
+Haz un fork, entra en **Actions → Desktop packages → Run workflow** y elige tu rama. El workflow compila los cuatro destinos nativos en los runners Windows, macOS y Linux de GitHub. Descarga los artefactos `nexo-*` al terminar; se conservan durante 14 días. Una ejecución manual no publica una release. Actions debe estar habilitado en el fork y se aplican los límites de uso de GitHub.
+
+### Por qué sigue incluido Node
+
+| Uso                         | Responsabilidad actual                                                                                                                                                                                                                                                                                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Compilación                 | npm, Angular CLI y la compilación del frontend y el motor. Se ejecutan en el equipo de desarrollo o en CI.                                                                                                                                                                                             |
+| App instalada / backend API | Motor auxiliar privado en `engine/src/`: peticiones HTTP/GraphQL, ayudas de autenticación, cookies, scripts/tests JavaScript, runner y rendimiento, protocolos, importación/generación de código, mocks, datasets, MCP y cifrado del vault. Rust delega estas operaciones mediante `ExecutionGateway`. |
+| Web en servidor propio      | Angular SSR y su proxy HTTP utilizan Node. El renderizado público es independiente del servicio API Rust.                                                                                                                                                                                              |
+
+Rust ya se ocupa de la aplicación nativa, el servicio API, documentos/revisiones SQLite, usuarios/sesiones/permisos y el adaptador Git local. Quitar Node del ejecutable requiere implementar las operaciones delegadas en Rust manteniendo sus contratos. Los scripts JavaScript necesitan un motor JavaScript embebido o una alternativa compatible y los datos del vault necesitan una migración que los conserve. Borrar Node ahora rompería esas funciones.
+
+La migración prevista consiste en sustituir adaptadores detrás de los puertos existentes: primero transporte y servicios locales, después protocolos y scripting, validando cada sustitución con las pruebas de contrato actuales. Es viable un escritorio sin runtime Node; compilar Angular seguiría requiriéndolo y Angular SSR también, salvo que cambiemos el renderizado de la web. **Los scripts de preparación no eliminan Node del runtime de la aplicación.**
 
 ### Servidor propio
 
@@ -215,6 +325,12 @@ chore(packages): update installer manifests
 
 Un commit debe tener una intención clara. Explica el motivo en el cuerpo si no se deduce del cambio. Usa `!` y `BREAKING CHANGE:` cuando cambies un contrato de forma incompatible. Las PR deben mantener la arquitectura hexagonal del backend, Clean Architecture en frontend y los principios SOLID.
 
+### Revisión de mantenedores
+
+La rama principal se llama actualmente `master`. Las contribuciones deben llegar mediante pull request y necesitan una aprobación de un code owner; [CODEOWNERS](.github/CODEOWNERS) asigna por ahora esa revisión a **@DaftyCode**. Los commits nuevos invalidan las aprobaciones anteriores, las conversaciones deben estar resueltas y se bloquean los pushes forzados y el borrado de la rama para colaboradores. El propietario del repositorio personal conserva la excepción de administrador. La regla también cubre `main` si se utiliza ese nombre después.
+
+Para incorporar mantenedores, invítalos con permiso de escritura y añade sus usuarios de GitHub al primer patrón de propietarios. Los cambios en `CODEOWNERS` y workflows seguirán necesitando al propietario. Otras personas pueden dejar revisiones, pero su aprobación no sustituye la obligatoria de un code owner. La automatización de los índices de paquetes propone sus cambios para revisión en vez de escribir directamente en la rama principal.
+
 ### Comprobaciones
 
 ```bash
@@ -234,7 +350,7 @@ npm run test:ssr
 
 ## Publicar una versión
 
-`Desktop packages` puede ejecutarse manualmente desde Actions para comprobar los cuatro builds sin publicar una release. Un tag `vX.Y.Z` que coincida con las versiones del proyecto genera un **borrador de GitHub Release**, instaladores, `SHA256SUMS` y manifiestos WinGet/Homebrew. Después de revisar y publicar el borrador, el workflow del índice añade el cask y los manifiestos al repositorio. Las ramas protegidas pueden requerir adaptar ese paso a una PR.
+`Desktop packages` puede ejecutarse manualmente desde Actions para comprobar los cuatro builds sin publicar una release. Un tag `vX.Y.Z` que coincida con las versiones del proyecto genera un **borrador de GitHub Release**, instaladores, `SHA256SUMS` y manifiestos WinGet/Homebrew. Tras publicar el borrador, el workflow del índice propone el cask y los manifiestos en una rama independiente y abre una PR cuando lo permiten los ajustes del repositorio. Si no, deja la rama y los artefactos preparados para que el propietario abra la PR. El propietario revisa e incorpora esos cambios.
 
 El registro público en WinGet necesita una PR independiente al catálogo oficial. La preparación de paquetes y manifiestos no equivale a su aceptación en un gestor.
 

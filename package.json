@@ -27,7 +27,8 @@
     "server:start": "node tools/start-server.mjs",
     "nexo": "node tools/cli.mjs",
     "preview:server": "node tools/preview-server.mjs",
-    "test:packages": "node --test tools/package-manifests.test.mjs"
+    "test:packages": "node --test tools/package-manifests.test.mjs",
+    "test:bootstrap": "node --test tools/bootstrap/*.test.mjs"
   },
   "private": true,
   "packageManager": "npm@11.19.0",

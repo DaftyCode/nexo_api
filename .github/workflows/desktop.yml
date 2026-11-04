@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.13.0'
+          node-version-file: '.node-version'
           cache: npm
       - name: Install Linux build libraries
         if: runner.os == 'Linux'
@@ -52,6 +52,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run test:architecture
       - run: npm run test:packages
+      - run: npm run test:bootstrap
       - run: npm run engine:test
       - run: npm run engine:build
       - run: npm run desktop:prepare
@@ -84,7 +85,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '26.13.0'
+          node-version-file: '.node-version'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Download native packages
         env:
