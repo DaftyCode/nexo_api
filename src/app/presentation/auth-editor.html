@@ -23,6 +23,7 @@
         <option value="digest">{{ 'Digest auth' | transloco }}</option>
         <option value="oauth1">{{ 'OAuth 1.0' | transloco }}</option>
         <option value="oauth2">{{ 'OAuth 2.0' | transloco }}</option>
+        <option value="jwt">{{ 'JWT Bearer' | transloco }}</option>
         <option value="awsv4">{{ 'AWS Signature' | transloco }}</option>
         <option value="ntlm">{{ 'NTLM Authentication' | transloco }}</option>
         <option value="hawk">{{ 'Hawk Authentication' | transloco }}</option>
@@ -349,6 +350,104 @@
               (input)="text('sessionToken', $event)"
               autocomplete="off"
           /></label>
+        </details>
+      }
+      @case ('jwt') {
+        @let algorithm = value('algorithm', 'HS256');
+        @let inQuery = value('addTokenTo') === 'queryParam';
+        <label class="field"
+          >{{ 'Add JWT token to' | transloco
+          }}<select (change)="text('addTokenTo', $event)">
+            <option value="header" [selected]="!inQuery">
+              {{ 'Request Header' | transloco }}
+            </option>
+            <option value="queryParam" [selected]="inQuery">
+              {{ 'Query Param' | transloco }}
+            </option>
+          </select></label
+        >
+        <label class="field"
+          >{{ 'Algorithm' | transloco
+          }}<select (change)="text('algorithm', $event)">
+            @for (option of jwtAlgorithms; track option) {
+              <option [value]="option" [selected]="option === algorithm">{{ option }}</option>
+            }
+          </select></label
+        >
+        @if (algorithm.startsWith('HS')) {
+          <label class="field"
+            >{{ 'Secret' | transloco
+            }}<input
+              type="password"
+              [value]="value('secret')"
+              (input)="text('secret', $event)"
+              autocomplete="off"
+          /></label>
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="checked('isSecretBase64Encoded')"
+              (change)="toggle('isSecretBase64Encoded', $event)"
+            />{{ 'Secret Base64 encoded' | transloco }}</label
+          >
+        } @else {
+          <label class="field"
+            >{{ 'Private key' | transloco
+            }}<textarea
+              class="code-editor small"
+              [value]="value('privateKey')"
+              (input)="text('privateKey', $event)"
+              spellcheck="false"
+              placeholder="-----BEGIN PRIVATE KEY-----"
+            ></textarea>
+          </label>
+        }
+        <label class="field"
+          >{{ 'Payload' | transloco
+          }}<textarea
+            class="code-editor small"
+            [value]="value('payload')"
+            (input)="text('payload', $event)"
+            spellcheck="false"
+            [placeholder]="jwtPayloadExample"
+          ></textarea>
+        </label>
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          @if (inQuery) {
+            <label class="field"
+              >{{ 'Query param name' | transloco
+              }}<input
+                [value]="value('queryParamKey')"
+                (input)="text('queryParamKey', $event)"
+                placeholder="token"
+                spellcheck="false"
+            /></label>
+          } @else {
+            <label class="field"
+              >{{ 'Request header prefix' | transloco
+              }}<input
+                [value]="value('headerPrefix', 'Bearer')"
+                (input)="text('headerPrefix', $event)"
+                spellcheck="false"
+            /></label>
+          }
+          <label class="field"
+            >{{ 'JWT headers' | transloco
+            }}<textarea
+              class="code-editor small"
+              [value]="value('header')"
+              (input)="text('header', $event)"
+              spellcheck="false"
+              [placeholder]="jwtHeaderExample"
+            ></textarea>
+          </label>
         </details>
       }
       @case ('ntlm') {

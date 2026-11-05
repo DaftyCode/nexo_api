@@ -9,6 +9,16 @@ async function violations(page) {
     .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
+/**
+ * Clicks an "Add request" action and waits for the new request's tab. The workspace opens with
+ * an "Untitled request" tab and the new one opens once the collection is saved; on a slow
+ * machine, typing before that edits the untitled request instead.
+ */
+async function addRequest(page, action) {
+  await action.click();
+  await expect(page.getByRole('textbox', { name: 'Request name' })).toHaveValue('New request');
+}
+
 test('pages have no serious accessibility violations', async ({ page, nexo }) => {
   for (const path of ['/', '/docs']) {
     await page.goto(nexo.base + path);
@@ -35,7 +45,7 @@ test('a request is created, renamed, moved into a folder and sent', async ({ pag
   await expect(collection.locator('.tree-row', { hasText: 'Users' })).toBeVisible();
 
   await collection.getByLabel('Collection actions').click();
-  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
   await page.getByLabel('Request URL').fill(`${nexo.echo}/users`);
   await page.getByRole('button', { name: /Save/ }).first().click();
 
@@ -149,7 +159,7 @@ test('a request shows the authorization it inherits from its folder', async ({ p
 
   // A new request in the folder inherits it, as in Postman, and says where it comes from.
   await page.getByRole('button', { name: 'Collections', exact: true }).click();
-  await folder.getByLabel('Add request in folder').click();
+  await addRequest(page, folder.getByLabel('Add request in folder'));
   await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
   await expect(page.getByLabel('Authorization type')).toHaveValue('inherit');
   await expect(page.getByText('Uses Bearer token from the folder "Local".')).toBeVisible();
@@ -199,7 +209,7 @@ test('OAuth 2.0: a collection gets a token and its requests send it', async ({ p
   // A new request inherits the authorization and sends the token.
   await page.getByRole('button', { name: 'Collections', exact: true }).click();
   await collection.getByLabel('Collection actions').click();
-  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
   await page.getByLabel('Request URL').fill(`${nexo.echo}/me`);
   await page.getByRole('button', { name: 'Send' }).first().click();
   // The token is sent from the vault and redacted from what Nexo shows and keeps.
@@ -241,7 +251,7 @@ test('OAuth 1.0: a request is signed in the Authorization header', async ({ page
   await page.getByRole('button', { name: 'Create', exact: true }).click();
   const collection = page.locator('.collection', { hasText: 'OAuth1 API' });
   await collection.getByLabel('Collection actions').click();
-  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
   await page.getByLabel('Request URL').fill(`${nexo.echo}/statuses?count=2`);
   await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
   await page.getByLabel('Authorization type').selectOption('oauth1');
@@ -276,7 +286,7 @@ test('AWS Signature: a request is signed with the region and service chosen', as
   await page.getByRole('button', { name: 'Create', exact: true }).click();
   const collection = page.locator('.collection', { hasText: 'AWS API' });
   await collection.getByLabel('Collection actions').click();
-  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
   await page.getByLabel('Request URL').fill(`${nexo.echo}/items`);
   await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
   await page.getByLabel('Authorization type').selectOption('awsv4');
@@ -301,7 +311,7 @@ test('Hawk: a request is signed with the ID, key and extra data', async ({ page,
   await page.getByRole('button', { name: 'Create', exact: true }).click();
   const collection = page.locator('.collection', { hasText: 'Hawk API' });
   await collection.getByLabel('Collection actions').click();
-  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
   await page.getByLabel('Request URL').fill(`${nexo.echo}/resource`);
   await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
   await page.getByLabel('Authorization type').selectOption('hawk');
@@ -318,6 +328,34 @@ test('Hawk: a request is signed with the ID, key and extra data', async ({ page,
   await expect(response).toContainText('e2e-hawk-id');
   await expect(response).toContainText('e2e-extra');
   await expect(response).not.toContainText('e2e-hawk-key');
+});
+
+test('JWT Bearer: a signed token is sent with the payload and prefix chosen', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('JWT API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'JWT API' });
+  await collection.getByLabel('Collection actions').click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/me`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('jwt');
+  await page.getByLabel('Algorithm').selectOption('HS512');
+  await page.getByLabel('Secret', { exact: true }).fill('e2e-jwt-secret');
+  await page.getByLabel('Payload').fill('{"sub":"e2e"}');
+  await page.getByText('Advanced', { exact: true }).click();
+  await page.getByLabel('Request header prefix').fill('JWT');
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const response = page.locator('.response-section');
+  // {"alg":"HS512"} and {"sub":"e2e"} in Base64url.
+  await expect(response).toContainText('JWT eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmUifQ.');
+  await expect(response).not.toContainText('e2e-jwt-secret');
 });
 
 test('Ctrl+Enter in a script editor does not send the request', async ({ page, nexo }) => {

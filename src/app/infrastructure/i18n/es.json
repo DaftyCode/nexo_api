@@ -679,5 +679,15 @@
   "Delegated by": "Delegado por",
   "NTLM Authentication": "NTLM Authentication",
   "Domain": "Dominio",
-  "Workstation": "Estación de trabajo"
+  "Workstation": "Estación de trabajo",
+  "JWT Bearer": "JWT Bearer",
+  "Add JWT token to": "Añadir el token JWT a",
+  "Request Header": "Cabecera de la petición",
+  "Query Param": "Parámetro de query",
+  "Secret Base64 encoded": "Secreto codificado en Base64",
+  "Private key": "Clave privada",
+  "Payload": "Payload",
+  "Query param name": "Nombre del parámetro de query",
+  "Request header prefix": "Prefijo de la cabecera",
+  "JWT headers": "Cabeceras JWT"
 }

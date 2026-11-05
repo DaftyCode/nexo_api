@@ -126,4 +126,24 @@ describe('sanitize', () => {
     expect(text).not.toContain('hawk-secret');
     expect(text).not.toContain('insomnia-secret');
   });
+
+  it('removes the JWT secret and private key from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'jwt',
+          jwt: [
+            { key: 'algorithm', value: 'HS256' },
+            { key: 'secret', value: 'jwt-secret' },
+            { key: 'privateKey', value: '-----BEGIN PRIVATE KEY-----' },
+            { key: 'payload', value: '{"sub":"{{user}}"}' },
+          ],
+        },
+      }),
+    );
+    expect(text).not.toContain('jwt-secret');
+    expect(text).not.toContain('BEGIN PRIVATE KEY');
+    expect(text).toContain('HS256');
+    expect(text).toContain('{{user}}');
+  });
 });

@@ -63,6 +63,7 @@ const secretAuthKeys = new Set([
   'secretAccessKey',
   'sessionToken',
   'authKey',
+  'secret',
 ]);
 /**
  * Collection prepared for a shared Git repository: literal credentials in auth helpers and
@@ -82,6 +83,7 @@ export function exportableCollection(value: unknown): unknown {
           'awsv4',
           'hawk',
           'ntlm',
+          'jwt',
         ].includes(key)
       )
         return node.map((row) =>

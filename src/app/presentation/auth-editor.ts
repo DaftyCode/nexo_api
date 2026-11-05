@@ -29,6 +29,7 @@ const labels: Record<string, string> = {
   digest: 'Digest auth',
   oauth1: 'OAuth 1.0',
   oauth2: 'OAuth 2.0',
+  jwt: 'JWT Bearer',
   awsv4: 'AWS Signature',
   ntlm: 'NTLM Authentication',
   hawk: 'Hawk Authentication',
@@ -100,6 +101,23 @@ export class AuthEditor {
     { key: 'version', label: 'Version', placeholder: '1.0' },
     { key: 'realm', label: 'Realm', placeholder: 'testrealm@example.com' },
   ];
+  /** The algorithms of Postman's JWT Bearer. */
+  protected readonly jwtAlgorithms = [
+    'HS256',
+    'HS384',
+    'HS512',
+    'RS256',
+    'RS384',
+    'RS512',
+    'PS256',
+    'PS384',
+    'PS512',
+    'ES256',
+    'ES384',
+    'ES512',
+  ];
+  protected readonly jwtPayloadExample = '{ "sub": "{{user}}", "iat": 1700000000 }';
+  protected readonly jwtHeaderExample = '{ "typ": "JWT", "kid": "key-1" }';
   /** Postman's advanced Hawk fields; nonce and timestamp are generated when blank. */
   protected readonly hawkFields = [
     { key: 'user', label: 'User', placeholder: 'User' },
