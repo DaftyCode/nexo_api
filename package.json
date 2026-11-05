@@ -52,7 +52,7 @@
     "@tauri-apps/cli": "2.12.4",
     "rxjs": "7.8.2",
     "tslib": "2.9.1",
-    "typescript": "6.0.3"
+    "typescript": "7.0.2"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
