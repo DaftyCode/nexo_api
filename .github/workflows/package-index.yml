@@ -16,6 +16,20 @@ jobs:
   update:
     runs-on: ubuntu-22.04
     steps:
+      - name: Check the release came from Desktop packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tag '$RELEASE_TAG' is not vX.Y.Z. Push a vX.Y.Z tag so 'Desktop packages' builds the installers into a draft release, then publish that draft."
+            exit 1
+          fi
+          installers=$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '[.assets[].name | select(test("[.](msi|dmg|deb|rpm)$"))] | length')
+          if [ "$installers" -eq 0 ]; then
+            echo "::error::Release $RELEASE_TAG has no installers. Publish the draft created by 'Desktop packages' instead of a release created by hand."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.repository.default_branch }}

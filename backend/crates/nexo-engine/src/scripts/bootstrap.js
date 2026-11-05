@@ -153,7 +153,7 @@
     };
   }
   // Vault secrets are substituted only into the outgoing request by the host. Scripts never
-  // read them, so a shared collection cannot forward another member's secrets elsewhere.
+  // read them, so an imported or shared collection cannot send the user's secrets elsewhere.
   const scriptScopes = ['local', 'data', 'environment', 'collection', 'globals'];
   function replace(value, scopes = scriptScopes) {
     if (typeof value === 'string')

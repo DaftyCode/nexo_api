@@ -24,7 +24,7 @@ import {
 
 /** Variable scopes and inherited configuration used to execute a request. */
 export interface ExecutionContext {
-  /** Workspace whose role rules apply to the execution. */
+  /** Workspace that scopes the execution, such as its cookie jar. */
   workspace?: string;
   environment: readonly VariableRow[];
   globals: readonly VariableRow[];

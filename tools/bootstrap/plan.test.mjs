@@ -11,7 +11,7 @@ test('selects native packages and rejects invalid arguments before installing an
   assert.throws(() => optionsFor(['--unrecognized'], 'darwin'));
   assert.equal(optionsFor(['--check', '--skip-system-install'], 'linux').check, true);
 });
-test('keeps the Node sidecar and Rust installer on the same native architecture', () => {
+test('installs the Rust toolchain for the same native architecture as the build Node', () => {
   assert.equal(rustupTarget('darwin', 'arm64'), 'aarch64-apple-darwin');
   assert.equal(rustupTarget('win32', 'x64'), 'x86_64-pc-windows-msvc');
   assert.equal(rustupTarget('linux', 'x64'), 'x86_64-unknown-linux-gnu');

@@ -3,7 +3,7 @@ import { PreferencePort } from '../application/ports';
 
 const prefix = 'nexo.preference.';
 
-/** Stores preferences in `localStorage`; unavailable storage (SSR, privacy modes) is ignored. */
+/** Stores preferences in `localStorage`; unavailable storage (privacy modes, quota) is ignored. */
 @Injectable()
 export class BrowserPreferences implements PreferencePort {
   private readonly document = inject(DOCUMENT);

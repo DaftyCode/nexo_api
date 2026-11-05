@@ -230,7 +230,7 @@ El script prepara compilador, WebKitGTK, OpenSSL, D-Bus y herramientas de empaqu
 | macOS                  | `target/release/bundle/macos/Nexo API.app` y `target/release/bundle/dmg/*.dmg`                                     |
 | Linux                  | `target/release/bundle/appimage/*.AppImage`, `target/release/bundle/deb/*.deb` y `target/release/bundle/rpm/*.rpm` |
 
-Instala o copia el **paquete generado**. El binario suelto de `target/release/` no incluye por sí solo todos los recursos del runtime. La app empaquetada incluye el motor necesario; sus usuarios no necesitan instalar Node ni Rust.
+Instala o copia el **paquete generado**. La app empaquetada es autosuficiente: sus usuarios no necesitan instalar Node ni Rust.
 
 Node y las herramientas descargadas se guardan en `.build-tools/`, excluida de Git. Rustup utiliza sus directorios habituales del usuario; los SDK nativos se instalan en el sistema. Las dependencias y los resultados de compilación también están excluidos. Las siguientes ejecuciones reutilizan herramientas y cachés; los gestores pueden seguir accediendo a Internet.
 
