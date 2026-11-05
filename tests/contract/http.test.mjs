@@ -382,6 +382,42 @@ test('the server accepts every operation of the generated TypeScript contract', 
   assert.equal(unknown.body.error, 'Unknown execution operation');
 });
 
+test('typed payloads are refused at the edge, naming the field', async () => {
+  const misspelled = await server.api('POST', '/execute/request', {
+    workspace: 'local',
+    request: { url: `${echo.url}/never` },
+    strictSsl: false,
+  });
+  assert.equal(misspelled.status, 400);
+  assert.equal(misspelled.body.code, 'validation');
+  assert.match(
+    misspelled.body.error,
+    /^Invalid request payload at strictSsl: unknown field `strictSsl`/,
+  );
+  const wrongType = await server.api('POST', '/execute/run', {
+    workspace: 'local',
+    collection: { info: { name: 'C' }, item: [] },
+    iterations: 'many',
+  });
+  assert.equal(wrongType.status, 400);
+  assert.match(
+    wrongType.body.error,
+    /^Invalid run payload at iterations: invalid type: string "many"/,
+  );
+  const row = await server.api('POST', '/execute/request', {
+    workspace: 'local',
+    request: { url: `${echo.url}/never` },
+    variables: [{ value: 'no key' }],
+  });
+  assert.match(row.body.error, /at variables\[0\]: missing field `key`/);
+  // Postman documents inside stay open: unknown item fields still reach the engine.
+  const sent = await server.execute('request', {
+    request: { url: `${echo.url}/typed`, nexoNote: 'kept' },
+    variables: [{ key: 'a', value: '1', type: 'default', description: 'Postman field' }],
+  });
+  assert.equal(sent.status, 200);
+});
+
 test('run status returns only entries after the cursor', async () => {
   const started = await server.execute('run', {
     iterations: 3,

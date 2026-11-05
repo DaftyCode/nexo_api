@@ -2807,7 +2807,9 @@ version = "0.3.0"
 dependencies = [
  "async-trait",
  "nexo-domain",
+ "serde",
  "serde_json",
+ "serde_path_to_error",
  "tokio",
  "tracing",
  "uuid",

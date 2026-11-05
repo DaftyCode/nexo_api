@@ -1,7 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { WORKSPACE } from '../composition/providers';
-import { ExecutionOperation } from '../application/operations';
 import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
 import {
   RequestAncestor,
@@ -22,7 +21,7 @@ import {
   oauth2UsesBrowser,
   writeAuth,
 } from '../domain/auth';
-import { ExecutionContext } from '../application/workspace-use-cases';
+import { ExecutionContext, WorkspaceExecuteArgs } from '../application/workspace-use-cases';
 import { TabsStore } from './tabs-store';
 
 export type SettingsTab = 'variables' | 'authorization' | 'scripts';
@@ -128,8 +127,8 @@ export class WorkspaceState {
     return this.status.describe(error);
   }
   /** Runs an engine operation inside the current workspace. */
-  execute<T>(operation: ExecutionOperation, payload: Record<string, unknown> = {}): Promise<T> {
-    return this.cases.execute<T>(this.workspaceId(), operation, payload);
+  execute<T>(...args: WorkspaceExecuteArgs): Promise<T> {
+    return this.cases.execute<T>(this.workspaceId(), ...args);
   }
 
   // Session and workspaces.

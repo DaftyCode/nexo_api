@@ -1,6 +1,7 @@
 import { Health, Workspace, WorkspaceDocument } from '../domain/models';
 import { SecretSummary } from '../domain/secrets';
 import { ExecutionOperation, GitOperation } from './operations';
+import { PayloadOf } from './payloads';
 
 /** A failed backend call with the stable error code the backend reported. */
 export class ApiFailure extends Error {
@@ -45,8 +46,15 @@ export interface DocumentRepositoryPort {
   remove(document: WorkspaceDocument): Promise<void>;
   revisions(id: string): Promise<RevisionEntry[]>;
 }
+/**
+ * An operation with its payload. Written as one tuple per operation so the payload is checked
+ * against the operation's generated type even when the result type is given explicitly.
+ */
+export type ExecuteArgs = {
+  [O in ExecutionOperation]: [operation: O, payload: PayloadOf<O>];
+}[ExecutionOperation];
 export interface ExecutionPort {
-  execute<T>(operation: ExecutionOperation, payload: unknown): Promise<T>;
+  execute<T>(...args: ExecuteArgs): Promise<T>;
 }
 export interface VersionControlPort {
   git<T>(operation: GitOperation, payload: unknown): Promise<T>;

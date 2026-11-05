@@ -1,6 +1,7 @@
 //! Use cases depend only on domain types and outbound ports.
 pub mod mcp;
 pub mod operations;
+pub mod payloads;
 pub mod ports;
 use nexo_domain::{
     Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, SecretSummary,
@@ -233,6 +234,11 @@ impl Application {
         for field in INTERNAL_FIELDS {
             payload.remove(field);
         }
+        // Checked against the operation's type before anything else reads it.
+        let Value::Object(mut payload) = payloads::validate(operation, Value::Object(payload))?
+        else {
+            return Err(Error::Validation("Expected an object".into()));
+        };
         if let Some(workspace) = payload.get("workspace").and_then(Value::as_str) {
             let workspace = WorkspaceId::parse(workspace)?;
             self.require_workspace(&workspace).await?;

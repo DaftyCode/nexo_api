@@ -1,6 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { WORKSPACE } from '../composition/providers';
-import { Run, mergeRun } from '../domain/models';
+import { Run, asCollection, mergeRun } from '../domain/models';
 import { toPortableRows } from '../domain/variables';
 import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
@@ -27,7 +27,7 @@ export class RunnerStore {
         this.state.workspaceId(),
         'run',
         {
-          collection: collection.value,
+          collection: asCollection(collection.value),
           variables: this.state.variables(),
           globals: toPortableRows(this.state.globalRows()),
           iterations,

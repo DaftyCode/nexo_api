@@ -1,5 +1,6 @@
-import { ApiPort, FilePort, PreferencePort } from './ports';
+import { ApiPort, ExecuteArgs, FilePort, PreferencePort } from './ports';
 import { ExecutionOperation } from './operations';
+import { PayloadOf } from './payloads';
 import { itemAt } from '../domain/collection-tree';
 import { OAuth2SignIn, OAuth2SignInStatus, OAuth2Token, OAuth2TokenDetails } from '../domain/auth';
 import {
@@ -21,6 +22,11 @@ import {
   toPortableRows,
   toVariableRows,
 } from '../domain/variables';
+
+/** An operation and its payload without the workspace, which `execute` adds. */
+export type WorkspaceExecuteArgs = {
+  [O in ExecutionOperation]: [operation: O, payload?: Omit<PayloadOf<O>, 'workspace'>];
+}[ExecutionOperation];
 
 /** Variable scopes and inherited configuration used to execute a request. */
 export interface ExecutionContext {
@@ -105,13 +111,9 @@ export class WorkspaceUseCases {
     return this.api.remove(document);
   }
 
-  /** Runs an engine operation in a workspace. */
-  execute<T>(
-    workspace: string,
-    operation: ExecutionOperation,
-    payload: Record<string, unknown> = {},
-  ) {
-    return this.api.execute<T>(operation, { ...payload, workspace });
+  /** Runs an engine operation in a workspace; its payload is checked against its type. */
+  execute<T>(workspace: string, ...[operation, payload]: WorkspaceExecuteArgs) {
+    return this.api.execute<T>(...([operation, { ...payload, workspace }] as ExecuteArgs));
   }
   async createDocument(
     workspace: string,
