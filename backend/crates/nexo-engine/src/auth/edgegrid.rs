@@ -160,6 +160,9 @@ mod tests {
     const NONCE: &str = "nonce-xx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
     const TIMESTAMP: &str = "20140321T19:34:21+0000";
 
+    /// An official case: method, path, body, headers and the expected signature.
+    type Case<'a> = (&'a str, &'a str, String, Vec<(&'a str, &'a str)>, &'a str);
+
     fn signed(
         method: &str,
         path: &str,
@@ -203,7 +206,7 @@ mod tests {
 
     #[test]
     fn matches_the_akamai_test_cases() {
-        let cases: Vec<(&str, &str, String, Vec<(&str, &str)>, &str)> = vec![
+        let cases: Vec<Case> = vec![
             (
                 "GET",
                 "/",

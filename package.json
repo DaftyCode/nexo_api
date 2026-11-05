@@ -17,7 +17,7 @@
     "test:architecture": "node tools/check-architecture.mjs",
     "check": "npm run test:architecture && ng build",
     "build:desktop": "ng build --configuration desktop",
-    "backend:clippy": "node tools/cargo.mjs clippy --locked --workspace --exclude nexo-desktop -- -D warnings",
+    "backend:clippy": "node tools/cargo.mjs clippy --locked --workspace --exclude nexo-desktop --all-targets -- -D warnings",
     "test:server": "node tools/runtime-node.mjs tools/verify-server.mjs",
     "nexo": "node tools/cli.mjs",
     "test:packages": "node --test tools/package-manifests.test.mjs",
