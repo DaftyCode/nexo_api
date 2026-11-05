@@ -21,6 +21,7 @@ import {
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { report, runStep } from '../bootstrap/failures.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 process.chdir(root);
@@ -30,6 +31,8 @@ const port = process.env.NEXO_WEB_PORT ?? '4000';
 const home = join(root, '.nexo-web');
 const logs = join(home, 'logs');
 const stampPath = join(home, 'install.json');
+/** Where the output of a failed build step is kept, to share with IT. */
+const failureLog = join(logs, 'install-error.log');
 /** The desktop app's data directory, shared with the web version. */
 function dataDirectory() {
   if (process.env.NEXO_DATA_DIR) return process.env.NEXO_DATA_DIR;
@@ -107,13 +110,28 @@ function outdated() {
     return true;
   }
 }
-function build() {
+async function build() {
   console.log('Building Nexo API web (this takes a few minutes the first time)...');
   if (!existsSync('node_modules/.package-lock.json'))
     // Only the build tools: lint, tests and their servers are for development (package.json).
-    run(process.execPath, [npm(), 'ci', '--omit=dev', '--no-audit', '--no-fund']);
-  run(process.execPath, ['node_modules/@angular/cli/bin/ng.js', 'build']);
-  run(cargo(), ['build', '--locked', '--release', '-p', 'nexo-server']);
+    await runStep(
+      'Installing npm dependencies',
+      process.execPath,
+      [npm(), 'ci', '--omit=dev', '--no-audit', '--no-fund'],
+      { log: failureLog },
+    );
+  await runStep(
+    'Building the web interface',
+    process.execPath,
+    ['node_modules/@angular/cli/bin/ng.js', 'build'],
+    { log: failureLog },
+  );
+  await runStep(
+    'Building the Rust launcher',
+    cargo(),
+    ['build', '--locked', '--release', '-p', 'nexo-server'],
+    { log: failureLog },
+  );
   mkdirSync(home, { recursive: true });
   writeFileSync(
     stampPath,
@@ -202,18 +220,25 @@ async function launch() {
   );
 }
 
-if (args.has('--stop')) stop();
-else if (args.has('--status')) {
-  console.log((await running()) ? `Running at http://127.0.0.1:${instance().port}` : 'Not running');
-} else {
-  if (args.has('--rebuild') && (await running())) stop();
-  if (args.has('--rebuild') || !installed()) build();
-  else if (outdated())
+try {
+  if (args.has('--stop')) stop();
+  else if (args.has('--status')) {
     console.log(
-      `Nexo API web is installed. The sources changed since it was built; update it with ${
-        windows ? '.\\install-web.ps1 -Rebuild' : 'bash install-web.sh --rebuild'
-      }.`,
+      (await running()) ? `Running at http://127.0.0.1:${instance().port}` : 'Not running',
     );
-  else console.log('Nexo API web is installed and up to date.');
-  await launch();
+  } else {
+    if (args.has('--rebuild') && (await running())) stop();
+    if (args.has('--rebuild') || !installed()) await build();
+    else if (outdated())
+      console.log(
+        `Nexo API web is installed. The sources changed since it was built; update it with ${
+          windows ? '.\\install-web.ps1 -Rebuild' : 'bash install-web.sh --rebuild'
+        }.`,
+      );
+    else console.log('Nexo API web is installed and up to date.');
+    await launch();
+  }
+} catch (error) {
+  report('Install stopped', error);
+  process.exitCode = 1;
 }

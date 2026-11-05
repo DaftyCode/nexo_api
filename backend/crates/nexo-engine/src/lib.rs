@@ -7,7 +7,7 @@ use nexo_application::{
     operations::Operation,
     ports::{ExecutionGateway, SecretVault},
 };
-use nexo_domain::{Error, Result};
+use nexo_domain::{Error, Result, SecretSummary, hosts::AllowedHosts};
 use serde_json::{Map, Value, json};
 use std::{path::Path, sync::Arc, time::Duration};
 
@@ -27,6 +27,7 @@ pub mod performance;
 pub mod realtime;
 pub mod runner;
 pub mod scripts;
+pub mod secret_hosts;
 pub mod tls;
 pub mod transport;
 pub mod vault;
@@ -237,6 +238,10 @@ impl Engine {
     /// The token is kept in the vault; the answer describes it without its values.
     async fn oauth2_token(&self, payload: &Value) -> Result<Value> {
         let auth = runner::resolved_auth(payload)?;
+        let restricted = secret_hosts::referenced_by(
+            &secret_hosts::restricted(payload),
+            &runner::request_auth(payload)?,
+        );
         if let Some(id) = payload["tokenId"].as_str().filter(|t| !t.is_empty()) {
             let details = oauth2_tokens::details(&self.vault, id).await?;
             let refresh = details["refreshToken"]
@@ -244,11 +249,14 @@ impl Engine {
                 .filter(|t| !t.is_empty())
                 .ok_or_else(|| invalid("This token has no refresh token"))?;
             let request = oauth2::token_request(&auth, oauth2::Exchange::Refresh(refresh))?;
-            let token = self.post_token(request).await?;
+            let token = self.post_token(request, &restricted).await?;
             return oauth2_tokens::replace(&self.vault, id, &token).await;
         }
         let token = self
-            .post_token(oauth2::token_request(&auth, oauth2::Exchange::New)?)
+            .post_token(
+                oauth2::token_request(&auth, oauth2::Exchange::New)?,
+                &restricted,
+            )
             .await?;
         oauth2_tokens::store(&self.vault, &auth::text(auth.get("tokenName")), &token).await
     }
@@ -318,7 +326,8 @@ impl Engine {
         else {
             return;
         };
-        let Ok(token) = self.post_token(request).await else {
+        let restricted = secret_hosts::referenced_by(&secret_hosts::restricted(payload), &stored);
+        let Ok(token) = self.post_token(request, &restricted).await else {
             return;
         };
         if oauth2_tokens::replace(&self.vault, &id, &token)
@@ -378,7 +387,9 @@ impl Engine {
                 let Ok(request) = oauth2::token_request(&settings, oauth2::Exchange::New) else {
                     return;
                 };
-                let Ok(answer) = self.post_token(request).await else {
+                let restricted =
+                    secret_hosts::referenced_by(&secret_hosts::restricted(payload), &stored);
+                let Ok(answer) = self.post_token(request, &restricted).await else {
                     return;
                 };
                 let Ok(token) = oauth2_tokens::store(&self.vault, &name, &answer).await else {
@@ -428,6 +439,10 @@ impl Engine {
                 let relay = std::env::var("NEXO_OAUTH_RELAY_URL")
                     .unwrap_or_else(|_| oauth2::RELAY_URL.to_string());
                 let started = self.oauth2_flows.start(auth, &relay).await?;
+                if let Err(error) = self.check_sign_in(payload, &started.id) {
+                    self.oauth2_flows.remove(&started.id);
+                    return Err(error);
+                }
                 let opened = payload["openBrowser"] != false
                     && oauth2_flow::open_browser(started.authorization_url.as_str());
                 Ok(json!({
@@ -458,6 +473,29 @@ impl Engine {
             other => Err(invalid(format!("Unknown sign-in action: {other}"))),
         }
     }
+    /// A browser sign-in may only send restricted vault secrets to hosts they allow: in the
+    /// address the browser opens and in the token request that exchanges its code.
+    fn check_sign_in(&self, payload: &Value, session: &str) -> Result<()> {
+        let restricted = secret_hosts::referenced_by(
+            &secret_hosts::restricted(payload),
+            &runner::request_auth(payload)?,
+        );
+        if restricted.is_empty() {
+            return Ok(());
+        }
+        let flow = self.oauth2_flows.get(session)?;
+        secret_hosts::check_address(&restricted, &flow.authorization_url)?;
+        let exchange = oauth2::Exchange::Code {
+            code: "",
+            redirect_uri: &flow.redirect_uri,
+            verifier: flow.verifier.as_deref(),
+        };
+        match oauth2::token_request(&flow.auth, exchange) {
+            Ok(request) => secret_hosts::check_token_request(&restricted, &request),
+            // The implicit grant has no token request.
+            Err(_) => Ok(()),
+        }
+    }
     /// Turns the provider's answer into a token once it arrives, and reports the sign-in.
     async fn oauth2_progress(&self, session: &str) -> Result<Value> {
         let flow = self.oauth2_flows.get(session)?;
@@ -472,7 +510,8 @@ impl Engine {
                             verifier: flow.verifier.as_deref(),
                         };
                         match oauth2::token_request(&flow.auth, exchange) {
-                            Ok(request) => self.post_token(request).await,
+                            // Its secrets were checked when the sign-in started.
+                            Ok(request) => self.post_token(request, &[]).await,
                             Err(error) => Err(error),
                         }
                     }
@@ -502,8 +541,36 @@ impl Engine {
             }
         })
     }
-    /// Sends a token request and reads the answer.
-    async fn post_token(&self, request: oauth2::TokenRequest) -> Result<Value> {
+    /// The allowed hosts of the restricted vault secrets a payload resolved, as
+    /// `secretHosts`. Only the engine sets it: the application discards it from clients.
+    async fn with_secret_hosts(&self, mut payload: Value) -> Result<Value> {
+        let Some(resolved) = payload["resolvedSecrets"]
+            .as_object()
+            .filter(|secrets| !secrets.is_empty())
+        else {
+            return Ok(payload);
+        };
+        let hosts = self.vault.hosts().await?;
+        let restricted: Map<String, Value> = resolved
+            .keys()
+            .filter_map(|name| {
+                let allowed = hosts.get(name).filter(|allowed| !allowed.is_empty())?;
+                Some((name.clone(), json!(allowed)))
+            })
+            .collect();
+        if !restricted.is_empty() {
+            payload["secretHosts"] = Value::Object(restricted);
+        }
+        Ok(payload)
+    }
+    /// Sends a token request and reads the answer. `restricted` are the vault secrets of the
+    /// settings it comes from that may only go to some hosts.
+    async fn post_token(
+        &self,
+        request: oauth2::TokenRequest,
+        restricted: &[secret_hosts::Restricted],
+    ) -> Result<Value> {
+        secret_hosts::check_token_request(restricted, &request)?;
         let client = self.client_for(&request.url).await?;
         let mut builder = client.post(request.url.clone());
         for (name, value) in &request.headers {
@@ -605,6 +672,7 @@ fn header_pairs(value: &Value) -> Vec<(String, String)> {
 #[async_trait]
 impl ExecutionGateway for Engine {
     async fn execute(&self, operation: Operation, payload: Value) -> Result<Value> {
+        let payload = self.with_secret_hosts(payload).await?;
         match operation {
             Operation::Request => {
                 let payload = self.prepare_oauth2(payload).await;
@@ -669,13 +737,20 @@ impl ExecutionGateway for Engine {
 #[async_trait]
 impl SecretVault for Engine {
     /// OAuth 2.0 tokens are kept under reserved names, managed only through `oauth2.tokens`.
-    async fn put(&self, name: &str, value: &str) -> Result<()> {
+    async fn put(
+        &self,
+        name: &str,
+        value: Option<&str>,
+        allowed_hosts: Option<&AllowedHosts>,
+    ) -> Result<()> {
         if oauth2_tokens::is_reserved(name) {
             return Err(invalid(
                 "Names starting with nexo-oauth2 are reserved for OAuth 2.0 tokens",
             ));
         }
-        self.vault.put(name, value).await
+        self.vault
+            .store(name, value, allowed_hosts.map(AllowedHosts::patterns))
+            .await
     }
     async fn remove(&self, name: &str) -> Result<()> {
         if oauth2_tokens::is_reserved(name) {
@@ -691,13 +766,17 @@ impl SecretVault for Engine {
         }
         self.vault.get(name).await
     }
-    async fn names(&self) -> Result<Vec<String>> {
+    async fn secrets(&self) -> Result<Vec<SecretSummary>> {
         Ok(self
             .vault
-            .names()
+            .hosts()
             .await?
             .into_iter()
-            .filter(|name| !oauth2_tokens::is_reserved(name))
+            .filter(|(name, _)| !oauth2_tokens::is_reserved(name))
+            .map(|(name, allowed_hosts)| SecretSummary {
+                name,
+                allowed_hosts,
+            })
             .collect())
     }
 }

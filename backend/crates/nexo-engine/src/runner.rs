@@ -476,21 +476,32 @@ impl Step {
     }
 }
 
-/// The authorization a request would be sent with: the request's own or the inherited one,
-/// with `{{variables}}` and vault secrets replaced exactly as when it is sent.
-pub fn resolved_auth(payload: &Value) -> Result<Map<String, Value>> {
+/// The first request of a payload and its authorization: its own or the inherited one,
+/// before its variables are replaced.
+fn authorized_step(payload: &Value) -> Result<(Value, Step)> {
     let collection = as_collection(payload)?;
     let mut steps = Vec::new();
     flatten(&collection, &[], &mut steps);
     let step = steps
-        .first()
+        .into_iter()
+        .next()
         .ok_or_else(|| Error::Validation("Nothing to authorize".into()))?;
-    let auth = step.request()["auth"].clone();
-    if !auth.is_object() {
+    if !step.request()["auth"].is_object() {
         return Err(Error::Validation(
             "No authorization is set for this request".into(),
         ));
     }
+    Ok((collection, step))
+}
+/// The authorization a request would be sent with, before its variables are replaced.
+pub fn request_auth(payload: &Value) -> Result<Value> {
+    Ok(authorized_step(payload)?.1.request()["auth"].clone())
+}
+/// The authorization a request would be sent with: the request's own or the inherited one,
+/// with `{{variables}}` and vault secrets replaced exactly as when it is sent.
+pub fn resolved_auth(payload: &Value) -> Result<Map<String, Value>> {
+    let (collection, step) = authorized_step(payload)?;
+    let auth = step.request()["auth"].clone();
     let mut collection_variables = values(&collection["variable"]);
     collection_variables.extend(step.layered_variables());
     let secrets = session_secrets(payload);
@@ -567,6 +578,7 @@ async fn run_steps(
     let mut steps = Vec::new();
     flatten(&collection, &[], &mut steps);
     let secrets = session_secrets(payload);
+    let restricted = crate::secret_hosts::restricted(payload);
     let jar = jars.get(&cookie_scope(payload));
     outcome.collection = values(&collection["variable"]);
     let mut local = Map::new();
@@ -640,10 +652,12 @@ async fn run_steps(
             send_queued(&session, transport).await?;
             let state = session.snapshot()?;
             if state["skip"] != true {
+                // Where restricted secrets go, read before their references are replaced.
+                let placements = crate::secret_hosts::placements(&restricted, &state["request"]);
                 let mut outgoing = session.replace(&state["request"])?;
                 let url = request_url(&outgoing["url"]);
                 outgoing["url"] = json!(url);
-                let mut result = match transport.request(&outgoing).await {
+                let mut result = match transport.request(&outgoing, &placements).await {
                     Ok(result) => result,
                     Err(error) => {
                         outcome.failure.get_or_insert_with(|| error.to_string());
@@ -738,7 +752,8 @@ async fn send_queued(session: &ScriptSession, transport: &Transport) -> Result<(
             if let Some(url) = request.get("url").map(request_url) {
                 request["url"] = json!(url);
             }
-            match transport.request(&request).await {
+            // Scripts cannot use vault secrets, so their requests carry none.
+            match transport.request(&request, &[]).await {
                 Ok(result) => session.deliver(&id, Some(&result), None)?,
                 Err(error) => session.deliver(&id, None, Some(&error.to_string()))?,
             }

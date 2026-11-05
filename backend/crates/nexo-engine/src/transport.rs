@@ -264,7 +264,13 @@ impl Transport {
     }
 
     /// Sends a collection-format request (`url`, `method`, `header`, `auth`, `body`).
-    pub async fn request(&self, input: &Value) -> Result<Value> {
+    /// `secrets` are the restricted vault secrets it carries: no hop, redirects included,
+    /// takes one to a host it does not allow.
+    pub async fn request(
+        &self,
+        input: &Value,
+        secrets: &[crate::secret_hosts::Placement],
+    ) -> Result<Value> {
         let started = Instant::now();
         let mut url = parse_url(&request_url(&input["url"]))?;
         let mut method = crate::collection::http_method(input["method"].as_str().unwrap_or("GET"))?;
@@ -420,6 +426,16 @@ impl Transport {
                         .await?;
                 }
             }
+            crate::secret_hosts::check_hop(
+                secrets,
+                &crate::secret_hosts::Hop {
+                    host: &host,
+                    same_origin: url.origin() == origin,
+                    body: body.is_some(),
+                    credential_headers: &credential_headers,
+                    trust_redirect_credentials: self.options.trust_redirect_credentials,
+                },
+            )?;
             let mut hop = headers.clone();
             if url.origin() != origin && !self.options.trust_redirect_credentials {
                 for name in &credential_headers {

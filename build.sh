@@ -28,7 +28,14 @@ elif [ ! -x "$node_executable" ]; then
   release_url="https://nodejs.org/dist/v$node_version"
   mkdir -p .build-tools/downloads .build-tools/node
   echo "Preparing official Node $node_version (SHA-256 verified)..."
-  curl --fail --location --connect-timeout 20 --max-time 120 --proto '=https' --tlsv1.2 "$release_url/SHASUMS256.txt" -o .build-tools/downloads/SHASUMS256.txt
+  download() {
+    curl --fail --location --connect-timeout 20 --max-time "$2" --proto '=https' --tlsv1.2 "$1" -o "$3" || {
+      echo "Build stopped: downloading Node failed." >&2
+      echo "Hint: rerun the script; on a company network the proxy may be cutting the connection. Check the address with: curl -I $1. If it keeps failing, give IT that exact URL." >&2
+      exit 1
+    }
+  }
+  download "$release_url/SHASUMS256.txt" 120 .build-tools/downloads/SHASUMS256.txt
   expected=$(awk -v name="$archive_name" '$2 == name { print $1 }' .build-tools/downloads/SHASUMS256.txt)
   if ! [[ "$expected" =~ ^[a-fA-F0-9]{64}$ ]]; then echo 'No official Node archive checksum found' >&2; exit 1; fi
   archive_path=".build-tools/downloads/$archive_name"
@@ -36,7 +43,7 @@ elif [ ! -x "$node_executable" ]; then
     if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi
   }
   if [ ! -f "$archive_path" ] || [ "$(checksum "$archive_path")" != "$expected" ]; then
-    curl --fail --location --connect-timeout 20 --max-time 180 --proto '=https' --tlsv1.2 "$release_url/$archive_name" -o "$archive_path"
+    download "$release_url/$archive_name" 180 "$archive_path"
   fi
   if [ "$(checksum "$archive_path")" != "$expected" ]; then echo 'Node checksum mismatch. Nothing was executed.' >&2; exit 1; fi
   tar -xzf "$archive_path" -C .build-tools/node

@@ -44,7 +44,13 @@
     </div>
   } @else if (response(); as r) {
     @if (r.error) {
-      <div class="alert error">{{ r.error }}</div>
+      <div class="alert error">
+        @if (blocked(r.error); as b) {
+          {{ 'error.secretHost' | transloco: { v0: b.name, v1: b.host } }}
+        } @else {
+          {{ r.error }}
+        }
+      </div>
     }
     @switch (tab()) {
       @case ('body') {

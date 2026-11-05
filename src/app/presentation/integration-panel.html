@@ -176,6 +176,19 @@
               >{{ 'Value' | transloco
               }}<input type="password" [formField]="fields.secretValue" autocomplete="off"
             /></label>
+            <label class="field"
+              >{{ 'Allowed domains' | transloco
+              }}<input
+                [formField]="fields.secretDomains"
+                placeholder="api.example.com, *.example.com"
+                aria-describedby="secret-domains-help"
+            /></label>
+            <p class="muted" id="secret-domains-help">
+              {{
+                'Separate domains with commas; *.example.com allows its subdomains. Leave it empty to allow every domain. To change only the domains of a saved secret, leave the value empty.'
+                  | transloco
+              }}
+            </p>
             <div class="row">
               <button class="button primary" (click)="secret()">
                 {{ 'Save secret' | transloco }}</button
@@ -197,12 +210,23 @@
             </p>
             <h3>{{ 'Saved secrets' | transloco }}</h3>
             <ul class="secret-list">
-              @for (name of secretNames(); track name) {
+              @for (saved of secrets(); track saved.name) {
                 <li>
-                  <code>{{ '{{vault:' + name + '}}' }}</code>
-                  <button class="text-button danger" (click)="secret(true, name)">
-                    {{ 'Remove' | transloco }}
-                  </button>
+                  <span class="secret-entry">
+                    <code>{{ '{{vault:' + saved.name + '}}' }}</code>
+                    <small class="muted">{{
+                      saved.allowedHosts.length
+                        ? formatDomains(saved.allowedHosts)
+                        : ('All domains' | transloco)
+                    }}</small>
+                  </span>
+                  <span class="row">
+                    <button class="text-button" (click)="editSecret(saved)">
+                      {{ 'Edit' | transloco }}</button
+                    ><button class="text-button danger" (click)="secret(true, saved.name)">
+                      {{ 'Remove' | transloco }}
+                    </button>
+                  </span>
                 </li>
               } @empty {
                 <li class="muted">{{ 'No secrets saved yet.' | transloco }}</li>

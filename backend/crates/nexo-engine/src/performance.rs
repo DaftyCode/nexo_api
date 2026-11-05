@@ -145,6 +145,7 @@ impl Performance {
             "globals",
             "context",
             "resolvedSecrets",
+            "secretHosts",
             "strictSSL",
             "followRedirects",
             "workspace",

@@ -5,6 +5,7 @@ import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { DATA } from '../composition/providers';
 import { RunnerStore } from './runner-store';
+import { blockedSecret } from '../domain/secrets';
 
 @Component({
   imports: [TranslocoPipe, FormField],
@@ -19,6 +20,7 @@ export class RunnerPanel {
   protected readonly runner = inject(RunnerStore);
   /** Starting, polling and cancelling runs report their errors in this panel. */
   protected readonly task = this.runner.task;
+  protected readonly blocked = blockedSecret;
   protected readonly model = signal({ collection: '', iterations: 1, data: '[]' });
   protected readonly fields = form(this.model, (p) => {
     min(p.iterations, 1);

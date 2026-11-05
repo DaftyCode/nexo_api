@@ -7,13 +7,18 @@ import { fileURLToPath } from 'node:url';
 import { optionsFor, rustupTarget } from './plan.mjs';
 import { verifiedDownload } from './download.mjs';
 import { prepareNativeRust } from './rust.mjs';
+import { report, runStep } from './failures.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 process.chdir(root);
 const options = optionsFor(process.argv.slice(2), process.platform);
 const nodeVersion = (await readFile('.node-version', 'utf8')).trim();
-if (process.version !== `v${nodeVersion}`)
-  throw new Error(`Use build.ps1 or build.sh to prepare Node ${nodeVersion}`);
+if (process.version !== `v${nodeVersion}`) {
+  console.error(`Use build.ps1 or build.sh to prepare Node ${nodeVersion}.`);
+  process.exit(1);
+}
+/** Where the output of a failed npm or Cargo step is kept, to share with IT. */
+const failureLog = resolve('.build-tools/last-error.log');
 const cargoBin = join(process.env.CARGO_HOME ?? join(homedir(), '.cargo'), 'bin');
 process.env.PATH = `${dirname(process.execPath)}${process.platform === 'win32' ? ';' : ':'}${cargoBin}${process.platform === 'win32' ? ';' : ':'}${process.env.PATH ?? ''}`;
 
@@ -232,7 +237,12 @@ try {
     console.log('Build tools are ready. npm dependencies and installers were not built.');
   } else {
     // Only the build tools: lint, tests and their servers are for development (package.json).
-    run(process.execPath, [npm, 'ci', '--omit=dev', '--no-audit', '--no-fund']);
+    await runStep(
+      'Installing npm dependencies',
+      process.execPath,
+      [npm, 'ci', '--omit=dev', '--no-audit', '--no-fund'],
+      { log: failureLog },
+    );
     if (options.prepareOnly)
       console.log(
         'Tools and npm dependencies are ready. Rerun without --prepare-only to build installers.',
@@ -240,18 +250,16 @@ try {
     else {
       if (process.platform === 'darwin') process.env.APPLE_SIGNING_IDENTITY ??= '-';
       if (process.platform === 'linux') process.env.NO_STRIP ??= 'true';
-      run(process.execPath, [
-        npm,
-        'run',
-        'desktop:build',
-        '--',
-        '--bundles',
-        options.bundles.join(','),
-      ]);
+      await runStep(
+        'Building the desktop installers',
+        process.execPath,
+        [npm, 'run', 'desktop:build', '--', '--bundles', options.bundles.join(',')],
+        { log: failureLog },
+      );
       console.log(`Native packages are in ${resolve('target/release/bundle')}`);
     }
   }
 } catch (error) {
-  console.error(`\nBuild stopped: ${error.message}`);
+  report('Build stopped', error);
   process.exitCode = 1;
 }

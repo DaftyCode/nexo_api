@@ -20,6 +20,31 @@ async function addRequest(page, action) {
   await expect(page.getByRole('textbox', { name: 'Request name' })).toHaveValue('New request');
 }
 
+/**
+ * The authorization address of the next OAuth 2.0 sign-in. The answer is read in the test
+ * process as it passes through: reading it from the browser afterwards can fail, because the
+ * browser may already have discarded the body ("No data found for resource").
+ */
+async function nextAuthorizationUrl(page) {
+  const pattern = '**/execute/oauth2.authorize';
+  let found;
+  const captured = new Promise((resolve) => (found = resolve));
+  const handler = async (route) => {
+    const response = await route.fetch();
+    const text = await response.text();
+    try {
+      const { authorizationUrl } = JSON.parse(text);
+      if (authorizationUrl) found(authorizationUrl);
+    } catch {
+      // Not the answer that starts the sign-in.
+    }
+    await route.fulfill({ response, body: text });
+  };
+  await page.route(pattern, handler);
+  // Wrapped: awaiting this function must not wait for the sign-in itself.
+  return { url: captured.finally(() => page.unroute(pattern, handler)) };
+}
+
 test('pages have no serious accessibility violations', async ({ page, nexo }) => {
   for (const path of ['/', '/docs']) {
     await page.goto(nexo.base + path);
@@ -229,9 +254,9 @@ test('OAuth 2.0: a PKCE sign-in completes with the address pasted back', async (
   await page.getByLabel('Access Token URL').fill(`${nexo.echo}/token`);
   await page.getByLabel('Client ID').fill('app');
 
-  const started = page.waitForResponse((response) => response.url().includes('oauth2.authorize'));
+  const started = await nextAuthorizationUrl(page);
   await page.getByRole('button', { name: 'Get new access token' }).click();
-  const { authorizationUrl } = await (await started).json();
+  const authorizationUrl = await started.url;
   const dialog = page.getByRole('dialog', { name: 'Sign in with OAuth 2.0' });
   await expect(dialog).toBeVisible();
   expect(new URL(authorizationUrl).searchParams.get('code_challenge_method')).toBe('S256');
@@ -263,9 +288,9 @@ test('OAuth 2.0: Auto-fetch Token signs in before sending without a token', asyn
   await page.getByLabel('Auto-fetch Token').check();
 
   // Sending without a token opens the sign-in first, as Bruno does.
-  const started = page.waitForResponse((response) => response.url().includes('oauth2.authorize'));
+  const started = await nextAuthorizationUrl(page);
   await page.getByRole('button', { name: 'Send' }).first().click();
-  const { authorizationUrl } = await (await started).json();
+  const authorizationUrl = await started.url;
   const dialog = page.getByRole('dialog', { name: 'Sign in with OAuth 2.0' });
   await expect(dialog).toBeVisible();
   const back = (await fetch(authorizationUrl, { redirect: 'manual' })).headers.get('location');
@@ -284,6 +309,42 @@ test('OAuth 2.0: Auto-fetch Token signs in before sending without a token', asyn
   await page.getByRole('button', { name: 'Send' }).first().click();
   await expect(page.getByText('Bearer [REDACTED]')).toBeVisible();
   expect(signIns).toEqual([]);
+});
+
+test('a vault secret limited to some domains is not sent anywhere else', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'Settings' })
+    .click();
+  await page.getByRole('button', { name: 'vault', exact: true }).click();
+  await page.getByLabel('Secret name').fill('e2e_limited');
+  await page.getByLabel('Value', { exact: true }).fill('e2e-limited-value');
+  await page.getByLabel('Allowed domains').fill('127.0.0.1');
+  await page.getByRole('button', { name: 'Save secret' }).click();
+  const saved = page.locator('.secret-list li', { hasText: '{{vault:e2e_limited}}' });
+  await expect(saved).toContainText('127.0.0.1');
+
+  // Sent to an allowed domain, redacted in what Nexo shows.
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'Collections' })
+    .click();
+  await page.keyboard.press('Control+t');
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/limited?key={{vault:e2e_limited}}`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  await expect(page.getByText('/limited?key=[REDACTED]')).toBeVisible();
+
+  // Not sent to another domain: the request stops with an explanation.
+  const elsewhere = nexo.echo.replace('127.0.0.1', 'localhost');
+  await page.getByLabel('Request URL').fill(`${elsewhere}/limited?key={{vault:e2e_limited}}`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(
+    page.getByText(
+      'Secret e2e_limited cannot be sent to localhost. If it should go there, add that domain to its allowed domains in the vault.',
+    ),
+  ).toBeVisible();
 });
 
 test('OAuth 1.0: a request is signed in the Authorization header', async ({ page, nexo }) => {

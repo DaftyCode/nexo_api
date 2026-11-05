@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiFailure, ApiPort, RevisionEntry } from '../application/ports';
 import { ExecutionOperation, GitOperation } from '../application/operations';
 import { Health, Workspace, WorkspaceDocument } from '../domain/models';
+import { SecretSummary } from '../domain/secrets';
 
 /**
  * Backend adapter. The desktop window receives a per-run token from the shell; the browser
@@ -102,13 +103,13 @@ export class HttpApi implements ApiPort {
   revisions(id: string) {
     return this.request<RevisionEntry[]>('GET', `/documents/${encodeURIComponent(id)}/revisions`);
   }
-  async putSecret(name: string, value: string) {
-    await this.request('PUT', `/secrets/${encodeURIComponent(name)}`, { value });
+  async putSecret(name: string, value?: string, allowedHosts?: string[]) {
+    await this.request('PUT', `/secrets/${encodeURIComponent(name)}`, { value, allowedHosts });
   }
   async removeSecret(name: string) {
     await this.request('DELETE', `/secrets/${encodeURIComponent(name)}`);
   }
-  async secretNames() {
-    return (await this.request<{ names: string[] }>('GET', '/secrets')).names ?? [];
+  async secrets() {
+    return (await this.request<{ secrets?: SecretSummary[] }>('GET', '/secrets')).secrets ?? [];
   }
 }

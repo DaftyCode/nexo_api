@@ -21,7 +21,7 @@ function fakeApi(results: Record<string, unknown> = {}) {
     revisions: record('revisions', () => []),
     putSecret: record('putSecret'),
     removeSecret: record('removeSecret'),
-    secretNames: record('secretNames', () => ['token']),
+    secrets: record('secrets', () => [{ name: 'token', allowedHosts: [] }]),
   } as unknown as ApiPort;
   return { api, calls };
 }
@@ -152,6 +152,14 @@ describe('IntegrationUseCases', () => {
     await expect(integration.saveSecret('token', '')).rejects.toThrowError(
       'Enter the secret value',
     );
+    // A saved secret can change only its allowed domains.
+    await integration.saveSecret('token', '', 'api.example.com, *.example.org', true);
+    expect(calls.at(-1)).toEqual({
+      method: 'putSecret',
+      args: ['token', undefined, ['api.example.com', '*.example.org']],
+    });
+    await integration.saveSecret('token', 'v');
+    expect(calls.at(-1)).toEqual({ method: 'putSecret', args: ['token', 'v', []] });
     expect(() => integration.restoreRevision(dataset('d1'), undefined)).toThrowError(
       'Document no longer exists',
     );

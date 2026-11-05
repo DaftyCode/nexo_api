@@ -706,5 +706,9 @@
   "A new nonce and creation time are signed on every send, in the X-WSSE header.": "En cada envío se firman un nonce y una hora de creación nuevos, en la cabecera X-WSSE.",
   "Nexo API uses the login and password of your netrc file (~/.netrc, or ~/_netrc on Windows) for the host of the request, or its default entry. Without a matching entry, no authorization is sent.": "Nexo API usa el usuario y la contraseña de tu archivo netrc (~/.netrc, o ~/_netrc en Windows) para el host de la petición, o su entrada default. Si no hay ninguna entrada que coincida, no se envía autorización.",
   "Auto-fetch Token": "Obtener el token automáticamente",
-  "Without a usable token, a new one is obtained before sending (with a sign-in when the grant needs a browser).": "Si no hay un token válido, se obtiene uno nuevo antes de enviar (con inicio de sesión si el flujo necesita navegador)."
+  "Without a usable token, a new one is obtained before sending (with a sign-in when the grant needs a browser).": "Si no hay un token válido, se obtiene uno nuevo antes de enviar (con inicio de sesión si el flujo necesita navegador).",
+  "Allowed domains": "Dominios permitidos",
+  "Separate domains with commas; *.example.com allows its subdomains. Leave it empty to allow every domain. To change only the domains of a saved secret, leave the value empty.": "Separa los dominios con comas; *.example.com permite sus subdominios. Déjalo vacío para permitir cualquier dominio. Para cambiar solo los dominios de un secreto guardado, deja el valor vacío.",
+  "All domains": "Todos los dominios",
+  "error.secretHost": "El secreto {{v0}} no puede enviarse a {{v1}}. Si debe ir allí, añade ese dominio a sus dominios permitidos en el vault."
 }

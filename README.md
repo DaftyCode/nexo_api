@@ -30,7 +30,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                      |
 | Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
 | Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, local Git and MCP client/server support.                  |
-| Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references and secret redaction in results.                                     |
+| Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references, allowed domains per secret and secret redaction in results.         |
 | Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                       |
 | Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.       |
 
@@ -247,6 +247,8 @@ Downloaded Node archives and bootstrap tools are cached in `.build-tools/`, whic
 Options can be combined. Check mode reports a missing Node version without downloading it. For MSI packaging, Windows needs the VBScript optional feature; if WiX reports `failed to run light.exe`, follow [Tauri's MSI prerequisites](https://v2.tauri.app/distribute/windows-installer/#building) or build only NSIS with `-Bundles nsis`. For `link.exe` errors, install the C++ desktop workload and Windows SDK. For Linux `pkg-config` errors, check the WebKitGTK **4.1** development packages.
 
 If an older checkout stops with `Node and Rust must use the same native architecture`, update the checkout and rerun the build. That older check also reported Rustup failures or a GNU toolchain as an architecture error. The current script checks `rustc -vV` for the selected native compiler and preserves Rustup's error details when it cannot run. On managed computers, downloads still need access through your organization's approved network/proxy configuration.
+
+When a step fails, the scripts end with what failed and a hint for the usual causes: a proxy or registry mirror that cuts downloads, files held by an editor or a development server, or an antivirus that blocks a Rust build script. The output of the failed step is kept in `.build-tools/last-error.log` (`.nexo-web/logs/install-error.log` for the web version), so you can share it with IT.
 
 If `npm ci` reports `EBUSY` for Sass or esbuild on Windows, stop this checkout's `npm run dev`, `ng serve`, desktop development and watch/test sessions before retrying. Do not run the bootstrap alongside a development server: `npm ci` replaces `node_modules`. A Node 24 `EBADENGINE` warning means your terminal is using the wrong runtime; `build.ps1` uses the prepared Node 26.13 without replacing your system-wide Node installation.
 

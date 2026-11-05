@@ -41,7 +41,8 @@ $ready = $node -and (Test-Path -LiteralPath 'node_modules/.package-lock.json') -
 if (-not $ready -and -not $Stop -and -not $Status) {
     Write-Host 'Preparing Node, Rust and dependencies (first run only)...'
     & (Join-Path $PSScriptRoot 'build.ps1') -PrepareOnly
-    if ($LASTEXITCODE) { throw "Preparation failed with exit code $LASTEXITCODE." }
+    # build.ps1 already printed why it stopped and what to do; a PowerShell error would bury it.
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
     $node = Find-Node
 }
 if (-not $node) { throw "Node $version is not available. Run .\build.ps1 -PrepareOnly and try again." }

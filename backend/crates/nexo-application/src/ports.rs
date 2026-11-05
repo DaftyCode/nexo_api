@@ -2,7 +2,8 @@
 use crate::operations::{GitOperation, Operation};
 use async_trait::async_trait;
 use nexo_domain::{
-    Document, DocumentId, DocumentKind, DocumentSummary, Result, Revision, Workspace, WorkspaceId,
+    Document, DocumentId, DocumentKind, DocumentSummary, Result, Revision, SecretSummary,
+    Workspace, WorkspaceId, hosts::AllowedHosts,
 };
 use serde_json::Value;
 
@@ -46,11 +47,17 @@ pub trait ExecutionGateway: Send + Sync {
 }
 #[async_trait]
 pub trait SecretVault: Send + Sync {
-    async fn put(&self, name: &str, value: &str) -> Result<()>;
+    /// Stores a value, allowed hosts or both; what is not given is kept.
+    async fn put(
+        &self,
+        name: &str,
+        value: Option<&str>,
+        allowed_hosts: Option<&AllowedHosts>,
+    ) -> Result<()>;
     async fn remove(&self, name: &str) -> Result<()>;
     async fn resolve(&self, name: &str) -> Result<String>;
-    /// Names of the stored secrets, never their values.
-    async fn names(&self) -> Result<Vec<String>>;
+    /// The stored secrets with their allowed hosts, never their values.
+    async fn secrets(&self) -> Result<Vec<SecretSummary>>;
 }
 #[async_trait]
 pub trait VersionControl: Send + Sync {

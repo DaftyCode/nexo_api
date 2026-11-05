@@ -2,6 +2,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, input, signal, computed, inject } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { ExecutionResponse, formatJson } from '../domain/models';
+import { blockedSecret } from '../domain/secrets';
 import { StudioIcon } from './studio-icon';
 import { WORKSPACE } from '../composition/providers';
 
@@ -21,6 +22,7 @@ export class ResponseView {
   readonly response = input<ExecutionResponse>();
   readonly running = input(false);
   protected readonly tab = signal('body');
+  protected readonly blocked = blockedSecret;
   protected readonly pretty = signal(true);
   private readonly cases = inject(WORKSPACE);
   protected readonly binary = computed(() => this.response()?.bodyEncoding === 'base64');

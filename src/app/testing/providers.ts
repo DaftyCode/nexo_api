@@ -54,7 +54,7 @@ export function testProviders() {
     },
     async putSecret() {},
     async removeSecret() {},
-    async secretNames() {
+    async secrets() {
       return [];
     },
   };

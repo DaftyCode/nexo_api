@@ -8,6 +8,7 @@ import {
   DestroyRef,
   effect,
   untracked,
+  computed,
 } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
@@ -26,6 +27,7 @@ import {
   parseGitStatus,
   tokenView,
 } from '../domain/integration-views';
+import { SecretSummary, formatAllowedDomains } from '../domain/secrets';
 
 /** Structured result shown above the raw output. */
 type View =
@@ -59,6 +61,7 @@ export class IntegrationPanel {
     variant: 'cURL',
     secretName: 'api_token',
     secretValue: '',
+    secretDomains: '',
     documentId: '',
     apiName: 'My API',
     apiSpec: 'openapi: 3.1.0\ninfo:\n  title: My API\n  version: 1.0.0\npaths: {}',
@@ -83,12 +86,26 @@ export class IntegrationPanel {
   });
   protected readonly headers = signal<KeyValue[]>([row()]);
   protected readonly revisions = signal<RevisionEntry[]>([]);
-  protected readonly secretNames = signal<string[]>([]);
+  protected readonly secrets = signal<SecretSummary[]>([]);
+  private readonly secretName = computed(() => this.model().secretName);
+  protected readonly formatDomains = formatAllowedDomains;
   protected readonly performanceStatus = signal<PerformanceStatus | undefined>(undefined);
   private timer: ReturnType<typeof setTimeout> | undefined;
   private performanceId = '';
   constructor() {
     this.destroy.onDestroy(() => clearTimeout(this.timer));
+    // Typing a saved secret's name shows its allowed domains, so saving a new value keeps them.
+    // It reacts to the name only, never to the domains being edited.
+    effect(() => {
+      const name = this.secretName();
+      const saved = this.secrets().find((secret) => secret.name === name);
+      if (!saved) return;
+      const domains = formatAllowedDomains(saved.allowedHosts);
+      untracked(() => {
+        if (this.model().secretDomains !== domains)
+          this.model.update((m) => ({ ...m, secretDomains: domains }));
+      });
+    });
     effect(() => {
       const name = this.state.workspaces().find((w) => w.id === this.state.workspaceId())?.name;
       untracked(() => this.model.update((m) => ({ ...m, workspaceName: name ?? '' })));
@@ -173,15 +190,30 @@ export class IntegrationPanel {
   }
   protected async loadSecrets() {
     try {
-      this.secretNames.set(await this.integration.secretNames());
+      this.secrets.set(await this.integration.secrets());
     } catch {
-      this.secretNames.set([]);
+      this.secrets.set([]);
     }
+  }
+  /** Loads a saved secret into the form to change its value or allowed domains. */
+  protected editSecret(secret: SecretSummary) {
+    this.model.update((m) => ({
+      ...m,
+      secretName: secret.name,
+      secretValue: '',
+      secretDomains: formatAllowedDomains(secret.allowedHosts),
+    }));
   }
   protected secret(remove = false, name = this.model().secretName) {
     void this.task.run(async () => {
       if (remove) await this.integration.removeSecret(name);
-      else await this.integration.saveSecret(name, this.model().secretValue);
+      else
+        await this.integration.saveSecret(
+          name,
+          this.model().secretValue,
+          this.model().secretDomains,
+          this.secrets().some((secret) => secret.name === name),
+        );
       this.model.update((m) => ({ ...m, secretValue: '' }));
       this.output.set(
         remove

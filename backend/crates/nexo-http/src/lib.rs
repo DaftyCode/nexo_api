@@ -190,7 +190,7 @@ pub fn router(
         .route("/documents/{id}/revisions", get(revisions))
         .route("/execute/{operation}", post(execute))
         .route("/git/{operation}", post(git))
-        .route("/secrets", get(secret_names))
+        .route("/secrets", get(secrets))
         .route("/secrets/{name}", put(put_secret).delete(remove_secret))
         .route("/mcp", post(mcp).get(mcp_stream))
         .route_layer(middleware::from_fn_with_state(state.clone(), authenticate));
@@ -496,20 +496,44 @@ async fn git(
             .await?,
     ))
 }
-async fn secret_names(State(state): State<HttpState>) -> ApiResult<Value> {
-    Ok(Json(
-        json!({"names": state.application.secret_names().await?}),
-    ))
+async fn secrets(State(state): State<HttpState>) -> ApiResult<Value> {
+    let secrets = state.application.secrets().await?;
+    let names: Vec<&str> = secrets.iter().map(|secret| secret.name.as_str()).collect();
+    Ok(Json(json!({"names": names, "secrets": secrets})))
 }
 async fn put_secret(
     State(state): State<HttpState>,
     Path(name): Path<String>,
     Json(payload): Json<Value>,
 ) -> ApiResult<Value> {
-    let value = payload["value"]
-        .as_str()
-        .ok_or_else(|| ApiError(Error::Validation("A secret value is required".into())))?;
-    state.application.put_secret(&name, value).await?;
+    if payload.get("value").is_some_and(|value| !value.is_string()) {
+        return Err(ApiError(Error::Validation(
+            "A secret value must be text".into(),
+        )));
+    }
+    let allowed_hosts = match payload.get("allowedHosts") {
+        None => None,
+        Some(Value::Array(items)) => Some(
+            items
+                .iter()
+                .map(|item| item.as_str().map(String::from))
+                .collect::<Option<Vec<_>>>()
+                .ok_or_else(|| {
+                    ApiError(Error::Validation(
+                        "Allowed domains must be a list of text".into(),
+                    ))
+                })?,
+        ),
+        Some(_) => {
+            return Err(ApiError(Error::Validation(
+                "Allowed domains must be a list of text".into(),
+            )));
+        }
+    };
+    state
+        .application
+        .put_secret(&name, payload["value"].as_str(), allowed_hosts.as_deref())
+        .await?;
     Ok(Json(json!({"saved":true})))
 }
 async fn remove_secret(

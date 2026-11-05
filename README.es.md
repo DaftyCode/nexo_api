@@ -30,7 +30,7 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 | Importación        | Colecciones JSON portables, entornos, OpenAPI/Swagger JSON o YAML, HAR y cURL.                                                       |
 | Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                             |
 | Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, Git local y cliente/servidor MCP.                                |
-| Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}` y redacción de secretos en resultados.                                     |
+| Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}`, dominios permitidos por secreto y redacción de secretos en resultados.    |
 | Workspaces         | Varios workspaces locales, historial de documentos y revisiones para evitar sobrescrituras.                                          |
 | Escritorio y web   | Aplicación de escritorio con Tauri o la misma interfaz en el navegador mediante un lanzador local si no puedes instalar la app.       |
 
@@ -247,6 +247,8 @@ Node y las herramientas descargadas se guardan en `.build-tools/`, excluida de G
 Las opciones pueden combinarse. El modo de comprobación informa si falta la versión de Node y no la descarga. Los MSI necesitan la característica opcional VBScript de Windows; si WiX muestra `failed to run light.exe`, consulta los [requisitos de MSI de Tauri](https://v2.tauri.app/distribute/windows-installer/#building) o genera solo NSIS con `-Bundles nsis`. Si falla `link.exe`, revisa la carga de trabajo de C++ y Windows SDK. Para errores `pkg-config` en Linux, comprueba los paquetes de desarrollo WebKitGTK **4.1**.
 
 Si una versión anterior se detiene con `Node and Rust must use the same native architecture`, actualiza el repositorio y repite la compilación. Esa comprobación también presentaba los fallos de Rustup o una instalación GNU como errores de arquitectura. El script actual comprueba el compilador nativo seleccionado mediante `rustc -vV` y conserva el detalle de Rustup si no puede ejecutarlo. En equipos corporativos, las descargas necesitan acceso mediante la configuración de red o proxy autorizada por tu organización.
+
+Si un paso falla, los scripts terminan diciendo qué ha fallado y con una pista para las causas habituales: un proxy o mirror que corta las descargas, ficheros abiertos por un editor o un servidor de desarrollo, o un antivirus que bloquea un build script de Rust. La salida del paso fallido se guarda en `.build-tools/last-error.log` (`.nexo-web/logs/install-error.log` en la versión web) para que puedas pasársela a IT.
 
 Si `npm ci` muestra `EBUSY` sobre Sass o esbuild en Windows, detén las sesiones `npm run dev`, `ng serve`, desarrollo de escritorio y watch/tests de este repositorio antes de repetirlo. No ejecutes la preparación a la vez que el servidor de desarrollo: `npm ci` reemplaza `node_modules`. El aviso `EBADENGINE` con Node 24 indica que la terminal usa otra versión; `build.ps1` utiliza el Node 26.13 preparado sin sustituir la instalación global de tu equipo.
 

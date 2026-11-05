@@ -2,6 +2,7 @@
 //!
 //! Nexo runs for the single person who opens it, on their own computer. There are no
 //! accounts: access is protected by the local session, see `nexo-http`.
+pub mod hosts;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
@@ -192,6 +193,15 @@ pub struct DocumentSummary {
     pub name: String,
     pub revision: i64,
     pub updated_at: i64,
+}
+
+/// A vault secret as listings show it: its name and allowed domains, never its value.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SecretSummary {
+    pub name: String,
+    /// Hosts it may be sent to; empty allows every host.
+    pub allowed_hosts: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

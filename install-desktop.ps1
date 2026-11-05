@@ -38,7 +38,8 @@ if (-not $Package) {
     $arguments = @{ Bundles = 'msi' }
     if ($SkipSystemInstall) { $arguments.SkipSystemInstall = $true }
     & (Join-Path $PSScriptRoot 'build.ps1') @arguments
-    if ($LASTEXITCODE) { throw "The build failed with exit code $LASTEXITCODE." }
+    # build.ps1 already printed why it stopped and what to do; a PowerShell error would bury it.
+    if ($LASTEXITCODE) { exit $LASTEXITCODE }
     $Package = Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'target/release/bundle/msi') -Filter '*.msi' |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1 -ExpandProperty FullName

@@ -1,4 +1,5 @@
 import { Health, Workspace, WorkspaceDocument } from '../domain/models';
+import { SecretSummary } from '../domain/secrets';
 import { ExecutionOperation, GitOperation } from './operations';
 
 /** A failed backend call with the stable error code the backend reported. */
@@ -51,9 +52,10 @@ export interface VersionControlPort {
   git<T>(operation: GitOperation, payload: unknown): Promise<T>;
 }
 export interface SecretVaultPort {
-  putSecret(name: string, value: string): Promise<void>;
+  /** Saves a value, allowed domains or both; what is not given is kept. */
+  putSecret(name: string, value?: string, allowedHosts?: string[]): Promise<void>;
   removeSecret(name: string): Promise<void>;
-  secretNames(): Promise<string[]>;
+  secrets(): Promise<SecretSummary[]>;
 }
 /** Aggregate supplied only by the composition root; each contract is independently replaceable. */
 export interface ApiPort

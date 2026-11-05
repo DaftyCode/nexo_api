@@ -8,6 +8,7 @@ import {
 import { GitOperation } from './operations';
 import { RequestDraft, WorkspaceDocument, toItem } from '../domain/models';
 import { exportableCollection } from '../domain/sanitize';
+import { parseAllowedDomains } from '../domain/secrets';
 
 export interface GitResult {
   success: boolean;
@@ -72,13 +73,17 @@ export class IntegrationUseCases {
     return this.api.git<GitResult>(operation, { workspace, ...input });
   }
 
-  secretNames() {
-    return this.api.secretNames();
+  secrets() {
+    return this.api.secrets();
   }
-  async saveSecret(name: string, value: string) {
+  /**
+   * Saves a secret with its allowed domains (empty allows every domain, as in Postman). The
+   * value may be left empty for a saved secret: then only its domains change.
+   */
+  async saveSecret(name: string, value: string, allowedDomains = '', saved = false) {
     if (!name.trim()) throw new Error('Enter a secret name');
-    if (!value) throw new Error('Enter the secret value');
-    await this.api.putSecret(name, value);
+    if (!value && !saved) throw new Error('Enter the secret value');
+    await this.api.putSecret(name, value || undefined, parseAllowedDomains(allowedDomains));
   }
   removeSecret(name: string) {
     if (!name.trim()) throw new Error('Enter a secret name');

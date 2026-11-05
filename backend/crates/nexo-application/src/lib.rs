@@ -3,8 +3,8 @@ pub mod mcp;
 pub mod operations;
 pub mod ports;
 use nexo_domain::{
-    Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, Workspace,
-    WorkspaceId,
+    Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, SecretSummary,
+    Workspace, WorkspaceId, hosts::AllowedHosts,
 };
 use operations::{GitOperation, Operation};
 use ports::{ExecutionGateway, SecretVault, VersionControl, WorkspaceRepository};
@@ -12,9 +12,10 @@ use serde_json::{Map, Value};
 use std::sync::Arc;
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 5] = [
+const INTERNAL_FIELDS: [&str; 6] = [
     "secretNames",
     "resolvedSecrets",
+    "secretHosts",
     "resolvedOAuth2",
     "scope",
     "egressLoopbackPorts",
@@ -194,14 +195,27 @@ impl Application {
     }
 
     // Secrets
-    pub async fn put_secret(&self, name: &str, value: &str) -> Result<()> {
-        self.secrets.put(name, value).await
+    /// Saves a secret's value, its allowed hosts (Postman's "allowed domains"; empty allows
+    /// every host) or both. Without a value the stored one is kept.
+    pub async fn put_secret(
+        &self,
+        name: &str,
+        value: Option<&str>,
+        allowed_hosts: Option<&[String]>,
+    ) -> Result<()> {
+        if value.is_none() && allowed_hosts.is_none() {
+            return Err(Error::Validation(
+                "Send a secret value, its allowed domains or both".into(),
+            ));
+        }
+        let hosts = allowed_hosts.map(AllowedHosts::parse).transpose()?;
+        self.secrets.put(name, value, hosts.as_ref()).await
     }
     pub async fn remove_secret(&self, name: &str) -> Result<()> {
         self.secrets.remove(name).await
     }
-    pub async fn secret_names(&self) -> Result<Vec<String>> {
-        self.secrets.names().await
+    pub async fn secrets(&self) -> Result<Vec<SecretSummary>> {
+        self.secrets.secrets().await
     }
 
     pub async fn engine_healthy(&self) -> bool {
@@ -359,7 +373,7 @@ mod tests {
     }
     #[async_trait]
     impl SecretVault for Fake {
-        async fn put(&self, _: &str, _: &str) -> Result<()> {
+        async fn put(&self, _: &str, _: Option<&str>, _: Option<&AllowedHosts>) -> Result<()> {
             Ok(())
         }
         async fn remove(&self, _: &str) -> Result<()> {
@@ -373,7 +387,7 @@ mod tests {
             }
             Ok(format!("secret-of-{name}"))
         }
-        async fn names(&self) -> Result<Vec<String>> {
+        async fn secrets(&self) -> Result<Vec<SecretSummary>> {
             Ok(vec![])
         }
     }
@@ -417,6 +431,7 @@ mod tests {
                     "workspace": "local",
                     "request": {"url": "{{vault:key}}"},
                     "resolvedSecrets": {"forged": "x"},
+                    "secretHosts": {"key": []},
                     "secretNames": ["other"],
                     "scope": "workspace:other",
                     "egressLoopbackPorts": [22]
@@ -427,8 +442,32 @@ mod tests {
         let (_, payload) = fake.executed.lock().unwrap()[0].clone();
         assert_eq!(payload["resolvedSecrets"], json!({"key": "secret-of-key"}));
         assert!(payload.get("secretNames").is_none());
+        assert!(
+            payload.get("secretHosts").is_none(),
+            "only the engine sets it"
+        );
         assert!(payload.get("scope").is_none());
         assert!(payload.get("egressLoopbackPorts").is_none());
+    }
+
+    #[tokio::test]
+    async fn secrets_need_a_value_or_valid_allowed_domains() {
+        let (application, _) = application();
+        assert!(application.put_secret("api", None, None).await.is_err());
+        assert!(
+            application
+                .put_secret("api", None, Some(&["https://api.example.com/".into()]))
+                .await
+                .is_err()
+        );
+        application
+            .put_secret("api", None, Some(&["*.example.com, api.test".into()]))
+            .await
+            .unwrap();
+        application
+            .put_secret("api", Some("v"), None)
+            .await
+            .unwrap();
     }
 
     #[tokio::test]

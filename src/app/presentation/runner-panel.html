@@ -89,7 +89,13 @@
         </div>
       </div>
       @if (run.error) {
-        <p class="danger">{{ run.error }}</p>
+        <p class="danger">
+          @if (blocked(run.error); as b) {
+            {{ 'error.secretHost' | transloco: { v0: b.name, v1: b.host } }}
+          } @else {
+            {{ run.error }}
+          }
+        </p>
       }
       @for (result of run.results; track $index) {
         <div class="run-result">

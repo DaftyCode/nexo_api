@@ -12,8 +12,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 4px 0;
   border-bottom: 1px solid var(--border);
+}
+.secret-entry {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .performance-stats {
   display: grid;
