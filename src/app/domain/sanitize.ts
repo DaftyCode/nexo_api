@@ -86,6 +86,7 @@ export function exportableCollection(value: unknown): unknown {
           'jwt',
           'asap',
           'edgegrid',
+          'wsse',
         ].includes(key)
       )
         return node.map((row) =>

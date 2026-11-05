@@ -28,6 +28,8 @@
         <option value="awsv4">{{ 'AWS Signature' | transloco }}</option>
         <option value="ntlm">{{ 'NTLM Authentication' | transloco }}</option>
         <option value="edgegrid">{{ 'Akamai EdgeGrid' | transloco }}</option>
+        <option value="wsse">{{ 'WSSE Auth' | transloco }}</option>
+        <option value="netrc">{{ 'Netrc File' | transloco }}</option>
         <option value="hawk">{{ 'Hawk Authentication' | transloco }}</option>
       </select></label
     >
@@ -509,6 +511,28 @@
             ></textarea>
           </label>
         </details>
+      }
+      @case ('wsse') {
+        <label class="field"
+          >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+        ><label class="field"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+        <p class="muted">
+          {{
+            'A new nonce and creation time are signed on every send, in the X-WSSE header.'
+              | transloco
+          }}
+        </p>
+      }
+      @case ('netrc') {
+        <div class="empty-inline">
+          {{
+            'Nexo API uses the login and password of your netrc file (~/.netrc, or ~/_netrc on Windows) for the host of the request, or its default entry. Without a matching entry, no authorization is sent.'
+              | transloco
+          }}
+        </div>
       }
       @case ('edgegrid') {
         <label class="field"

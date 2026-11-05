@@ -17,6 +17,8 @@ import {
   OAuth2SignIn,
   OAuth2SignInStatus,
   OAuth2Token,
+  autoFetches,
+  needsSignIn,
   oauth2UsesBrowser,
   writeAuth,
 } from '../domain/auth';
@@ -360,8 +362,24 @@ export class WorkspaceState {
   }
 
   // Requests and history.
-  send() {
+  async send() {
+    await this.signInBeforeSending();
     return this.requests.send();
+  }
+  /**
+   * Bruno's "Auto-fetch token" for grants that sign in through a browser: without a usable
+   * token, the sign-in runs first and stores one under the token name, which the engine then
+   * uses. Grants without a browser are fetched by the engine itself.
+   */
+  private async signInBeforeSending() {
+    const request = this.active()?.request;
+    if (!request) return;
+    const auth =
+      request.auth.type === 'inherit' ? this.activeInheritance()?.source?.auth : request.auth;
+    if (auth?.type !== 'oauth2' || !autoFetches(auth) || !oauth2UsesBrowser(auth)) return;
+    await this.loadOAuth2Tokens();
+    if (needsSignIn(auth, this.oauth2Tokens(), Date.now()))
+      await this.oauth2Token(auth, this.activeAncestors(), false);
   }
   cancel() {
     return this.guard(() => this.requests.cancel());

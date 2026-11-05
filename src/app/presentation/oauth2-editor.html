@@ -74,8 +74,19 @@
       'Auto-refresh Token' | transloco
     }}</label
   >
+  <label class="check-field"
+    ><input type="checkbox" [checked]="autoFetch()" (change)="toggleAutoFetch($event)" />{{
+      'Auto-fetch Token' | transloco
+    }}</label
+  >
   <p class="muted hint">
     {{ 'Your expired token will be auto-refreshed before sending a request.' | transloco }}
+    @if (autoFetch()) {
+      {{
+        'Without a usable token, a new one is obtained before sending (with a sign-in when the grant needs a browser).'
+          | transloco
+      }}
+    }
     <button type="button" class="text-button" (click)="state.managingOAuth2Tokens.set(true)">
       {{ 'Manage Tokens' | transloco }}
     </button>

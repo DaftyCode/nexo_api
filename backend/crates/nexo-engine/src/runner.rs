@@ -4,7 +4,7 @@ use crate::{
     egress::Policy,
     scripts::ScriptSession,
     transport::{CookieJar, Options, Transport, transport_settings},
-    vault::write_atomic,
+    vault::{Vault, write_atomic},
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use cookie_store::CookieStore;
@@ -215,6 +215,8 @@ impl Cursor {
 pub struct Context {
     pub egress: Policy,
     pub loopback_ports: Arc<dyn Fn() -> Vec<u16> + Send + Sync>,
+    /// Where `nx.oauth2.reset(name)` deletes OAuth 2.0 tokens; `None` in tests without one.
+    pub vault: Option<Arc<Vault>>,
 }
 
 pub struct Runs {
@@ -662,6 +664,13 @@ async fn run_steps(
                 send_queued(&session, transport).await?;
             }
             let state = session.snapshot()?;
+            // `nx.oauth2.reset(name)`: the next send gets a new token (Bruno's
+            // `bru.resetOauth2Credential`). Scripts can delete tokens but never read them.
+            if let (Some(vault), Some(names)) = (&context.vault, state["oauth2Resets"].as_array()) {
+                for name in names.iter().filter_map(Value::as_str) {
+                    crate::oauth2_tokens::delete_named(vault, name).await?;
+                }
+            }
             outcome.environment = state["environment"]
                 .as_object()
                 .cloned()
@@ -805,6 +814,7 @@ mod tests {
             Context {
                 egress: Policy::AllowAll,
                 loopback_ports: Arc::new(Vec::new),
+                vault: None,
             },
         )
     }

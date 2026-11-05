@@ -23,7 +23,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Requests            | HTTP/HTTPS, methods, query parameters, headers and responses; raw, JSON, text form bodies and GraphQL over HTTP.          |
 | Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite.                        |
-| HTTP authentication | Basic, Bearer, API key, MD5/SHA-256 Digest and OAuth2 tokens; token exchange in the integrations panel.                   |
+| HTTP authentication | Every type of Postman, Bruno and Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (all grants, PKCE, browser sign-in, tokens in the vault, auto-refresh and auto-fetch), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc; inherited from folders and collections. |
 | Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. |
 | Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, cancellation and JSON/JUnit reports from the CLI.  |
 | Protocols           | WebSocket, Socket.IO, MQTT and gRPC clients with a supplied proto.                                                        |
@@ -326,7 +326,7 @@ Important work remains:
 - Real-time collaboration, comments, synchronization between installations and scheduled monitoring.
 - Signed APT/YUM repositories and Flatpak distribution.
 
-Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. Socket.IO binary events and MQTT 5 are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unimplemented HTTP authentication helpers are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
+Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. Socket.IO binary events and MQTT 5 are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
 
 ## Contributing
 

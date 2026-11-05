@@ -1,7 +1,15 @@
 // Script API (pm.* / nx.*) evaluated inside an isolated QuickJS context.
 // The host only exchanges JSON strings with it through __nexo.
 (function bootstrap(seed) {
-  const state = { ...seed, assertions: [], logs: [], queue: [], callbacks: {}, skip: false };
+  const state = {
+    ...seed,
+    assertions: [],
+    logs: [],
+    queue: [],
+    callbacks: {},
+    skip: false,
+    oauth2Resets: [],
+  };
   const stringify = JSON.stringify;
   const serialize = (value) => (typeof value === 'string' ? value : stringify(value));
   function equal(a, b) {
@@ -270,6 +278,12 @@
       },
       skipRequest: () => {
         state.skip = true;
+      },
+    },
+    // OAuth 2.0 tokens can be deleted (the next send gets a new one) but never read.
+    oauth2: {
+      reset: (name) => {
+        state.oauth2Resets.push(String(name));
       },
     },
     sendRequest: (request, callback) =>

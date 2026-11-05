@@ -284,6 +284,37 @@ export function autoRefreshes(auth: AuthDraft): boolean {
   return value !== false && value !== 'false';
 }
 
+/** Bruno's "Auto-fetch token": off unless the authorization turns it on. */
+export function autoFetches(auth: AuthDraft): boolean {
+  const value = auth.values['autoFetchToken'] as unknown;
+  return value === true || value === 'true';
+}
+
+/** Whether a stored token can still be used: it does not expire within a minute, or it can be refreshed. */
+export function usableToken(token: OAuth2Token, now: number): boolean {
+  return token.expiresAt == null || token.expiresAt > now + 60_000 || token.hasRefreshToken;
+}
+
+/**
+ * Whether sending needs a browser sign-in first: the OAuth 2.0 authorization fetches its token
+ * automatically, signs in through a browser, and neither its selected token nor one with its
+ * name can be used. Other grants are fetched by the engine itself.
+ */
+export function needsSignIn(
+  auth: AuthDraft | undefined,
+  tokens: readonly OAuth2Token[],
+  now: number,
+): boolean {
+  if (auth?.type !== 'oauth2' || !autoFetches(auth) || !oauth2UsesBrowser(auth)) return false;
+  const selected = String(auth.values['oauth2TokenId'] ?? '');
+  // A token typed in ("Custom token") is the user's choice.
+  if (!selected && String(auth.values['accessToken'] ?? '')) return false;
+  const name = String(auth.values['tokenName'] ?? '').trim() || 'Token';
+  return !tokens.some(
+    (token) => (token.id === selected || token.name === name) && usableToken(token, now),
+  );
+}
+
 /** Field of an authorization shown read-only, for example where it is inherited. */
 export interface AuthDetail {
   key: string;

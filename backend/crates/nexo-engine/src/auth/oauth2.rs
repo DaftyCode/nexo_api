@@ -25,7 +25,9 @@ fn query_key(auth: &Map<String, Value>) -> String {
 
 pub fn sign(auth: &Map<String, Value>, request: &mut Outgoing) -> Result<()> {
     let token = text(auth.get("accessToken"));
-    if token.is_empty() {
+    // A stored token that was deleted stays an unresolved reference: send no token, as
+    // Postman does without one, rather than the reference.
+    if token.is_empty() || token.starts_with("{{vault:nexo-oauth2") {
         return Ok(());
     }
     let add_to = match text(auth.get("addTokenTo")) {

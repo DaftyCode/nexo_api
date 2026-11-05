@@ -26,6 +26,11 @@ const SCRIPT_FIELDS: [&str; 5] = ["event", "prerequest", "tests", "script", "exe
 pub const HISTORY_LIMIT: usize = 200;
 
 /// Collects `{{vault:name}}` references outside script fields.
+/// Vault entries of OAuth 2.0 tokens that requests reference: their access and ID tokens.
+fn is_oauth2_token(name: &str) -> bool {
+    name.starts_with("nexo-oauth2:") || name.starts_with("nexo-oauth2-id:")
+}
+
 pub fn vault_references(value: &Value) -> Vec<String> {
     fn visit(value: &Value, names: &mut Vec<String>) {
         match value {
@@ -247,10 +252,15 @@ impl Application {
             if !names.is_empty() {
                 let mut secrets = Map::new();
                 for name in &names {
-                    secrets.insert(
-                        name.clone(),
-                        Value::String(self.secrets.resolve(name).await?),
-                    );
+                    match self.secrets.resolve(name).await {
+                        Ok(value) => {
+                            secrets.insert(name.clone(), Value::String(value));
+                        }
+                        // A deleted OAuth 2.0 token (Manage Tokens, `nx.oauth2.reset`): the engine
+                        // gets a new one ("Auto-fetch token") or sends the request without it.
+                        Err(_) if is_oauth2_token(name) => {}
+                        Err(error) => return Err(error),
+                    }
                 }
                 payload.insert("resolvedSecrets".into(), Value::Object(secrets));
             }
@@ -356,6 +366,11 @@ mod tests {
             Ok(())
         }
         async fn resolve(&self, name: &str) -> Result<String> {
+            if name.contains("deleted") {
+                return Err(nexo_domain::Error::Validation(format!(
+                    "Secret not found: {name}"
+                )));
+            }
             Ok(format!("secret-of-{name}"))
         }
         async fn names(&self) -> Result<Vec<String>> {
@@ -414,6 +429,33 @@ mod tests {
         assert!(payload.get("secretNames").is_none());
         assert!(payload.get("scope").is_none());
         assert!(payload.get("egressLoopbackPorts").is_none());
+    }
+
+    #[tokio::test]
+    async fn a_deleted_oauth2_token_is_left_to_the_engine_but_other_secrets_must_exist() {
+        let (application, fake) = application();
+        application
+            .execute(
+                Operation::Request,
+                json!({
+                    "workspace": "local",
+                    "request": {"url": "https://x", "auth": {"type": "oauth2", "oauth2": [
+                        {"key": "accessToken", "value": "{{vault:nexo-oauth2:deleted}}"}
+                    ]}},
+                }),
+            )
+            .await
+            .unwrap();
+        let (_, payload) = fake.executed.lock().unwrap()[0].clone();
+        assert_eq!(payload["resolvedSecrets"], json!({}));
+        let error = application
+            .execute(
+                Operation::Request,
+                json!({"workspace": "local", "request": {"url": "{{vault:deleted-key}}"}}),
+            )
+            .await
+            .unwrap_err();
+        assert!(error.to_string().contains("Secret not found"));
     }
 
     #[tokio::test]

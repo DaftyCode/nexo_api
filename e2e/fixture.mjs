@@ -1,7 +1,7 @@
 // Starts nexo-server with the built interface and signs the browser in with a one-time link.
 import { test as base } from '@playwright/test';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
 import { tmpdir } from 'node:os';
@@ -27,6 +27,9 @@ export const test = base.extend({
       const directory = await mkdtemp(join(tmpdir(), 'nexo-e2e-'));
       const token = 'e2e-token';
       const listen = await port();
+      // Stands for the user's ~/.netrc in the Netrc test.
+      const netrc = join(directory, 'netrc');
+      await writeFile(netrc, 'machine 127.0.0.1 login e2e-user password e2e-netrc\n');
       const child = spawn(
         binary,
         ['--port', String(listen), '--web', 'dist/nexo/browser', '--no-open'],
@@ -37,6 +40,7 @@ export const test = base.extend({
             NEXO_LOCAL_TOKEN: token,
             NEXO_MASTER_KEY: 'b'.repeat(64),
             NEXO_NO_BROWSER: '1',
+            NEXO_NETRC: netrc,
           },
           stdio: 'ignore',
         },
@@ -74,6 +78,7 @@ export const test = base.extend({
             path: request.url,
             method: request.method,
             authorization: request.headers.authorization ?? null,
+            wsse: request.headers['x-wsse'] ?? null,
           }),
         );
       });

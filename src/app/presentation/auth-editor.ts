@@ -42,6 +42,8 @@ const labels: Record<string, string> = {
   awsv4: 'AWS Signature',
   ntlm: 'NTLM Authentication',
   edgegrid: 'Akamai EdgeGrid',
+  wsse: 'WSSE Auth',
+  netrc: 'Netrc File',
   hawk: 'Hawk Authentication',
 };
 

@@ -124,6 +124,40 @@ pub async fn delete(vault: &Vault, id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Deletes every token called `name`.
+pub async fn delete_named(vault: &Vault, name: &str) -> Result<()> {
+    for token in list(vault).await? {
+        if token["name"].as_str() == Some(name.trim())
+            && let Some(id) = token["id"].as_str()
+        {
+            delete(vault, id).await?;
+        }
+    }
+    Ok(())
+}
+
+/// The newest token called `name` that is valid for more than a minute after `now` (ms), or
+/// that can be refreshed.
+pub async fn usable_named(vault: &Vault, name: &str, now: u64) -> Result<Option<Value>> {
+    Ok(list(vault)
+        .await?
+        .into_iter()
+        .find(|token| token["name"].as_str() == Some(name.trim()) && usable(token, now)))
+}
+
+/// Whether a token (its details or its public view) can still be used: it does not expire
+/// within a minute, or it can be refreshed.
+pub fn usable(token: &Value, now: u64) -> bool {
+    let fresh = token["expiresAt"]
+        .as_u64()
+        .is_none_or(|at| at > now + 60_000);
+    let refreshable = token["hasRefreshToken"] == json!(true)
+        || token["refreshToken"]
+            .as_str()
+            .is_some_and(|t| !t.is_empty());
+    fresh || refreshable
+}
+
 /// Values of every stored token by name, for `{{$oauth2.<name>.access_token}}` (Bruno's
 /// syntax), `.id_token` and `.refresh_token`.
 pub async fn variables(vault: &Vault) -> Result<serde_json::Map<String, Value>> {

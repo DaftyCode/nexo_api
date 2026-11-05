@@ -182,4 +182,20 @@ describe('sanitize', () => {
     expect(text).not.toContain('akab-access');
     expect(text).not.toContain('edgegrid-secret');
   });
+
+  it('removes the WSSE password from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'wsse',
+          wsse: [
+            { key: 'username', value: 'bob' },
+            { key: 'password', value: 'wsse-secret' },
+          ],
+        },
+      }),
+    );
+    expect(text).toContain('bob');
+    expect(text).not.toContain('wsse-secret');
+  });
 });

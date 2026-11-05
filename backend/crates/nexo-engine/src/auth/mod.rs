@@ -16,13 +16,16 @@ mod asap;
 mod awsv4;
 mod basic;
 mod bearer;
+pub mod convert;
 pub mod digest;
 mod edgegrid;
 mod hawk;
 pub mod jwt;
+mod netrc;
 mod ntlm;
 mod oauth1;
 mod oauth2;
+mod wsse;
 
 /// The values of a stored authorization, flattened into one map with its `type`.
 pub fn values(auth: &Value) -> Map<String, Value> {
@@ -106,6 +109,8 @@ pub fn sign(auth: &Map<String, Value>, request: &mut Outgoing) -> Result<()> {
         "jwt" => jwt::sign(auth, request),
         "asap" => asap::sign(auth, request),
         "edgegrid" => edgegrid::sign(auth, request),
+        "wsse" => wsse::sign(auth, request),
+        "netrc" => netrc::sign(auth, request),
         "" | "noauth" | "inherit" => Ok(()),
         other => Err(Error::Validation(format!(
             "Unsupported authentication helper: {other}"

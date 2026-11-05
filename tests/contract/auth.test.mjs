@@ -10,6 +10,9 @@ import {
   randomBytes,
   verify,
 } from 'node:crypto';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fixture, startServer } from './server.mjs';
 
 let server;
@@ -836,5 +839,85 @@ test('Akamai EdgeGrid signatures verify, with signed headers, body limit and bas
     }
   } finally {
     await local.close();
+  }
+});
+
+// A WSSE server: recomputes Bruno's digest (Base64 of the hexadecimal SHA-1) with the password.
+test('WSSE UsernameToken digests verify like Bruno sends them', async () => {
+  const verifier = await fixture((request, body, response) => {
+    const header = request.headers['x-wsse'] ?? '';
+    const f = Object.fromEntries([...header.matchAll(/(\w+)="([^"]*)"/g)].map((m) => [m[1], m[2]]));
+    const hex = createHash('sha1').update(`${f.Nonce}${f.Created}wsse-password`).digest('hex');
+    const ok =
+      header.startsWith('UsernameToken ') &&
+      f.PasswordDigest === Buffer.from(hex).toString('base64');
+    response.statusCode = ok ? 200 : 401;
+    response.end(JSON.stringify({ ok, username: f.Username, nonce: f.Nonce, created: f.Created }));
+  });
+  try {
+    const nonces = new Set();
+    for (let i = 0; i < 2; i++) {
+      const result = await server.execute('request', {
+        request: {
+          url: `${verifier.url}/soap`,
+          auth: {
+            type: 'wsse',
+            wsse: [
+              { key: 'username', value: 'bob' },
+              { key: 'password', value: 'wsse-password' },
+            ],
+          },
+        },
+      });
+      assert.equal(result.status, 200, result.body);
+      const answer = JSON.parse(result.body);
+      assert.equal(answer.username, 'bob');
+      assert.match(answer.nonce, /^[0-9a-f]{32}$/);
+      assert.match(answer.created, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      nonces.add(answer.nonce);
+    }
+    assert.equal(nonces.size, 2, 'a new nonce on every send');
+  } finally {
+    await verifier.close();
+  }
+});
+
+// Netrc reads only the file the server was started with (NEXO_NETRC stands for ~/.netrc).
+test('netrc sends the machine or default login, and nothing without a match', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'nexo-netrc-'));
+  const echoAuthorization = await fixture((request, body, response) => {
+    response.end(JSON.stringify({ authorization: request.headers.authorization ?? null }));
+  });
+  const servers = [];
+  try {
+    const host = new URL(echoAuthorization.url).hostname;
+    const send = async (netrc) => {
+      const file = join(directory, `netrc-${servers.length}`);
+      await writeFile(file, netrc);
+      const started = await startServer({ NEXO_NETRC: file });
+      servers.push(started);
+      const result = await started.execute('request', {
+        request: { url: `${echoAuthorization.url}/files`, auth: { type: 'netrc', netrc: [] } },
+      });
+      return JSON.parse(result.body).authorization;
+    };
+    const basic = (credentials) => `Basic ${Buffer.from(credentials).toString('base64')}`;
+    assert.equal(
+      await send(
+        `machine ${host} login ada password "s3cret pass"\ndefault login anon password guest\n`,
+      ),
+      basic('ada:s3cret pass'),
+    );
+    assert.equal(
+      await send(
+        'machine other.example.com login ada password x\ndefault login anon password guest\n',
+      ),
+      basic('anon:guest'),
+    );
+    assert.equal(await send('machine other.example.com login ada password x\n'), null);
+  } finally {
+    await echoAuthorization.close();
+    for (const started of servers) await started.stop();
+    await rm(directory, { recursive: true, force: true });
   }
 });

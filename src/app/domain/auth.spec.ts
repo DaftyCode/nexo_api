@@ -8,6 +8,8 @@ import {
   oauth2Grant,
   oauth2Shows,
   oauth2UsesBrowser,
+  needsSignIn,
+  OAuth2Token,
   readAuth,
   withAuthValue,
   withOAuth2Token,
@@ -217,5 +219,50 @@ describe('authorization', () => {
         { key: 'workstation', value: 'PC-1', type: 'string' },
       ]),
     );
+  });
+
+  it('signs in before sending only for browser grants that auto-fetch without a usable token', () => {
+    const now = 1_000_000;
+    const auth = (values: Record<string, unknown>) =>
+      readAuth({
+        type: 'oauth2',
+        oauth2: Object.entries({
+          grant_type: 'authorization_code',
+          tokenName: 'SSO',
+          ...values,
+        }).map(([key, value]) => ({ key, value })),
+      });
+    const token = (extra: Partial<OAuth2Token>): OAuth2Token => ({
+      id: 't1',
+      name: 'SSO',
+      hasRefreshToken: false,
+      hasIdToken: false,
+      reference: '{{vault:nexo-oauth2:t1}}',
+      idReference: '{{vault:nexo-oauth2-id:t1}}',
+      ...extra,
+    });
+    const fetching = auth({ autoFetchToken: true });
+    expect(needsSignIn(fetching, [], now)).toBe(true);
+    expect(needsSignIn(fetching, [token({ expiresAt: now + 120_000 })], now)).toBe(false);
+    // Expired: a new sign-in, unless it can be refreshed.
+    expect(needsSignIn(fetching, [token({ expiresAt: now + 30_000 })], now)).toBe(true);
+    expect(needsSignIn(fetching, [token({ expiresAt: now - 1, hasRefreshToken: true })], now)).toBe(
+      false,
+    );
+    // Another name does not count; the selected token does.
+    expect(needsSignIn(fetching, [token({ name: 'OTHER' })], now)).toBe(true);
+    expect(
+      needsSignIn(
+        auth({ autoFetchToken: true, oauth2TokenId: 't1' }),
+        [token({ name: 'OTHER' })],
+        now,
+      ),
+    ).toBe(false);
+    // Off, a custom token, or a grant without a browser: no sign-in.
+    expect(needsSignIn(auth({}), [], now)).toBe(false);
+    expect(needsSignIn(auth({ autoFetchToken: true, accessToken: 'typed' }), [], now)).toBe(false);
+    expect(
+      needsSignIn(auth({ autoFetchToken: true, grant_type: 'client_credentials' }), [], now),
+    ).toBe(false);
   });
 });

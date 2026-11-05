@@ -700,5 +700,11 @@
   "Client Token": "Client Token",
   "Base URL": "URL base",
   "Headers to Sign": "Cabeceras a firmar",
-  "Max Body Size": "Tamaño máximo del cuerpo"
+  "Max Body Size": "Tamaño máximo del cuerpo",
+  "WSSE Auth": "WSSE Auth",
+  "Netrc File": "Archivo netrc",
+  "A new nonce and creation time are signed on every send, in the X-WSSE header.": "En cada envío se firman un nonce y una hora de creación nuevos, en la cabecera X-WSSE.",
+  "Nexo API uses the login and password of your netrc file (~/.netrc, or ~/_netrc on Windows) for the host of the request, or its default entry. Without a matching entry, no authorization is sent.": "Nexo API usa el usuario y la contraseña de tu archivo netrc (~/.netrc, o ~/_netrc en Windows) para el host de la petición, o su entrada default. Si no hay ninguna entrada que coincida, no se envía autorización.",
+  "Auto-fetch Token": "Obtener el token automáticamente",
+  "Without a usable token, a new one is obtained before sending (with a sign-in when the grant needs a browser).": "Si no hay un token válido, se obtiene uno nuevo antes de enviar (con inicio de sesión si el flujo necesita navegador)."
 }

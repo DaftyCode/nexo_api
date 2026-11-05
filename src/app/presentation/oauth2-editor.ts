@@ -13,6 +13,7 @@ import {
 import {
   AuthDraft,
   OAuth2Field,
+  autoFetches,
   autoRefreshes,
   emptyAuth,
   oauth2Grant,
@@ -63,6 +64,7 @@ export class OAuth2Editor {
     selectedToken(this.auth(), this.state.oauth2Tokens()),
   );
   protected readonly autoRefresh = computed(() => autoRefreshes(this.auth()));
+  protected readonly autoFetch = computed(() => autoFetches(this.auth()));
   constructor() {
     void this.state.loadOAuth2Tokens();
   }
@@ -85,6 +87,10 @@ export class OAuth2Editor {
       const next = withAuthValue(auth, 'tokenSource', source);
       return token ? withOAuth2Token(next, token) : next;
     });
+  }
+  protected toggleAutoFetch(event: Event) {
+    // Bruno's option; stored only when on, so Postman collections stay as they are.
+    this.set('autoFetchToken', (event.target as HTMLInputElement).checked ? true : undefined);
   }
   protected toggleAutoRefresh(event: Event) {
     // Stored only when turned off, so collections keep Postman's default.

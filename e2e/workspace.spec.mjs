@@ -245,6 +245,47 @@ test('OAuth 2.0: a PKCE sign-in completes with the address pasted back', async (
   await expect(current).not.toHaveValue('');
 });
 
+test('OAuth 2.0: Auto-fetch Token signs in before sending without a token', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.keyboard.press('Control+t');
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/me`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('oauth2');
+  await page.getByLabel('Grant type').selectOption('authorization_code_with_pkce');
+  await page.getByLabel('Token Name').fill('E2E-AUTO');
+  await page.getByLabel('Callback URL').fill('https://oauth.pstmn.io/v1/browser-callback');
+  await page.getByLabel('Auth URL').fill(`${nexo.echo}/authorize`);
+  await page.getByLabel('Access Token URL').fill(`${nexo.echo}/token`);
+  await page.getByLabel('Client ID').fill('app');
+  await page.getByLabel('Auto-fetch Token').check();
+
+  // Sending without a token opens the sign-in first, as Bruno does.
+  const started = page.waitForResponse((response) => response.url().includes('oauth2.authorize'));
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  const { authorizationUrl } = await (await started).json();
+  const dialog = page.getByRole('dialog', { name: 'Sign in with OAuth 2.0' });
+  await expect(dialog).toBeVisible();
+  const back = (await fetch(authorizationUrl, { redirect: 'manual' })).headers.get('location');
+  await dialog.getByLabel('Address the browser returned to').fill(back);
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog).toBeHidden();
+  // The request then goes with the new token (redacted in what Nexo shows).
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  await expect(page.getByText('Bearer [REDACTED]')).toBeVisible();
+
+  // The next send reuses it without signing in again.
+  const signIns = [];
+  page.on('request', (request) => {
+    if (request.url().includes('oauth2.authorize')) signIns.push(request.url());
+  });
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByText('Bearer [REDACTED]')).toBeVisible();
+  expect(signIns).toEqual([]);
+});
+
 test('OAuth 1.0: a request is signed in the Authorization header', async ({ page, nexo }) => {
   await nexo.signIn(page);
   await page.getByRole('button', { name: 'Create collection' }).first().click();
@@ -407,6 +448,34 @@ test('Akamai EdgeGrid: a request is signed with the three tokens', async ({ page
   await expect(response).toContainText(';signature=');
   await expect(response).not.toContainText('e2e-edgegrid-secret');
 });
+
+for (const [type, label, check] of [
+  ['wsse', 'WSSE', 'UsernameToken Username='],
+  // The e2e server reads a netrc file with a machine entry for 127.0.0.1.
+  ['netrc', 'Netrc', `Basic ${Buffer.from('e2e-user:e2e-netrc').toString('base64')}`],
+]) {
+  test(`${label}: a request is sent with its credentials`, async ({ page, nexo }) => {
+    await nexo.signIn(page);
+    await page.getByRole('button', { name: 'Create collection' }).first().click();
+    await page.getByPlaceholder('Give it a name').fill(`${label} API`);
+    await page.getByRole('button', { name: 'Create', exact: true }).click();
+    const collection = page.locator('.collection', { hasText: `${label} API` });
+    await collection.getByLabel('Collection actions').click();
+    await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
+    await page.getByLabel('Request URL').fill(`${nexo.echo}/${type}`);
+    await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+    await page.getByLabel('Authorization type').selectOption(type);
+    if (type === 'wsse') {
+      await page.getByLabel('Username').fill('bob');
+      await page.getByLabel('Password').fill('e2e-wsse-password');
+    }
+
+    await page.getByRole('button', { name: 'Send' }).first().click();
+    await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+    await expect(page.locator('.response-section')).toContainText(check);
+    await expect(page.locator('.response-section')).not.toContainText('e2e-wsse-password');
+  });
+}
 
 test('Ctrl+Enter in a script editor does not send the request', async ({ page, nexo }) => {
   await nexo.signIn(page);

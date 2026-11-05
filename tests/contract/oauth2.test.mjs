@@ -428,3 +428,72 @@ test('tokens about to expire are refreshed before sending, and $oauth2 variables
   assert.equal(JSON.parse(sent.body).authorization, 'Bearer [REDACTED]');
   assert.ok(!JSON.stringify(sent).includes('renewed-token'));
 });
+
+test('Auto-fetch token gets a token once, reuses it by name, and scripts can only reset it', async () => {
+  const settings = (extra = []) => [
+    { key: 'grant_type', value: 'client_credentials' },
+    { key: 'accessTokenUrl', value: '{{tokenUrl}}' },
+    { key: 'tokenName', value: 'AUTO' },
+    ...extra,
+  ];
+  const send = (auth, prerequest) =>
+    server.execute('request', {
+      request: {
+        url: `${provider.url}/echo`,
+        auth: { type: 'inherit' },
+        ...(prerequest ? { prerequest } : {}),
+      },
+      variables: [{ key: 'tokenUrl', value: `${provider.url}/token`, enabled: true }],
+      context: { ancestors: [{ name: 'API', auth: { type: 'oauth2', oauth2: auth } }] },
+    });
+  const named = async () =>
+    (await server.execute('oauth2.tokens', { action: 'list' })).tokens.filter(
+      (token) => token.name === 'AUTO',
+    );
+  const tokenRequests = () => received.filter((entry) => entry.url === '/token').length;
+
+  // No token yet: one is obtained, stored under its name and sent (redacted in the result).
+  received.length = 0;
+  const first = await send(settings([{ key: 'autoFetchToken', value: true }]));
+  assert.equal(JSON.parse(first.body).authorization, 'Bearer [REDACTED]');
+  assert.equal(tokenRequests(), 1);
+  assert.equal((await named()).length, 1);
+
+  // The next send reuses it.
+  await send(settings([{ key: 'autoFetchToken', value: true }]));
+  assert.equal(tokenRequests(), 1);
+
+  // A script resets it (it cannot read it): the next send gets a new one.
+  const reset = await send(
+    settings([{ key: 'autoFetchToken', value: true }]),
+    "nx.oauth2.reset('AUTO'); nx.test('no token API', () => nx.expect(nx.oauth2.token).to.equal(undefined));",
+  );
+  assert.ok(
+    reset.assertions.every((assertion) => assertion.passed),
+    JSON.stringify(reset.assertions),
+  );
+  assert.equal((await named()).length, 0);
+  await send(settings([{ key: 'autoFetchToken', value: true }]));
+  assert.equal(tokenRequests(), 2);
+  const [current] = await named();
+
+  // Without Auto-fetch, a deleted token is not sent (no error, no reference in the header).
+  await server.execute('oauth2.tokens', { action: 'delete', id: current.id });
+  const without = await send(
+    settings([
+      { key: 'accessToken', value: current.reference },
+      { key: 'oauth2TokenId', value: current.id },
+    ]),
+  );
+  assert.equal(without.status, 200);
+  assert.equal(JSON.parse(without.body).authorization, null);
+  assert.equal(tokenRequests(), 2);
+
+  // Browser grants are signed in by the interface: the engine sends without a token.
+  const browser = await send([
+    ...browserSettings([{ key: 'tokenName', value: 'AUTO-BROWSER' }]),
+    { key: 'autoFetchToken', value: true },
+  ]);
+  assert.equal(JSON.parse(browser.body).authorization, null);
+  assert.equal(tokenRequests(), 2);
+});
