@@ -1,4 +1,4 @@
-use nexo_application::{operations::Operation, ports::ExecutionGateway};
+use nexo_application::{operations::Operation, payloads, ports::ExecutionGateway};
 use nexo_engine::Engine;
 use serde_json::{Value, json};
 use std::{
@@ -93,6 +93,17 @@ fn junit(result: &Value, seconds: f64) -> String {
     )
 }
 
+/// Runs an operation with its payload checked as the API checks it.
+async fn execute(
+    engine: &Engine,
+    operation: Operation,
+    payload: Value,
+) -> Result<Value, nexo_domain::Error> {
+    engine
+        .execute(operation, payloads::validate(operation, payload)?)
+        .await
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let values: Vec<String> = std::env::args().skip(1).collect();
@@ -118,20 +129,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .map_err(|e| format!("Cannot read {source_path}: {e}"))?;
         let strict = !args.has("--insecure");
         Ok(match command.as_str() {
-            "import" => {
-                engine
-                    .execute(Operation::Import, json!({"content":source}))
-                    .await?
-            }
+            "import" => execute(&engine, Operation::Import, json!({"content":source})).await?,
             "request" => {
                 let request: Value = serde_json::from_str(&source)
                     .map_err(|e| format!("{source_path} is not valid JSON: {e}"))?;
-                engine
-                    .execute(
-                        Operation::Request,
-                        json!({"request":request,"strictSSL":strict}),
-                    )
-                    .await?
+                execute(
+                    &engine,
+                    Operation::Request,
+                    json!({"request":request,"strictSSL":strict}),
+                )
+                .await?
             }
             _ => {
                 let mut variables = match args.flag("--environment") {
@@ -155,8 +162,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(path) => {
                         let content = std::fs::read_to_string(&path)
                             .map_err(|e| format!("Cannot read {path}: {e}"))?;
-                        engine
-                            .execute(Operation::DatasetParse, json!({"content":content}))
+                        execute(&engine, Operation::DatasetParse, json!({"content":content}))
                             .await?["rows"]
                             .clone()
                     }
@@ -176,30 +182,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
                 let collection: Value = serde_json::from_str(&source)
                     .map_err(|e| format!("{source_path} is not valid JSON: {e}"))?;
-                let started = engine
-                    .execute(
-                        Operation::Run,
-                        json!({"collection":collection,"variables":variables,"globals":globals,
+                let started = execute(
+                    &engine,
+                    Operation::Run,
+                    json!({"collection":collection,"variables":variables,"globals":globals,
                             "data":data,"iterations":iterations,"strictSSL":strict,
                             "globalTimeout":timeout * 1000}),
-                    )
-                    .await?;
+                )
+                .await?;
                 let deadline = Instant::now() + Duration::from_secs(timeout + 5);
                 loop {
                     tokio::time::sleep(Duration::from_millis(100)).await;
-                    let result = engine
-                        .execute(
-                            Operation::Run,
-                            json!({"action":"status","id":started["id"]}),
-                        )
-                        .await?;
+                    let result = execute(
+                        &engine,
+                        Operation::Run,
+                        json!({"action":"status","id":started["id"]}),
+                    )
+                    .await?;
                     if result["state"] != "running" {
                         break result;
                     }
                     if Instant::now() > deadline {
-                        engine
-                            .execute(Operation::Cancel, json!({"id":started["id"]}))
-                            .await?;
+                        execute(&engine, Operation::Cancel, json!({"id":started["id"]})).await?;
                         return Err(format!("The run exceeded {timeout} seconds").into());
                     }
                 }

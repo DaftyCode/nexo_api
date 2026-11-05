@@ -291,6 +291,10 @@ impl Application {
     }
 
     pub async fn git(&self, operation: GitOperation, payload: Value) -> Result<Value> {
+        let payload = match payload {
+            Value::Null => Value::Object(Map::new()),
+            payload => payloads::validate_git(operation, payload)?,
+        };
         let workspace = WorkspaceId::parse(payload["workspace"].as_str().unwrap_or("local"))?;
         self.require_workspace(&workspace).await?;
         self.git.execute(&workspace, operation, payload).await
@@ -509,7 +513,7 @@ mod tests {
         application
             .execute(
                 Operation::DatasetQuery,
-                json!({"workspace": "local", "id": "d"}),
+                json!({"workspace": "local", "id": "d", "sql": "SELECT 1"}),
             )
             .await
             .unwrap();
@@ -521,7 +525,7 @@ mod tests {
             application
                 .execute(
                     Operation::DatasetQuery,
-                    json!({"workspace": "missing", "id": "d"})
+                    json!({"workspace": "missing", "id": "d", "sql": "SELECT 1"})
                 )
                 .await,
             Err(Error::NotFound)

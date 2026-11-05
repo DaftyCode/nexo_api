@@ -58,7 +58,10 @@ test('datasets keep identifiers as text and only allow read-only SQL', async () 
   const parsed = await server.execute('dataset.parse', { content: '[{"a":1}]' });
   assert.deepEqual(parsed, { rows: [{ a: 1 }], total: 1 });
   await server.execute('dataset.delete', { id: 'people' });
-  await assert.rejects(server.execute('dataset.query', { id: 'people' }), /import it again/);
+  await assert.rejects(
+    server.execute('dataset.query', { id: 'people', sql: 'SELECT * FROM data' }),
+    /import it again/,
+  );
 });
 
 test('load tests run virtual users and report a summary', async () => {

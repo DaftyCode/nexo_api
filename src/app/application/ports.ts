@@ -1,7 +1,7 @@
 import { Health, Workspace, WorkspaceDocument } from '../domain/models';
 import { SecretSummary } from '../domain/secrets';
 import { ExecutionOperation, GitOperation } from './operations';
-import { PayloadOf } from './payloads';
+import { GitPayload, PayloadOf } from './payloads';
 
 /** A failed backend call with the stable error code the backend reported. */
 export class ApiFailure extends Error {
@@ -57,7 +57,7 @@ export interface ExecutionPort {
   execute<T>(...args: ExecuteArgs): Promise<T>;
 }
 export interface VersionControlPort {
-  git<T>(operation: GitOperation, payload: unknown): Promise<T>;
+  git<T>(operation: GitOperation, payload: GitPayload): Promise<T>;
 }
 export interface SecretVaultPort {
   /** Saves a value, allowed domains or both; what is not given is kept. */

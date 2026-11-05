@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { ApiFailure, ApiPort, ExecuteArgs, RevisionEntry } from '../application/ports';
+import { GitPayload } from '../application/payloads';
 import { GitOperation } from '../application/operations';
 import { Health, Workspace, WorkspaceDocument } from '../domain/models';
 import { SecretSummary } from '../domain/secrets';
@@ -97,7 +98,7 @@ export class HttpApi implements ApiPort {
   execute<T>(...[operation, payload]: ExecuteArgs) {
     return this.request<T>('POST', `/execute/${encodeURIComponent(operation)}`, payload);
   }
-  git<T>(operation: GitOperation, payload: unknown) {
+  git<T>(operation: GitOperation, payload: GitPayload) {
     return this.request<T>('POST', `/git/${encodeURIComponent(operation)}`, payload);
   }
   revisions(id: string) {

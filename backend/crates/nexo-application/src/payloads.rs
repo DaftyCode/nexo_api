@@ -6,7 +6,7 @@
 //!
 //! The top-level fields are closed: unknown ones are refused. Documents inside them
 //! (collections, items, authorizations) keep the Postman format and stay open.
-use crate::operations::Operation;
+use crate::operations::{GitOperation, Operation};
 use nexo_domain::{Error, Result};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
@@ -165,6 +165,299 @@ payload! {
     }
 }
 
+payload! {
+    /// `cancel`, `realtime.close`, `mock.stop`, `performance.cancel`: an identifier.
+    closed IdPayload {
+        required { id "id": String => "string" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `realtime.list`, `mock.list`, `cookies.list`, `cookies.clear`: only the workspace.
+    closed WorkspacePayload {
+        required {}
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `oauth2.token`: "Get New Access Token" for an authorization, or a refresh with `tokenId`.
+    closed Oauth2TokenPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            token_id "tokenId": String => "string",
+            request "request": Map<String, Value> => "object",
+            item "item": Map<String, Value> => "object",
+            collection "collection": Map<String, Value> => "object",
+            variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
+            globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            context "context": ExecutionContext => "ExecutionContext",
+        }
+    }
+}
+
+payload! {
+    /// `oauth2.authorize`: a browser sign-in. `start` takes the authorization like
+    /// `oauth2.token`; the other actions take its `session`, and `complete` the `url` the
+    /// browser returned to.
+    closed Oauth2AuthorizePayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            action "action": SignInAction => "'start' | 'status' | 'open' | 'complete' | 'cancel'",
+            session "session": String => "string",
+            url "url": String => "string",
+            open_browser "openBrowser": bool => "boolean",
+            request "request": Map<String, Value> => "object",
+            item "item": Map<String, Value> => "object",
+            collection "collection": Map<String, Value> => "object",
+            variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
+            globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            context "context": ExecutionContext => "ExecutionContext",
+        }
+    }
+}
+
+payload! {
+    /// `oauth2.tokens`: "Manage Tokens" (`list`, `details` or `delete` of the token `id`).
+    closed Oauth2TokensPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            action "action": TokensAction => "'list' | 'details' | 'delete'",
+            id "id": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// `oauth.token`: posts form `fields` to a token endpoint.
+    closed OauthTokenPayload {
+        required { url "url": String => "string" }
+        optional {
+            workspace "workspace": String => "string",
+            fields "fields": Map<String, Value> => "Record<string, unknown>",
+            headers "headers": Value => "Record<string, string> | readonly object[]",
+        }
+    }
+}
+
+payload! {
+    /// `realtime.connect`: a WebSocket, Socket.IO or MQTT connection.
+    closed RealtimeConnectPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            protocol "protocol": String => "string",
+            url "url": String => "string",
+            headers "headers": Value => "Record<string, string> | readonly object[]",
+            subprotocols "subprotocols": Vec<String> => "readonly string[]",
+            path "path": String => "string",
+            auth "auth": Map<String, Value> => "Record<string, unknown>",
+            client_id "clientId": String => "string",
+            clean "clean": bool => "boolean",
+            username "username": String => "string",
+            password "password": String => "string",
+            topic "topic": String => "string",
+            qos "qos": u8 => "number",
+            strict_ssl "strictSSL": bool => "boolean",
+            ca_pem "caPem": String => "string",
+            cert_pem "certPem": String => "string",
+            key_pem "keyPem": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// `realtime.send`: a message, or an MQTT subscribe/unsubscribe with `action`.
+    closed RealtimeSendPayload {
+        required { id "id": String => "string" }
+        optional {
+            workspace "workspace": String => "string",
+            action "action": String => "string",
+            message "message": Value => "unknown",
+            topic "topic": String => "string",
+            event "event": String => "string",
+            qos "qos": u8 => "number",
+            retain "retain": bool => "boolean",
+        }
+    }
+}
+
+payload! {
+    /// `realtime.poll`: the events after the sequence number `after`.
+    closed RealtimePollPayload {
+        required { id "id": String => "string" }
+        optional {
+            workspace "workspace": String => "string",
+            after "after": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `grpc`: a call with a supplied proto.
+    closed GrpcPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            url "url": String => "string",
+            proto "proto": String => "string",
+            service "service": String => "string",
+            method "method": String => "string",
+            tls "tls": bool => "boolean",
+            ca_pem "caPem": String => "string",
+            cert_pem "certPem": String => "string",
+            key_pem "keyPem": String => "string",
+            message "message": Value => "unknown",
+            messages "messages": Vec<Value> => "readonly unknown[]",
+            metadata "metadata": Value => "unknown",
+            timeout "timeout": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `mock.start`: a mock server for the examples, on `port` (0 or none for any free one).
+    closed MockStartPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            id "id": String => "string",
+            port "port": u64 => "number",
+            examples "examples": Vec<Map<String, Value>> => "readonly object[]",
+        }
+    }
+}
+
+payload! {
+    /// `dataset.import` and `dataset.parse`: JSON or CSV `content`, or `rows`.
+    closed DatasetRowsPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            id "id": String => "string",
+            content "content": String => "string",
+            rows "rows": Vec<Value> => "readonly unknown[]",
+        }
+    }
+}
+
+payload! {
+    /// `dataset.query`: read-only SQL over a dataset.
+    closed DatasetQueryPayload {
+        required {
+            id "id": String => "string",
+            sql "sql": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `import`: a collection, environment, cURL command, HAR or OpenAPI document.
+    closed ImportPayload {
+        required { content "content": String => "string" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `codegen`: code that sends `request` in `language`.
+    closed CodegenPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            request "request": Map<String, Value> => "object",
+            language "language": String => "string",
+            variant "variant": String => "string",
+            follow_redirects "followRedirects": bool => "boolean",
+        }
+    }
+}
+
+payload! {
+    /// `mcp.request`: a JSON-RPC call to an MCP server.
+    closed McpRequestPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            url "url": String => "string",
+            method "method": String => "string",
+            params "params": Value => "unknown",
+            headers "headers": Value => "Record<string, string> | readonly object[]",
+            session_id "sessionId": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// `performance`: starts a load test of `request`, or with `action: "status"` reports one.
+    closed PerformancePayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            action "action": RunAction => "'status'",
+            id "id": String => "string",
+            request "request": Map<String, Value> => "object",
+            users "users": u64 => "number",
+            duration "duration": u64 => "number",
+            profile "profile": String => "string",
+            variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
+            globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            context "context": ExecutionContext => "ExecutionContext",
+            strict_ssl "strictSSL": bool => "boolean",
+            follow_redirects "followRedirects": bool => "boolean",
+        }
+    }
+}
+
+payload! {
+    /// A collection written to the workspace project by Git `export`.
+    closed GitFile {
+        required {
+            id "id": String => "string",
+            value "value": Value => "unknown",
+        }
+        optional {}
+    }
+}
+
+payload! {
+    /// Git operations on the workspace project.
+    closed GitPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            branch "branch": String => "string",
+            message "message": String => "string",
+            files "files": Vec<GitFile> => "readonly GitFile[]",
+        }
+    }
+}
+
+/// What an `oauth2.authorize` call does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SignInAction {
+    Start,
+    Status,
+    Open,
+    Complete,
+    Cancel,
+}
+
+/// What an `oauth2.tokens` call does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum TokensAction {
+    List,
+    Details,
+    Delete,
+}
+
 /// What a `run` call asks for besides starting a run.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -172,7 +465,10 @@ pub enum RunAction {
     Status,
 }
 
-fn check<T: DeserializeOwned + Serialize>(operation: Operation, payload: Value) -> Result<Value> {
+fn check<T: DeserializeOwned + Serialize>(
+    operation: impl std::fmt::Display,
+    payload: Value,
+) -> Result<Value> {
     // serde would also read a struct from an array of its fields.
     if !payload.is_object() {
         return Err(Error::Validation(format!(
@@ -191,34 +487,105 @@ fn check<T: DeserializeOwned + Serialize>(operation: Operation, payload: Value) 
     serde_json::to_value(typed).map_err(|error| Error::Infrastructure(error.to_string()))
 }
 
-/// Checks an operation's payload against its type and returns it as the engine reads it.
-/// Operations not typed yet pass unchanged; they are migrated group by group.
-pub fn validate(operation: Operation, payload: Value) -> Result<Value> {
-    match operation {
-        Operation::Request => check::<RequestPayload>(operation, payload),
-        Operation::Run => check::<RunPayload>(operation, payload),
-        _ => Ok(payload),
-    }
+/// Declares which payload each operation takes: `validate` matches every operation without a
+/// wildcard, so a new operation without a payload does not compile, and the TypeScript map
+/// of payloads comes from the same list.
+macro_rules! operation_payloads {
+    ($($operation:ident => $payload:ident),+ $(,)?) => {
+        /// Checks an operation's payload against its type and returns it as the engine reads
+        /// it.
+        pub fn validate(operation: Operation, payload: Value) -> Result<Value> {
+            match operation {
+                $(Operation::$operation => check::<$payload>(operation, payload),)+
+            }
+        }
+        /// `OperationPayloads`: the payload type of each operation, for TypeScript.
+        fn typescript_map() -> String {
+            let mut map = String::from(
+                "/** The payload of each execution operation, checked by the backend. */\n\
+                 export interface OperationPayloads {\n",
+            );
+            $({
+                // Quoted only when the name is not an identifier, as Prettier writes it.
+                let name = Operation::$operation.as_str();
+                let key = if name.contains('.') {
+                    format!("'{name}'")
+                } else {
+                    name.to_string()
+                };
+                map.push_str(&format!("  {key}: {};\n", stringify!($payload)));
+            })+
+            map.push_str("}\n");
+            map
+        }
+        /// Each payload's interface, once, in the order of first use.
+        fn typescript_interfaces() -> Vec<&'static str> {
+            let mut interfaces: Vec<&'static str> = Vec::new();
+            $(if !interfaces.contains(&$payload::TYPESCRIPT) {
+                interfaces.push($payload::TYPESCRIPT);
+            })+
+            interfaces
+        }
+    };
+}
+
+operation_payloads! {
+    Request => RequestPayload,
+    Run => RunPayload,
+    Cancel => IdPayload,
+    Import => ImportPayload,
+    Codegen => CodegenPayload,
+    RealtimeConnect => RealtimeConnectPayload,
+    RealtimeSend => RealtimeSendPayload,
+    RealtimeClose => IdPayload,
+    RealtimePoll => RealtimePollPayload,
+    RealtimeList => WorkspacePayload,
+    Grpc => GrpcPayload,
+    MockStart => MockStartPayload,
+    MockStop => IdPayload,
+    MockList => WorkspacePayload,
+    DatasetQuery => DatasetQueryPayload,
+    DatasetImport => DatasetRowsPayload,
+    DatasetSchema => IdPayload,
+    DatasetParse => DatasetRowsPayload,
+    DatasetDelete => IdPayload,
+    McpRequest => McpRequestPayload,
+    OauthToken => OauthTokenPayload,
+    Oauth2Token => Oauth2TokenPayload,
+    Oauth2Authorize => Oauth2AuthorizePayload,
+    Oauth2Tokens => Oauth2TokensPayload,
+    CookiesList => WorkspacePayload,
+    CookiesClear => WorkspacePayload,
+    Performance => PerformancePayload,
+    PerformanceCancel => IdPayload,
+}
+
+/// Checks the payload of a Git operation.
+pub fn validate_git(operation: GitOperation, payload: Value) -> Result<Value> {
+    check::<GitPayload>(operation, payload)
 }
 
 /// The TypeScript contract written to `src/app/application/payloads.ts`.
 pub fn typescript_contract() -> String {
-    [
+    let mut parts = vec![
         "// Generated from backend/crates/nexo-application/src/payloads.rs.\n\
          // Regenerate with `NEXO_UPDATE_CONTRACTS=1 cargo test -p nexo-application`.\n\
-         import type { ExecutionOperation } from './operations';\n",
-        VariableRow::TYPESCRIPT,
-        ExecutionContext::TYPESCRIPT,
-        RunCursor::TYPESCRIPT,
-        RequestPayload::TYPESCRIPT,
-        RunPayload::TYPESCRIPT,
-        "/** Payloads the backend checks; the other operations are still being typed. */\n\
-         export interface OperationPayloads {\n  request: RequestPayload;\n  run: RunPayload;\n}\n\
-         /** The payload of an operation. */\n\
-         export type PayloadOf<O extends ExecutionOperation> = O extends keyof OperationPayloads\n  \
-         ? OperationPayloads[O]\n  : Record<string, unknown>;\n",
-    ]
-    .join("\n")
+         import type { ExecutionOperation } from './operations';\n"
+            .to_string(),
+        VariableRow::TYPESCRIPT.to_string(),
+        ExecutionContext::TYPESCRIPT.to_string(),
+        RunCursor::TYPESCRIPT.to_string(),
+        GitFile::TYPESCRIPT.to_string(),
+    ];
+    parts.extend(typescript_interfaces().into_iter().map(String::from));
+    parts.push(GitPayload::TYPESCRIPT.to_string());
+    parts.push(typescript_map());
+    parts.push(
+        "/** The payload of an operation. */\n\
+         export type PayloadOf<O extends ExecutionOperation> = OperationPayloads[O];\n"
+            .to_string(),
+    );
+    parts.join("\n")
 }
 
 #[cfg(test)]
@@ -282,6 +649,87 @@ mod tests {
         assert!(error.to_string().contains("at after.results"), "{error}");
         assert!(validate(Operation::Request, json!({"request": "https://x"})).is_err());
         assert!(validate(Operation::Run, json!([])).is_err());
+    }
+
+    #[test]
+    fn every_operation_has_a_payload_type() {
+        // An empty object is valid exactly when the operation has no required field.
+        for operation in Operation::ALL {
+            let result = validate(*operation, json!({}));
+            let required = matches!(
+                operation,
+                Operation::Cancel
+                    | Operation::Import
+                    | Operation::RealtimeSend
+                    | Operation::RealtimeClose
+                    | Operation::RealtimePoll
+                    | Operation::MockStop
+                    | Operation::DatasetQuery
+                    | Operation::DatasetSchema
+                    | Operation::DatasetDelete
+                    | Operation::OauthToken
+                    | Operation::PerformanceCancel
+            );
+            assert_eq!(result.is_err(), required, "{operation}");
+            assert!(
+                validate(
+                    *operation,
+                    json!({"unknown": 1, "id": "x", "content": "", "sql": "", "url": ""})
+                )
+                .is_err(),
+                "{operation}"
+            );
+        }
+    }
+
+    #[test]
+    fn checks_the_other_operation_groups() {
+        let sign_in = json!({"action": "complete", "session": "s1", "url": "https://cb/?code=1"});
+        assert_eq!(
+            validate(Operation::Oauth2Authorize, sign_in.clone()).unwrap(),
+            sign_in
+        );
+        let error = validate(Operation::Oauth2Authorize, json!({"action": "restart"})).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("at action: unknown variant `restart`"),
+            "{error}"
+        );
+        assert!(validate(Operation::Oauth2Tokens, json!({"action": "rename"})).is_err());
+        let error = validate(Operation::OauthToken, json!({"fields": {}})).unwrap_err();
+        assert!(error.to_string().contains("missing field `url`"), "{error}");
+        let error = validate(Operation::MockStart, json!({"port": "8080"})).unwrap_err();
+        assert!(
+            error.to_string().contains("at port: invalid type"),
+            "{error}"
+        );
+        let error = validate(Operation::RealtimeConnect, json!({"qos": 3000})).unwrap_err();
+        assert!(error.to_string().contains("at qos"), "{error}");
+        let grpc = json!({"url": "localhost:50051", "proto": "syntax", "service": "s", "method": "m",
+                          "tls": false, "message": {"name": "Nexo"}, "metadata": []});
+        assert_eq!(validate(Operation::Grpc, grpc.clone()).unwrap(), grpc);
+        // Git: the files of an export and the branch or message of the others.
+        let export = json!({"workspace": "w1", "files": [{"id": "c1", "value": {"item": []}}]});
+        assert_eq!(
+            validate_git(GitOperation::Export, export.clone()).unwrap(),
+            export
+        );
+        let error = validate_git(GitOperation::Commit, json!({"mesage": "typo"})).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("Invalid commit payload at mesage"),
+            "{error}"
+        );
+        let error =
+            validate_git(GitOperation::Export, json!({"files": [{"id": "c1"}]})).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("at files[0]: missing field `value`"),
+            "{error}"
+        );
     }
 
     #[test]

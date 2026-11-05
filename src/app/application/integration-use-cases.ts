@@ -9,6 +9,7 @@ import { GitOperation } from './operations';
 import { RequestDraft, WorkspaceDocument, toItem } from '../domain/models';
 import { exportableCollection } from '../domain/sanitize';
 import { parseAllowedDomains } from '../domain/secrets';
+import { RequestAncestor, toPortableRows } from '../domain/variables';
 
 export interface GitResult {
   success: boolean;
@@ -30,9 +31,9 @@ export interface LoadTest {
   duration: number;
   profile: string;
   request: RequestDraft;
-  variables: unknown;
-  globals: unknown;
-  ancestors: unknown[];
+  variables: ReturnType<typeof toPortableRows>;
+  globals: ReturnType<typeof toPortableRows>;
+  ancestors: readonly RequestAncestor[];
 }
 export interface TokenRequest {
   url: string;
