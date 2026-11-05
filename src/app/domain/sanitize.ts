@@ -85,6 +85,7 @@ export function exportableCollection(value: unknown): unknown {
           'ntlm',
           'jwt',
           'asap',
+          'edgegrid',
         ].includes(key)
       )
         return node.map((row) =>

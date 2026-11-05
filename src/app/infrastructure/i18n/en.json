@@ -695,5 +695,10 @@
   "Subject": "Subject",
   "Key ID": "Key ID",
   "Expires in (seconds)": "Expires in (seconds)",
-  "Additional claims": "Additional claims"
+  "Additional claims": "Additional claims",
+  "Akamai EdgeGrid": "Akamai EdgeGrid",
+  "Client Token": "Client Token",
+  "Base URL": "Base URL",
+  "Headers to Sign": "Headers to Sign",
+  "Max Body Size": "Max Body Size"
 }

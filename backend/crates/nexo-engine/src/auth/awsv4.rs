@@ -81,7 +81,7 @@ pub fn sign(auth: &Map<String, Value>, request: &mut Outgoing) -> Result<()> {
 }
 
 /// `YYYYMMDDTHHMMSSZ` for a time in seconds since 1970 (UTC).
-fn amz_date(seconds: u64) -> String {
+pub(super) fn amz_date(seconds: u64) -> String {
     let (days, time) = (seconds / 86_400, seconds % 86_400);
     // Days to a civil date (Howard Hinnant's algorithm).
     let z = days as i64 + 719_468;

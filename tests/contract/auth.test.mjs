@@ -754,3 +754,87 @@ test('Atlassian ASAP tokens verify and carry fresh claims', async () => {
     await verifier.close();
   }
 });
+
+// An Akamai-like server: recomputes the EG1-HMAC-SHA256 signature for the host it was told to
+// expect, the headers to sign and the POST body cut to the maximum size.
+function edgegridVerifier({ secret, host, headersToSign, maxBody }) {
+  const hmac = (key, data) => createHmac('sha256', key).update(data).digest('base64');
+  return (request, body, response) => {
+    const header = request.headers.authorization ?? '';
+    const [unsigned, signature] = header.split('signature=');
+    const fields = Object.fromEntries(
+      unsigned
+        .replace('EG1-HMAC-SHA256 ', '')
+        .split(';')
+        .filter(Boolean)
+        .map((pair) => pair.split(/=(.*)/s).slice(0, 2)),
+    );
+    const canonical = headersToSign
+      .filter((name) => request.headers[name])
+      .map((name) => `${name}:${request.headers[name].trim().replace(/\s+/g, ' ')}`)
+      .join('\t');
+    const hash =
+      request.method === 'POST' && body
+        ? createHash('sha256').update(Buffer.from(body).subarray(0, maxBody)).digest('base64')
+        : '';
+    const data = [request.method, 'http', host, request.url, canonical, hash, unsigned].join('\t');
+    const ok = signature === hmac(hmac(secret, fields.timestamp), data);
+    response.statusCode = ok ? 200 : 401;
+    response.end(JSON.stringify({ ok, fields }));
+  };
+}
+
+test('Akamai EdgeGrid signatures verify, with signed headers, body limit and base URL', async () => {
+  const secret = 'edgegrid-secret=';
+  const local = await fixture((request, body, response) => handler(request, body, response));
+  let handler;
+  const edgegrid = (values) => ({
+    type: 'edgegrid',
+    edgegrid: Object.entries(values).map(([key, value]) => ({ key, value })),
+  });
+  try {
+    const host = new URL(local.url).host;
+    for (const [label, values, expectedHost] of [
+      ['request host', {}, host],
+      [
+        'base URL host',
+        { baseURL: 'https://akaa-example.luna.akamaiapis.net/' },
+        'akaa-example.luna.akamaiapis.net',
+      ],
+    ]) {
+      handler = edgegridVerifier({
+        secret,
+        host: expectedHost,
+        headersToSign: ['x-test1', 'x-test2'],
+        maxBody: 16,
+      });
+      const result = await server.execute('request', {
+        request: {
+          url: `${local.url}/papi/v1/properties?contractId=ctr_1`,
+          method: 'POST',
+          headers: [
+            { key: 'X-Test1', value: '  spaced    value ', enabled: true },
+            { key: 'X-Other', value: 'not signed', enabled: true },
+          ],
+          body: 'a body longer than sixteen bytes',
+          auth: edgegrid({
+            accessToken: 'akab-access',
+            clientToken: 'akab-client',
+            clientSecret: '{{edgegridSecret}}',
+            headersToSign: 'X-Test1, X-Test2',
+            maxBodySize: '16',
+            ...values,
+          }),
+        },
+        variables: [{ key: 'edgegridSecret', value: secret, enabled: true }],
+      });
+      assert.equal(result.status, 200, `${label}: ${result.body}`);
+      const { fields } = JSON.parse(result.body);
+      assert.equal(fields.client_token, 'akab-client', label);
+      assert.match(fields.timestamp, /^\d{8}T\d{2}:\d{2}:\d{2}\+0000$/, label);
+      assert.match(fields.nonce, /^[0-9a-f-]{36}$/, label);
+    }
+  } finally {
+    await local.close();
+  }
+});

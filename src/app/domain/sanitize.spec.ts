@@ -162,4 +162,24 @@ describe('sanitize', () => {
     expect(text).toContain('nexo');
     expect(text).not.toContain('BEGIN PRIVATE KEY');
   });
+
+  it('removes the EdgeGrid access token and client secret from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'edgegrid',
+          edgegrid: [
+            { key: 'clientToken', value: 'akab-client' },
+            { key: 'accessToken', value: 'akab-access' },
+            { key: 'clientSecret', value: 'edgegrid-secret' },
+            { key: 'baseURL', value: 'https://akab.luna.akamaiapis.net' },
+          ],
+        },
+      }),
+    );
+    expect(text).toContain('akab-client');
+    expect(text).toContain('akamaiapis.net');
+    expect(text).not.toContain('akab-access');
+    expect(text).not.toContain('edgegrid-secret');
+  });
 });

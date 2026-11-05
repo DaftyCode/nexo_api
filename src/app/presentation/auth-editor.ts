@@ -41,6 +41,7 @@ const labels: Record<string, string> = {
   asap: 'ASAP (Atlassian)',
   awsv4: 'AWS Signature',
   ntlm: 'NTLM Authentication',
+  edgegrid: 'Akamai EdgeGrid',
   hawk: 'Hawk Authentication',
 };
 
@@ -137,6 +138,18 @@ export class AuthEditor {
   protected readonly asapClaimsExample = '{ "scope": "read" }';
   protected readonly jwtPayloadExample = '{ "sub": "{{user}}", "iat": 1700000000 }';
   protected readonly jwtHeaderExample = '{ "typ": "JWT", "kid": "key-1" }';
+  /** Postman's advanced EdgeGrid fields (and Bruno's maximum body size). */
+  protected readonly edgegridFields = [
+    { key: 'nonce', label: 'Nonce', placeholder: 'Nonce' },
+    { key: 'timestamp', label: 'Timestamp', placeholder: 'Timestamp' },
+    {
+      key: 'baseURL',
+      label: 'Base URL',
+      placeholder: 'https://akab-xxxx.luna.akamaiapis.net',
+    },
+    { key: 'headersToSign', label: 'Headers to Sign', placeholder: 'x-api-key, x-api-version' },
+    { key: 'maxBodySize', label: 'Max Body Size', placeholder: '131072' },
+  ];
   /** Postman's advanced Hawk fields; nonce and timestamp are generated when blank. */
   protected readonly hawkFields = [
     { key: 'user', label: 'User', placeholder: 'User' },

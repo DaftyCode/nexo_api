@@ -27,6 +27,7 @@
         <option value="asap">{{ 'ASAP (Atlassian)' | transloco }}</option>
         <option value="awsv4">{{ 'AWS Signature' | transloco }}</option>
         <option value="ntlm">{{ 'NTLM Authentication' | transloco }}</option>
+        <option value="edgegrid">{{ 'Akamai EdgeGrid' | transloco }}</option>
         <option value="hawk">{{ 'Hawk Authentication' | transloco }}</option>
       </select></label
     >
@@ -507,6 +508,51 @@
               [placeholder]="asapClaimsExample"
             ></textarea>
           </label>
+        </details>
+      }
+      @case ('edgegrid') {
+        <label class="field"
+          >{{ 'Access Token' | transloco
+          }}<input
+            [value]="value('accessToken')"
+            (input)="text('accessToken', $event)"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Client Token' | transloco
+          }}<input
+            [value]="value('clientToken')"
+            (input)="text('clientToken', $event)"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Client Secret' | transloco
+          }}<input
+            type="password"
+            [value]="value('clientSecret')"
+            (input)="text('clientSecret', $event)"
+            autocomplete="off"
+        /></label>
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          @for (field of edgegridFields; track field.key) {
+            <label class="field"
+              >{{ field.label | transloco
+              }}<input
+                [value]="value(field.key)"
+                (input)="text(field.key, $event)"
+                [placeholder]="field.placeholder"
+                spellcheck="false"
+            /></label>
+          }
         </details>
       }
       @case ('ntlm') {

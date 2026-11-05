@@ -385,6 +385,29 @@ test('ASAP: a short-lived token is signed with the key ID and issuer', async ({ 
   await expect(page.locator('.response-section')).toContainText(`Bearer ${header}.`);
 });
 
+test('Akamai EdgeGrid: a request is signed with the three tokens', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('EdgeGrid API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'EdgeGrid API' });
+  await collection.getByLabel('Collection actions').click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/papi/v1/groups`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('edgegrid');
+  await page.getByLabel('Access Token').fill('e2e-access');
+  await page.getByLabel('Client Token').fill('e2e-client');
+  await page.getByLabel('Client Secret').fill('e2e-edgegrid-secret');
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const response = page.locator('.response-section');
+  await expect(response).toContainText('EG1-HMAC-SHA256 client_token=e2e-client;');
+  await expect(response).toContainText(';signature=');
+  await expect(response).not.toContainText('e2e-edgegrid-secret');
+});
+
 test('Ctrl+Enter in a script editor does not send the request', async ({ page, nexo }) => {
   await nexo.signIn(page);
   await page.keyboard.press('Control+t');

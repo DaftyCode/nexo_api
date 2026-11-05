@@ -695,5 +695,10 @@
   "Subject": "Sujeto",
   "Key ID": "ID de la clave",
   "Expires in (seconds)": "Caduca en (segundos)",
-  "Additional claims": "Claims adicionales"
+  "Additional claims": "Claims adicionales",
+  "Akamai EdgeGrid": "Akamai EdgeGrid",
+  "Client Token": "Client Token",
+  "Base URL": "URL base",
+  "Headers to Sign": "Cabeceras a firmar",
+  "Max Body Size": "Tamaño máximo del cuerpo"
 }

@@ -17,6 +17,7 @@ mod awsv4;
 mod basic;
 mod bearer;
 pub mod digest;
+mod edgegrid;
 mod hawk;
 pub mod jwt;
 mod ntlm;
@@ -104,6 +105,7 @@ pub fn sign(auth: &Map<String, Value>, request: &mut Outgoing) -> Result<()> {
         "ntlm" => ntlm::sign(auth, request),
         "jwt" => jwt::sign(auth, request),
         "asap" => asap::sign(auth, request),
+        "edgegrid" => edgegrid::sign(auth, request),
         "" | "noauth" | "inherit" => Ok(()),
         other => Err(Error::Validation(format!(
             "Unsupported authentication helper: {other}"
