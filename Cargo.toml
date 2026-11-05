@@ -20,8 +20,6 @@ axum = { version = "0.8.9", features = ["ws", "macros"] }
 tower-http = { version = "0.7.1", features = ["cors", "trace", "limit", "fs", "request-id"] }
 rusqlite = { version = "0.41.1", features = ["bundled", "hooks"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
-sha2 = "0.11.1"
-hex = "0.4.3"
 keyring = { version = "4.2.0", features = ["v1"] }
 tauri = "2.12.5"
 tauri-build = "2.7.4"

@@ -6,11 +6,11 @@ use crate::{
     transport::{CookieJar, Options, Transport, transport_settings},
     vault::{Vault, write_atomic},
 };
+use aws_lc_rs::digest;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use cookie_store::CookieStore;
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     path::PathBuf,
@@ -81,7 +81,7 @@ impl Jars {
     fn path(&self, scope: &str) -> PathBuf {
         self.directory.join(format!(
             "{}.json",
-            hex::encode(Sha256::digest(scope.as_bytes()))
+            crate::hex::encode(digest::digest(&digest::SHA256, scope.as_bytes()))
         ))
     }
     pub fn get(&self, scope: &str) -> CookieJar {

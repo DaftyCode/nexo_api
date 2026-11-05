@@ -16,6 +16,7 @@ pub mod collection;
 pub mod datasets;
 pub mod egress;
 pub mod grpc;
+pub mod hex;
 pub mod interchange;
 pub mod mocks;
 pub mod mqtt;

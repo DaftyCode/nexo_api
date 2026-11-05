@@ -21,6 +21,7 @@ pub mod digest;
 mod edgegrid;
 mod hawk;
 pub mod jwt;
+mod legacy;
 mod netrc;
 mod ntlm;
 mod oauth1;

@@ -6,12 +6,12 @@
 //! - algorithms MD5 (default), MD5-sess, SHA-256, SHA-256-sess, SHA-512-256 and its -sess;
 //! - `qop` `auth` or `auth-int` (which also signs the body), with `nonceCount` and
 //!   `clientNonce`; `opaque` is echoed back.
-use md5::Md5;
+use aws_lc_rs::digest;
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value, json};
-use sha2::{Digest, Sha256, Sha512_256};
 
-use super::{Outgoing, flag, text};
+use super::{Outgoing, flag, legacy, text};
+use crate::hex;
 
 const ONE: &str = "00000001";
 
@@ -144,9 +144,9 @@ pub fn header(
     };
     let hash = |value: &[u8]| -> Result<String> {
         Ok(match algorithm.to_uppercase().trim_end_matches("-SESS") {
-            "MD5" => hex::encode(Md5::digest(value)),
-            "SHA-256" => hex::encode(Sha256::digest(value)),
-            "SHA-512-256" => hex::encode(Sha512_256::digest(value)),
+            "MD5" => hex::encode(legacy::md5(value)),
+            "SHA-256" => hex::encode(digest::digest(&digest::SHA256, value)),
+            "SHA-512-256" => hex::encode(digest::digest(&digest::SHA512_256, value)),
             _ => {
                 return Err(Error::Validation(format!(
                     "Unsupported digest algorithm: {algorithm}"

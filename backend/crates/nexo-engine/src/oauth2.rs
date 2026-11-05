@@ -4,13 +4,13 @@
 //! The request each grant sends follows Insomnia's `o-auth-2/get-token.ts`: the client
 //! authenticates with a Basic header unless its credentials go in the body, custom
 //! parameters go to the body, the URL or a header, and the answer may be JSON or a form.
+use aws_lc_rs::digest;
 use base64::{
     Engine as _,
     engine::general_purpose::{STANDARD, URL_SAFE_NO_PAD},
 };
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value, json};
-use sha2::{Digest, Sha256};
 use url::Url;
 
 use crate::auth::text;
@@ -303,7 +303,7 @@ pub fn pkce_challenge(auth: &Map<String, Value>, verifier: &str) -> (String, &'s
         (verifier.to_string(), "plain")
     } else {
         (
-            URL_SAFE_NO_PAD.encode(Sha256::digest(verifier.as_bytes())),
+            URL_SAFE_NO_PAD.encode(digest::digest(&digest::SHA256, verifier.as_bytes())),
             "S256",
         )
     }

@@ -7,6 +7,7 @@
 //!
 //! Local listeners accept connections on 127.0.0.1 only, answer only the callback path, ignore
 //! answers whose `state` is not this sign-in's and close once answered or after five minutes.
+use crate::hex;
 use axum::{
     Router,
     extract::State,

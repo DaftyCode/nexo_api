@@ -1,5 +1,7 @@
 //! Datasets: JSON or CSV rows stored per owner and queried with read-only SQL.
+use crate::hex;
 use crate::vault::write_atomic;
+use aws_lc_rs::digest;
 use nexo_domain::{Error, Result};
 use rusqlite::{
     Connection, ToSql,
@@ -7,7 +9,6 @@ use rusqlite::{
     types::{Null, ValueRef},
 };
 use serde_json::{Map, Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     path::PathBuf,
     time::{Duration, Instant},
@@ -34,7 +35,10 @@ impl Datasets {
             .as_str()
             .filter(|s| !s.is_empty())
             .unwrap_or("local");
-        let name = hex::encode(Sha256::digest(format!("{owner}:{id}").as_bytes()));
+        let name = hex::encode(digest::digest(
+            &digest::SHA256,
+            format!("{owner}:{id}").as_bytes(),
+        ));
         self.directory.join(format!("{name}.json"))
     }
     fn id(payload: &Value) -> Result<String> {

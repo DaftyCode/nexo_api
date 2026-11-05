@@ -19,17 +19,13 @@ rusqlite.workspace = true
 tracing.workspace = true
 futures-util.workspace = true
 base64.workspace = true
-sha2.workspace = true
-hex.workspace = true
 axum.workspace = true
 rquickjs = { version = "0.14.0", default-features = false, features = ["classes", "properties"] }
-aes-gcm = "0.11.1"
 cookie_store = "0.22.1"
 encoding_rs = "0.8.44"
 serde-saphyr = "2.1.1"
 shell-words = "1.1.1"
 url = "2.5.8"
-md5 = { package = "md-5", version = "0.11.0" }
 csv = "1.4.0"
 tokio-tungstenite = { version = "0.30.0", features = ["connect", "handshake", "rustls-tls-native-roots"], default-features = false }
 # Only the MQTT packet codec: transports and TLS are this crate's.
@@ -44,13 +40,13 @@ protox = "0.10.0"
 tokio-util = "0.7.20"
 bytes = "1.12.1"
 http = "1.5.0"
-getrandom = "0.4.3"
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum", "std", "tls12", "logging"] }
 rustls-pki-types = "1.15.1"
-# Already built for TLS; also signs OAuth 1.0, AWS, Hawk and EdgeGrid requests (HMAC, RSA).
+# Already built for TLS; also the vault (AES-256-GCM), hashes, randomness and request signing
+# (HMAC, RSA, ECDSA): no other crypto crate.
 aws-lc-rs = "1.19.0"
-# The C library behind aws-lc-rs (already built): RSA-SHA1 signing, which aws-lc-rs does not
-# offer and OAuth 1.0 still needs (auth/oauth1.rs).
+# The C library behind aws-lc-rs (already built): what legacy protocols need and aws-lc-rs
+# does not offer: RSA-SHA1 (OAuth 1.0), MD4, MD5, HMAC-MD5 and DES (NTLM, Digest).
 aws-lc-sys = "0.47.0"
 rustls-native-certs = "0.8.5"
 tower = { version = "0.5.3", features = ["util"] }

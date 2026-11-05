@@ -14,6 +14,7 @@ use nexo_domain::{Error, Result};
 use serde_json::{Map, Value};
 
 use super::{Outgoing, first, flag, percent_encode, text};
+use crate::hex;
 
 /// Headers that proxies and clients change, which the `aws4` library never signs.
 const UNSIGNED: [&str; 7] = [

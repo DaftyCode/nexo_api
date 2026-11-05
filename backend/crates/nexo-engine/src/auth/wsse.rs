@@ -10,6 +10,7 @@ use nexo_domain::Result;
 use serde_json::{Map, Value};
 
 use super::{Outgoing, text};
+use crate::hex;
 
 fn header(username: &str, password: &str, nonce: &str, created: &str) -> String {
     let sha1 = digest::digest(
