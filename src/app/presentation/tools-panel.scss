@@ -1,0 +1,12 @@
+/* Fills the space under the toolbar so that .tools-page scrolls instead of growing past
+   the window (the workspace clips its overflow). */
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.tools-page {
+  flex: 1;
+  min-height: 0;
+}

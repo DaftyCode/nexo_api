@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nexo API · Sign-in</title>
+    <style>
+      body {
+        font:
+          16px/1.5 system-ui,
+          sans-serif;
+        margin: 3rem auto;
+        max-width: 40rem;
+        padding: 0 1rem;
+        color: #1d2433;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Nexo API</h1>
+    <p id="message">Returning to Nexo API…</p>
+    <noscript>
+      <p>Copy this page's address and paste it in Nexo API to finish signing in.</p>
+    </noscript>
+    <script>
+      // OAuth 2.0 callback page of Nexo API, like Postman's browser callback. Nexo puts the
+      // one-time port it listens on at the end of `state`; this page forwards the provider's
+      // answer (query and fragment) to that port on this computer, and nowhere else.
+      (function () {
+        var message = document.getElementById('message');
+        var search = new URLSearchParams(location.search);
+        var fragment = new URLSearchParams(location.hash.slice(1));
+        var state = search.get('state') || fragment.get('state') || '';
+        var match = /\.(\d{4,5})$/.exec(state);
+        var port = match ? Number(match[1]) : 0;
+        if (port < 1024 || port > 65535) {
+          message.textContent =
+            'This page returns sign-ins started in Nexo API to your computer. There is nothing to do here.';
+          return;
+        }
+        setTimeout(function () {
+          message.textContent =
+            'If Nexo API did not continue, copy this page’s address and paste it in Nexo API.';
+        }, 4000);
+        location.replace(
+          'http://127.0.0.1:' + port + '/callback' + location.search + location.hash,
+        );
+      })();
+    </script>
+  </body>
+</html>

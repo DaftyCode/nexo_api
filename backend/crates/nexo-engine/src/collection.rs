@@ -183,8 +183,14 @@ pub fn request_item(input: &Value) -> Result<Value> {
                 .to_string(),
         )
     };
+    // Already in the collection format (`{type, <type>: [...]}`): kept as it is, with every
+    // option of the type.
+    let stored = auth_input
+        .get(&auth_type)
+        .is_some_and(|values| values.is_array() || values.is_object());
     let auth = match auth_type.as_str() {
         "inherit" => Value::Null,
+        _ if stored => auth_input.clone(),
         "bearer" => {
             json!({"type": "bearer", "bearer": [{"key": "token", "value": field("token", ""), "type": "string"}]})
         }

@@ -638,17 +638,22 @@ small {
   color: var(--muted);
   padding: 2px 6px;
 }
+/* The sidebar clips its overflow, so the menu is positioned against the window and
+   floats over the next panel (Workspace.placeMenu). It stays hidden until placed. */
 .collection-menu > div {
-  position: absolute;
-  top: 25px;
-  right: 0;
-  min-width: 160px;
+  position: fixed;
+  min-width: 170px;
+  /* The "Move to" select would otherwise grow to its longest folder name. */
+  max-width: 260px;
   background: var(--panel-3);
   border: 1px solid var(--border);
-  z-index: 10;
+  z-index: 50;
   border-radius: 5px;
   box-shadow: 0 10px 35px #0008;
   padding: 5px;
+}
+.collection-menu:not([data-placed]) > div {
+  visibility: hidden;
 }
 .collection-menu button {
   display: block;
@@ -660,6 +665,18 @@ small {
 }
 .collection-menu button:hover {
   background: #ffffff0c;
+}
+.collection-menu label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  font-size: 11px;
+}
+.collection-menu select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 .history-item {
   display: flex;

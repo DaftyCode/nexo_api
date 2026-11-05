@@ -4,6 +4,7 @@ import { WORKSPACE } from '../composition/providers';
 import { ExecutionOperation } from '../application/operations';
 import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
 import {
+  RequestAncestor,
   ResolvedVariable,
   VariableRow,
   VariableScopes,
@@ -11,7 +12,18 @@ import {
   requestVariables,
   resolveVariable,
 } from '../domain/variables';
+import {
+  AuthDraft,
+  OAuth2SignIn,
+  OAuth2SignInStatus,
+  OAuth2Token,
+  oauth2UsesBrowser,
+  writeAuth,
+} from '../domain/auth';
+import { ExecutionContext } from '../application/workspace-use-cases';
 import { TabsStore } from './tabs-store';
+
+export type SettingsTab = 'variables' | 'authorization' | 'scripts';
 import { CollectionsStore } from './state/collections-store';
 import { DocumentsStore } from './state/documents-store';
 import { RequestsStore } from './state/requests-store';
@@ -38,6 +50,9 @@ export class WorkspaceState {
   readonly consoleOpen = signal(false);
   /** Collection whose variables, auth and scripts are edited in the collection settings view. */
   readonly settingsCollectionId = signal('');
+  /** Folder of that collection being edited; empty for the collection itself. */
+  readonly settingsPath = signal<number[]>([]);
+  readonly settingsTab = signal<SettingsTab>('variables');
 
   private readonly status = new StatusStore();
   readonly tabsStore = new TabsStore(() => this.cases.files.id());
@@ -90,6 +105,7 @@ export class WorkspaceState {
   readonly trees = this.collectionStore.trees;
   readonly activeCollection = this.collectionStore.activeCollection;
   readonly activeAncestors = this.collectionStore.activeAncestors;
+  readonly activeInheritance = this.collectionStore.activeInheritance;
   readonly scopes = computed<VariableScopes>(() => ({
     environment: this.environmentRows(),
     collection: inheritedCollectionVariables(this.activeAncestors()),
@@ -216,17 +232,130 @@ export class WorkspaceState {
   saveActive(targetDocumentId?: string) {
     return this.guard(() => this.collectionStore.saveActive(targetDocumentId));
   }
-  openCollectionSettings(id: string) {
+  /** Opens the settings of a collection or, with a path, of one of its folders. */
+  openCollectionSettings(id: string, path: number[] = [], tab: SettingsTab = 'variables') {
     this.settingsCollectionId.set(id);
+    this.settingsPath.set(path);
+    this.settingsTab.set(tab);
     this.section.set('collection-settings');
+  }
+  /** Opens the folder or collection that the active request takes its authorization from. */
+  editInheritedAuth() {
+    const document = this.activeCollection();
+    if (!document) return;
+    const path = this.activeInheritance()?.source?.path ?? [];
+    this.openCollectionSettings(document.id, path, 'authorization');
+  }
+  /**
+   * Obtains (or with `refresh`, renews) an OAuth 2.0 token for an authorization edited in a
+   * request, folder or collection, resolving variables in the scopes of `ancestors`.
+   */
+  async oauth2Token(
+    auth: AuthDraft,
+    ancestors: readonly RequestAncestor[],
+    refresh: boolean,
+  ): Promise<OAuth2Token | undefined> {
+    let token: OAuth2Token | undefined;
+    await this.guard(async () => {
+      const context = {
+        workspace: this.workspaceId(),
+        environment: this.environmentRows(),
+        globals: this.globalRows(),
+        ancestors,
+      };
+      if (!refresh && oauth2UsesBrowser(auth)) {
+        token = await this.signIn(writeAuth(auth), context);
+      } else {
+        const tokenId = refresh ? String(auth.values['oauth2TokenId'] ?? '') : undefined;
+        if (refresh && !tokenId) throw new Error('There is no refresh token to use');
+        token = await this.cases.oauth2Token(writeAuth(auth), context, tokenId);
+      }
+      if (token) {
+        this.notice.set(refresh ? 'Access token refreshed' : 'Access token obtained');
+        this.oauth2Tokens.set(await this.cases.oauth2Tokens(this.workspaceId()));
+      }
+    });
+    return token;
+  }
+  /** Stored OAuth 2.0 tokens: Postman's "Available Tokens". */
+  readonly oauth2Tokens = signal<OAuth2Token[]>([]);
+  /** Whether the "Manage Tokens" dialog is open. */
+  readonly managingOAuth2Tokens = signal(false);
+  async loadOAuth2Tokens() {
+    try {
+      this.oauth2Tokens.set(await this.cases.oauth2Tokens(this.workspaceId()));
+    } catch {
+      // The list stays as it was; the editors still work with custom tokens.
+    }
+  }
+  oauth2TokenDetails(id: string) {
+    return this.cases.oauth2TokenDetails(this.workspaceId(), id);
+  }
+  deleteOAuth2Token(id: string) {
+    return this.guard(async () => {
+      await this.cases.deleteOAuth2Token(this.workspaceId(), id);
+      this.oauth2Tokens.update((tokens) => tokens.filter((token) => token.id !== id));
+      this.notice.set('Token deleted');
+    });
+  }
+  /** The browser sign-in in progress, shown in a dialog until it finishes. */
+  readonly oauth2SignIn = signal<OAuth2SignIn | undefined>(undefined);
+  /** Status returned by pasting the address, read by the polling loop. */
+  private oauth2Completed?: OAuth2SignInStatus;
+  /** Runs a browser sign-in until it gives a token, fails or is cancelled (`undefined`). */
+  private async signIn(auth: unknown, context: ExecutionContext) {
+    const started = await this.cases.oauth2Authorize(auth, context);
+    this.oauth2Completed = undefined;
+    this.oauth2SignIn.set(started);
+    try {
+      for (;;) {
+        await new Promise((resolve) => setTimeout(resolve, 700));
+        if (this.oauth2SignIn()?.session !== started.session) return undefined;
+        const status =
+          this.oauth2Completed ??
+          (await this.cases.oauth2SignIn(this.workspaceId(), started.session, 'status'));
+        this.oauth2Completed = undefined;
+        if (status.state === 'done') return status.token;
+        if (status.state === 'error') throw new Error(status.error ?? 'The sign-in failed');
+        if (status.state === 'cancelled') return undefined;
+      }
+    } finally {
+      if (this.oauth2SignIn()?.session === started.session) this.oauth2SignIn.set(undefined);
+    }
+  }
+  /** Manual mode: the address the browser returned to. */
+  async completeOAuth2SignIn(url: string) {
+    const signIn = this.oauth2SignIn();
+    if (!signIn) return;
+    try {
+      this.oauth2Completed = await this.cases.oauth2SignIn(
+        this.workspaceId(),
+        signIn.session,
+        'complete',
+        url.trim(),
+      );
+    } catch (error) {
+      this.error.set(this.describe(error));
+    }
+  }
+  async reopenOAuth2SignIn() {
+    const signIn = this.oauth2SignIn();
+    if (signIn) await this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'open');
+  }
+  async cancelOAuth2SignIn() {
+    const signIn = this.oauth2SignIn();
+    if (!signIn) return;
+    this.oauth2SignIn.set(undefined);
+    await this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'cancel').catch(() => {});
   }
   saveCollectionSettings(
     id: string,
     settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+    folder: number[] = [],
   ) {
     return this.guard(async () => {
-      await this.store.saveCollectionSettings(id, settings);
-      this.notice.set('Collection saved');
+      await this.store.saveCollectionSettings(id, settings, folder);
+      this.notice.set(folder.length ? 'Folder saved' : 'Collection saved');
     });
   }
 

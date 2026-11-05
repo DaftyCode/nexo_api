@@ -11,8 +11,11 @@ import {
 import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { VariableEditor } from './variable-editor';
-import { asCollection } from '../domain/models';
-import { VariableRow, emptyVariable, toVariableRows } from '../domain/variables';
+import { AuthEditor } from './auth-editor';
+import { Collection, CollectionItem, asCollection } from '../domain/models';
+import { AuthDraft, Inheritance, inheritedAuth, withOAuth2Token } from '../domain/auth';
+import { itemAt } from '../domain/collection-tree';
+import { VariableRow, emptyVariable, requestAncestors, toVariableRows } from '../domain/variables';
 import {
   CollectionSettingsModel,
   collectionAuth,
@@ -20,9 +23,21 @@ import {
   readCollectionSettings,
 } from '../domain/collection-settings';
 
-/** Variables, authorization and scripts that every request of a collection inherits. */
+/** The collection, and the folder of it when one is being edited. */
+interface Target {
+  id: string;
+  collection: Collection;
+  path: number[];
+  folder?: CollectionItem;
+}
+
+/**
+ * Variables, authorization and scripts that the requests of a collection or of one of its
+ * folders inherit. Folders can also inherit the authorization of the folder or collection
+ * above them, as in Postman.
+ */
 @Component({
-  imports: [TranslocoPipe, FormField, VariableEditor],
+  imports: [TranslocoPipe, FormField, VariableEditor, AuthEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-collection-settings-panel',
   styleUrl: './collection-settings-panel.scss',
@@ -30,55 +45,97 @@ import {
 })
 export class CollectionSettingsPanel {
   protected readonly state = inject(WorkspaceState);
-  protected readonly tab = signal<'variables' | 'authorization' | 'scripts'>('variables');
+  protected readonly tab = this.state.settingsTab;
   protected readonly rows = signal<VariableRow[]>([emptyVariable()]);
   protected readonly model = signal<CollectionSettingsModel>(readCollectionSettings(undefined));
   protected readonly fields = form(this.model);
   protected readonly dirty = signal(false);
-  protected readonly collection = computed(() =>
-    this.state.collections().find((d) => d.id === this.state.settingsCollectionId()),
-  );
-  constructor() {
-    // Reload the editor whenever another collection is chosen.
-    effect(() => {
-      const id = this.state.settingsCollectionId();
-      untracked(() => this.load(id));
-    });
-  }
-  protected load(id: string) {
+  protected readonly target = computed<Target | undefined>(() => {
+    const id = this.state.settingsCollectionId();
     const document = this.state.collections().find((d) => d.id === id);
-    if (!document) {
-      this.rows.set([emptyVariable()]);
-      this.model.set(readCollectionSettings(undefined));
-      return;
-    }
+    if (!document) return undefined;
     try {
       const collection = asCollection(document.value);
-      const rows = toVariableRows(collection['variable']);
-      this.rows.set(rows.length ? rows : [emptyVariable()]);
-      this.model.set(readCollectionSettings(collection));
+      const path = this.state.settingsPath();
+      const folder = path.length ? itemAt(collection, path) : undefined;
+      // A folder that moved or was removed falls back to the collection itself.
+      if (path.length && !folder?.item) return { id, collection, path: [] };
+      return { id, collection, path, folder };
     } catch {
-      this.rows.set([emptyVariable()]);
-      this.model.set(readCollectionSettings(undefined));
+      return undefined;
     }
+  });
+  /** What the folder receives when it inherits its authorization. */
+  protected readonly inheritance = computed<Inheritance | undefined>(() => {
+    const target = this.target();
+    return target?.folder ? { source: inheritedAuth(target.collection, target.path) } : undefined;
+  });
+  constructor() {
+    // Reload the editor whenever another collection or folder is chosen, but not when a
+    // document is saved meanwhile: that would discard unsaved edits.
+    effect(() => {
+      this.state.settingsCollectionId();
+      this.state.settingsPath();
+      untracked(() => this.load(this.target()));
+    });
+  }
+  protected load(target: Target | undefined) {
+    const group = target?.folder ?? target?.collection;
+    const rows = toVariableRows(group?.['variable']);
+    this.rows.set(rows.length ? rows : [emptyVariable()]);
+    this.model.set(readCollectionSettings(group, !!target?.folder));
     this.dirty.set(false);
   }
   protected select(event: Event) {
-    this.state.settingsCollectionId.set((event.target as HTMLSelectElement).value);
+    this.state.openCollectionSettings((event.target as HTMLSelectElement).value, [], this.tab());
+  }
+  protected openCollection() {
+    const target = this.target();
+    if (target) this.state.openCollectionSettings(target.id, [], this.tab());
+  }
+  /** Opens the folder or collection that the edited folder inherits its authorization from. */
+  protected openInherited() {
+    const target = this.target();
+    if (!target) return;
+    const path = this.inheritance()?.source?.path ?? [];
+    this.state.openCollectionSettings(target.id, path, 'authorization');
   }
   protected editRows(rows: VariableRow[]) {
     this.rows.set(rows);
     this.dirty.set(true);
   }
+  protected editAuth(auth: AuthDraft) {
+    this.model.update((m) => ({ ...m, auth }));
+    this.dirty.set(true);
+  }
+  /** "Get new access token" or "Refresh", with the variables of this collection or folder. */
+  protected async requestToken(refresh: boolean) {
+    const target = this.target();
+    if (!target) return;
+    const ancestors = requestAncestors(target.collection, [...target.path, 0]);
+    const token = await this.state.oauth2Token(this.model().auth, ancestors, refresh);
+    if (!token) return;
+    this.editAuth(withOAuth2Token(this.model().auth, token));
+    this.state.notice.set(
+      target.folder
+        ? 'Access token obtained. Save the folder to keep it.'
+        : 'Access token obtained. Save the collection to keep it.',
+    );
+  }
   protected async save() {
-    const document = this.collection();
-    if (!document) return;
+    const target = this.target();
+    if (!target) return;
     const m = this.model();
-    await this.state.saveCollectionSettings(document.id, {
-      variables: this.rows(),
-      auth: collectionAuth(m),
-      event: collectionEvents(m, asCollection(document.value)['event']),
-    });
+    const folder = !!target.folder;
+    await this.state.saveCollectionSettings(
+      target.id,
+      {
+        variables: this.rows(),
+        auth: collectionAuth(m, folder),
+        event: collectionEvents(m, (target.folder ?? target.collection)['event']),
+      },
+      target.path,
+    );
     if (!this.state.error()) this.dirty.set(false);
   }
   protected markDirty() {

@@ -59,6 +59,267 @@ test('a request is created, renamed, moved into a folder and sent', async ({ pag
   await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
 });
 
+test('item actions float over the next panel and stay usable with long names', async ({
+  page,
+  nexo,
+}) => {
+  // The "Move to" select lists the collection and folder names. A long name used to widen
+  // the menu past the sidebar's left edge, where the sidebar clipped every action.
+  const name = '[DEV-mediadores] Comunicador Siniestros BFF con un nombre muy largo';
+  await page.setViewportSize({ width: 900, height: 700 });
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill(name);
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: name });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add folder' }).click();
+  await page.getByPlaceholder('Give it a name').fill('Users');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+  const row = collection.locator('.tree-row', { hasText: 'Users' });
+  const menu = row.locator('.collection-menu > div');
+  await row.getByLabel('Item actions').click();
+  await expect(menu).toBeVisible();
+  for (const action of [
+    row.getByRole('button', { name: 'Rename' }),
+    row.getByRole('button', { name: 'Delete' }),
+    row.getByLabel('Move to'),
+  ]) {
+    await expect(action).toBeInViewport({ ratio: 1 });
+  }
+  // Scrolling the sidebar keeps the menu under its button: Playwright, like a user, may
+  // scroll the button into view as it clicks it.
+  await page.locator('.sidebar').evaluate((sidebar) => sidebar.dispatchEvent(new Event('scroll')));
+  await expect(menu).toBeVisible();
+  // A click outside closes the floating menu.
+  await page.getByLabel('Request URL').click();
+  await expect(menu).toBeHidden();
+
+  // Clicking an action works: no panel covers the menu.
+  await row.getByLabel('Item actions').click();
+  await row.getByRole('button', { name: 'Rename' }).click();
+  await expect(page.getByPlaceholder('Give it a name')).toHaveValue('Users');
+});
+
+test('collection settings scroll to their last option in a short window', async ({
+  page,
+  nexo,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('Tall settings');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'Tall settings' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Variables & settings' }).click();
+  await page.getByRole('button', { name: 'Authorization', exact: true }).click();
+  await page.getByLabel('Authorization type').selectOption('oauth2');
+
+  // The page scrolls inside the window, so the last buttons can be reached with the wheel.
+  const save = page.getByRole('button', { name: 'Save collection' });
+  await expect(save).not.toBeInViewport();
+  await page.locator('.tools-page').hover();
+  await page.mouse.wheel(0, 5000);
+  await expect(save).toBeInViewport();
+});
+
+test('a request shows the authorization it inherits from its folder', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('Auth API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'Auth API' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add folder' }).click();
+  await page.getByPlaceholder('Give it a name').fill('Local');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+  // Folder settings: a bearer token for every request in the folder.
+  const folder = collection.locator('.tree-row', { hasText: 'Local' });
+  await folder.getByLabel('Item actions').click();
+  await folder.getByRole('button', { name: 'Variables & settings' }).click();
+  await expect(page.getByRole('heading', { name: 'Folder settings' })).toBeVisible();
+  await page.getByRole('button', { name: 'Authorization', exact: true }).click();
+  await page.getByLabel('Authorization type').selectOption('bearer');
+  await page.getByRole('textbox', { name: 'Token' }).fill('{{token}}');
+  await page.getByRole('button', { name: 'Save folder' }).click();
+  await expect(page.getByText('Folder saved')).toBeVisible();
+
+  // A new request in the folder inherits it, as in Postman, and says where it comes from.
+  await page.getByRole('button', { name: 'Collections', exact: true }).click();
+  await folder.getByLabel('Add request in folder').click();
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await expect(page.getByLabel('Authorization type')).toHaveValue('inherit');
+  await expect(page.getByText('Uses Bearer token from the folder "Local".')).toBeVisible();
+  await expect(page.getByText('{{token}}', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Edit authorization' }).click();
+  await expect(page.getByRole('heading', { name: 'Folder settings' })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Token' })).toHaveValue('{{token}}');
+});
+
+test('OAuth 2.0: a collection gets a token and its requests send it', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('OAuth API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', {
+    has: page.getByRole('button', { name: 'OAuth API', exact: true }),
+  });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Variables & settings' }).click();
+  await page.getByRole('button', { name: 'Authorization', exact: true }).click();
+
+  // As in Postman: OAuth 2.0, Client Credentials, then "Get new access token".
+  await page.getByLabel('Authorization type').selectOption('oauth2');
+  await page.getByLabel('Grant type').selectOption('client_credentials');
+  await expect(page.getByLabel('Auth URL')).toHaveCount(0);
+  await page.getByLabel('Access Token URL').fill(`${nexo.echo}/token`);
+  await page.getByLabel('Client ID').fill('app');
+  await page.getByLabel('Client Secret').fill('secret');
+  await page.getByLabel('Token Name').fill('E2E token');
+  await page.getByRole('button', { name: 'Get new access token' }).click();
+  // As in Postman, the new token is selected in "Available Tokens"; its value stays in the vault.
+  const current = page.getByRole('combobox', { name: 'Token', exact: true });
+  await expect(current.locator('option:checked')).toHaveText('E2E token');
+  await expect(page.locator('.token-input')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Manage Tokens' }).click();
+  const tokens = page.getByRole('dialog', { name: 'Manage Tokens' });
+  await tokens.getByRole('button', { name: 'Show' }).first().click();
+  await expect(tokens.getByText('e2e-token')).toBeVisible();
+  await tokens.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(page.locator('.token-status')).toContainText('Expires');
+  await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Save collection' }).click();
+  await expect(page.getByText('Collection saved')).toBeVisible();
+
+  // A new request inherits the authorization and sends the token.
+  await page.getByRole('button', { name: 'Collections', exact: true }).click();
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/me`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  // The token is sent from the vault and redacted from what Nexo shows and keeps.
+  await expect(page.getByText('Bearer [REDACTED]')).toBeVisible();
+});
+
+test('OAuth 2.0: a PKCE sign-in completes with the address pasted back', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.keyboard.press('Control+t');
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('oauth2');
+  await page.getByLabel('Grant type').selectOption('authorization_code_with_pkce');
+  // A Callback URL that is not on this computer (like Postman's) is completed by pasting.
+  await page.getByLabel('Callback URL').fill('https://oauth.pstmn.io/v1/browser-callback');
+  await page.getByLabel('Auth URL').fill(`${nexo.echo}/authorize`);
+  await page.getByLabel('Access Token URL').fill(`${nexo.echo}/token`);
+  await page.getByLabel('Client ID').fill('app');
+
+  const started = page.waitForResponse((response) => response.url().includes('oauth2.authorize'));
+  await page.getByRole('button', { name: 'Get new access token' }).click();
+  const { authorizationUrl } = await (await started).json();
+  const dialog = page.getByRole('dialog', { name: 'Sign in with OAuth 2.0' });
+  await expect(dialog).toBeVisible();
+  expect(new URL(authorizationUrl).searchParams.get('code_challenge_method')).toBe('S256');
+
+  // What the browser does: sign in and come back to the Callback URL with a code.
+  const back = (await fetch(authorizationUrl, { redirect: 'manual' })).headers.get('location');
+  await dialog.getByLabel('Address the browser returned to').fill(back);
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog).toBeHidden();
+  const current = page.getByRole('combobox', { name: 'Token', exact: true });
+  await expect(current).not.toHaveValue('');
+});
+
+test('OAuth 1.0: a request is signed in the Authorization header', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('OAuth1 API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'OAuth1 API' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/statuses?count=2`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('oauth1');
+
+  // RSA methods take a private key instead of the consumer and token secrets, as in Postman.
+  await page.getByLabel('Signature Method').selectOption('RSA-SHA256');
+  await expect(page.getByLabel('Private Key')).toBeVisible();
+  await expect(page.getByLabel('Consumer Secret')).toHaveCount(0);
+  await page.getByLabel('Signature Method').selectOption('HMAC-SHA256');
+  await page.getByLabel('Consumer Key').fill('e2e-consumer');
+  await page.getByLabel('Consumer Secret').fill('e2e-secret');
+  await page.getByLabel('Access Token').fill('e2e-token');
+  await page.getByLabel('Token Secret').fill('e2e-token-secret');
+  await page.getByLabel('Add authorization data to').selectOption('header');
+  await expect(page.getByLabel('Signature Method')).toHaveValue('HMAC-SHA256');
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const response = page.locator('.response-section');
+  await expect(response).toContainText('oauth_consumer_key');
+  await expect(response).toContainText('HMAC-SHA256');
+  await expect(response).not.toContainText('e2e-secret');
+});
+
+test('AWS Signature: a request is signed with the region and service chosen', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('AWS API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'AWS API' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/items`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('awsv4');
+  await page.getByLabel('Access Key').fill('E2EKEY');
+  await page.getByLabel('Secret Key').fill('e2e-aws-secret');
+  await page.getByText('Advanced', { exact: true }).click();
+  await page.getByLabel('AWS Region').fill('eu-west-1');
+  await page.getByLabel('Service Name').fill('lambda');
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const response = page.locator('.response-section');
+  await expect(response).toContainText('AWS4-HMAC-SHA256 Credential=E2EKEY/');
+  await expect(response).toContainText('/eu-west-1/lambda/aws4_request');
+  await expect(response).not.toContainText('e2e-aws-secret');
+});
+
+test('Hawk: a request is signed with the ID, key and extra data', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('Hawk API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'Hawk API' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Add request', exact: true }).click();
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/resource`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('hawk');
+  await page.getByLabel('Hawk Auth ID').fill('e2e-hawk-id');
+  await page.getByLabel('Hawk Auth Key').fill('e2e-hawk-key');
+  await page.getByLabel('Algorithm').selectOption('sha1');
+  await page.getByText('Advanced', { exact: true }).click();
+  await page.getByLabel('ext', { exact: true }).fill('e2e-extra');
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const response = page.locator('.response-section');
+  await expect(response).toContainText('Hawk id=');
+  await expect(response).toContainText('e2e-hawk-id');
+  await expect(response).toContainText('e2e-extra');
+  await expect(response).not.toContainText('e2e-hawk-key');
+});
+
 test('Ctrl+Enter in a script editor does not send the request', async ({ page, nexo }) => {
   await nexo.signIn(page);
   await page.keyboard.press('Control+t');

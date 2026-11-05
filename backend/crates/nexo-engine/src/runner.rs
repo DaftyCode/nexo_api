@@ -247,15 +247,11 @@ impl Runs {
             .as_str()
             .map(String::from)
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-        let secrets: Vec<String> = payload["resolvedSecrets"]
-            .as_object()
-            .map(|map| {
-                map.values()
-                    .filter_map(Value::as_str)
-                    .map(String::from)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let secrets: Vec<String> = session_secrets(&payload)
+            .values()
+            .filter_map(Value::as_str)
+            .map(String::from)
+            .collect();
         let job = Arc::new(Job {
             id: id.clone(),
             started: Instant::now(),
@@ -427,9 +423,91 @@ struct Outcome {
     collection: Map<String, Value>,
     failure: Option<String>,
 }
+/// Secrets a session resolves and redacts: vault secrets as `vault:<name>`, and OAuth 2.0
+/// token variables (`$oauth2.<name>.access_token`) added by the engine.
+fn session_secrets(payload: &Value) -> Map<String, Value> {
+    let mut secrets: Map<String, Value> = payload["resolvedSecrets"]
+        .as_object()
+        .map(|map| {
+            map.iter()
+                .map(|(k, v)| (format!("vault:{k}"), v.clone()))
+                .collect()
+        })
+        .unwrap_or_default();
+    if let Some(variables) = payload["resolvedOAuth2"].as_object() {
+        secrets.extend(variables.clone());
+    }
+    secrets
+}
 struct Step {
     item: Value,
     parents: Vec<Value>,
+}
+impl Step {
+    /// The request to send, with the authorization of the nearest folder or collection
+    /// when it inherits one.
+    fn request(&self) -> Value {
+        let mut request = match &self.item["request"] {
+            Value::String(url) => json!({"method": "GET", "url": url}),
+            Value::Object(_) => self.item["request"].clone(),
+            _ => json!({}),
+        };
+        if request.get("auth").is_none_or(Value::is_null)
+            && let Some(auth) = self
+                .parents
+                .iter()
+                .rev()
+                .find_map(|group| group.get("auth").filter(|a| a.is_object()))
+        {
+            request["auth"] = auth.clone();
+        }
+        request
+    }
+    /// Variables of the folders around the request and of the request itself, nearest last.
+    fn layered_variables(&self) -> Map<String, Value> {
+        let mut layered = Map::new();
+        for group in self.parents.iter().skip(1) {
+            layered.extend(values(&group["variable"]));
+        }
+        layered.extend(values(&self.item["variable"]));
+        layered
+    }
+}
+
+/// The authorization a request would be sent with: the request's own or the inherited one,
+/// with `{{variables}}` and vault secrets replaced exactly as when it is sent.
+pub fn resolved_auth(payload: &Value) -> Result<Map<String, Value>> {
+    let collection = as_collection(payload)?;
+    let mut steps = Vec::new();
+    flatten(&collection, &[], &mut steps);
+    let step = steps
+        .first()
+        .ok_or_else(|| Error::Validation("Nothing to authorize".into()))?;
+    let auth = step.request()["auth"].clone();
+    if !auth.is_object() {
+        return Err(Error::Validation(
+            "No authorization is set for this request".into(),
+        ));
+    }
+    let mut collection_variables = values(&collection["variable"]);
+    collection_variables.extend(step.layered_variables());
+    let secrets = session_secrets(payload);
+    let seed = json!({
+        "environment": values(&payload["variables"]),
+        "globals": values(&payload["globals"]),
+        "local": {},
+        "collection": collection_variables,
+        "data": {},
+        "secrets": secrets,
+        "request": {"auth": auth},
+        "iteration": 0,
+        "iterationCount": 1,
+        "requestName": step.item["name"],
+        "requestId": step.item["id"],
+        "uuid": uuid::Uuid::new_v4().to_string(),
+    });
+    let session = ScriptSession::new(&seed, Arc::new(AtomicBool::new(false)))?;
+    Ok(crate::auth::values(&session.replace(&auth)?))
 }
 fn flatten(group: &Value, parents: &[Value], output: &mut Vec<Step>) {
     let mut chain = parents.to_vec();
@@ -486,14 +564,7 @@ async fn run_steps(
     let collection = as_collection(payload)?;
     let mut steps = Vec::new();
     flatten(&collection, &[], &mut steps);
-    let secrets: Map<String, Value> = payload["resolvedSecrets"]
-        .as_object()
-        .map(|map| {
-            map.iter()
-                .map(|(k, v)| (format!("vault:{k}"), v.clone()))
-                .collect()
-        })
-        .unwrap_or_default();
+    let secrets = session_secrets(payload);
     let jar = jars.get(&cookie_scope(payload));
     outcome.collection = values(&collection["variable"]);
     let mut local = Map::new();
@@ -519,25 +590,8 @@ async fn run_steps(
             steps_taken += 1;
             let step = &steps[index];
             let item = &step.item;
-            let mut request = match &item["request"] {
-                Value::String(url) => json!({"method": "GET", "url": url}),
-                Value::Object(_) => item["request"].clone(),
-                _ => json!({}),
-            };
-            if request.get("auth").is_none_or(Value::is_null)
-                && let Some(auth) = step
-                    .parents
-                    .iter()
-                    .rev()
-                    .find_map(|group| group.get("auth").filter(|a| a.is_object()))
-            {
-                request["auth"] = auth.clone();
-            }
-            let mut layered = Map::new();
-            for group in step.parents.iter().skip(1) {
-                layered.extend(values(&group["variable"]));
-            }
-            layered.extend(values(&item["variable"]));
+            let request = step.request();
+            let layered = step.layered_variables();
             let mut collection_variables = outcome.collection.clone();
             collection_variables.extend(layered.clone());
             let seed = json!({

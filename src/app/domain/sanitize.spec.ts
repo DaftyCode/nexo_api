@@ -63,4 +63,67 @@ describe('sanitize', () => {
     expect(text).toContain('{{password}}');
     expect(text).toContain('ada');
   });
+
+  it('removes OAuth 1.0 secrets and private keys from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'oauth1',
+          oauth1: [
+            { key: 'consumerKey', value: 'consumer' },
+            { key: 'consumerSecret', value: 'consumer-secret' },
+            { key: 'token', value: 'access-token' },
+            { key: 'tokenSecret', value: '{{tokenSecret}}' },
+            { key: 'privateKey', value: '-----BEGIN PRIVATE KEY-----' },
+          ],
+        },
+      }),
+    );
+    expect(text).not.toContain('consumer-secret');
+    expect(text).not.toContain('access-token');
+    expect(text).not.toContain('BEGIN PRIVATE KEY');
+    expect(text).toContain('{{tokenSecret}}');
+    expect(text).toContain('consumer');
+  });
+
+  it('removes AWS secret keys and session tokens from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'awsv4',
+          awsv4: [
+            { key: 'accessKey', value: 'AKID' },
+            { key: 'secretKey', value: 'aws-secret' },
+            { key: 'secretAccessKey', value: 'bruno-secret' },
+            { key: 'sessionToken', value: 'session-token' },
+          ],
+        },
+      }),
+    );
+    expect(text).toContain('AKID');
+    for (const secret of ['aws-secret', 'bruno-secret', 'session-token'])
+      expect(text).not.toContain(secret);
+  });
+
+  it('removes Hawk keys, also under the Insomnia name, and keeps API key names', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'hawk',
+          hawk: [
+            { key: 'authId', value: 'hawk-id' },
+            { key: 'authKey', value: 'hawk-secret' },
+            { key: 'key', value: 'insomnia-secret' },
+          ],
+        },
+        item: [
+          { request: { auth: { type: 'apikey', apikey: [{ key: 'key', value: 'X-Api-Key' }] } } },
+        ],
+      }),
+    );
+    expect(text).toContain('hawk-id');
+    expect(text).toContain('X-Api-Key');
+    expect(text).not.toContain('hawk-secret');
+    expect(text).not.toContain('insomnia-secret');
+  });
 });

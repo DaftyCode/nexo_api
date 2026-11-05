@@ -12,9 +12,10 @@ use serde_json::{Map, Value};
 use std::sync::Arc;
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 4] = [
+const INTERNAL_FIELDS: [&str; 5] = [
     "secretNames",
     "resolvedSecrets",
+    "resolvedOAuth2",
     "scope",
     "egressLoopbackPorts",
 ];
@@ -236,7 +237,11 @@ impl Application {
         }
         if matches!(
             operation,
-            Operation::Request | Operation::Run | Operation::Performance
+            Operation::Request
+                | Operation::Run
+                | Operation::Performance
+                | Operation::Oauth2Token
+                | Operation::Oauth2Authorize
         ) {
             let names = vault_references(&Value::Object(payload.clone()));
             if !names.is_empty() {

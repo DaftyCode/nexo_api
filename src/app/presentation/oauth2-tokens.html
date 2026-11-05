@@ -1,0 +1,92 @@
+@if (state.managingOAuth2Tokens()) {
+  <div class="modal-backdrop">
+    <section
+      class="modal tokens-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Manage Tokens' | transloco"
+    >
+      <div class="modal-heading">
+        <h2>{{ 'Manage Tokens' | transloco }}</h2>
+        <button
+          class="icon-button"
+          (click)="close()"
+          [attr.aria-label]="'Close dialog' | transloco"
+        >
+          ×
+        </button>
+      </div>
+      @if (!state.oauth2Tokens().length) {
+        <p class="muted">{{ 'No tokens yet. Use Get new access token.' | transloco }}</p>
+      }
+      <ul class="tokens">
+        @for (token of state.oauth2Tokens(); track token.id) {
+          <li>
+            <div class="token-row">
+              <strong>{{ token.name }}</strong>
+              <span class="muted">
+                @if (token.expiresAt; as expiry) {
+                  {{
+                    (expiry <= now() ? 'oauth2.expired' : 'oauth2.expires')
+                      | transloco: { v0: (expiry | date: 'medium') }
+                  }}
+                } @else {
+                  {{ 'No expiry' | transloco }}
+                }
+                @if (token.hasRefreshToken) {
+                  · {{ 'Refresh token' | transloco }}
+                }
+                @if (token.hasIdToken) {
+                  · {{ 'ID token' | transloco }}
+                }
+              </span>
+              <span class="actions">
+                <button
+                  type="button"
+                  class="text-button"
+                  (click)="show(token)"
+                  [attr.aria-expanded]="shown()?.id === token.id"
+                >
+                  {{ (shown()?.id === token.id ? 'Hide' : 'Show') | transloco }}</button
+                ><button type="button" class="text-button danger" (click)="remove(token)">
+                  {{ 'Delete' | transloco }}
+                </button>
+              </span>
+            </div>
+            @if (shown(); as visible) {
+              @if (visible.id === token.id) {
+                <dl class="token-values">
+                  <dt>{{ 'Access token' | transloco }}</dt>
+                  <dd>
+                    <code>{{ visible.details.accessToken || '—' }}</code>
+                  </dd>
+                  @if (visible.details.idToken) {
+                    <dt>{{ 'ID token' | transloco }}</dt>
+                    <dd>
+                      <code>{{ visible.details.idToken }}</code>
+                    </dd>
+                  }
+                  @if (visible.details.refreshToken) {
+                    <dt>{{ 'Refresh token' | transloco }}</dt>
+                    <dd>
+                      <code>{{ visible.details.refreshToken }}</code>
+                    </dd>
+                  }
+                </dl>
+              }
+            }
+          </li>
+        }
+      </ul>
+      <p class="muted">
+        {{
+          'Tokens are kept encrypted in your vault. Deleting one here does not revoke it at the provider.'
+            | transloco
+        }}
+      </p>
+      <div class="modal-actions">
+        <button class="button" (click)="close()">{{ 'Close' | transloco }}</button>
+      </div>
+    </section>
+  </div>
+}

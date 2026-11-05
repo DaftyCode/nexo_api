@@ -2,11 +2,9 @@
 use crate::{collection::request_url, egress::Policy};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use cookie_store::{CookieStore, RawCookie};
-use md5::Md5;
 use nexo_domain::{Error, Result};
 use reqwest::{Method, header::HeaderName, header::HeaderValue};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     net::SocketAddr,
     sync::{Arc, Mutex},
@@ -114,112 +112,29 @@ impl HeaderList {
     pub fn delete(&mut self, name: &str) {
         self.0.retain(|(key, _)| !key.eq_ignore_ascii_case(name));
     }
+    /// Every header, in order.
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.0
+            .iter()
+            .map(|(name, value)| (name.as_str(), value.as_str()))
+    }
+    /// Values of every header called `name`, in order.
+    pub fn get(&self, name: &str) -> Vec<&str> {
+        self.0
+            .iter()
+            .filter(|(key, _)| key.eq_ignore_ascii_case(name))
+            .map(|(_, value)| value.as_str())
+            .collect()
+    }
 }
 
-pub(crate) fn auth_values(auth: &Value) -> serde_json::Map<String, Value> {
-    let mut values = auth.as_object().cloned().unwrap_or_default();
-    let kind = auth["type"].as_str().unwrap_or("");
-    match &auth[kind] {
-        Value::Array(rows) => {
-            for row in rows {
-                if let Some(key) = row["key"].as_str() {
-                    values.insert(key.to_string(), row["value"].clone());
-                }
-            }
-        }
-        Value::Object(object) => values.extend(object.clone()),
-        _ => {}
-    }
-    values
-}
+pub(crate) use crate::auth::values as auth_values;
 fn string(value: Option<&Value>) -> String {
     match value {
         Some(Value::String(text)) => text.clone(),
         Some(Value::Null) | None => String::new(),
         Some(other) => other.to_string(),
     }
-}
-
-fn digest_header(
-    challenge: &str,
-    auth: &serde_json::Map<String, Value>,
-    url: &Url,
-    method: &str,
-) -> Result<String> {
-    let mut parts = std::collections::HashMap::new();
-    let mut rest = challenge
-        .trim_start_matches(|c: char| c.is_alphabetic())
-        .trim();
-    while !rest.is_empty() {
-        let Some(eq) = rest.find('=') else { break };
-        let key = rest[..eq].trim().trim_start_matches(',').trim().to_string();
-        rest = rest[eq + 1..].trim_start();
-        let value;
-        if let Some(stripped) = rest.strip_prefix('"') {
-            let end = stripped.find('"').unwrap_or(stripped.len());
-            value = stripped[..end].to_string();
-            rest = stripped.get(end + 1..).unwrap_or("");
-        } else {
-            let end = rest.find(',').unwrap_or(rest.len());
-            value = rest[..end].trim().to_string();
-            rest = &rest[end..];
-        }
-        parts.insert(key.to_lowercase(), value);
-        rest = rest.trim_start_matches([',', ' ']);
-    }
-    let algorithm = parts
-        .get("algorithm")
-        .cloned()
-        .unwrap_or_else(|| "MD5".into())
-        .to_uppercase();
-    let hash = |value: &str| -> String {
-        if algorithm.starts_with("SHA-256") {
-            hex::encode(Sha256::digest(value.as_bytes()))
-        } else {
-            hex::encode(Md5::digest(value.as_bytes()))
-        }
-    };
-    if !["MD5", "MD5-SESS", "SHA-256", "SHA-256-SESS"].contains(&algorithm.as_str()) {
-        return Err(Error::Validation("Unsupported digest algorithm".into()));
-    }
-    let realm = parts.get("realm").cloned().unwrap_or_default();
-    let nonce = parts.get("nonce").cloned().unwrap_or_default();
-    let uri = match url.query() {
-        Some(query) => format!("{}?{query}", url.path()),
-        None => url.path().to_string(),
-    };
-    let cnonce = hex::encode(crate::vault::rand_bytes::<12>());
-    let username = string(auth.get("username"));
-    let mut ha1 = hash(&format!(
-        "{username}:{realm}:{}",
-        string(auth.get("password"))
-    ));
-    if algorithm.ends_with("-SESS") {
-        ha1 = hash(&format!("{ha1}:{nonce}:{cnonce}"));
-    }
-    let qop = parts
-        .get("qop")
-        .is_some_and(|q| q.split(',').any(|item| item.trim() == "auth"));
-    let ha2 = hash(&format!("{method}:{uri}"));
-    let response = if qop {
-        hash(&format!("{ha1}:{nonce}:00000001:{cnonce}:auth:{ha2}"))
-    } else {
-        hash(&format!("{ha1}:{nonce}:{ha2}"))
-    };
-    let quote = |value: &str| value.replace('\\', "\\\\").replace('"', "\\\"");
-    let mut header = format!(
-        "Digest username=\"{}\", realm=\"{}\", nonce=\"{}\", uri=\"{uri}\", response=\"{response}\", algorithm={algorithm}",
-        quote(&username),
-        quote(&realm),
-        quote(&nonce)
-    );
-    if qop {
-        header.push_str(&format!(", qop=auth, nc=00000001, cnonce=\"{cnonce}\""));
-    }
-    if let Some(opaque) = parts.get("opaque") {
-        header.push_str(&format!(", opaque=\"{}\"", quote(opaque)));
-    }
-    Ok(header)
 }
 
 /// Decodes text with its declared charset; binary payloads are returned as base64.
@@ -375,50 +290,7 @@ impl Transport {
             headers.append(&key, &value);
         }
         let mut credential_headers: Vec<String> = SENSITIVE.iter().map(|s| s.to_string()).collect();
-        let auth = auth_values(&input["auth"]);
-        let kind = auth
-            .get("type")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
-        match kind.as_str() {
-            "basic" => headers.set(
-                "authorization",
-                &format!(
-                    "Basic {}",
-                    STANDARD.encode(format!(
-                        "{}:{}",
-                        string(auth.get("username")),
-                        string(auth.get("password"))
-                    ))
-                ),
-            ),
-            "bearer" | "oauth2" => {
-                let token = auth.get("token").or_else(|| auth.get("accessToken"));
-                headers.set("authorization", &format!("Bearer {}", string(token)));
-            }
-            "apikey" => {
-                let key = string(auth.get("key"));
-                if key.trim().is_empty() {
-                    return Err(Error::Validation(
-                        "API key authentication needs a key name".into(),
-                    ));
-                }
-                if auth.get("in").and_then(Value::as_str) == Some("query") {
-                    url.query_pairs_mut()
-                        .append_pair(&key, &string(auth.get("value")));
-                } else {
-                    headers.set(&key, &string(auth.get("value")));
-                    credential_headers.push(key.to_lowercase());
-                }
-            }
-            "" | "noauth" | "inherit" | "digest" => {}
-            other => {
-                return Err(Error::Validation(format!(
-                    "Unsupported authentication helper: {other}"
-                )));
-            }
-        }
+        let mut auth = auth_values(&input["auth"]);
         let mut warnings = Vec::new();
         let mut body: Option<Vec<u8>> = None;
         let body_input = &input["body"];
@@ -504,8 +376,27 @@ impl Transport {
                 }
             }
         }
+        // Signed once the request is built: Digest `auth-int` and the signature types read
+        // the final method, URL, headers and body.
+        let had_body = body.is_some();
+        let mut signed_body = body.take().unwrap_or_default();
+        crate::auth::sign(
+            &auth,
+            &mut crate::auth::Outgoing {
+                method: &method,
+                url: &mut url,
+                headers: &mut headers,
+                body: &mut signed_body,
+                credential_headers: &mut credential_headers,
+            },
+        )?;
+        // OAuth 1.0 may have added its parameters to a form body.
+        if had_body || !signed_body.is_empty() {
+            body = Some(signed_body.clone());
+        }
         let origin = url.origin();
-        let mut digest_sent = false;
+        // Challenges answered: Digest answers one, NTLM two (negotiate, then authenticate).
+        let mut challenges_answered = 0;
         let mut redirects = 0;
         let response = loop {
             let host = url.host_str().unwrap_or("").to_string();
@@ -574,22 +465,35 @@ impl Transport {
                 jar.store_response_cookies(cookies, &url);
             }
             let status = response.status().as_u16();
-            if status == 401
-                && kind == "digest"
-                && !digest_sent
-                && url.origin() == origin
-                && let Some(challenge) = response
-                    .headers()
-                    .get(reqwest::header::WWW_AUTHENTICATE)
-                    .and_then(|v| v.to_str().ok())
-                    .filter(|c| c.to_lowercase().starts_with("digest "))
+            if (status == 401 || status == 403) && challenges_answered < 2 && url.origin() == origin
             {
-                headers.set(
-                    "authorization",
-                    &digest_header(challenge, &auth, &url, &method)?,
-                );
-                digest_sent = true;
-                continue;
+                let challenges: Vec<String> = response
+                    .headers()
+                    .get_all(reqwest::header::WWW_AUTHENTICATE)
+                    .iter()
+                    .filter_map(|v| v.to_str().ok())
+                    .map(String::from)
+                    .collect();
+                let answered = crate::auth::answer_challenge(
+                    &mut auth,
+                    challenges_answered,
+                    status,
+                    &challenges,
+                    &mut crate::auth::Outgoing {
+                        method: &method,
+                        url: &mut url,
+                        headers: &mut headers,
+                        body: &mut signed_body,
+                        credential_headers: &mut credential_headers,
+                    },
+                )?;
+                if answered {
+                    challenges_answered += 1;
+                    // Read the body to the end so the connection is reused: NTLM authenticates
+                    // the connection, not each request.
+                    let _ = response.bytes().await;
+                    continue;
+                }
             }
             let location = response
                 .headers()
@@ -751,25 +655,5 @@ mod tests {
         );
         assert_eq!(text, "España");
         assert_eq!(decode_body(b"{\"a\":1}", "application/json").0, "{\"a\":1}");
-    }
-    #[test]
-    fn computes_digest_headers() {
-        let auth = serde_json::Map::from_iter([
-            ("username".to_string(), json!("Mufasa")),
-            ("password".to_string(), json!("Circle Of Life")),
-        ]);
-        let url = Url::parse("http://x.test/dir/index.html").unwrap();
-        let header = digest_header(
-            "Digest realm=\"testrealm@host.com\", nonce=\"dcd98b7102dd2f0e8b11d0f600bfb0c093\", opaque=\"5ccc069c403ebaf9f0171e9517f40e41\"",
-            &auth,
-            &url,
-            "GET",
-        )
-        .unwrap();
-        // MD5(HA1:nonce:HA2) as defined by RFC 2069 for challenges without qop.
-        assert!(
-            header.contains("response=\"670fd8c2df070c60b045671b8b24ff02\""),
-            "{header}"
-        );
     }
 }

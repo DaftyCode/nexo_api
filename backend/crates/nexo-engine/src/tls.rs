@@ -1,9 +1,10 @@
-//! TLS client settings shared by WebSocket, MQTT and Socket.IO connections.
+//! TLS client settings shared by WebSocket, MQTT and Socket.IO connections. They use
+//! aws-lc-rs, like reqwest's HTTP clients, and prefer post-quantum key exchange.
 use nexo_domain::{Error, Result};
 use rustls::{
     ClientConfig, DigitallySignedStruct, RootCertStore, SignatureScheme,
     client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier},
-    crypto::{CryptoProvider, WebPkiSupportedAlgorithms, ring},
+    crypto::{CryptoProvider, WebPkiSupportedAlgorithms, aws_lc_rs},
 };
 use rustls_pki_types::{CertificateDer, PrivateKeyDer, ServerName, UnixTime, pem::PemObject};
 use serde_json::Value;
@@ -50,7 +51,7 @@ fn invalid(message: String) -> Error {
 
 /// Builds a client configuration from `strictSSL`, `caPem`, `certPem` and `keyPem`.
 pub fn client_config(payload: &Value) -> Result<Arc<ClientConfig>> {
-    let provider: Arc<CryptoProvider> = Arc::new(ring::default_provider());
+    let provider: Arc<CryptoProvider> = Arc::new(aws_lc_rs::default_provider());
     let builder = ClientConfig::builder_with_provider(provider.clone())
         .with_safe_default_protocol_versions()
         .map_err(|error| Error::Infrastructure(error.to_string()))?;
@@ -93,4 +94,33 @@ pub fn client_config(payload: &Value) -> Result<Arc<ClientConfig>> {
         _ => builder.with_no_client_auth(),
     };
     Ok(Arc::new(config))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustls::NamedGroup;
+    use serde_json::json;
+
+    #[test]
+    fn protocol_connections_prefer_post_quantum_key_exchange() {
+        for payload in [json!({}), json!({"strictSSL": false})] {
+            let config = client_config(&payload).expect("client configuration");
+            let groups: Vec<NamedGroup> = config
+                .crypto_provider()
+                .kx_groups
+                .iter()
+                .map(|group| group.name())
+                .collect();
+            assert_eq!(
+                groups.first(),
+                Some(&NamedGroup::X25519MLKEM768),
+                "{groups:?}"
+            );
+            assert!(
+                groups.contains(&NamedGroup::X25519),
+                "classic fallback: {groups:?}"
+            );
+        }
+    }
 }

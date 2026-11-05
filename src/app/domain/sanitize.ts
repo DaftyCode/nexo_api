@@ -47,7 +47,23 @@ export function historyResponse(
   };
 }
 
-const secretAuthKeys = new Set(['token', 'password', 'value', 'accessToken', 'clientSecret']);
+const secretAuthKeys = new Set([
+  'token',
+  'password',
+  'value',
+  'accessToken',
+  'clientSecret',
+  'refreshToken',
+  'code_verifier',
+  'consumerSecret',
+  'tokenSecret',
+  'privateKey',
+  'accessTokenSecret',
+  'secretKey',
+  'secretAccessKey',
+  'sessionToken',
+  'authKey',
+]);
 /**
  * Collection prepared for a shared Git repository: literal credentials in auth helpers and
  * client certificates are removed; variable references are kept.
@@ -55,11 +71,15 @@ const secretAuthKeys = new Set(['token', 'password', 'value', 'accessToken', 'cl
 export function exportableCollection(value: unknown): unknown {
   const visit = (node: unknown, key = ''): unknown => {
     if (Array.isArray(node)) {
-      if (['basic', 'bearer', 'apikey', 'oauth2', 'digest'].includes(key))
+      if (
+        ['basic', 'bearer', 'apikey', 'oauth2', 'digest', 'oauth1', 'awsv4', 'hawk', 'ntlm'].includes(key)
+      )
         return node.map((row) =>
           row &&
           typeof row === 'object' &&
-          secretAuthKeys.has(String((row as { key?: unknown }).key))
+          (secretAuthKeys.has(String((row as { key?: unknown }).key)) ||
+            // Insomnia calls the Hawk key `key`, which for an API key is only the header name.
+            (key === 'hawk' && (row as { key?: unknown }).key === 'key'))
             ? { ...row, value: hide(String((row as { value?: unknown }).value ?? '')) }
             : row,
         );

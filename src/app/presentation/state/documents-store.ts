@@ -48,10 +48,11 @@ export class DocumentsStore {
   async saveCollectionSettings(
     id: string,
     settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+    folder: readonly number[] = [],
   ) {
     const document = this.collections().find((d) => d.id === id);
     if (!document) throw new Error('Choose a collection');
-    this.applySaved([await this.context.cases.saveCollectionSettings(document, settings)]);
+    this.applySaved([await this.context.cases.saveCollectionSettings(document, settings, folder)]);
   }
   /** Keeps the most recent history entries; older ones are removed in the background. */
   async pruneHistory(keep = 200) {

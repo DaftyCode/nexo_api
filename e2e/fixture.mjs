@@ -36,6 +36,7 @@ export const test = base.extend({
             NEXO_DATA_DIR: directory,
             NEXO_LOCAL_TOKEN: token,
             NEXO_MASTER_KEY: 'b'.repeat(64),
+            NEXO_NO_BROWSER: '1',
           },
           stdio: 'ignore',
         },
@@ -53,7 +54,28 @@ export const test = base.extend({
       // A local API the requests in the tests can reach.
       const echo = http.createServer((request, response) => {
         response.setHeader('content-type', 'application/json');
-        response.end(JSON.stringify({ path: request.url, method: request.method }));
+        // A sign-in page and a token endpoint for the OAuth 2.0 tests.
+        if (request.url.startsWith('/authorize')) {
+          const query = new URL(request.url, 'http://e2e').searchParams;
+          const back = new URL(query.get('redirect_uri'));
+          back.search = new URLSearchParams({
+            code: 'e2e-code',
+            state: query.get('state'),
+          }).toString();
+          response.writeHead(302, { location: back.toString() });
+          return response.end();
+        }
+        if (request.url === '/token')
+          return response.end(
+            JSON.stringify({ access_token: 'e2e-token', refresh_token: 'r1', expires_in: 3600 }),
+          );
+        response.end(
+          JSON.stringify({
+            path: request.url,
+            method: request.method,
+            authorization: request.headers.authorization ?? null,
+          }),
+        );
       });
       await new Promise((r) => echo.listen(0, '127.0.0.1', r));
       await use({

@@ -1,0 +1,320 @@
+<div class="oauth2">
+  <label class="field row-field"
+    >{{ 'Add authorization data to' | transloco
+    }}<select [value]="value('addTokenTo', 'header')" (change)="text('addTokenTo', $event)">
+      <option value="header">{{ 'Request Headers' | transloco }}</option>
+      <option value="queryParams">{{ 'Request URL' | transloco }}</option>
+    </select></label
+  >
+
+  <h3>{{ 'Current Token' | transloco }}</h3>
+  <label class="field row-field"
+    >{{ 'Token' | transloco
+    }}<select (change)="choose($event)">
+      <option value="" [selected]="!selected()">{{ 'Custom token' | transloco }}</option>
+      @for (token of state.oauth2Tokens(); track token.id) {
+        <!-- [selected] per option: the token list may arrive after the selection. -->
+        <option [value]="token.id" [selected]="token.id === selected()?.id">
+          {{ token.name }}
+        </option>
+      }
+    </select></label
+  >
+  @if (selected(); as token) {
+    @if (token.expiresAt; as expiry) {
+      <p class="token-status" [class.expired]="expiry <= now()">
+        {{
+          (expiry <= now() ? 'oauth2.expired' : 'oauth2.expires')
+            | transloco: { v0: (expiry | date: 'medium') }
+        }}
+        @if (token.hasRefreshToken) {
+          <button
+            type="button"
+            class="text-button"
+            [disabled]="busy()"
+            (click)="tokenRequested.emit(true)"
+          >
+            {{ 'Refresh' | transloco }}
+          </button>
+        }
+      </p>
+    }
+    @if (token.hasIdToken) {
+      <label class="field row-field"
+        >{{ 'Use Token Type' | transloco
+        }}<select [value]="value('tokenSource', 'access_token')" (change)="source($event)">
+          <option value="access_token">{{ 'Access token' | transloco }}</option>
+          <option value="id_token">{{ 'ID token' | transloco }}</option>
+        </select></label
+      >
+    }
+  } @else {
+    <span class="token-input">
+      <input
+        [type]="showToken() ? 'text' : 'password'"
+        [value]="value('accessToken')"
+        (input)="custom($event)"
+        [attr.aria-label]="'Token' | transloco"
+        spellcheck="false"
+        autocomplete="off"
+      />
+      <button
+        type="button"
+        class="icon-button"
+        (click)="showToken.set(!showToken())"
+        [attr.aria-label]="(showToken() ? 'Hide token' : 'Show token') | transloco"
+        [attr.aria-pressed]="showToken()"
+      >
+        {{ showToken() ? '◉' : '◎' }}
+      </button>
+    </span>
+  }
+  <label class="check-field"
+    ><input type="checkbox" [checked]="autoRefresh()" (change)="toggleAutoRefresh($event)" />{{
+      'Auto-refresh Token' | transloco
+    }}</label
+  >
+  <p class="muted hint">
+    {{ 'Your expired token will be auto-refreshed before sending a request.' | transloco }}
+    <button type="button" class="text-button" (click)="state.managingOAuth2Tokens.set(true)">
+      {{ 'Manage Tokens' | transloco }}
+    </button>
+  </p>
+  @if (value('addTokenTo', 'header') === 'queryParams') {
+    <label class="field row-field"
+      >{{ 'Query parameter name' | transloco
+      }}<input
+        [value]="value('tokenQueryKey')"
+        placeholder="access_token"
+        (input)="text('tokenQueryKey', $event)"
+        spellcheck="false"
+    /></label>
+  } @else {
+    <label class="field row-field"
+      >{{ 'Header Prefix' | transloco
+      }}<input
+        [value]="value('headerPrefix', 'Bearer')"
+        (input)="text('headerPrefix', $event)"
+        spellcheck="false"
+    /></label>
+  }
+
+  <h3>{{ 'Configure New Token' | transloco }}</h3>
+  <label class="field row-field"
+    >{{ 'Token Name' | transloco
+    }}<input [value]="value('tokenName')" (input)="text('tokenName', $event)"
+  /></label>
+  <label class="field row-field"
+    >{{ 'Grant type' | transloco
+    }}<select [value]="grant()" (change)="text('grant_type', $event)">
+      <option value="authorization_code">{{ 'Authorization Code' | transloco }}</option>
+      <option value="authorization_code_with_pkce">
+        {{ 'Authorization Code (With PKCE)' | transloco }}
+      </option>
+      <option value="implicit">{{ 'Implicit' | transloco }}</option>
+      <option value="password_credentials">{{ 'Password Credentials' | transloco }}</option>
+      <option value="client_credentials">{{ 'Client Credentials' | transloco }}</option>
+    </select></label
+  >
+  @if (shows('redirect_uri')) {
+    <label class="field row-field"
+      >{{ 'Callback URL' | transloco
+      }}<input
+        [value]="checked('useBrowser') ? relayUrl : value('redirect_uri')"
+        [disabled]="checked('useBrowser')"
+        placeholder="http://localhost:8080/callback"
+        (input)="text('redirect_uri', $event)"
+        spellcheck="false"
+    /></label>
+    <label class="check-field"
+      ><input
+        type="checkbox"
+        [checked]="checked('useBrowser')"
+        (change)="toggle('useBrowser', $event)"
+      />{{ 'Authorize using browser' | transloco }}</label
+    >
+  }
+  @if (shows('authUrl')) {
+    <label class="field row-field"
+      >{{ 'Auth URL' | transloco
+      }}<input [value]="value('authUrl')" (input)="text('authUrl', $event)" spellcheck="false"
+    /></label>
+  }
+  @if (shows('accessTokenUrl')) {
+    <label class="field row-field"
+      >{{ 'Access Token URL' | transloco
+      }}<input
+        [value]="value('accessTokenUrl')"
+        (input)="text('accessTokenUrl', $event)"
+        spellcheck="false"
+    /></label>
+  }
+  @if (shows('username')) {
+    <label class="field row-field"
+      >{{ 'Username' | transloco
+      }}<input [value]="value('username')" (input)="text('username', $event)" /></label
+    ><label class="field row-field"
+      >{{ 'Password' | transloco
+      }}<input
+        type="password"
+        [value]="value('password')"
+        (input)="text('password', $event)"
+        autocomplete="off"
+    /></label>
+  }
+  <label class="field row-field"
+    >{{ 'Client ID' | transloco
+    }}<input [value]="value('clientId')" (input)="text('clientId', $event)" spellcheck="false"
+  /></label>
+  @if (shows('clientSecret')) {
+    <label class="field row-field"
+      >{{ 'Client Secret' | transloco
+      }}<input
+        [value]="value('clientSecret')"
+        (input)="text('clientSecret', $event)"
+        spellcheck="false"
+        autocomplete="off"
+    /></label>
+  }
+  @if (shows('challengeAlgorithm')) {
+    <label class="field row-field"
+      >{{ 'Code Challenge Method' | transloco
+      }}<select
+        [value]="value('challengeAlgorithm', 'S256')"
+        (change)="text('challengeAlgorithm', $event)"
+      >
+        <option value="S256">SHA-256</option>
+        <option value="plain">Plain</option>
+      </select></label
+    ><label class="field row-field"
+      >{{ 'Code Verifier' | transloco
+      }}<input
+        [value]="value('code_verifier')"
+        [placeholder]="'Automatically generated if left blank' | transloco"
+        (input)="text('code_verifier', $event)"
+        spellcheck="false"
+    /></label>
+  }
+  <label class="field row-field"
+    >{{ 'Scope' | transloco
+    }}<input
+      [value]="value('scope')"
+      placeholder="openid profile"
+      (input)="text('scope', $event)"
+      spellcheck="false"
+  /></label>
+  @if (shows('state')) {
+    <label class="field row-field"
+      >{{ 'State' | transloco
+      }}<input [value]="value('state')" (input)="text('state', $event)" spellcheck="false"
+    /></label>
+  }
+  @if (shows('client_authentication')) {
+    <label class="field row-field"
+      >{{ 'Client Authentication' | transloco
+      }}<select
+        [value]="value('client_authentication', 'header')"
+        (change)="text('client_authentication', $event)"
+      >
+        <option value="header">{{ 'Send as Basic Auth header' | transloco }}</option>
+        <option value="body">{{ 'Send client credentials in body' | transloco }}</option>
+      </select></label
+    >
+  }
+
+  <details class="advanced">
+    <summary>{{ 'Advanced' | transloco }}</summary>
+    <label class="field row-field"
+      >{{ 'Refresh Token URL' | transloco
+      }}<input
+        [value]="value('refreshTokenUrl')"
+        [placeholder]="value('accessTokenUrl')"
+        (input)="text('refreshTokenUrl', $event)"
+        spellcheck="false"
+    /></label>
+    @for (list of lists; track list.id) {
+      @let typed = list.id;
+      @if (typed !== 'authRequestParams' || shows('authRequestParams')) {
+        <section class="parameters">
+          <h4>{{ list.label | transloco }}</h4>
+          @for (row of parameters(typed); track $index) {
+            <div class="parameter">
+              <input
+                type="checkbox"
+                [checked]="row.enabled !== false"
+                (change)="editParameter(typed, $index, 'enabled', $event)"
+                [attr.aria-label]="'Enabled' | transloco"
+              /><input
+                [value]="row.key"
+                (input)="editParameter(typed, $index, 'key', $event)"
+                [placeholder]="'Key' | transloco"
+                [attr.aria-label]="'Key' | transloco"
+              /><input
+                [value]="row.value"
+                (input)="editParameter(typed, $index, 'value', $event)"
+                [placeholder]="'Value' | transloco"
+                [attr.aria-label]="'Value' | transloco"
+              /><select
+                [value]="row.send_as"
+                (change)="editParameter(typed, $index, 'send_as', $event)"
+                [attr.aria-label]="'Send In' | transloco"
+              >
+                @for (option of placements[typed]; track option[0]) {
+                  <option [value]="option[0]">{{ option[1] | transloco }}</option>
+                }</select
+              ><button
+                type="button"
+                class="icon-button"
+                (click)="removeParameter(typed, $index)"
+                [attr.aria-label]="'Remove parameter' | transloco"
+              >
+                ×
+              </button>
+            </div>
+          }
+          <button type="button" class="text-button" (click)="addParameter(typed)">
+            {{ 'Add parameter' | transloco }}
+          </button>
+        </section>
+      }
+    }
+    <label class="field row-field"
+      >{{ 'Audience' | transloco
+      }}<input [value]="value('audience')" (input)="text('audience', $event)" spellcheck="false"
+    /></label>
+    <label class="field row-field"
+      >{{ 'Resource' | transloco
+      }}<input [value]="value('resource')" (input)="text('resource', $event)" spellcheck="false"
+    /></label>
+    <label class="field row-field"
+      >{{ 'Origin' | transloco
+      }}<input [value]="value('origin')" (input)="text('origin', $event)" spellcheck="false"
+    /></label>
+  </details>
+
+  @if (usesBrowser() && checked('useBrowser')) {
+    <p class="muted">
+      {{
+        'Authorize using browser returns through Nexo API callback page. Register it as a redirect URI with your provider:'
+          | transloco
+      }}
+      <code>{{ relayUrl }}</code>
+    </p>
+  }
+  <div class="row">
+    <button
+      type="button"
+      class="button primary"
+      [disabled]="busy()"
+      (click)="tokenRequested.emit(false)"
+    >
+      {{ 'Get new access token' | transloco }}
+    </button>
+  </div>
+  <p class="muted">
+    {{
+      'The authorization data will be automatically generated when you send the request.'
+        | transloco
+    }}
+  </p>
+</div>

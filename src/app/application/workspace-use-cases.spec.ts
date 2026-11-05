@@ -122,4 +122,37 @@ describe('WorkspaceUseCases variables', () => {
       auth: { type: 'bearer', bearer: [] },
     });
   });
+
+  it('saves folder settings in the folder and leaves the collection root alone', async () => {
+    const { cases, saved } = fixture();
+    const rootAuth = { type: 'bearer', bearer: [{ key: 'token', value: 'root' }] };
+    const collection = document('collection', {
+      info: { name: 'API', schema: 's' },
+      auth: rootAuth,
+      item: [{ name: 'Local', auth: rootAuth, item: [{ name: 'Request', request: {} }] }],
+    });
+    const folderAuth = { type: 'apikey', apikey: [{ key: 'key', value: 'X-Key' }] };
+    await cases.saveCollectionSettings(
+      collection,
+      { variables: [emptyVariable('host', 'localhost')], auth: folderAuth },
+      [0],
+    );
+    const value = saved[0].value as { auth: unknown; item: Record<string, unknown>[] };
+    expect(value.auth).toEqual(rootAuth);
+    expect(value.item[0]).toMatchObject({
+      name: 'Local',
+      auth: folderAuth,
+      variable: [{ key: 'host', value: 'localhost' }],
+    });
+    // Inheriting again removes the folder's own authorization and empty variables.
+    await cases.saveCollectionSettings(saved[0], { variables: [emptyVariable()] }, [0]);
+    const inherited = saved[1].value as { item: Record<string, unknown>[] };
+    expect(inherited.item[0]['auth']).toBeUndefined();
+    expect(inherited.item[0]['variable']).toBeUndefined();
+    // The original document is not modified in place.
+    expect((collection.value as { item: { auth: unknown }[] }).item[0].auth).toEqual(rootAuth);
+    await expect(
+      cases.saveCollectionSettings(collection, { variables: [] }, [0, 0]),
+    ).rejects.toThrow('Folder not found');
+  });
 });

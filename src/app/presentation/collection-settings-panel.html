@@ -1,11 +1,15 @@
 <div class="feature-heading">
   <div>
     <span class="eyebrow">{{ 'SHARED BY EVERY REQUEST' | transloco }}</span>
-    <h1>{{ 'Collection settings' | transloco }}</h1>
+    <h1>
+      {{ (target()?.folder ? 'Folder settings' : 'Collection settings') | transloco }}
+    </h1>
     <p>
       {{
-        'Variables, authorization and scripts defined here apply to every request in the collection.'
-          | transloco
+        (target()?.folder
+          ? 'Variables, authorization and scripts defined here apply to every request in the folder.'
+          : 'Variables, authorization and scripts defined here apply to every request in the collection.'
+        ) | transloco
       }}
     </p>
   </div>
@@ -22,9 +26,19 @@
     }
   </select>
 </div>
-@if (collection(); as current) {
+@if (target(); as current) {
+  @if (current.folder; as folder) {
+    <nav class="settings-breadcrumb" [attr.aria-label]="'Folder settings' | transloco">
+      <button class="text-button" (click)="openCollection()">
+        {{ current.collection.info.name }}</button
+      ><span aria-hidden="true">/</span><strong>{{ folder.name }}</strong>
+    </nav>
+  }
   <section class="feature-card">
-    <nav class="editor-tabs" [attr.aria-label]="'Collection settings' | transloco">
+    <nav
+      class="editor-tabs"
+      [attr.aria-label]="(current.folder ? 'Folder settings' : 'Collection settings') | transloco"
+    >
       <button [class.active]="tab() === 'variables'" (click)="tab.set('variables')">
         {{ 'Variables' | transloco }}</button
       ><button [class.active]="tab() === 'authorization'" (click)="tab.set('authorization')">
@@ -46,47 +60,20 @@
         }
         @case ('authorization') {
           <p class="muted">
-            {{ 'Requests set to "Inherit from collection" use this authorization.' | transloco }}
+            {{
+              'Requests and folders set to "Inherit from parent" use this authorization.'
+                | transloco
+            }}
           </p>
-          <label class="field"
-            >{{ 'Authorization type' | transloco
-            }}<select [formField]="fields.authType">
-              <option value="noauth">{{ 'No auth' | transloco }}</option>
-              <option value="bearer">{{ 'Bearer token' | transloco }}</option>
-              <option value="basic">{{ 'Basic auth' | transloco }}</option>
-              <option value="apikey">{{ 'API key' | transloco }}</option>
-            </select></label
-          >
-          @switch (model().authType) {
-            @case ('bearer') {
-              <label class="field"
-                >{{ 'Token' | transloco
-                }}<input [formField]="fields.token" spellcheck="false" autocomplete="off"
-              /></label>
-            }
-            @case ('basic') {
-              <label class="field"
-                >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
-              ><label class="field"
-                >{{ 'Password' | transloco
-                }}<input type="password" [formField]="fields.password" autocomplete="off"
-              /></label>
-            }
-            @case ('apikey') {
-              <label class="field"
-                >{{ 'Key' | transloco }}<input [formField]="fields.key" spellcheck="false" /></label
-              ><label class="field"
-                >{{ 'Value' | transloco
-                }}<input [formField]="fields.value" spellcheck="false" autocomplete="off" /></label
-              ><label class="field"
-                >{{ 'Add to' | transloco
-                }}<select [formField]="fields.in">
-                  <option value="header">{{ 'Header' | transloco }}</option>
-                  <option value="query">{{ 'Query params' | transloco }}</option>
-                </select></label
-              >
-            }
-          }
+          <app-auth-editor
+            [auth]="model().auth"
+            (authChange)="editAuth($event)"
+            [inheritable]="!!current.folder"
+            [inheritance]="inheritance()"
+            (editInherited)="openInherited()"
+            [tokenBusy]="state.busy()"
+            (tokenRequested)="requestToken($event)"
+          />
         }
         @case ('scripts') {
           <label class="field"
@@ -113,7 +100,7 @@
     <div class="row between settings-actions">
       <span class="unsaved">{{ dirty() ? ('Unsaved changes' | transloco) : '' }}</span>
       <button class="button primary" (click)="save()" [disabled]="state.busy()">
-        {{ 'Save collection' | transloco }}
+        {{ (current.folder ? 'Save folder' : 'Save collection') | transloco }}
       </button>
     </div>
   </section>

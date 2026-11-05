@@ -1,5 +1,7 @@
 import { ApiPort, FilePort, PreferencePort } from './ports';
 import { ExecutionOperation } from './operations';
+import { itemAt } from '../domain/collection-tree';
+import { OAuth2SignIn, OAuth2SignInStatus, OAuth2Token, OAuth2TokenDetails } from '../domain/auth';
 import {
   Collection,
   ExecutionResponse,
@@ -154,6 +156,69 @@ export class WorkspaceUseCases {
       followRedirects: request.followRedirects,
     });
   }
+  /**
+   * "Get New Access Token" or, with a refresh token, its renewal for an OAuth 2.0
+   * authorization. The engine resolves its variables and vault secrets as for a request.
+   */
+  oauth2Token(auth: unknown, context: ExecutionContext, tokenId?: string) {
+    return this.api.execute<OAuth2Token>('oauth2.token', {
+      ...this.authorizationPayload(auth, context),
+      ...(tokenId ? { tokenId } : {}),
+    });
+  }
+  /** Stored tokens ("Available Tokens") without their values. */
+  async oauth2Tokens(workspace: string) {
+    const { tokens } = await this.api.execute<{ tokens: OAuth2Token[] }>('oauth2.tokens', {
+      workspace,
+      action: 'list',
+    });
+    return tokens;
+  }
+  /** Every value of a stored token, for "Manage Tokens". */
+  oauth2TokenDetails(workspace: string, id: string) {
+    return this.api.execute<OAuth2TokenDetails>('oauth2.tokens', {
+      workspace,
+      action: 'details',
+      id,
+    });
+  }
+  deleteOAuth2Token(workspace: string, id: string) {
+    return this.api.execute('oauth2.tokens', { workspace, action: 'delete', id });
+  }
+  /** Starts a browser sign-in (authorization code, PKCE or implicit). */
+  oauth2Authorize(auth: unknown, context: ExecutionContext) {
+    return this.api.execute<OAuth2SignIn>('oauth2.authorize', {
+      ...this.authorizationPayload(auth, context),
+      action: 'start',
+    });
+  }
+  /** `status`, `open` (the browser again), `complete` (with the returned address) or `cancel`. */
+  oauth2SignIn(
+    workspace: string,
+    session: string,
+    action: 'status' | 'open' | 'complete' | 'cancel',
+    url?: string,
+  ) {
+    return this.api.execute<OAuth2SignInStatus>('oauth2.authorize', {
+      workspace,
+      session,
+      action,
+      ...(url ? { url } : {}),
+    });
+  }
+  /** The authorization and the scopes its variables are resolved in. */
+  private authorizationPayload(auth: unknown, context: ExecutionContext) {
+    return {
+      ...(context.workspace ? { workspace: context.workspace } : {}),
+      request: {
+        name: 'OAuth 2.0',
+        request: { method: 'GET', url: 'https://oauth2.invalid/', auth },
+      },
+      variables: toPortableRows(context.environment),
+      globals: toPortableRows(context.globals),
+      context: { ancestors: context.ancestors },
+    };
+  }
   async saveRequest(document: WorkspaceDocument, path: number[], request: RequestDraft) {
     const collection = asCollection(document.value);
     let existing = collection.item[path[0]];
@@ -213,17 +278,28 @@ export class WorkspaceUseCases {
       : this.createDocument(workspace, 'globals', 'Globals', { name: 'Globals', values });
   }
 
-  /** Collection-level variables, auth and scripts are stored in the collection root. */
-  saveCollectionSettings(
+  /**
+   * Variables, auth and scripts of the collection root or, with a `folder` path, of that
+   * folder. A folder without variables stores none.
+   */
+  async saveCollectionSettings(
     document: WorkspaceDocument,
     settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+    folder: readonly number[] = [],
   ) {
-    const value: Collection = { ...asCollection(document.value) };
-    value['variable'] = toCollectionVariables(settings.variables);
-    if (settings.auth === undefined) delete value['auth'];
-    else value['auth'] = settings.auth;
-    if (settings.event === undefined) delete value['event'];
-    else value['event'] = settings.event;
+    const value: Collection = structuredClone(asCollection(document.value));
+    const group: Record<string, unknown> | undefined = folder.length
+      ? itemAt(value, folder)
+      : value;
+    if (!group || (folder.length && !Array.isArray(group['item'])))
+      throw new Error('Folder not found');
+    const variables = toCollectionVariables(settings.variables);
+    if (folder.length && !variables.length) delete group['variable'];
+    else group['variable'] = variables;
+    if (settings.auth === undefined) delete group['auth'];
+    else group['auth'] = settings.auth;
+    if (settings.event === undefined) delete group['event'];
+    else group['event'] = settings.event;
     return this.api.save({ ...document, value });
   }
 

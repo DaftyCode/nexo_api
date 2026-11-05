@@ -1,0 +1,476 @@
+<div class="auth-grid">
+  <div>
+    <label class="field"
+      >{{ 'Authorization type' | transloco
+      }}<select [formField]="fields.type">
+        @if (inheritable()) {
+          <option value="inherit">
+            {{ 'Inherit from parent' | transloco }}
+            @if (inheritance()?.source; as source) {
+              ({{
+                label(source.auth.type) ? (label(source.auth.type)! | transloco) : source.auth.type
+              }})
+            }
+          </option>
+        }
+        @if (unknownType(); as type) {
+          <option [value]="type">{{ type }}</option>
+        }
+        <option value="noauth">{{ 'No auth' | transloco }}</option>
+        <option value="bearer">{{ 'Bearer token' | transloco }}</option>
+        <option value="basic">{{ 'Basic auth' | transloco }}</option>
+        <option value="apikey">{{ 'API key' | transloco }}</option>
+        <option value="digest">{{ 'Digest auth' | transloco }}</option>
+        <option value="oauth1">{{ 'OAuth 1.0' | transloco }}</option>
+        <option value="oauth2">{{ 'OAuth 2.0' | transloco }}</option>
+        <option value="awsv4">{{ 'AWS Signature' | transloco }}</option>
+        <option value="ntlm">{{ 'NTLM Authentication' | transloco }}</option>
+        <option value="hawk">{{ 'Hawk Authentication' | transloco }}</option>
+      </select></label
+    >
+    <p class="muted">
+      {{
+        'Authorization is applied when the request runs. You can use environment variables in these fields.'
+          | transloco
+      }}
+    </p>
+  </div>
+  <div>
+    @switch (auth().type) {
+      @case ('inherit') {
+        <div class="inherited" role="status">
+          @if (inheritance(); as inheritance) {
+            @if (inheritance.source; as source) {
+              @let known = label(source.auth.type);
+              @let typeName = known ? (known | transloco) : source.auth.type;
+              <p>
+                {{
+                  (source.path.length ? 'auth.inheritedFromFolder' : 'auth.inheritedFromCollection')
+                    | transloco: { v0: typeName, v1: source.name }
+                }}
+              </p>
+              @if (details(source.auth); as rows) {
+                @if (rows.length) {
+                  <dl class="auth-details">
+                    @for (row of rows; track row.key) {
+                      <dt>{{ row.key }}</dt>
+                      <dd>
+                        <code>{{ row.secret ? '••••••••' : row.value || '—' }}</code>
+                      </dd>
+                    }
+                  </dl>
+                }
+              }
+              <button class="button" (click)="editInherited.emit()">
+                {{ 'Edit authorization' | transloco }}
+              </button>
+            } @else {
+              <p>
+                {{
+                  'No folder or collection above sets an authorization, so none is sent.'
+                    | transloco
+                }}
+              </p>
+              <button class="button" (click)="editInherited.emit()">
+                {{ 'Set an authorization for the collection' | transloco }}
+              </button>
+            }
+          } @else {
+            <p>
+              {{
+                'Save the request in a collection to inherit an authorization from it.' | transloco
+              }}
+            </p>
+          }
+        </div>
+      }
+      @case ('noauth') {
+        <div class="empty-inline">
+          {{ "This request doesn't use authorization." | transloco }}
+        </div>
+      }
+      @case ('bearer') {
+        <label class="field"
+          >{{ 'Token' | transloco
+          }}<input
+            [formField]="fields.token"
+            placeholder="{{ '{{access_token}}' }}"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Prefix' | transloco
+          }}<input
+            [value]="value('prefix', 'Bearer')"
+            (input)="text('prefix', $event)"
+            spellcheck="false"
+        /></label>
+      }
+      @case ('basic') {
+        <label class="field"
+          >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+        ><label class="field"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+        <label class="check-field"
+          ><input
+            type="checkbox"
+            [checked]="checked('useISO88591')"
+            (change)="toggle('useISO88591', $event)"
+          />{{ 'Use ISO 8859-1 encoding' | transloco }}</label
+        >
+      }
+      @case ('digest') {
+        <label class="field"
+          >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+        ><label class="field"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+        <label class="check-field"
+          ><input
+            type="checkbox"
+            [checked]="checked('disableRetryRequest')"
+            (change)="toggle('disableRetryRequest', $event)"
+          />{{ 'Disable retrying the request' | transloco }}</label
+        >
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          @for (field of digestFields; track field.key) {
+            <label class="field"
+              >{{ field.label | transloco
+              }}<input
+                [value]="value(field.key)"
+                (input)="text(field.key, $event)"
+                [placeholder]="field.placeholder"
+                spellcheck="false"
+            /></label>
+          }
+          <label class="field"
+            >{{ 'Algorithm' | transloco
+            }}<select (change)="text('algorithm', $event)">
+              @for (algorithm of digestAlgorithms; track algorithm) {
+                <option [value]="algorithm" [selected]="algorithm === value('algorithm', 'MD5')">
+                  {{ algorithm }}
+                </option>
+              }
+            </select></label
+          >
+        </details>
+      }
+      @case ('apikey') {
+        <label class="field"
+          >{{ 'Key' | transloco }}<input [formField]="fields.key" spellcheck="false" /></label
+        ><label class="field"
+          >{{ 'Value' | transloco
+          }}<input [formField]="fields.value" spellcheck="false" autocomplete="off" /></label
+        ><label class="field"
+          >{{ 'Add to' | transloco
+          }}<select [formField]="fields.in">
+            <option value="header">{{ 'Header' | transloco }}</option>
+            <option value="query">{{ 'Query params' | transloco }}</option>
+          </select></label
+        >
+      }
+      @case ('oauth1') {
+        @let rsa = value('signatureMethod', 'HMAC-SHA1').startsWith('RSA');
+        <label class="field"
+          >{{ 'Signature Method' | transloco
+          }}<select (change)="text('signatureMethod', $event)">
+            @for (method of oauth1Methods; track method) {
+              <option
+                [value]="method"
+                [selected]="method === value('signatureMethod', 'HMAC-SHA1')"
+              >
+                {{ method }}
+              </option>
+            }
+          </select></label
+        >
+        <label class="field"
+          >{{ 'Consumer Key' | transloco
+          }}<input
+            [value]="value('consumerKey')"
+            (input)="text('consumerKey', $event)"
+            spellcheck="false"
+        /></label>
+        @if (!rsa) {
+          <label class="field"
+            >{{ 'Consumer Secret' | transloco
+            }}<input
+              type="password"
+              [value]="value('consumerSecret')"
+              (input)="text('consumerSecret', $event)"
+              autocomplete="off"
+          /></label>
+        }
+        <label class="field"
+          >{{ 'Access Token' | transloco
+          }}<input
+            [value]="value('token')"
+            (input)="text('token', $event)"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        @if (rsa) {
+          <label class="field"
+            >{{ 'Private Key' | transloco
+            }}<textarea
+              class="code-editor small"
+              [value]="value('privateKey')"
+              (input)="text('privateKey', $event)"
+              spellcheck="false"
+              placeholder="-----BEGIN PRIVATE KEY-----"
+            ></textarea>
+          </label>
+        } @else {
+          <label class="field"
+            >{{ 'Token Secret' | transloco
+            }}<input
+              type="password"
+              [value]="value('tokenSecret')"
+              (input)="text('tokenSecret', $event)"
+              autocomplete="off"
+          /></label>
+        }
+        <label class="field"
+          >{{ 'Add authorization data to' | transloco
+          }}<select [value]="oauth1Placement()" (change)="placeOAuth1($event)">
+            <option value="body">{{ 'Request Body / Request URL' | transloco }}</option>
+            <option value="header">{{ 'Request Headers' | transloco }}</option>
+          </select></label
+        >
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          @for (field of oauth1Fields; track field.key) {
+            <label class="field"
+              >{{ field.label | transloco
+              }}<input
+                [value]="value(field.key)"
+                (input)="text(field.key, $event)"
+                [placeholder]="field.placeholder"
+                spellcheck="false"
+            /></label>
+          }
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="checked('includeBodyHash')"
+              (change)="toggle('includeBodyHash', $event)"
+            />{{ 'Include body hash' | transloco }}</label
+          >
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="checked('addEmptyParamsToSign')"
+              (change)="toggle('addEmptyParamsToSign', $event)"
+            />{{ 'Add empty parameters to signature' | transloco }}</label
+          >
+          @if (oauth1Placement() === 'header') {
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                [checked]="!checked('disableHeaderEncoding')"
+                (change)="encodeOAuth1Header($event)"
+              />{{ 'Encode the parameters in the Authorization header' | transloco }}</label
+            >
+          }
+        </details>
+      }
+      @case ('awsv4') {
+        <label class="field"
+          >{{ 'Add authorization data to' | transloco
+          }}<select
+            [value]="checked('addAuthDataToQuery') ? 'query' : 'header'"
+            (change)="placeAws($event)"
+          >
+            <option value="header">{{ 'Request Headers' | transloco }}</option>
+            <option value="query">{{ 'Request URL' | transloco }}</option>
+          </select></label
+        >
+        <label class="field"
+          >{{ 'Access Key' | transloco
+          }}<input
+            [value]="value('accessKey')"
+            (input)="text('accessKey', $event)"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Secret Key' | transloco
+          }}<input
+            type="password"
+            [value]="value('secretKey')"
+            (input)="text('secretKey', $event)"
+            autocomplete="off"
+        /></label>
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          <label class="field"
+            >{{ 'AWS Region' | transloco
+            }}<input
+              [value]="value('region')"
+              (input)="text('region', $event)"
+              placeholder="us-east-1"
+              spellcheck="false"
+          /></label>
+          <label class="field"
+            >{{ 'Service Name' | transloco
+            }}<input
+              [value]="value('service')"
+              (input)="text('service', $event)"
+              placeholder="execute-api"
+              spellcheck="false"
+          /></label>
+          <label class="field"
+            >{{ 'Session Token' | transloco
+            }}<input
+              type="password"
+              [value]="value('sessionToken')"
+              (input)="text('sessionToken', $event)"
+              autocomplete="off"
+          /></label>
+        </details>
+      }
+      @case ('ntlm') {
+        <label class="field"
+          >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+        ><label class="field"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+        <label class="check-field"
+          ><input
+            type="checkbox"
+            [checked]="checked('disableRetryRequest')"
+            (change)="toggle('disableRetryRequest', $event)"
+          />{{ 'Disable retrying the request' | transloco }}</label
+        >
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          <label class="field"
+            >{{ 'Domain' | transloco
+            }}<input
+              [value]="value('domain')"
+              (input)="text('domain', $event)"
+              placeholder="CORP"
+              spellcheck="false"
+          /></label>
+          <label class="field"
+            >{{ 'Workstation' | transloco
+            }}<input
+              [value]="value('workstation')"
+              (input)="text('workstation', $event)"
+              placeholder="WORKSTATION"
+              spellcheck="false"
+          /></label>
+        </details>
+      }
+      @case ('hawk') {
+        <label class="field"
+          >{{ 'Hawk Auth ID' | transloco
+          }}<input
+            [value]="value('authId')"
+            (input)="text('authId', $event)"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Hawk Auth Key' | transloco
+          }}<input
+            type="password"
+            [value]="value('authKey')"
+            (input)="text('authKey', $event)"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Algorithm' | transloco
+          }}<select (change)="text('algorithm', $event)">
+            <option value="sha256" [selected]="value('algorithm', 'sha256') === 'sha256'">
+              SHA256
+            </option>
+            <option value="sha1" [selected]="value('algorithm', 'sha256') === 'sha1'">SHA1</option>
+          </select></label
+        >
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          @for (field of hawkFields; track field.key) {
+            <label class="field"
+              >{{ field.label | transloco
+              }}<input
+                [value]="value(field.key)"
+                (input)="text(field.key, $event)"
+                [placeholder]="field.placeholder | transloco"
+                spellcheck="false"
+            /></label>
+          }
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="checked('includePayloadHash')"
+              (change)="toggle('includePayloadHash', $event)"
+            />{{ 'Include payload hash' | transloco }}</label
+          >
+        </details>
+      }
+      @case ('oauth2') {
+        <app-oauth2-editor
+          [auth]="auth()"
+          (authChange)="auth.set($event)"
+          [busy]="tokenBusy()"
+          (tokenRequested)="tokenRequested.emit($event)"
+        />
+      }
+      @default {
+        <label class="field"
+          >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
+        ><label class="field"
+          >{{ 'Password' | transloco
+          }}<input type="password" [formField]="fields.password" autocomplete="off" /></label
+        ><label class="field"
+          >{{ 'Provider parameters (JSON)' | transloco
+          }}<textarea
+            class="code-editor small"
+            [formField]="fields.parameters"
+            spellcheck="false"
+            [placeholder]="'Additional fields for this authorization type' | transloco"
+          ></textarea>
+        </label>
+        <p class="muted">
+          {{ 'This authorization type is not available yet; its settings are kept.' | transloco }}
+        </p>
+      }
+    }
+  </div>
+</div>

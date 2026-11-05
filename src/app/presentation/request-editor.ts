@@ -2,12 +2,14 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, model, signal, output, input } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { RequestDraft, KeyValue, newRequest, formatJson } from '../domain/models';
+import { AuthDraft, Inheritance } from '../domain/auth';
 import { ResolvedVariable } from '../domain/variables';
+import { AuthEditor } from './auth-editor';
 import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor, StudioIcon],
+  imports: [TranslocoPipe, FormField, KeyValueEditor, StudioIcon, AuthEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-request-editor',
   styleUrl: './request-editor.scss',
@@ -19,6 +21,13 @@ export class RequestEditor {
   readonly readonly = input(false);
   /** Variables referenced by the request and the scope that resolves each one. */
   readonly variables = input<ResolvedVariable[]>([]);
+  /** Where "Inherit from parent" takes the authorization from. */
+  readonly inheritance = input<Inheritance | undefined>(undefined);
+  readonly editInheritedAuth = output<void>();
+  /** OAuth 2.0 token request in progress. */
+  readonly tokenBusy = input(false);
+  /** OAuth 2.0 "Get new access token" (`false`) or "Refresh" (`true`). */
+  readonly oauth2Token = output<boolean>();
   readonly manageVariables = output<void>();
   readonly send = output<void>();
   readonly cancelRequest = output<void>();
@@ -33,6 +42,9 @@ export class RequestEditor {
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
   protected rows(key: 'query' | 'headers' | 'form', rows: KeyValue[]) {
     this.request.update((r) => ({ ...r, [key]: rows }));
+  }
+  protected editAuth(auth: AuthDraft) {
+    this.request.update((r) => ({ ...r, auth }));
   }
   protected variableTitle(variable: ResolvedVariable) {
     if (!variable.defined) return 'Not defined in the active environment, collection or globals';

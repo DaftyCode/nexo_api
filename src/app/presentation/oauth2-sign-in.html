@@ -1,0 +1,61 @@
+@if (state.oauth2SignIn(); as signIn) {
+  <div class="modal-backdrop">
+    <section
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Sign in with OAuth 2.0' | transloco"
+    >
+      <div class="modal-heading">
+        <h2>{{ 'Sign in with OAuth 2.0' | transloco }}</h2>
+      </div>
+      <p role="status">
+        @if (signIn.mode === 'manual') {
+          {{
+            'Sign in in the browser. When it reaches the Callback URL, copy the full address from the address bar and paste it below.'
+              | transloco
+          }}
+        } @else {
+          {{ 'Sign in in the browser. Nexo API continues by itself when you finish.' | transloco }}
+        }
+      </p>
+      @if (!signIn.opened) {
+        <p class="muted">{{ 'The browser could not be opened automatically.' | transloco }}</p>
+      }
+      <div class="row">
+        <button type="button" class="button" (click)="state.reopenOAuth2SignIn()">
+          {{ 'Open the sign-in page' | transloco }}</button
+        ><button type="button" class="button" (click)="copy(signIn.authorizationUrl)">
+          {{ (copied() ? 'Link copied' : 'Copy link') | transloco }}
+        </button>
+      </div>
+      <label class="field"
+        >{{
+          (signIn.mode === 'manual'
+            ? 'Address the browser returned to'
+            : 'Did it not come back to Nexo API? Paste the address the browser returned to'
+          ) | transloco
+        }}<input
+          [value]="address()"
+          (input)="edit($event)"
+          (keydown.enter)="complete()"
+          [placeholder]="signIn.redirectUri + '?code=…'"
+          spellcheck="false"
+          autocomplete="off"
+      /></label>
+      <div class="modal-actions">
+        <button type="button" class="button" (click)="state.cancelOAuth2SignIn()">
+          {{ 'Cancel' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="button primary"
+          [disabled]="!address().trim()"
+          (click)="complete()"
+        >
+          {{ 'Continue' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

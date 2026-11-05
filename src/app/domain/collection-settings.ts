@@ -1,26 +1,20 @@
-import { Collection } from './models';
+import { AuthDraft, readAuth, writeAuth } from './auth';
 
-/** Editable view of the configuration stored at the root of a collection. */
+/**
+ * A collection root or a folder: both hold `variable`, `auth` and `event` (scripts).
+ */
+export type SettingsGroup = Readonly<Record<string, unknown>>;
+
+/** Editable view of the authorization and scripts of a collection or a folder. */
 export interface CollectionSettingsModel {
-  authType: string;
-  token: string;
-  username: string;
-  password: string;
-  key: string;
-  value: string;
-  in: string;
+  auth: AuthDraft;
   prerequest: string;
   tests: string;
 }
 
-const authFields: Record<string, (keyof CollectionSettingsModel)[]> = {
-  bearer: ['token'],
-  basic: ['username', 'password'],
-  apikey: ['key', 'value', 'in'],
-};
-
-function scriptText(collection: Collection | undefined, listen: string): string {
-  const events = Array.isArray(collection?.['event']) ? (collection['event'] as unknown[]) : [];
+function scriptText(group: SettingsGroup | undefined, listen: string): string {
+  const stored = group?.['event'];
+  const events = Array.isArray(stored) ? (stored as unknown[]) : [];
   const event = events.find(
     (entry): entry is { listen: string; script?: { exec?: unknown } } =>
       !!entry && typeof entry === 'object' && (entry as { listen?: unknown }).listen === listen,
@@ -29,42 +23,32 @@ function scriptText(collection: Collection | undefined, listen: string): string 
   return Array.isArray(exec) ? exec.join('\n') : typeof exec === 'string' ? exec : '';
 }
 
+/**
+ * Reads the settings of a collection root or, with `folder`, of a folder. Without a stored
+ * authorization a folder inherits its parent's, while a collection has none.
+ */
 export function readCollectionSettings(
-  collection: Collection | undefined,
+  group: SettingsGroup | undefined,
+  folder = false,
 ): CollectionSettingsModel {
-  const auth = (collection?.['auth'] ?? {}) as Record<string, unknown>;
-  const type = typeof auth['type'] === 'string' ? auth['type'] : 'noauth';
-  const rows = Array.isArray(auth[type])
-    ? (auth[type] as { key?: unknown; value?: unknown }[])
-    : [];
-  const value = (key: string, fallback = '') => {
-    const row = rows.find((entry) => entry?.key === key);
-    return row?.value == null ? fallback : String(row.value);
-  };
   return {
-    authType: type,
-    token: value('token'),
-    username: value('username'),
-    password: value('password'),
-    key: value('key', 'X-API-Key'),
-    value: value('value'),
-    in: value('in', 'header'),
-    prerequest: scriptText(collection, 'prerequest'),
-    tests: scriptText(collection, 'test'),
+    auth: readAuth(group?.['auth'], folder ? 'inherit' : 'noauth'),
+    prerequest: scriptText(group, 'prerequest'),
+    tests: scriptText(group, 'test'),
   };
 }
 
-/** Auth in the collection format, or `undefined` when requests should not inherit any. */
-export function collectionAuth(model: CollectionSettingsModel): unknown {
-  const fields = authFields[model.authType];
-  if (!fields) return undefined;
-  return {
-    type: model.authType,
-    [model.authType]: fields.map((key) => ({ key, value: model[key], type: 'string' })),
-  };
+/**
+ * The authorization to store, or `undefined` to store none: a folder then inherits its
+ * parent's, and a collection root has nothing to inherit, so "No auth" needs no entry.
+ * Types without dedicated fields (OAuth 2, Digest…) keep every stored value.
+ */
+export function collectionAuth(model: CollectionSettingsModel, folder = false): unknown {
+  if (!folder && model.auth.type === 'noauth') return undefined;
+  return writeAuth(model.auth);
 }
 
-/** Replaces the pre-request and test scripts, keeping any other collection events. */
+/** Replaces the pre-request and test scripts, keeping any other events. */
 export function collectionEvents(model: CollectionSettingsModel, existing: unknown): unknown {
   const others = (Array.isArray(existing) ? existing : []).filter(
     (entry) =>

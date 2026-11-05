@@ -34,8 +34,10 @@ csv = "1.4.0"
 tokio-tungstenite = { version = "0.30.0", features = ["connect", "handshake", "rustls-tls-native-roots"], default-features = false }
 # Only the MQTT packet codec: transports and TLS are this crate's.
 rumqttc = { version = "0.25.1", default-features = false }
-tokio-rustls = { version = "0.26.6", default-features = false, features = ["ring", "tls12", "logging"] }
-tonic = { version = "0.14.9", default-features = false, features = ["transport", "tls-ring", "codegen", "tls-native-roots"] }
+# Every TLS client uses aws-lc-rs, the provider reqwest uses for HTTP, so all protocols
+# offer the same post-quantum key exchange (X25519MLKEM768) and signature algorithms.
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws_lc_rs", "tls12", "logging"] }
+tonic = { version = "0.14.9", default-features = false, features = ["transport", "tls-aws-lc", "codegen", "tls-native-roots"] }
 prost = "0.14.4"
 prost-reflect = { version = "0.16.5", features = ["serde"] }
 protox = "0.10.0"
@@ -43,8 +45,13 @@ tokio-util = "0.7.20"
 bytes = "1.12.1"
 http = "1.5.0"
 getrandom = "0.4.3"
-rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12", "logging"] }
+rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum", "std", "tls12", "logging"] }
 rustls-pki-types = "1.15.1"
+# Already built for TLS; also signs OAuth 1.0, AWS, Hawk and EdgeGrid requests (HMAC, RSA).
+aws-lc-rs = "1.19.0"
+# The C library behind aws-lc-rs (already built): RSA-SHA1 signing, which aws-lc-rs does not
+# offer and OAuth 1.0 still needs (auth/oauth1.rs).
+aws-lc-sys = "0.47.0"
 rustls-native-certs = "0.8.5"
 tower = { version = "0.5.3", features = ["util"] }
 hyper-util = { version = "0.1.21", features = ["tokio"] }

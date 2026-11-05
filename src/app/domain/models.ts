@@ -1,3 +1,5 @@
+import { AuthDraft, emptyAuth, readAuth, writeAuth } from './auth';
+
 export interface KeyValue {
   key: string;
   value: string;
@@ -17,17 +19,7 @@ export interface RequestDraft {
   bodyMode: string;
   bodyLanguage: string;
   graphqlVariables: string;
-  auth: {
-    type: string;
-    token: string;
-    username: string;
-    password: string;
-    key: string;
-    value: string;
-    in: string;
-    values: Record<string, string>;
-    parameters: string;
-  };
+  auth: AuthDraft;
   prerequest: string;
   tests: string;
   timeout: number;
@@ -200,16 +192,6 @@ export function splitQuery(url: string): { url: string; query: KeyValue[] } {
   }
   return { url: url.slice(0, index), query };
 }
-function authParameters(text: string): Record<string, unknown> {
-  try {
-    const value: unknown = JSON.parse(text || '{}');
-    if (value && typeof value === 'object' && !Array.isArray(value))
-      return value as Record<string, unknown>;
-  } catch {
-    // Reported below.
-  }
-  throw new Error('Authorization parameters must be a JSON object');
-}
 export function newRequest(id: string): RequestDraft {
   return {
     id,
@@ -224,17 +206,8 @@ export function newRequest(id: string): RequestDraft {
     bodyMode: 'raw',
     bodyLanguage: 'json',
     graphqlVariables: '{}',
-    auth: {
-      type: 'noauth',
-      token: '',
-      username: '',
-      password: '',
-      key: 'X-API-Key',
-      value: '',
-      in: 'header',
-      values: {},
-      parameters: '{}',
-    },
+    // As in Postman, a new request takes the authorization of its folder or collection.
+    auth: emptyAuth('inherit'),
     prerequest: '',
     tests: '',
     timeout: 30000,
@@ -295,18 +268,7 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
         body[draft.bodyMode] as { key: string; value: string; disabled?: boolean }[]
       ).map(editableRow);
   }
-  const auth = request['auth'] as Record<string, unknown> | undefined;
-  if (auth) {
-    draft.auth.type = String(auth['type'] ?? 'noauth');
-    const values = auth[draft.auth.type];
-    if (Array.isArray(values))
-      for (const v of values as { key: string; value: string }[]) {
-        draft.auth.values[v.key] = v.value;
-        if (v.key in draft.auth)
-          (draft.auth as unknown as Record<string, unknown>)[v.key] = v.value;
-      }
-    draft.auth.parameters = JSON.stringify(draft.auth.values, null, 2);
-  } else draft.auth.type = 'inherit';
+  draft.auth = readAuth(request['auth']);
   for (const event of item.event ?? []) {
     const script = Array.isArray(event.script.exec)
       ? event.script.exec.join('\n')
@@ -326,30 +288,7 @@ export function toItem(draft: RequestDraft, existing?: CollectionItem): Collecti
     url +=
       (url.includes('?') ? '&' : '?') +
       query.map((x) => `${encodeQueryPart(x.key)}=${encodeQueryPart(x.value)}`).join('&');
-  const values =
-    draft.auth.type === 'bearer'
-      ? { token: draft.auth.token }
-      : draft.auth.type === 'basic'
-        ? { username: draft.auth.username, password: draft.auth.password }
-        : draft.auth.type === 'apikey'
-          ? { key: draft.auth.key, value: draft.auth.value, in: draft.auth.in }
-          : {
-              ...draft.auth.values,
-              username: draft.auth.username,
-              password: draft.auth.password,
-              ...authParameters(draft.auth.parameters),
-            };
-  const auth =
-    draft.auth.type === 'inherit'
-      ? undefined
-      : {
-          type: draft.auth.type,
-          [draft.auth.type]: Object.entries(values).map(([key, value]) => ({
-            key,
-            value,
-            type: 'string',
-          })),
-        };
+  const auth = writeAuth(draft.auth);
   const body =
     draft.protocol === 'graphql'
       ? { mode: 'graphql', graphql: { query: draft.body, variables: draft.graphqlVariables } }

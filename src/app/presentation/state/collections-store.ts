@@ -12,6 +12,7 @@ import {
   toItem,
 } from '../../domain/models';
 import { RequestAncestor, requestAncestors } from '../../domain/variables';
+import { Inheritance, inheritedAuth } from '../../domain/auth';
 import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 
@@ -36,6 +37,22 @@ export class CollectionsStore {
       return requestAncestors(asCollection(document.value), tab.path);
     } catch {
       return [];
+    }
+  });
+
+  /**
+   * Where the active request takes its authorization from when it inherits it. `undefined`
+   * when the request is not saved in a collection; `source` is missing when no folder or
+   * collection above it sets one.
+   */
+  readonly activeInheritance = computed<Inheritance | undefined>(() => {
+    const tab = this.context.tabs.active();
+    const document = this.activeCollection();
+    if (!tab || !document) return undefined;
+    try {
+      return { source: inheritedAuth(asCollection(document.value), tab.path) };
+    } catch {
+      return undefined;
     }
   });
 

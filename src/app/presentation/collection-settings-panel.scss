@@ -12,6 +12,17 @@
 .settings-actions {
   margin-top: 8px;
 }
+.settings-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.settings-breadcrumb strong {
+  color: var(--text);
+}
 .unsaved {
   font-size: 11px;
   color: #e7b45a;

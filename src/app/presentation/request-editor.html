@@ -150,81 +150,15 @@
         }
       }
       @case ('authorization') {
-        <div class="auth-grid">
-          <div>
-            <label class="field"
-              >{{ 'Authorization type' | transloco
-              }}<select [formField]="fields.auth.type">
-                <option value="inherit">{{ 'Inherit from collection' | transloco }}</option>
-                <option value="noauth">{{ 'No auth' | transloco }}</option>
-                <option value="bearer">{{ 'Bearer token' | transloco }}</option>
-                <option value="basic">{{ 'Basic auth' | transloco }}</option>
-                <option value="apikey">{{ 'API key' | transloco }}</option>
-                <option value="digest">{{ 'Digest auth' | transloco }}</option>
-                <option value="oauth1" disabled>{{ 'OAuth 1.0 (planned)' | transloco }}</option>
-                <option value="oauth2">{{ 'OAuth 2.0' | transloco }}</option>
-                <option value="awsv4" disabled>{{ 'AWS Signature (planned)' | transloco }}</option>
-                <option value="ntlm" disabled>{{ 'NTLM (planned)' | transloco }}</option>
-                <option value="hawk" disabled>{{ 'Hawk (planned)' | transloco }}</option>
-              </select></label
-            >
-            <p class="muted">
-              {{
-                'Authorization is applied when the request runs. You can use environment variables in these fields.'
-                  | transloco
-              }}
-            </p>
-          </div>
-          <div>
-            @switch (request().auth.type) {
-              @case ('noauth') {
-                <div class="empty-inline">
-                  {{ "This request doesn't use authorization." | transloco }}
-                </div>
-              }
-              @case ('bearer') {
-                <label class="field"
-                  >{{ 'Token' | transloco
-                  }}<input [formField]="fields.auth.token" placeholder="{{ '{{access_token}}' }}"
-                /></label>
-              }
-              @case ('apikey') {
-                <label class="field"
-                  >{{ 'Key' | transloco }}<input [formField]="fields.auth.key" /></label
-                ><label class="field"
-                  >{{ 'Value' | transloco }}<input [formField]="fields.auth.value" /></label
-                ><label class="field"
-                  >{{ 'Add to' | transloco
-                  }}<select [formField]="fields.auth.in">
-                    <option value="header">{{ 'Header' | transloco }}</option>
-                    <option value="query">{{ 'Query params' | transloco }}</option>
-                  </select></label
-                >
-              }
-              @default {
-                <label class="field"
-                  >{{ 'Username' | transloco }}<input [formField]="fields.auth.username" /></label
-                ><label class="field"
-                  >{{ 'Password' | transloco
-                  }}<input type="password" [formField]="fields.auth.password" /></label
-                ><label class="field"
-                  >{{ 'Provider parameters (JSON)' | transloco
-                  }}<textarea
-                    class="code-editor small"
-                    [formField]="fields.auth.parameters"
-                    [placeholder]="'Additional fields for this authorization type' | transloco"
-                  ></textarea>
-                </label>
-                <p class="muted">
-                  {{
-                    'Digest uses the username and password fields. OAuth 2 accepts an accessToken in the JSON parameters. Additional signing helpers are planned.'
-                      | transloco
-                  }}
-                </p>
-              }
-            }
-          </div>
-        </div>
+        <app-auth-editor
+          [auth]="request().auth"
+          (authChange)="editAuth($event)"
+          [inheritable]="true"
+          [inheritance]="inheritance()"
+          (editInherited)="editInheritedAuth.emit()"
+          [tokenBusy]="tokenBusy()"
+          (tokenRequested)="oauth2Token.emit($event)"
+        />
       }
       @case ('scripts') {
         <div class="body-options">

@@ -42,6 +42,9 @@ export async function startServer(environment = {}) {
       NEXO_LOCAL_TOKEN: token,
       NEXO_MASTER_KEY: 'a'.repeat(64),
       NEXO_EGRESS: '',
+      // OAuth 2.0 sign-ins in tests never open a real browser.
+      NEXO_NO_BROWSER: '1',
+      NEXO_OAUTH_RELAY_URL: 'https://relay.nexo.test/oauth/callback',
       ...environment,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
