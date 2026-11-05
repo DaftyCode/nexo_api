@@ -40,7 +40,7 @@ test('uses MSVC for the build even when a Windows GNU toolchain was selected', (
   assert.match(messages[0], /instead of RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu/);
 });
 
-test('installs the fully qualified native toolchain without changing global Rust defaults', () => {
+test('installs the fully qualified native toolchain without self-updating rustup or changing global Rust defaults', () => {
   let installed = false;
   const { options, calls } = fixture();
   options.probe = (command, args) => {
@@ -59,6 +59,7 @@ test('installs the fully qualified native toolchain without changing global Rust
       'toolchain',
       'install',
       native,
+      '--no-self-update',
       '--profile',
       'minimal',
       '--component',

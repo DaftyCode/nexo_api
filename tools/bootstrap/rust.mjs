@@ -26,10 +26,13 @@ export function prepareNativeRust({ version, platform, arch, check, env, probe, 
       throw new Error(
         `Rust ${toolchain} is unavailable. Run without --check to prepare it. Rustup reported: ${commandFailure(compiler)}`,
       );
+    // Updating rustup itself is not part of this build: a failed self-update
+    // (locked or missing rustup-init, proxy) would fail an install that worked.
     run('rustup', [
       'toolchain',
       'install',
       toolchain,
+      '--no-self-update',
       '--profile',
       'minimal',
       '--component',
