@@ -2858,7 +2858,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nexo-application"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "nexo-domain",
@@ -2870,7 +2870,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-desktop"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "nexo-server",
  "serde",
@@ -2883,7 +2883,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-domain"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -2892,7 +2892,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-engine"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -2940,7 +2940,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-http"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "nexo-application",
@@ -2955,7 +2955,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-infrastructure"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -2971,7 +2971,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-server"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "axum",
  "directories",
