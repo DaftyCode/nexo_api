@@ -192,7 +192,7 @@ You do not have to download Node, Rust or npm dependencies manually. The bootstr
 1. Reuse the Node version in [.node-version](.node-version), or download the official archive and verify its SHA-256 before extraction.
 2. Check the native build tools and prepare missing system dependencies through WinGet on Windows, the Apple installer on macOS, or APT/DNF on Linux.
 3. Install Rustup if missing, verifying its official download, and prepare the Rust version in [rust-toolchain.toml](rust-toolchain.toml) for the native compiler host (MSVC on Windows).
-4. Run `npm ci`, build Angular and Rust, and generate native packages.
+4. Run `npm ci --omit=dev` (only the build tools; lint, tests and their servers are for development), build Angular and Rust, and generate native packages.
 
 The first run needs Internet access and may download several GB of SDKs and toolchains. System installers can request administrator permission, license acceptance or a restart. Complete those prompts yourself and rerun the same command if setup pauses. The script does not accept Microsoft or Apple agreements on your behalf. A fresh build is **not an offline build**.
 

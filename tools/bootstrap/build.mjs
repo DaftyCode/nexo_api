@@ -231,7 +231,8 @@ try {
   } else if (options.toolsOnly) {
     console.log('Build tools are ready. npm dependencies and installers were not built.');
   } else {
-    run(process.execPath, [npm, 'ci', '--no-audit', '--no-fund']);
+    // Only the build tools: lint, tests and their servers are for development (package.json).
+    run(process.execPath, [npm, 'ci', '--omit=dev', '--no-audit', '--no-fund']);
     if (options.prepareOnly)
       console.log(
         'Tools and npm dependencies are ready. Rerun without --prepare-only to build installers.',

@@ -192,7 +192,7 @@ No tienes que descargar Node, Rust ni las dependencias npm a mano. Los scripts:
 1. Reutilizan la versión Node fijada en [.node-version](.node-version), o descargan su archivo oficial y verifican el SHA-256 antes de extraerlo.
 2. Comprueban las herramientas nativas y preparan las dependencias que falten mediante WinGet en Windows, el instalador de Apple en macOS o APT/DNF en Linux.
 3. Instalan Rustup si falta, verificando su descarga oficial, y preparan la versión Rust de [rust-toolchain.toml](rust-toolchain.toml) para el compilador nativo (MSVC en Windows).
-4. Ejecutan `npm ci`, preparan el motor incluido, compilan Angular y Rust y generan los paquetes nativos.
+4. Ejecutan `npm ci --omit=dev` (solo las herramientas de compilación; lint, tests y sus servidores son para desarrollo), preparan el motor incluido, compilan Angular y Rust y generan los paquetes nativos.
 
 La primera ejecución necesita Internet y puede descargar varios GB de SDK y toolchains. Los instaladores del sistema pueden pedir permisos de administrador, aceptar sus condiciones o reiniciar. Completa esos pasos y vuelve a ejecutar el mismo comando si la preparación se detiene. El script no acepta acuerdos de Microsoft o Apple por ti. Una compilación desde cero **no funciona sin conexión**.
 

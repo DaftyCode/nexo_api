@@ -110,7 +110,8 @@ function outdated() {
 function build() {
   console.log('Building Nexo API web (this takes a few minutes the first time)...');
   if (!existsSync('node_modules/.package-lock.json'))
-    run(process.execPath, [npm(), 'ci', '--no-audit', '--no-fund']);
+    // Only the build tools: lint, tests and their servers are for development (package.json).
+    run(process.execPath, [npm(), 'ci', '--omit=dev', '--no-audit', '--no-fund']);
   run(process.execPath, ['node_modules/@angular/cli/bin/ng.js', 'build']);
   run(cargo(), ['build', '--locked', '--release', '-p', 'nexo-server']);
   mkdirSync(home, { recursive: true });
