@@ -72,7 +72,17 @@ export function exportableCollection(value: unknown): unknown {
   const visit = (node: unknown, key = ''): unknown => {
     if (Array.isArray(node)) {
       if (
-        ['basic', 'bearer', 'apikey', 'oauth2', 'digest', 'oauth1', 'awsv4', 'hawk', 'ntlm'].includes(key)
+        [
+          'basic',
+          'bearer',
+          'apikey',
+          'oauth2',
+          'digest',
+          'oauth1',
+          'awsv4',
+          'hawk',
+          'ntlm',
+        ].includes(key)
       )
         return node.map((row) =>
           row &&

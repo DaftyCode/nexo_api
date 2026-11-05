@@ -26,7 +26,7 @@ rquickjs = { version = "0.14.0", default-features = false, features = ["classes"
 aes-gcm = "0.11.1"
 cookie_store = "0.22.1"
 encoding_rs = "0.8.44"
-serde-saphyr = "2.1.0"
+serde-saphyr = "2.1.1"
 shell-words = "1.1.1"
 url = "2.5.8"
 md5 = { package = "md-5", version = "0.11.0" }
