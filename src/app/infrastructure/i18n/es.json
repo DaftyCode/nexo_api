@@ -689,5 +689,11 @@
   "Payload": "Payload",
   "Query param name": "Nombre del parámetro de query",
   "Request header prefix": "Prefijo de la cabecera",
-  "JWT headers": "Cabeceras JWT"
+  "JWT headers": "Cabeceras JWT",
+  "ASAP (Atlassian)": "ASAP (Atlassian)",
+  "Issuer": "Emisor",
+  "Subject": "Sujeto",
+  "Key ID": "ID de la clave",
+  "Expires in (seconds)": "Caduca en (segundos)",
+  "Additional claims": "Claims adicionales"
 }

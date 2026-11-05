@@ -24,6 +24,7 @@
         <option value="oauth1">{{ 'OAuth 1.0' | transloco }}</option>
         <option value="oauth2">{{ 'OAuth 2.0' | transloco }}</option>
         <option value="jwt">{{ 'JWT Bearer' | transloco }}</option>
+        <option value="asap">{{ 'ASAP (Atlassian)' | transloco }}</option>
         <option value="awsv4">{{ 'AWS Signature' | transloco }}</option>
         <option value="ntlm">{{ 'NTLM Authentication' | transloco }}</option>
         <option value="hawk">{{ 'Hawk Authentication' | transloco }}</option>
@@ -446,6 +447,64 @@
               (input)="text('header', $event)"
               spellcheck="false"
               [placeholder]="jwtHeaderExample"
+            ></textarea>
+          </label>
+        </details>
+      }
+      @case ('asap') {
+        @let asapAlgorithm = value('alg', 'RS256');
+        <label class="field"
+          >{{ 'Algorithm' | transloco
+          }}<select (change)="text('alg', $event)">
+            @for (option of asapAlgorithms; track option) {
+              <option [value]="option" [selected]="option === asapAlgorithm">{{ option }}</option>
+            }
+          </select></label
+        >
+        @for (field of asapFields; track field.key) {
+          <label class="field"
+            >{{ field.label | transloco
+            }}<input
+              [value]="value(field.key)"
+              (input)="text(field.key, $event)"
+              [placeholder]="field.placeholder"
+              spellcheck="false"
+          /></label>
+        }
+        <label class="field"
+          >{{ 'Private key' | transloco
+          }}<textarea
+            class="code-editor small"
+            [value]="value('privateKey')"
+            (input)="text('privateKey', $event)"
+            spellcheck="false"
+            placeholder="-----BEGIN PRIVATE KEY-----"
+          ></textarea>
+        </label>
+        <details class="advanced">
+          <summary>{{ 'Advanced' | transloco }}</summary>
+          <p class="muted">
+            {{
+              'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+                | transloco
+            }}
+          </p>
+          <label class="field"
+            >{{ 'Expires in (seconds)' | transloco
+            }}<input
+              [value]="value('exp')"
+              (input)="text('exp', $event)"
+              placeholder="3600"
+              inputmode="numeric"
+          /></label>
+          <label class="field"
+            >{{ 'Additional claims' | transloco
+            }}<textarea
+              class="code-editor small"
+              [value]="value('claims')"
+              (input)="text('claims', $event)"
+              spellcheck="false"
+              [placeholder]="asapClaimsExample"
             ></textarea>
           </label>
         </details>

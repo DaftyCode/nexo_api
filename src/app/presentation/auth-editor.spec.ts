@@ -57,4 +57,27 @@ describe('AuthEditor', () => {
     await fixture.whenStable();
     expect(input('Prefix').value).toBe('');
   });
+
+  it('shows Insomnia ASAP names and saves them under the Postman names', async () => {
+    fixture.componentRef.setInput(
+      'auth',
+      readAuth({
+        type: 'asap',
+        asap: [
+          { key: 'issuer', value: 'insomnia-issuer' },
+          { key: 'keyId', value: 'key-1' },
+        ],
+      }),
+    );
+    await fixture.whenStable();
+    expect(input('Issuer').value).toBe('insomnia-issuer');
+    expect(input('Key ID').value).toBe('key-1');
+    input('Issuer').value = 'nexo';
+    input('Issuer').dispatchEvent(new Event('input'));
+    const saved = writeAuth(fixture.componentInstance.auth()) as {
+      asap: { key: string; value: unknown }[];
+    };
+    expect(saved.asap).toContainEqual({ key: 'iss', value: 'nexo', type: 'string' });
+    expect(saved.asap.map((row) => row.key)).not.toContain('issuer');
+  });
 });

@@ -680,3 +680,77 @@ test('JWT Bearer tokens of every algorithm verify', async () => {
     await verifier.close();
   }
 });
+
+// An ASAP resource server: verifies the token with the issuer's public key and reads its claims.
+function asapVerifier(publicKeys) {
+  return (request, body, response) => {
+    const token = (request.headers.authorization ?? '').replace(/^Bearer /, '');
+    const [header64, payload64, signature64] = token.split('.');
+    const header = JSON.parse(Buffer.from(header64, 'base64url').toString());
+    const payload = JSON.parse(Buffer.from(payload64, 'base64url').toString());
+    const hash = `sha${header.alg.slice(2)}`;
+    const key = publicKeys[header.kid];
+    const options = header.alg.startsWith('PS')
+      ? {
+          key,
+          padding: constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: Number(header.alg.slice(2)) / 8,
+        }
+      : header.alg.startsWith('ES')
+        ? { key, dsaEncoding: 'ieee-p1363' }
+        : key;
+    const ok = verify(
+      hash,
+      Buffer.from(`${header64}.${payload64}`),
+      options,
+      Buffer.from(signature64, 'base64url'),
+    );
+    response.statusCode = ok ? 200 : 401;
+    response.end(JSON.stringify({ ok, header, payload }));
+  };
+}
+
+test('Atlassian ASAP tokens verify and carry fresh claims', async () => {
+  const rsa = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const ec = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  const verifier = await fixture(
+    asapVerifier({ 'nexo/rsa': rsa.publicKey, 'nexo/ec': ec.publicKey }),
+  );
+  const asap = (values) => ({
+    type: 'asap',
+    asap: Object.entries(values).map(([key, value]) => ({ key, value })),
+  });
+  const ecUri = `data:application/pkcs8;kid=${encodeURIComponent('nexo/ec')};base64,${ec.privateKey
+    .export({ type: 'pkcs8', format: 'der' })
+    .toString('base64')}`;
+  try {
+    const seen = new Set();
+    for (const [alg, kid, privateKey] of [
+      ['RS256', 'nexo/rsa', rsa.privateKey.export({ type: 'pkcs8', format: 'pem' })],
+      ['PS384', 'nexo/rsa', rsa.privateKey.export({ type: 'pkcs8', format: 'pem' })],
+      ['ES256', 'nexo/ec', ecUri],
+      ['ES256', 'nexo/ec', ecUri],
+    ]) {
+      const result = await server.execute('request', {
+        request: {
+          url: `${verifier.url}/rest/api`,
+          auth: asap({ alg, kid, iss: 'nexo', aud: '{{audience}}', privateKey }),
+        },
+        variables: [{ key: 'audience', value: 'jira', enabled: true }],
+      });
+      assert.equal(result.status, 200, `${alg}: ${result.body}`);
+      const { header, payload } = JSON.parse(result.body);
+      assert.deepEqual(header, { alg, kid });
+      assert.equal(payload.iss, 'nexo');
+      assert.equal(payload.sub, 'nexo');
+      assert.equal(payload.aud, 'jira');
+      assert.equal(payload.exp - payload.iat, 3600);
+      assert.ok(Math.abs(payload.iat - Date.now() / 1000) < 60, 'issued now');
+      assert.match(payload.jti, /^[0-9a-f-]{36}$/);
+      assert.ok(!seen.has(payload.jti), 'a new jti on every send');
+      seen.add(payload.jti);
+    }
+  } finally {
+    await verifier.close();
+  }
+});

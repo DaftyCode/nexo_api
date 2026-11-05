@@ -12,6 +12,7 @@ use url::Url;
 use crate::transport::HeaderList;
 
 mod apikey;
+mod asap;
 mod awsv4;
 mod basic;
 mod bearer;
@@ -102,6 +103,7 @@ pub fn sign(auth: &Map<String, Value>, request: &mut Outgoing) -> Result<()> {
         "hawk" => hawk::sign(auth, request),
         "ntlm" => ntlm::sign(auth, request),
         "jwt" => jwt::sign(auth, request),
+        "asap" => asap::sign(auth, request),
         "" | "noauth" | "inherit" => Ok(()),
         other => Err(Error::Validation(format!(
             "Unsupported authentication helper: {other}"

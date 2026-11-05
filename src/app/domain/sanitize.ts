@@ -84,6 +84,7 @@ export function exportableCollection(value: unknown): unknown {
           'hawk',
           'ntlm',
           'jwt',
+          'asap',
         ].includes(key)
       )
         return node.map((row) =>

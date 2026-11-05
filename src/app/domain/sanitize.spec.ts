@@ -146,4 +146,20 @@ describe('sanitize', () => {
     expect(text).toContain('HS256');
     expect(text).toContain('{{user}}');
   });
+
+  it('removes the ASAP private key from exported collections', () => {
+    const text = JSON.stringify(
+      exportableCollection({
+        auth: {
+          type: 'asap',
+          asap: [
+            { key: 'iss', value: 'nexo' },
+            { key: 'privateKey', value: '-----BEGIN PRIVATE KEY-----' },
+          ],
+        },
+      }),
+    );
+    expect(text).toContain('nexo');
+    expect(text).not.toContain('BEGIN PRIVATE KEY');
+  });
 });

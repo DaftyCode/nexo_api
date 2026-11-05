@@ -689,5 +689,11 @@
   "Payload": "Payload",
   "Query param name": "Query param name",
   "Request header prefix": "Request header prefix",
-  "JWT headers": "JWT headers"
+  "JWT headers": "JWT headers",
+  "ASAP (Atlassian)": "ASAP (Atlassian)",
+  "Issuer": "Issuer",
+  "Subject": "Subject",
+  "Key ID": "Key ID",
+  "Expires in (seconds)": "Expires in (seconds)",
+  "Additional claims": "Additional claims"
 }

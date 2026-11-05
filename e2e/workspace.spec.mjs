@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import { generateKeyPairSync } from 'node:crypto';
 import { expect, test } from './fixture.mjs';
 
 /** Serious and critical axe violations, reduced to rule and target for readable failures. */
@@ -356,6 +357,32 @@ test('JWT Bearer: a signed token is sent with the payload and prefix chosen', as
   // {"alg":"HS512"} and {"sub":"e2e"} in Base64url.
   await expect(response).toContainText('JWT eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlMmUifQ.');
   await expect(response).not.toContainText('e2e-jwt-secret');
+});
+
+test('ASAP: a short-lived token is signed with the key ID and issuer', async ({ page, nexo }) => {
+  const { privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+  await nexo.signIn(page);
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('ASAP API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'ASAP API' });
+  await collection.getByLabel('Collection actions').click();
+  await addRequest(page, collection.getByRole('button', { name: 'Add request', exact: true }));
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/rest`);
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('asap');
+  await page.getByLabel('Algorithm').selectOption('ES256');
+  await page.getByLabel('Issuer').fill('nexo');
+  await page.getByLabel('Audience').fill('jira');
+  await page.getByLabel('Key ID').fill('nexo/e2e');
+  await page
+    .getByLabel('Private key')
+    .fill(privateKey.export({ type: 'pkcs8', format: 'pem' }).toString());
+
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  const header = Buffer.from('{"alg":"ES256","kid":"nexo/e2e"}').toString('base64url');
+  await expect(page.locator('.response-section')).toContainText(`Bearer ${header}.`);
 });
 
 test('Ctrl+Enter in a script editor does not send the request', async ({ page, nexo }) => {

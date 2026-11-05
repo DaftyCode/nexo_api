@@ -12,6 +12,14 @@ const aliases: Record<string, Record<string, readonly string[]>> = {
     callback: ['callbackUrl'],
   },
   awsv4: { accessKey: ['accessKeyId'], secretKey: ['secretAccessKey'] },
+  asap: {
+    alg: ['algorithm'],
+    iss: ['issuer'],
+    sub: ['subject'],
+    aud: ['audience'],
+    kid: ['keyId'],
+    claims: ['additionalClaims'],
+  },
   hawk: {
     authId: ['id'],
     authKey: ['key'],
@@ -30,6 +38,7 @@ const labels: Record<string, string> = {
   oauth1: 'OAuth 1.0',
   oauth2: 'OAuth 2.0',
   jwt: 'JWT Bearer',
+  asap: 'ASAP (Atlassian)',
   awsv4: 'AWS Signature',
   ntlm: 'NTLM Authentication',
   hawk: 'Hawk Authentication',
@@ -116,6 +125,16 @@ export class AuthEditor {
     'ES384',
     'ES512',
   ];
+  /** ASAP signs with RSA or ECDSA keys; it has no HMAC algorithms. */
+  protected readonly asapAlgorithms = this.jwtAlgorithms.filter((name) => !name.startsWith('HS'));
+  /** Postman's ASAP claims; the subject is the issuer when left blank. */
+  protected readonly asapFields = [
+    { key: 'iss', label: 'Issuer', placeholder: 'micros/my-service' },
+    { key: 'sub', label: 'Subject', placeholder: 'micros/my-service' },
+    { key: 'aud', label: 'Audience', placeholder: 'jira' },
+    { key: 'kid', label: 'Key ID', placeholder: 'micros/my-service/key-1' },
+  ];
+  protected readonly asapClaimsExample = '{ "scope": "read" }';
   protected readonly jwtPayloadExample = '{ "sub": "{{user}}", "iat": 1700000000 }';
   protected readonly jwtHeaderExample = '{ "typ": "JWT", "kid": "key-1" }';
   /** Postman's advanced Hawk fields; nonce and timestamp are generated when blank. */
