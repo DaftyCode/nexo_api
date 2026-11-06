@@ -1,11 +1,13 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { WorkspaceState } from './workspace-state';
+import { isReturnedAddress } from '../domain/auth';
 
 /**
- * Dialog shown while an OAuth 2.0 sign-in waits for the browser: it can open the sign-in page
- * again, copy its link, take the address the browser returned to (manual mode, or when the
- * automatic return did not work) and cancel.
+ * Dialog shown while an OAuth 2.0 sign-in waits for the browser, or for the desktop app's
+ * sign-in window: it can open the sign-in page again, copy its link, take the address the
+ * browser returned to (manual mode, or when the automatic return did not work; pasting it is
+ * enough) and cancel.
  */
 @Component({
   imports: [TranslocoPipe],
@@ -19,6 +21,14 @@ export class OAuth2SignInDialog {
   protected readonly copied = signal(false);
   protected edit(event: Event) {
     this.address.set((event.target as HTMLInputElement).value);
+  }
+  /** Pasting the address the browser returned to continues without pressing Continue. */
+  protected pasted(event: ClipboardEvent) {
+    const text = event.clipboardData?.getData('text') ?? '';
+    if (!isReturnedAddress(text)) return;
+    event.preventDefault();
+    this.address.set(text.trim());
+    void this.complete();
   }
   protected async copy(link: string) {
     await globalThis.navigator?.clipboard?.writeText(link);

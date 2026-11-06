@@ -65,6 +65,26 @@ export interface SecretVaultPort {
   removeSecret(name: string): Promise<void>;
   secrets(): Promise<SecretSummary[]>;
 }
+/** How a sign-in window ended. */
+export type SignInWindowOutcome =
+  { outcome: 'returned'; url: string } | { outcome: 'closed' } | { outcome: 'replaced' };
+/**
+ * A browser window inside the desktop app for OAuth 2.0 sign-ins, as Postman has: it stops at
+ * the Callback URL and gives back that address, so any Callback URL works without pasting.
+ */
+export interface SignInWindowPort {
+  /** Whether this build has one (the desktop app); the web version uses the system browser. */
+  readonly available: boolean;
+  open(url: string, callbackUrl: string): Promise<SignInWindowOutcome>;
+  /** Closes the window if it is open; its `open` call ends as `closed`. */
+  close(): Promise<void>;
+}
+/** Without a sign-in window: the web version. */
+export const noSignInWindow: SignInWindowPort = {
+  available: false,
+  open: () => Promise.resolve({ outcome: 'closed' }),
+  close: () => Promise.resolve(),
+};
 /** Aggregate supplied only by the composition root; each contract is independently replaceable. */
 export interface ApiPort
   extends

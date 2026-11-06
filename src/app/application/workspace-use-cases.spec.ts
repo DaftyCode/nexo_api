@@ -156,3 +156,18 @@ describe('WorkspaceUseCases variables', () => {
     ).rejects.toThrow('Folder not found');
   });
 });
+
+describe('WorkspaceUseCases OAuth 2.0 sign-in', () => {
+  it('opens the system browser when there is no sign-in window (web version)', async () => {
+    const { cases, executed } = fixture();
+    expect(cases.hasSignInWindow).toBe(false);
+    await cases.oauth2Authorize(
+      { type: 'oauth2' },
+      { environment: [], globals: [], ancestors: [] },
+    );
+    expect(executed[0]).toMatchObject({
+      operation: 'oauth2.authorize',
+      payload: { action: 'start', openBrowser: true },
+    });
+  });
+});

@@ -710,5 +710,6 @@
   "Allowed domains": "Allowed domains",
   "Separate domains with commas; *.example.com allows its subdomains. Leave it empty to allow every domain. To change only the domains of a saved secret, leave the value empty.": "Separate domains with commas; *.example.com allows its subdomains. Leave it empty to allow every domain. To change only the domains of a saved secret, leave the value empty.",
   "All domains": "All domains",
-  "error.secretHost": "Secret {{v0}} cannot be sent to {{v1}}. If it should go there, add that domain to its allowed domains in the vault."
+  "error.secretHost": "Secret {{v0}} cannot be sent to {{v1}}. If it should go there, add that domain to its allowed domains in the vault.",
+  "Sign in in the window Nexo API opened. It continues by itself when you finish.": "Sign in in the window Nexo API opened. It continues by itself when you finish."
 }

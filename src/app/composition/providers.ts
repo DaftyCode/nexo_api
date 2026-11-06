@@ -4,6 +4,7 @@ import { HttpApi } from '../infrastructure/http-api';
 import { BrowserFiles } from '../infrastructure/browser-files';
 import { BrowserPreferences } from '../infrastructure/browser-preferences';
 import { BrowserAppearance } from '../infrastructure/browser-appearance';
+import { DesktopSignInWindow } from '../infrastructure/desktop-sign-in-window';
 import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
@@ -18,6 +19,7 @@ export const workspaceProviders = [
   BrowserFiles,
   BrowserPreferences,
   BrowserAppearance,
+  DesktopSignInWindow,
   { provide: APPEARANCE, useFactory: () => new AppearanceUseCases(inject(BrowserAppearance)) },
   { provide: INTEGRATION, useFactory: () => new IntegrationUseCases(inject(HttpApi)) },
   {
@@ -31,6 +33,11 @@ export const workspaceProviders = [
   {
     provide: WORKSPACE,
     useFactory: () =>
-      new WorkspaceUseCases(inject(HttpApi), inject(BrowserFiles), inject(BrowserPreferences)),
+      new WorkspaceUseCases(
+        inject(HttpApi),
+        inject(BrowserFiles),
+        inject(BrowserPreferences),
+        inject(DesktopSignInWindow),
+      ),
   },
 ];

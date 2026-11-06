@@ -3,6 +3,8 @@ use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{Manager, RunEvent};
 
+mod sign_in;
+
 #[derive(Clone, Serialize)]
 struct DesktopInfo {
     base_url: String,
@@ -93,9 +95,14 @@ pub fn run() {
                 }
             };
             app.manage(backend);
+            app.manage(sign_in::Current::default());
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![desktop_info])
+        .invoke_handler(tauri::generate_handler![
+            desktop_info,
+            sign_in::oauth2_sign_in_window,
+            sign_in::oauth2_sign_in_window_close
+        ])
         .build(tauri::generate_context!());
     let application = match application {
         Ok(application) => application,

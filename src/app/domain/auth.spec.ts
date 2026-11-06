@@ -5,6 +5,7 @@ import {
   authDetails,
   emptyAuth,
   inheritedAuth,
+  isReturnedAddress,
   oauth2Grant,
   oauth2Shows,
   oauth2UsesBrowser,
@@ -264,5 +265,19 @@ describe('authorization', () => {
     expect(
       needsSignIn(auth({ autoFetchToken: true, grant_type: 'client_credentials' }), [], now),
     ).toBe(false);
+  });
+});
+
+describe('isReturnedAddress', () => {
+  it('recognizes what the provider sends back to the Callback URL', () => {
+    for (const address of [
+      'https://front.example.com/callback?code=abc&state=1',
+      ' https://front.example.com/callback#access_token=t&token_type=Bearer ',
+      'https://front.example.com/callback#id_token=x',
+      'https://front.example.com/callback?error=access_denied',
+    ])
+      expect(isReturnedAddress(address), address).toBe(true);
+    for (const text of ['https://front.example.com/callback', 'code=abc', 'not a url', ''])
+      expect(isReturnedAddress(text), text).toBe(false);
   });
 });

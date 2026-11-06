@@ -239,8 +239,26 @@ export interface OAuth2SignIn {
   /** Loopback Callback URL, Nexo's callback page, or pasting the returned address. */
   mode: 'loopback' | 'relay' | 'manual';
   redirectUri: string;
-  /** Whether the system browser was opened. */
+  /** Whether the system browser (or the app's sign-in window) was opened. */
   opened: boolean;
+  /** Shown in the desktop app's sign-in window instead of the system browser. */
+  window?: boolean;
+}
+
+/**
+ * Whether a pasted address is what the provider sends back to the Callback URL: an address
+ * with a code, a token or an error, in its query or its fragment.
+ */
+export function isReturnedAddress(text: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(text.trim());
+  } catch {
+    return false;
+  }
+  const parameters = new URLSearchParams(url.search);
+  new URLSearchParams(url.hash.slice(1)).forEach((value, key) => parameters.append(key, value));
+  return ['code', 'access_token', 'id_token', 'error'].some((key) => parameters.has(key));
 }
 
 export interface OAuth2SignInStatus {

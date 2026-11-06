@@ -306,8 +306,14 @@ export class WorkspaceState {
   /** Runs a browser sign-in until it gives a token, fails or is cancelled (`undefined`). */
   private async signIn(auth: unknown, context: ExecutionContext) {
     const started = await this.cases.oauth2Authorize(auth, context);
+    // The desktop app shows the page in its own window, like Postman's built-in browser, and
+    // takes the Callback URL from it. "Authorize using browser" keeps the system browser.
+    const inWindow = this.cases.hasSignInWindow && started.mode !== 'relay';
     this.oauth2Completed = undefined;
-    this.oauth2SignIn.set(started);
+    this.oauth2SignIn.set({ ...started, window: inWindow, opened: started.opened || inWindow });
+    if (inWindow) this.watchSignInWindow(started);
+    else if (this.cases.hasSignInWindow)
+      await this.cases.oauth2SignIn(this.workspaceId(), started.session, 'open');
     try {
       for (;;) {
         await new Promise((resolve) => setTimeout(resolve, 700));
@@ -322,7 +328,22 @@ export class WorkspaceState {
       }
     } finally {
       if (this.oauth2SignIn()?.session === started.session) this.oauth2SignIn.set(undefined);
+      if (inWindow) void this.cases.closeSignInWindow().catch(() => {});
     }
+  }
+  /** Takes the address from the sign-in window; closing the window cancels the sign-in. */
+  private watchSignInWindow(signIn: OAuth2SignIn) {
+    const current = () => this.oauth2SignIn()?.session === signIn.session;
+    this.cases
+      .openSignInWindow(signIn)
+      .then(async (ended) => {
+        if (!current()) return;
+        if (ended.outcome === 'returned') await this.completeOAuth2SignIn(ended.url);
+        else if (ended.outcome === 'closed') await this.cancelOAuth2SignIn();
+      })
+      .catch((error: unknown) => {
+        if (current()) this.error.set(this.describe(error));
+      });
   }
   /** Manual mode: the address the browser returned to. */
   async completeOAuth2SignIn(url: string) {
@@ -341,7 +362,8 @@ export class WorkspaceState {
   }
   async reopenOAuth2SignIn() {
     const signIn = this.oauth2SignIn();
-    if (signIn) await this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'open');
+    if (signIn?.window) this.watchSignInWindow(signIn);
+    else if (signIn) await this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'open');
   }
   async cancelOAuth2SignIn() {
     const signIn = this.oauth2SignIn();

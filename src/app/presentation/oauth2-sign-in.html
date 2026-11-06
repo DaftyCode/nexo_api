@@ -10,7 +10,12 @@
         <h2>{{ 'Sign in with OAuth 2.0' | transloco }}</h2>
       </div>
       <p role="status">
-        @if (signIn.mode === 'manual') {
+        @if (signIn.window) {
+          {{
+            'Sign in in the window Nexo API opened. It continues by itself when you finish.'
+              | transloco
+          }}
+        } @else if (signIn.mode === 'manual') {
           {{
             'Sign in in the browser. When it reaches the Callback URL, copy the full address from the address bar and paste it below.'
               | transloco
@@ -31,13 +36,14 @@
       </div>
       <label class="field"
         >{{
-          (signIn.mode === 'manual'
+          (signIn.mode === 'manual' && !signIn.window
             ? 'Address the browser returned to'
             : 'Did it not come back to Nexo API? Paste the address the browser returned to'
           ) | transloco
         }}<input
           [value]="address()"
           (input)="edit($event)"
+          (paste)="pasted($event)"
           (keydown.enter)="complete()"
           [placeholder]="signIn.redirectUri + '?code=…'"
           spellcheck="false"

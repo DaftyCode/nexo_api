@@ -1,4 +1,11 @@
-import { ApiPort, ExecuteArgs, FilePort, PreferencePort } from './ports';
+import {
+  ApiPort,
+  ExecuteArgs,
+  FilePort,
+  PreferencePort,
+  SignInWindowPort,
+  noSignInWindow,
+} from './ports';
 import { ExecutionOperation } from './operations';
 import { PayloadOf } from './payloads';
 import { itemAt } from '../domain/collection-tree';
@@ -65,6 +72,7 @@ export class WorkspaceUseCases {
     private readonly api: ApiPort,
     readonly files: FilePort,
     private readonly preferences: PreferencePort = memoryPreferences(),
+    private readonly signInWindow: SignInWindowPort = noSignInWindow,
   ) {}
 
   // Connection and session.
@@ -187,12 +195,27 @@ export class WorkspaceUseCases {
   deleteOAuth2Token(workspace: string, id: string) {
     return this.api.execute('oauth2.tokens', { workspace, action: 'delete', id });
   }
-  /** Starts a browser sign-in (authorization code, PKCE or implicit). */
+  /**
+   * Starts a browser sign-in (authorization code, PKCE or implicit). With a sign-in window
+   * (desktop) the system browser is not opened: the window shows the page instead.
+   */
   oauth2Authorize(auth: unknown, context: ExecutionContext) {
     return this.api.execute<OAuth2SignIn>('oauth2.authorize', {
       ...this.authorizationPayload(auth, context),
       action: 'start',
+      openBrowser: !this.signInWindow.available,
     });
+  }
+  /** Whether sign-ins can use a window of the app instead of the system browser. */
+  get hasSignInWindow() {
+    return this.signInWindow.available;
+  }
+  /** Shows a sign-in page in the app's window until it reaches the Callback URL. */
+  openSignInWindow(signIn: OAuth2SignIn) {
+    return this.signInWindow.open(signIn.authorizationUrl, signIn.redirectUri);
+  }
+  closeSignInWindow() {
+    return this.signInWindow.close();
   }
   /** `status`, `open` (the browser again), `complete` (with the returned address) or `cancel`. */
   oauth2SignIn(
