@@ -270,6 +270,13 @@ impl Engine {
                 oauth2_tokens::delete(&self.vault, id).await?;
                 Ok(json!({"deleted": true}))
             }
+            // A token the person pasted (the sign-in could not take one by itself).
+            "add" => {
+                let fields = payload.as_object().cloned().unwrap_or_default();
+                let token = oauth2::pasted_token(&fields, now_ms())?;
+                oauth2_tokens::store(&self.vault, payload["name"].as_str().unwrap_or(""), &token)
+                    .await
+            }
             other => Err(invalid(format!("Unknown token action: {other}"))),
         }
     }

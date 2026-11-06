@@ -95,6 +95,98 @@ test('a request is created, renamed, moved into a folder and sent', async ({ pag
   await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
 });
 
+test('a Postman export opens with its body and path variables, and sends them', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  const request = (name, method, body, url) => ({
+    name,
+    request: { method, header: [], body, url },
+  });
+  const exported = {
+    info: {
+      name: 'Exported claims',
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
+    },
+    item: [
+      request(
+        'cache',
+        'GET',
+        { mode: 'urlencoded', urlencoded: [] },
+        {
+          raw: `${nexo.echo}/contexto/:clave`,
+          variable: [{ key: 'clave', value: 'cead1876' }],
+        },
+      ),
+      request(
+        'cache',
+        'POST',
+        { mode: 'raw', raw: '{"canal":"MEDIADORES"}', options: { raw: { language: 'json' } } },
+        { raw: `${nexo.echo}/contexto` },
+      ),
+    ],
+  };
+  await page.getByRole('button', { name: 'Import' }).first().click();
+  await page.getByLabel('Import content').fill(JSON.stringify(exported));
+  await page.getByRole('button', { name: 'Import', exact: true }).last().click();
+  const collection = page.locator('.collection', { hasText: 'Exported claims' });
+  const configuration = page.getByRole('navigation', { name: 'Request configuration' });
+
+  // The POST "cache" shows the body it sends.
+  await collection.locator('.tree-row', { hasText: 'POST' }).click();
+  await configuration.getByRole('button', { name: 'Body' }).click();
+  await expect(page.getByLabel('Request body')).toHaveValue('{"canal":"MEDIADORES"}');
+
+  // The GET "cache" shows its path variable, which is edited and sent.
+  await collection.locator('.tree-row', { hasText: 'GET' }).click();
+  await configuration.getByRole('button', { name: 'Params' }).click();
+  const clave = page.getByRole('textbox', { name: 'clave', exact: true });
+  await expect(clave).toHaveValue('cead1876');
+  await clave.fill('k2');
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.locator('.response-section')).toContainText('/contexto/k2');
+});
+
+test('panels resize by dragging their dividers, and Back leaves the settings', async ({
+  page,
+  nexo,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Request configuration' })
+    .getByRole('button', { name: 'Body' })
+    .click();
+  const content = page.locator('.request-content');
+  const before = (await content.boundingBox()).height;
+  const divider = page.getByRole('separator', { name: 'Resize the request and the response' });
+  await expect(divider).toHaveCSS('cursor', 'row-resize');
+  const box = await divider.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y + 80, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(async () => (await content.boundingBox()).height).toBeGreaterThan(before + 60);
+  const resized = (await content.boundingBox()).height;
+  // The body editor fills the panel, and the size is kept for the next session.
+  const editor = (await page.getByLabel('Request body').boundingBox()).height;
+  expect(editor).toBeGreaterThan(resized - 120);
+  await page.reload();
+  await expect
+    .poll(async () => (await page.locator('.request-content').boundingBox())?.height)
+    .toBe(resized);
+
+  await page.getByRole('button', { name: 'Create collection' }).first().click();
+  await page.getByPlaceholder('Give it a name').fill('Back API');
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  const collection = page.locator('.collection', { hasText: 'Back API' });
+  await collection.getByLabel('Collection actions').click();
+  await collection.getByRole('button', { name: 'Variables & settings' }).click();
+  await page.getByRole('button', { name: 'Back to Collections' }).click();
+  await expect(page.getByRole('button', { name: 'Send' }).first()).toBeVisible();
+});
+
 test('item actions float over the next panel and stay usable with long names', async ({
   page,
   nexo,
@@ -268,6 +360,36 @@ test('OAuth 2.0: a PKCE sign-in completes with the address pasted back', async (
   await expect(dialog).toBeHidden();
   const current = page.getByRole('combobox', { name: 'Token', exact: true });
   await expect(current).not.toHaveValue('');
+});
+
+test('OAuth 2.0: a token pasted from the browser is used when the address has no code', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.keyboard.press('Control+t');
+  await page.getByRole('button', { name: 'Authorization', exact: true }).first().click();
+  await page.getByLabel('Authorization type').selectOption('oauth2');
+  await page.getByLabel('Grant type').selectOption('authorization_code_with_pkce');
+  await page.getByLabel('Token Name').fill('E2E-PASTED');
+  await page.getByLabel('Callback URL').fill('https://front.example.com/callback');
+  await page.getByLabel('Auth URL').fill(`${nexo.echo}/authorize`);
+  await page.getByLabel('Access Token URL').fill(`${nexo.echo}/token`);
+  await page.getByLabel('Client ID').fill('app');
+  await page.getByRole('button', { name: 'Get new access token' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Sign in with OAuth 2.0' });
+  await expect(dialog).toBeVisible();
+
+  // The front signed in by itself and cleaned its address: no code to read.
+  await dialog.getByLabel('Address the browser returned to').fill('https://front.example.com/home');
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByRole('alert')).toContainText('This address has no code');
+  await dialog.getByLabel('Access token', { exact: true }).fill('Bearer token-from-cookie');
+  await dialog.getByRole('button', { name: 'Use this token' }).click();
+  await expect(dialog).toBeHidden();
+  const current = page.getByRole('combobox', { name: 'Token', exact: true });
+  await expect(current).not.toHaveValue('');
+  await expect(current.locator('option:checked')).toContainText('E2E-PASTED');
 });
 
 test('OAuth 2.0: Auto-fetch Token signs in before sending without a token', async ({

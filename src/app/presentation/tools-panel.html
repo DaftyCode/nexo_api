@@ -1,4 +1,10 @@
 <div class="tools-page">
+  @if (state.backSection(); as previous) {
+    <button type="button" class="text-button back-button" (click)="state.goBack()">
+      <span aria-hidden="true">←</span> {{ 'Back to' | transloco }}
+      {{ sectionLabel(previous) | transloco }}
+    </button>
+  }
   @switch (section()) {
     @case ('environments') {
       <app-environment-panel />

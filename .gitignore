@@ -45,6 +45,7 @@ Thumbs.db
 
 # Nexo build output and private data
 /target/
+/src-tauri/target/
 /.nexo*/
 /src-tauri/binaries/
 /src-tauri/gen/

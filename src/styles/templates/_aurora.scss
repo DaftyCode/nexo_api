@@ -414,7 +414,7 @@
     height: 18px;
   }
   .request-content {
-    height: 198px;
+    height: clamp(198px, 34vh, 440px);
     padding: 17px 25px 21px;
   }
   .section-caption {

@@ -20,6 +20,7 @@ import { folders } from '../domain/collection-tree';
 import { withOAuth2Token } from '../domain/auth';
 import { AppearanceState } from './appearance-state';
 import { AppearanceSelector } from './appearance-selector';
+import { Splitter } from './splitter';
 import { LanguageSelector } from './language-selector';
 import { LanguageState } from './language-state';
 import { StudioIcon } from './studio-icon';
@@ -30,6 +31,7 @@ import { OAuth2TokensDialog } from './oauth2-tokens';
 
 @Component({
   imports: [
+    Splitter,
     TranslocoPipe,
     FormField,
     DatePipe,
@@ -112,6 +114,10 @@ export class Workspace {
       event.preventDefault();
       this.state.newTab();
     }
+  }
+  /** A panel size as a CSS length, or nothing to keep the template's own. */
+  protected px(size: number | undefined) {
+    return size ? `${size}px` : null;
   }
   protected setSection(id: string) {
     this.state.section.set(id);

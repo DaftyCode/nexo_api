@@ -50,3 +50,13 @@
 .variable-chip.undefined span {
   color: #ff9b9b;
 }
+/* The body and script editors take the whole panel, which the divider below resizes. */
+.request-content.fill {
+  display: flex;
+  flex-direction: column;
+}
+.request-content.fill > .code-editor:not(.small) {
+  flex: 1 0 120px;
+  min-height: 120px;
+  resize: none;
+}

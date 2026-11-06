@@ -874,7 +874,8 @@ small {
   color: var(--green);
 }
 .request-content {
-  height: 213px;
+  /* Room for the body on tall windows; the divider below resizes it. */
+  height: clamp(213px, 34vh, 440px);
   overflow: auto;
   padding: 13px 21px 16px;
 }
@@ -929,6 +930,11 @@ small {
   font-size: 11px;
   border-left: 1px solid var(--border);
   width: 100%;
+}
+.kv-row > .kv-key {
+  padding: 6px 9px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .kv-row > .icon-button {
   font-size: 15px;

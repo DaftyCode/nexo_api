@@ -10,6 +10,7 @@ import {
   RequestDraft,
   Run,
   mergeRun,
+  pathVariableNames,
 } from './models';
 describe('Collection editing', () => {
   it('preserves examples and unknown item metadata while editing a request', () => {
@@ -152,6 +153,72 @@ describe('collection item conversion', () => {
       expect(significant(fromItem(item, original.id))).toEqual(significant(original));
       expect(toItem(fromItem(item, original.id), item)).toEqual(item);
     });
+  it('opens a Postman export with its path variables, body format and body type', () => {
+    const exported = {
+      name: 'cache',
+      protocolProfileBehavior: { disableBodyPruning: true },
+      request: {
+        method: 'POST',
+        header: [],
+        body: { mode: 'raw', raw: '<a/>', options: { raw: { language: 'xml' } } },
+        url: {
+          raw: 'http://localhost:8080/v1/contexto/:clave?ramo=6',
+          protocol: 'http',
+          host: ['localhost'],
+          port: '8080',
+          path: ['v1', 'contexto', ':clave'],
+          query: [{ key: 'ramo', value: '6' }],
+          variable: [{ key: 'clave', value: 'cead1876' }],
+        },
+      },
+    };
+    const draft = fromItem(exported, 'r1');
+    expect(draft.url).toBe('http://localhost:8080/v1/contexto/:clave');
+    expect(draft.pathVariables).toEqual([{ key: 'clave', value: 'cead1876', enabled: true }]);
+    expect(draft.bodyLanguage).toBe('xml');
+    expect(draft.body).toBe('<a/>');
+    const saved = toItem(
+      { ...draft, pathVariables: [{ key: 'clave', value: 'k2', enabled: true }] },
+      exported,
+    );
+    expect(saved.request).toMatchObject({
+      url: {
+        raw: 'http://localhost:8080/v1/contexto/:clave?ramo=6',
+        variable: [{ key: 'clave', value: 'k2' }],
+      },
+      body: { mode: 'raw', raw: '<a/>', options: { raw: { language: 'xml' } } },
+    });
+    expect(saved['protocolProfileBehavior']).toEqual({ disableBodyPruning: true });
+    // Without path variables the URL stays text.
+    expect(
+      toItem({ ...draft, url: 'http://x/a', query: [], pathVariables: [] }).request,
+    ).toMatchObject({
+      url: 'http://x/a',
+    });
+  });
+
+  it('keeps a body Nexo does not edit and writes an empty one', () => {
+    const file = {
+      name: 'upload',
+      request: { method: 'POST', url: 'http://x', body: { mode: 'file', file: { src: 'a.bin' } } },
+    };
+    const draft = fromItem(file, 'r2');
+    expect(draft.bodyMode).toBe('file');
+    expect(toItem(draft, file).request).toMatchObject({
+      body: { mode: 'file', file: { src: 'a.bin' } },
+    });
+    expect(toItem({ ...draft, bodyMode: 'none' }, file).request).toMatchObject({
+      body: { mode: 'none' },
+    });
+  });
+
+  it('finds the path variables of a URL, not its port or query', () => {
+    expect(pathVariableNames('http://localhost:8080/v1/:a/x/:b/:a?q=:c#:d')).toEqual(['a', 'b']);
+    expect(pathVariableNames('{{base}}/users/:id')).toEqual(['id']);
+    expect(pathVariableNames('http://host:8080')).toEqual([]);
+    expect(pathVariableNames('/a/:')).toEqual([]);
+  });
+
   it('keeps URLs whose query cannot be written back identically', () => {
     for (const url of [
       'https://x/a?b=1+2',

@@ -28,5 +28,7 @@ describe('Browser appearance storage', () => {
     const preferences = TestBed.inject(BrowserAppearance);
     expect(preferences.loadTemplate()).toBeUndefined();
     expect(() => preferences.saveTemplate('aurora')).not.toThrow();
+    expect(preferences.loadLayout()).toBeUndefined();
+    expect(() => preferences.saveLayout({ aurora: { sidebar: 300 } })).not.toThrow();
   });
 });

@@ -186,6 +186,56 @@ pub fn token_response(status: u16, body: &str, now_ms: u64) -> Result<Value> {
     token_fields(status, &fields, now_ms)
 }
 
+/// The expiry of a JWT (its `exp`, in milliseconds), read without checking the signature:
+/// only to know when to renew a token the person pasted.
+pub fn jwt_expiry(token: &str) -> Option<u64> {
+    let payload = token.split('.').nth(1)?;
+    let claims: Value =
+        serde_json::from_slice(&URL_SAFE_NO_PAD.decode(payload.trim_end_matches('=')).ok()?)
+            .ok()?;
+    claims["exp"].as_u64().map(|seconds| seconds * 1000)
+}
+
+/// A token the person pasted, when the sign-in cannot take one by itself (a Callback URL that
+/// another application consumes, in the web version). Kept like an obtained token, so it can
+/// be selected and, with its refresh token, renewed. A JWT gives its expiry.
+pub fn pasted_token(fields: &Map<String, Value>, now_ms: u64) -> Result<Value> {
+    let value = |key: &str| {
+        let text = text(fields.get(key));
+        let text = text.trim();
+        let text = text
+            .strip_prefix("Bearer ")
+            .or_else(|| text.strip_prefix("bearer "))
+            .unwrap_or(text)
+            .trim();
+        (!text.is_empty()).then(|| Value::String(text.to_string()))
+    };
+    let mut answer = Map::new();
+    for (from, to) in [
+        ("accessToken", "access_token"),
+        ("idToken", "id_token"),
+        ("refreshToken", "refresh_token"),
+    ] {
+        if let Some(value) = value(from) {
+            answer.insert(to.into(), value);
+        }
+    }
+    if !answer.contains_key("access_token") && !answer.contains_key("id_token") {
+        return Err(invalid("Paste the access token"));
+    }
+    if let Some(seconds) = fields.get("expiresIn").and_then(Value::as_u64) {
+        answer.insert("expires_in".into(), json!(seconds));
+    }
+    let mut token = token_fields(200, &answer, now_ms)?;
+    if token["expiresAt"].is_null() {
+        let jwt = token["accessToken"].as_str().or(token["idToken"].as_str());
+        if let Some(expires) = jwt.and_then(jwt_expiry) {
+            token["expiresAt"] = json!(expires);
+        }
+    }
+    Ok(token)
+}
+
 /// The token in the fields of a token answer, or of an implicit grant's redirect.
 fn token_fields(status: u16, fields: &Map<String, Value>, now_ms: u64) -> Result<Value> {
     let get = |key: &str| {
@@ -425,6 +475,38 @@ pub fn returned_parameters(url: &Url) -> Vec<(String, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn keeps_a_pasted_token_with_its_expiry() {
+        // {"sub":"ada","exp":2000000000}
+        let jwt = format!(
+            "eyJhbGciOiJIUzI1NiJ9.{}.signature",
+            URL_SAFE_NO_PAD.encode(r#"{"sub":"ada","exp":2000000000}"#)
+        );
+        assert_eq!(jwt_expiry(&jwt), Some(2_000_000_000_000));
+        assert_eq!(jwt_expiry("opaque-token"), None);
+        let fields = |value: Value| value.as_object().cloned().unwrap();
+        let token = pasted_token(
+            &fields(json!({"accessToken": format!("  Bearer {jwt} "), "refreshToken": "r1"})),
+            1_000,
+        )
+        .unwrap();
+        assert_eq!(token["accessToken"], jwt.as_str());
+        assert_eq!(token["refreshToken"], "r1");
+        assert_eq!(token["expiresAt"], 2_000_000_000_000u64);
+        assert_eq!(token["obtainedAt"], 1_000);
+        // An opaque token without expiry, or with the expiry given.
+        let opaque = pasted_token(&fields(json!({"accessToken": "opaque"})), 1_000).unwrap();
+        assert!(opaque["expiresAt"].is_null());
+        let given = pasted_token(
+            &fields(json!({"accessToken": "opaque", "expiresIn": 60})),
+            1_000,
+        )
+        .unwrap();
+        assert_eq!(given["expiresAt"], 61_000);
+        assert!(pasted_token(&fields(json!({"refreshToken": "r1"})), 1_000).is_err());
+        assert!(pasted_token(&fields(json!({"accessToken": "  "})), 1_000).is_err());
+    }
 
     fn auth(entries: Value) -> Map<String, Value> {
         crate::auth::values(&json!({"type": "oauth2", "oauth2": entries}))

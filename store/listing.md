@@ -31,7 +31,15 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 
 ### What's new in this version
 
-First Microsoft Store release.
+Every authorization type, sign-in like Postman and a lighter app.
+
+- All the authorizations of Postman, Bruno and Insomnia: OAuth 2.0 (every grant, PKCE, token management, automatic refresh and Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc.
+- OAuth 2.0 sign-in in a window of the app, like Postman: it takes the token by itself, whatever the Callback URL.
+- Allowed domains for each vault secret: it is only sent to the domains you choose, also after a redirect.
+- The engine now runs in Rust inside the app, without Node: it starts faster, uses less memory and runs scripts in an isolated sandbox.
+- Post-quantum key exchange (X25519MLKEM768) preferred for TLS connections.
+- English and Spanish switch without restarting, and two new templates: Aurora Studio and Canvas.
+- Many fixes and security improvements.
 
 ### Search terms
 
@@ -83,7 +91,15 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 
 ### Novedades de esta versión
 
-Primera versión en Microsoft Store.
+Todas las autorizaciones, inicio de sesión como en Postman y una aplicación más ligera.
+
+- Todas las autorizaciones de Postman, Bruno e Insomnia: OAuth 2.0 (todos los flujos, PKCE, gestión de tokens, renovación automática y Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc.
+- Inicio de sesión de OAuth 2.0 en una ventana de la aplicación, como en Postman: recoge el token sola, sea cual sea la Callback URL.
+- Dominios permitidos para cada secreto del vault: solo se envía a los dominios que elijas, también tras una redirección.
+- El motor funciona ahora en Rust dentro de la aplicación, sin Node: arranca antes, usa menos memoria y ejecuta los scripts en un sandbox aislado.
+- Intercambio de claves poscuántico (X25519MLKEM768) preferido en las conexiones TLS.
+- Cambia entre español e inglés sin reiniciar, y dos plantillas nuevas: Aurora Studio y Canvas.
+- Muchas correcciones y mejoras de seguridad.
 
 ### Términos de búsqueda
 

@@ -221,13 +221,19 @@ payload! {
 }
 
 payload! {
-    /// `oauth2.tokens`: "Manage Tokens" (`list`, `details` or `delete` of the token `id`).
+    /// `oauth2.tokens`: "Manage Tokens" (`list`, `details` or `delete` of the token `id`), or
+    /// `add` a token the person pasted, under `name`.
     closed Oauth2TokensPayload {
         required {}
         optional {
             workspace "workspace": String => "string",
-            action "action": TokensAction => "'list' | 'details' | 'delete'",
+            action "action": TokensAction => "'list' | 'details' | 'delete' | 'add'",
             id "id": String => "string",
+            name "name": String => "string",
+            access_token "accessToken": String => "string",
+            refresh_token "refreshToken": String => "string",
+            id_token "idToken": String => "string",
+            expires_in "expiresIn": u64 => "number",
         }
     }
 }
@@ -456,6 +462,7 @@ pub enum TokensAction {
     List,
     Details,
     Delete,
+    Add,
 }
 
 /// What a `run` call asks for besides starting a run.

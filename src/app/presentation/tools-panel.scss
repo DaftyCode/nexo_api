@@ -10,3 +10,11 @@
   flex: 1;
   min-height: 0;
 }
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 4px 0;
+  font-size: 12px;
+}

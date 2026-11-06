@@ -1,4 +1,4 @@
-import { Collection, CollectionItem, KeyValue, RequestDraft } from './models';
+import { Collection, CollectionItem, KeyValue, RequestDraft, pathVariableRows } from './models';
 
 /** A variable row as edited in environments, globals and collections. */
 export interface VariableRow {
@@ -106,6 +106,7 @@ export function requestVariables(request: RequestDraft): string[] {
   return referencedVariables([
     request.url,
     request.query.filter((row) => row.enabled),
+    pathVariableRows(request.url, request.pathVariables ?? []),
     request.headers.filter((row) => row.enabled),
     request.bodyMode === 'raw' ? request.body : request.form.filter((row) => row.enabled),
     request.protocol === 'graphql' ? request.graphqlVariables : '',

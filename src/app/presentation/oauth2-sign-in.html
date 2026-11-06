@@ -49,6 +49,47 @@
           spellcheck="false"
           autocomplete="off"
       /></label>
+      @if (needsToken()) {
+        <div class="global-alert panel-alert" role="alert">
+          {{
+            'This address has no code: the page it returned to signs in by itself and removed it from the address. Paste the token instead. Copy it from the browser developer tools (F12): Application → Cookies, or the Authorization header of a request.'
+              | transloco
+          }}
+        </div>
+        <label class="field"
+          >{{ 'Access token' | transloco
+          }}<input
+            type="password"
+            [value]="accessToken()"
+            (input)="accessToken.set(value($event))"
+            (keydown.enter)="useToken()"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <label class="field"
+          >{{ 'Refresh token (optional, to renew it)' | transloco
+          }}<input
+            type="password"
+            [value]="refreshToken()"
+            (input)="refreshToken.set(value($event))"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        <div class="row">
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="!accessToken().trim()"
+            (click)="useToken()"
+          >
+            {{ 'Use this token' | transloco }}
+          </button>
+        </div>
+      } @else if (signIn.mode === 'manual' || signIn.window) {
+        <button type="button" class="text-button" (click)="needsToken.set(true)">
+          {{ 'I have the token' | transloco }}
+        </button>
+      }
       <div class="modal-actions">
         <button type="button" class="button" (click)="state.cancelOAuth2SignIn()">
           {{ 'Cancel' | transloco }}

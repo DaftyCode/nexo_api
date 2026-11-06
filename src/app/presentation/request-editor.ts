@@ -1,7 +1,22 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, model, signal, output, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  model,
+  signal,
+  output,
+  input,
+} from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
-import { RequestDraft, KeyValue, newRequest, formatJson } from '../domain/models';
+import {
+  RequestDraft,
+  KeyValue,
+  editableBodyModes,
+  newRequest,
+  formatJson,
+  pathVariableRows,
+} from '../domain/models';
 import { AuthDraft, Inheritance } from '../domain/auth';
 import { ResolvedVariable } from '../domain/variables';
 import { AuthEditor } from './auth-editor';
@@ -40,6 +55,25 @@ export class RequestEditor {
   protected readonly tab = signal('params');
   protected readonly scriptTab = signal('tests');
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
+  /** One row per `:name` segment of the URL, with the value entered for it. */
+  protected readonly pathVariables = computed(() =>
+    pathVariableRows(this.request().url, this.request().pathVariables ?? []),
+  );
+  /** An imported body type the editor does not handle (a binary file), kept on save. */
+  protected readonly keptBodyMode = computed(
+    () =>
+      this.request().protocol !== 'graphql' && !editableBodyModes.includes(this.request().bodyMode),
+  );
+  protected editPathVariables(rows: KeyValue[]) {
+    this.request.update((r) => ({
+      ...r,
+      // Values of names no longer in the URL are kept, as Postman does while editing.
+      pathVariables: [
+        ...rows,
+        ...(r.pathVariables ?? []).filter((x) => !rows.some((row) => row.key === x.key)),
+      ],
+    }));
+  }
   protected rows(key: 'query' | 'headers' | 'form', rows: KeyValue[]) {
     this.request.update((r) => ({ ...r, [key]: rows }));
   }

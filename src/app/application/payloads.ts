@@ -201,8 +201,13 @@ export interface Oauth2AuthorizePayload {
 
 export interface Oauth2TokensPayload {
   workspace?: string;
-  action?: 'list' | 'details' | 'delete';
+  action?: 'list' | 'details' | 'delete' | 'add';
   id?: string;
+  name?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  idToken?: string;
+  expiresIn?: number;
 }
 
 export interface PerformancePayload {

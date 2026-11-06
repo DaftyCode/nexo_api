@@ -390,6 +390,57 @@ test('stored tokens are listed, used by reference, protected and deleted', async
   assert.ok(!after.tokens.some((entry) => entry.id === token.id));
 });
 
+test('a pasted token is kept like an obtained one: sent by reference and refreshed', async () => {
+  // A JWT that expires in an hour, as a web front keeps it in a cookie.
+  const claims = Buffer.from(
+    JSON.stringify({ sub: 'ada', exp: Math.floor(Date.now() / 1000) + 3600 }),
+  );
+  const jwt = `eyJhbGciOiJSUzI1NiJ9.${claims.toString('base64url')}.signature`;
+  const token = await server.execute('oauth2.tokens', {
+    action: 'add',
+    name: 'FROM-BROWSER',
+    accessToken: `Bearer ${jwt}`,
+    refreshToken: 'refresh-1',
+  });
+  assert.equal(token.name, 'FROM-BROWSER');
+  assert.equal(token.hasRefreshToken, true);
+  assert.ok(Math.abs(token.expiresAt - JSON.parse(claims).exp * 1000) < 1000);
+  assert.ok(!JSON.stringify(token).includes(jwt), 'values stay in the vault');
+  assert.equal((await details(token.id)).accessToken, jwt);
+
+  const sent = await server.execute('request', {
+    request: {
+      url: `${provider.url}/echo`,
+      auth: {
+        type: 'oauth2',
+        oauth2: [
+          { key: 'accessToken', value: token.reference },
+          { key: 'oauth2TokenId', value: token.id },
+        ],
+      },
+    },
+  });
+  assert.equal(JSON.parse(sent.body).authorization, 'Bearer [REDACTED]');
+
+  // Its refresh token renews it at the authorization's token endpoint.
+  received.length = 0;
+  const settings = [
+    { key: 'grant_type', value: 'authorization_code' },
+    { key: 'accessTokenUrl', value: '{{tokenUrl}}' },
+    { key: 'clientId', value: 'app' },
+  ];
+  const renewed = await server.execute('oauth2.token', inheriting(settings, { tokenId: token.id }));
+  assert.equal(renewed.id, token.id);
+  assert.equal(received[0].form.refresh_token, 'refresh-1');
+  assert.equal((await details(token.id)).accessToken, 'renewed-token');
+
+  await assert.rejects(
+    server.execute('oauth2.tokens', { action: 'add', name: 'EMPTY', refreshToken: 'r' }),
+    /Paste the access token/,
+  );
+  await server.execute('oauth2.tokens', { action: 'delete', id: token.id });
+});
+
 test('tokens about to expire are refreshed before sending, and $oauth2 variables resolve', async () => {
   const settings = [
     { key: 'grant_type', value: 'client_credentials' },

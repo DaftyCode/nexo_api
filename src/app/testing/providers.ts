@@ -76,7 +76,12 @@ export function testProviders() {
     { provide: PROTOCOLS, useValue: new ProtocolUseCases(api) },
     {
       provide: APPEARANCE,
-      useValue: new AppearanceUseCases({ loadTemplate: () => undefined, saveTemplate() {} }),
+      useValue: new AppearanceUseCases({
+        loadTemplate: () => undefined,
+        saveTemplate() {},
+        loadLayout: () => undefined,
+        saveLayout() {},
+      }),
     },
   ];
 }

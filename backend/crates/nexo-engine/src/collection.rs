@@ -58,7 +58,58 @@ pub fn encode_component(value: &str) -> String {
 }
 
 /// Request URL from a string or a `{raw, protocol, host, path, query}` object.
+/// The address a request is sent to. A Postman URL object may carry path variables
+/// (`/users/:id` with `variable: [{key: "id", value: "7"}]`), filled in here as Postman does.
 pub fn request_url(url: &Value) -> String {
+    let address = written_url(url);
+    match url.get("variable") {
+        Some(variables) => fill_path_variables(&address, variables),
+        None => address,
+    }
+}
+
+/// Replaces each `:name` path segment that has a non-empty value; the rest stay as written.
+/// Only the path changes: the scheme, host, port, query and fragment are kept.
+pub fn fill_path_variables(url: &str, variables: &Value) -> String {
+    let values: Vec<(&str, String)> = variables
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|row| {
+            let key = row.get("key")?.as_str().filter(|key| !key.is_empty())?;
+            let value = text(row.get("value"));
+            (!value.is_empty()).then_some((key, value))
+        })
+        .collect();
+    if values.is_empty() {
+        return url.to_string();
+    }
+    let end = url.find(['?', '#']).unwrap_or(url.len());
+    let (address, rest) = url.split_at(end);
+    // The path starts after `scheme://host[:port]`, or at the start without a scheme.
+    let start = address
+        .find("://")
+        .map(|scheme| {
+            address[scheme + 3..]
+                .find('/')
+                .map_or(address.len(), |slash| scheme + 3 + slash)
+        })
+        .unwrap_or(0);
+    let (origin, path) = address.split_at(start);
+    let path = path
+        .split('/')
+        .map(|segment| {
+            segment
+                .strip_prefix(':')
+                .and_then(|name| values.iter().find(|(key, _)| *key == name))
+                .map_or(segment, |(_, value)| value.as_str())
+        })
+        .collect::<Vec<_>>()
+        .join("/");
+    format!("{origin}{path}{rest}")
+}
+
+fn written_url(url: &Value) -> String {
     match url {
         Value::String(text) => text.clone(),
         Value::Object(object) => {
@@ -384,6 +435,28 @@ mod tests {
         assert_eq!(collection["variable"][0]["key"], "a");
         assert_eq!(collection["item"][0]["name"], "Folder");
         assert_eq!(collection["item"][0]["item"][0]["name"], "Leaf");
+    }
+    #[test]
+    fn fills_path_variables_like_postman() {
+        let url = json!({
+            "raw": "http://localhost:8080/v1/polizas/:poliza/siniestros/:empty?ramo=:poliza#:poliza",
+            "variable": [{"key": "poliza", "value": "6458273"}, {"key": "empty", "value": ""}]
+        });
+        // The port and the query keep their colons; a variable without a value stays.
+        assert_eq!(
+            request_url(&url),
+            "http://localhost:8080/v1/polizas/6458273/siniestros/:empty?ramo=:poliza#:poliza"
+        );
+        let built = json!({
+            "protocol": "https", "host": ["api", "test"], "path": ["users", ":id"],
+            "variable": [{"key": "id", "value": "{{user}}"}]
+        });
+        assert_eq!(request_url(&built), "https://api.test/users/{{user}}");
+        assert_eq!(
+            fill_path_variables("/a/:id", &json!([{"key": "id", "value": 7}])),
+            "/a/7"
+        );
+        assert_eq!(request_url(&json!("http://x/:id")), "http://x/:id");
     }
     #[test]
     fn builds_urls_from_objects() {

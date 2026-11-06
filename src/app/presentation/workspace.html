@@ -1,6 +1,14 @@
 <div
   class="studio"
   [attr.data-template]="appearance.current()"
+  [class.sized-sidebar]="!!appearance.layout().sidebar"
+  [class.sized-request]="!!appearance.layout().request"
+  [class.sized-split]="!!appearance.layout().split"
+  [class.sized-context]="!!appearance.layout().context"
+  [style.--nexo-sidebar]="px(appearance.layout().sidebar)"
+  [style.--nexo-request]="px(appearance.layout().request)"
+  [style.--nexo-split]="px(appearance.layout().split)"
+  [style.--nexo-context]="px(appearance.layout().context)"
   [class.canvas-navigation-visible]="
     navigationOpen() || (appearance.current() === 'canvas' && state.section() === 'history')
   "
@@ -374,6 +382,29 @@ bash install-web.sh  (macOS / Linux)</pre>
               }}
             </div>
           </aside>
+          @if (appearance.current() === 'aurora') {
+            <app-splitter
+              target=".sidebar"
+              neighbor=".main-workspace"
+              [neighborMin]="420"
+              [label]="'Resize the sidebar' | transloco"
+              (resized)="appearance.resize('sidebar', $event)"
+              (settled)="appearance.save()"
+              (restore)="appearance.reset('sidebar')"
+            />
+          }
+        }
+        @if (appearance.current() !== 'aurora') {
+          <app-splitter
+            class="navigation-splitter"
+            target=".workspace-navigation"
+            [neighbor]="appearance.current() === 'studio' ? '.main-workspace' : ''"
+            [neighborMin]="420"
+            [label]="'Resize the sidebar' | transloco"
+            (resized)="appearance.resize('sidebar', $event)"
+            (settled)="appearance.save()"
+            (restore)="appearance.reset('sidebar')"
+          />
         }
       </div>
       <main class="main-workspace">
@@ -445,6 +476,30 @@ bash install-web.sh  (macOS / Linux)</pre>
               (save)="state.saveActive()"
               (code)="state.section.set('code')"
             />
+            @if (appearance.current() === 'canvas') {
+              <app-splitter
+                class="request-splitter"
+                target=".request-configuration"
+                neighbor="app-response-view"
+                [neighborMin]="300"
+                [label]="'Resize the request and the response' | transloco"
+                (resized)="appearance.resize('split', $event)"
+                (settled)="appearance.save()"
+                (restore)="appearance.reset('split')"
+              />
+            } @else {
+              <app-splitter
+                class="request-splitter"
+                axis="y"
+                target=".request-content"
+                neighbor="app-response-view"
+                [neighborMin]="120"
+                [label]="'Resize the request and the response' | transloco"
+                (resized)="appearance.resize('request', $event)"
+                (settled)="appearance.save()"
+                (restore)="appearance.reset('request')"
+              />
+            }
           }
           <app-response-view [response]="state.response()" [running]="state.running()" />
         } @else {
@@ -452,6 +507,17 @@ bash install-web.sh  (macOS / Linux)</pre>
         }
       </main>
       @if (appearance.current() === 'studio') {
+        <app-splitter
+          class="context-splitter"
+          target="app-workspace-context"
+          neighbor=".main-workspace"
+          [neighborMin]="420"
+          [invert]="true"
+          [label]="'Resize the context panel' | transloco"
+          (resized)="appearance.resize('context', $event)"
+          (settled)="appearance.save()"
+          (restore)="appearance.reset('context')"
+        />
         <app-workspace-context />
       }
       @if (appearance.current() === 'canvas') {

@@ -118,6 +118,23 @@ test('query variables are substituted after encoding', async () => {
   assert.equal(JSON.parse(result.body).path, '/search?tenant=acme&q=a%20b%26c');
 });
 
+test('path variables of a Postman URL are filled in, with their own variables resolved', async () => {
+  const result = await server.execute('request', {
+    item: {
+      name: 'Claims',
+      request: {
+        method: 'GET',
+        url: {
+          raw: `${echo.url}/polizas/:poliza/siniestros?ramo=6`,
+          variable: [{ key: 'poliza', value: '{{policy}}' }],
+        },
+      },
+    },
+    variables: [{ key: 'policy', value: '6458273', enabled: true }],
+  });
+  assert.equal(JSON.parse(result.body).path, '/polizas/6458273/siniestros?ramo=6');
+});
+
 test('runs keep folder variables in their folder, order test scripts and iterate data', async () => {
   const script = (listen, line) => ({ listen, script: { exec: [line] } });
   const started = await server.execute('run', {

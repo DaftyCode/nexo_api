@@ -3,7 +3,7 @@ import { testProviders } from '../testing/providers';
 import { WORKSPACE } from '../composition/providers';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
 import { ApiPort, FilePort, SignInWindowOutcome, SignInWindowPort } from '../application/ports';
-import { readAuth } from '../domain/auth';
+import { readAuth, withAuthValue } from '../domain/auth';
 import { WorkspaceState } from './workspace-state';
 import { OAuth2SignInDialog } from './oauth2-sign-in';
 
@@ -31,7 +31,8 @@ function setup(ending: SignInWindowOutcome, mode = 'manual') {
     },
     async execute<T>(operation: string, payload: Record<string, unknown>) {
       executed.push({ operation, payload });
-      if (operation === 'oauth2.tokens') return { tokens: [token] } as T;
+      if (operation === 'oauth2.tokens' && payload['action'] !== 'add')
+        return { tokens: [token] } as T;
       const answers: Record<string, unknown> = {
         start: {
           session: 's1',
@@ -43,6 +44,7 @@ function setup(ending: SignInWindowOutcome, mode = 'manual') {
         complete: { state: 'done', token },
         cancel: { state: 'cancelled' },
         open: { opened: true },
+        add: { ...token, id: 'pasted', name: String(payload['name']) },
         status: { state: 'waiting' },
       };
       return answers[String(payload['action'])] as T;
@@ -96,6 +98,24 @@ describe('OAuth 2.0 sign-in window of the desktop app', () => {
     expect(actions(executed)).not.toContain('complete');
   });
 
+  it('ends the sign-in with a token pasted from the browser, kept under the token name', async () => {
+    // The window stays open (a replaced outcome is ignored) while the token is pasted.
+    const { state, executed } = setup({ outcome: 'replaced' });
+    const named = withAuthValue(auth, 'tokenName', 'SSO');
+    const signingIn = state.oauth2Token(named, [], false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    await state.useOAuth2Token({ accessToken: 'jwt-from-cookie', refreshToken: 'r1' });
+    const obtained = await signingIn;
+    expect(obtained?.id).toBe('pasted');
+    const add = executed.find((call) => call.payload['action'] === 'add');
+    expect(add?.payload).toMatchObject({
+      name: 'SSO',
+      accessToken: 'jwt-from-cookie',
+      refreshToken: 'r1',
+    });
+    expect(actions(executed)).toContain('cancel');
+  });
+
   it('keeps the system browser for "Authorize using browser"', async () => {
     const { state, executed, opened } = setup({ outcome: 'closed' }, 'relay');
     const signingIn = state.oauth2Token(auth, [], false);
@@ -133,7 +153,7 @@ describe('OAuth 2.0 sign-in dialog', () => {
       input.dispatchEvent(event);
       return event;
     };
-    return { completed, paste };
+    return { completed, paste, fixture };
   }
 
   it('continues by itself when the returned address is pasted', async () => {
@@ -144,9 +164,19 @@ describe('OAuth 2.0 sign-in dialog', () => {
     expect(completed).toEqual(['https://front.example.com/callback?code=c1&state=x']);
   });
 
-  it('leaves other pasted text to be edited', async () => {
+  it('asks for the token when the pasted address has no code', async () => {
+    const { completed, paste, fixture } = await dialog();
+    expect(paste('https://front.example.com/callback').defaultPrevented).toBe(true);
+    await fixture.whenStable();
+    expect(completed).toEqual([]);
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('This address has no code');
+    expect(text).toContain('Use this token');
+  });
+
+  it('leaves text that is not an address to be edited', async () => {
     const { completed, paste } = await dialog();
-    expect(paste('https://front.example.com/callback').defaultPrevented).toBe(false);
+    expect(paste('not an address').defaultPrevented).toBe(false);
     expect(completed).toEqual([]);
   });
 });

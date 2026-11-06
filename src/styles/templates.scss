@@ -24,3 +24,99 @@
 .canvas-navigation-heading {
   display: none;
 }
+
+/* Dividers dragged to resize panels (app-splitter), with the resize cursor of the system. */
+.splitter {
+  position: relative;
+  z-index: 6;
+  flex-shrink: 0;
+  touch-action: none;
+  outline: none;
+}
+.splitter::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  border-radius: 2px;
+  background: transparent;
+  transition: background-color 0.12s;
+}
+.splitter.vertical {
+  width: 8px;
+  margin: 0 -4px;
+  align-self: stretch;
+  cursor: col-resize;
+}
+.splitter.vertical::after {
+  width: 2px;
+}
+.splitter.horizontal {
+  height: 8px;
+  margin: -4px 0;
+  cursor: row-resize;
+}
+.splitter.horizontal::after {
+  height: 2px;
+}
+.splitter:hover::after,
+.splitter:focus-visible::after,
+.splitter.dragging::after {
+  background: var(--accent);
+}
+.studio:has(.splitter.dragging) {
+  user-select: none;
+}
+/* Studio and Canvas: on the right edge of the navigation, which holds the rail too. */
+.studio[data-template='studio'] .workspace-navigation {
+  position: relative;
+}
+.splitter.navigation-splitter {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+}
+/* Canvas: between the request and the response, in the gap of their columns. */
+.studio[data-template='canvas'] .request-splitter {
+  grid-row: 4;
+  grid-column: 2;
+  justify-self: start;
+  margin: 0 0 0 -11px;
+}
+
+/* Sizes chosen by dragging; until then each template keeps its own. */
+@media (min-width: 801px) {
+  .studio.sized-sidebar[data-template='aurora'] .sidebar,
+  .studio.sized-sidebar[data-template='studio'] .workspace-navigation,
+  .studio.sized-sidebar[data-template='canvas'] .workspace-navigation {
+    width: var(--nexo-sidebar);
+  }
+  .studio.sized-request:not([data-template='canvas']) .request-content {
+    height: var(--nexo-request);
+  }
+  .studio.sized-context[data-template='studio'] app-workspace-context {
+    width: var(--nexo-context);
+  }
+}
+@media (min-width: 1051px) {
+  .studio.sized-split[data-template='canvas'] .main-workspace {
+    grid-template-columns: var(--nexo-split) minmax(0, 1fr);
+  }
+}
+@media (max-width: 1150px) {
+  .studio[data-template='studio'] .context-splitter {
+    display: none;
+  }
+}
+@media (max-width: 1050px) {
+  .studio[data-template='canvas'] .request-splitter {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  .splitter {
+    display: none;
+  }
+}

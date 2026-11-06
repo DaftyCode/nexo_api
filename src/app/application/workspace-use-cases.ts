@@ -30,6 +30,13 @@ import {
   toVariableRows,
 } from '../domain/variables';
 
+/** A token copied from the browser, with its refresh token to renew it. */
+export interface PastedOAuth2Token {
+  accessToken: string;
+  refreshToken?: string;
+  idToken?: string;
+}
+
 /** An operation and its payload without the workspace, which `execute` adds. */
 export type WorkspaceExecuteArgs = {
   [O in ExecutionOperation]: [operation: O, payload?: Omit<PayloadOf<O>, 'workspace'>];
@@ -190,6 +197,21 @@ export class WorkspaceUseCases {
       workspace,
       action: 'details',
       id,
+    });
+  }
+  /**
+   * Keeps a token the person pasted, when a sign-in cannot take one by itself (in the web
+   * version, a Callback URL that another application consumes). It is stored like an obtained
+   * token, so it can be selected and renewed with its refresh token.
+   */
+  addOAuth2Token(workspace: string, name: string, token: PastedOAuth2Token) {
+    return this.api.execute<OAuth2Token>('oauth2.tokens', {
+      workspace,
+      action: 'add',
+      name,
+      accessToken: token.accessToken,
+      ...(token.refreshToken?.trim() ? { refreshToken: token.refreshToken } : {}),
+      ...(token.idToken?.trim() ? { idToken: token.idToken } : {}),
     });
   }
   deleteOAuth2Token(workspace: string, id: string) {

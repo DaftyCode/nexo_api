@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { WORKSPACE } from '../composition/providers';
 import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
@@ -21,7 +21,11 @@ import {
   oauth2UsesBrowser,
   writeAuth,
 } from '../domain/auth';
-import { ExecutionContext, WorkspaceExecuteArgs } from '../application/workspace-use-cases';
+import {
+  ExecutionContext,
+  PastedOAuth2Token,
+  WorkspaceExecuteArgs,
+} from '../application/workspace-use-cases';
 import { TabsStore } from './tabs-store';
 
 export type SettingsTab = 'variables' | 'authorization' | 'scripts';
@@ -48,6 +52,33 @@ export class WorkspaceState {
 
   readonly workspaceId = signal('');
   readonly section = signal('collections');
+  /** Sections left to reach the current one, most recent last, for "Back". */
+  private readonly trail = signal<string[]>([]);
+  /** Where "Back" returns to, or nothing at the first section. */
+  readonly backSection = computed(() => this.trail().at(-1) ?? '');
+  private shownSection = this.section();
+  private returning = false;
+  private readonly followSections = effect(() => {
+    const now = this.section();
+    untracked(() => {
+      if (now === this.shownSection) return;
+      if (this.returning) this.returning = false;
+      else
+        this.trail.update((trail) =>
+          [...trail.filter((x) => x !== now), this.shownSection].slice(-20),
+        );
+      this.shownSection = now;
+    });
+  });
+  /** Returns to the section shown before this one, as a browser's back button. */
+  goBack() {
+    const trail = this.trail();
+    const previous = trail.at(-1);
+    if (!previous) return;
+    this.returning = true;
+    this.trail.set(trail.slice(0, -1));
+    this.section.set(previous);
+  }
   readonly consoleOpen = signal(false);
   /** Collection whose variables, auth and scripts are edited in the collection settings view. */
   readonly settingsCollectionId = signal('');
@@ -265,6 +296,7 @@ export class WorkspaceState {
         ancestors,
       };
       if (!refresh && oauth2UsesBrowser(auth)) {
+        this.oauth2SignInName = String(auth.values['tokenName'] ?? '');
         token = await this.signIn(writeAuth(auth), context);
       } else {
         const tokenId = refresh ? String(auth.values['oauth2TokenId'] ?? '') : undefined;
@@ -303,6 +335,8 @@ export class WorkspaceState {
   readonly oauth2SignIn = signal<OAuth2SignIn | undefined>(undefined);
   /** Status returned by pasting the address, read by the polling loop. */
   private oauth2Completed?: OAuth2SignInStatus;
+  /** Token name of the sign-in in progress, for a token pasted by hand. */
+  private oauth2SignInName = '';
   /** Runs a browser sign-in until it gives a token, fails or is cancelled (`undefined`). */
   private async signIn(auth: unknown, context: ExecutionContext) {
     const started = await this.cases.oauth2Authorize(auth, context);
@@ -356,6 +390,25 @@ export class WorkspaceState {
         'complete',
         url.trim(),
       );
+    } catch (error) {
+      this.error.set(this.describe(error));
+    }
+  }
+  /**
+   * Ends the sign-in with a token the person pasted from the browser, when the address it
+   * returned to carries no code (a web front that signs in by itself and cleans its address).
+   */
+  async useOAuth2Token(pasted: PastedOAuth2Token) {
+    const signIn = this.oauth2SignIn();
+    if (!signIn) return;
+    try {
+      const token = await this.cases.addOAuth2Token(
+        this.workspaceId(),
+        this.oauth2SignInName,
+        pasted,
+      );
+      this.oauth2Completed = { state: 'done', token };
+      void this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'cancel').catch(() => {});
     } catch (error) {
       this.error.set(this.describe(error));
     }

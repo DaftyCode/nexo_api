@@ -91,7 +91,7 @@
       </button>
     }
   </nav>
-  <div class="request-content">
+  <div class="request-content" [class.fill]="tab() === 'body' || tab() === 'scripts'">
     @switch (tab()) {
       @case ('params') {
         <div class="section-caption">
@@ -102,6 +102,17 @@
           >
         </div>
         <app-key-value-editor [rows]="request().query" (rowsChange)="rows('query', $event)" />
+        @if (pathVariables().length) {
+          <div class="section-caption">
+            {{ 'Path variables' | transloco }}
+            <span>{{ 'Values of the :name segments of the URL.' | transloco }}</span>
+          </div>
+          <app-key-value-editor
+            [rows]="pathVariables()"
+            (rowsChange)="editPathVariables($event)"
+            [fixedKeys]="true"
+          />
+        }
       }
       @case ('headers') {
         <div class="section-caption">{{ 'Request headers' | transloco }}</div>
@@ -112,9 +123,13 @@
           <label
             >{{ 'Body type' | transloco
             }}<select [formField]="fields.bodyMode">
+              <option value="none">{{ 'None' | transloco }}</option>
               <option value="raw">{{ 'Raw' | transloco }}</option>
               <option value="urlencoded">{{ 'x-www-form-urlencoded' | transloco }}</option>
               <option value="formdata">{{ 'Form data' | transloco }}</option>
+              @if (keptBodyMode()) {
+                <option [value]="request().bodyMode">{{ request().bodyMode }}</option>
+              }
             </select></label
           ><label
             >{{ 'Format' | transloco
@@ -127,7 +142,16 @@
             </select></label
           ><button class="text-button" (click)="format()">{{ 'Beautify' | transloco }}</button>
         </div>
-        @if (request().bodyMode === 'raw') {
+        @if (request().bodyMode === 'none') {
+          <p class="editor-hint">{{ 'This request does not have a body.' | transloco }}</p>
+        } @else if (keptBodyMode()) {
+          <p class="editor-hint">
+            {{
+              'This body type is not edited in Nexo. It is kept as imported when you save; choose another type to replace it.'
+                | transloco
+            }}
+          </p>
+        } @else if (request().bodyMode === 'raw') {
           <textarea
             class="code-editor"
             [formField]="fields.body"

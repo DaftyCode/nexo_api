@@ -14,6 +14,8 @@ export interface RequestDraft {
   url: string;
   headers: KeyValue[];
   query: KeyValue[];
+  /** Values of the `:name` segments of the URL (Postman "Path Variables"). */
+  pathVariables: KeyValue[];
   form: KeyValue[];
   body: string;
   bodyMode: string;
@@ -192,6 +194,27 @@ export function splitQuery(url: string): { url: string; query: KeyValue[] } {
   }
   return { url: url.slice(0, index), query };
 }
+/** Names of the `:name` path segments of a URL, in order and without repeats, as Postman. */
+export function pathVariableNames(url: string): string[] {
+  const address = url.split(/[?#]/, 1)[0];
+  const scheme = address.indexOf('://');
+  const slash = scheme < 0 ? 0 : address.indexOf('/', scheme + 3);
+  if (slash < 0) return [];
+  const names = address
+    .slice(slash)
+    .split('/')
+    .filter((segment) => segment.length > 1 && segment.startsWith(':'))
+    .map((segment) => segment.slice(1));
+  return [...new Set(names)];
+}
+/** The path variables of a URL with the values already entered, one row per name. */
+export function pathVariableRows(url: string, rows: readonly KeyValue[]): KeyValue[] {
+  return pathVariableNames(url).map((key) => ({
+    key,
+    value: rows.find((row) => row.key === key)?.value ?? '',
+    enabled: true,
+  }));
+}
 export function newRequest(id: string): RequestDraft {
   return {
     id,
@@ -201,6 +224,7 @@ export function newRequest(id: string): RequestDraft {
     url: '',
     headers: [row()],
     query: [row()],
+    pathVariables: [],
     form: [row()],
     body: '',
     bodyMode: 'raw',
@@ -241,6 +265,12 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
     typeof url === 'string' ? url : String((url as Record<string, unknown>)?.['raw'] ?? ''),
   );
   draft.url = split.url;
+  const variable = typeof url === 'object' ? (url as Record<string, unknown>)?.['variable'] : [];
+  draft.pathVariables = Array.isArray(variable)
+    ? (variable as { key: string; value: unknown }[])
+        .filter((x) => x && x.key)
+        .map((x) => ({ key: String(x.key), value: String(x.value ?? ''), enabled: true }))
+    : [];
   const disabled = Array.isArray(item['nexoDisabledQuery'])
     ? (item['nexoDisabledQuery'] as { key: string; value: string }[]).map((x) => ({
         key: String(x.key),
@@ -256,6 +286,8 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
   if (body) {
     draft.bodyMode = String(body['mode'] ?? 'raw');
     draft.body = String(body['raw'] ?? '');
+    const options = body['options'] as { raw?: { language?: unknown } } | undefined;
+    if (typeof options?.raw?.language === 'string') draft.bodyLanguage = options.raw.language;
     if (body['mode'] === 'graphql') {
       draft.protocol = 'graphql';
       draft.bodyMode = 'raw';
@@ -278,6 +310,8 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
   }
   return draft;
 }
+/** Body modes edited in the request editor; others (a binary file) are kept unchanged. */
+export const editableBodyModes = ['none', 'raw', 'urlencoded', 'formdata'];
 export function toItem(draft: RequestDraft, existing?: CollectionItem): CollectionItem {
   const headers = draft.headers
     .filter((x) => x.key)
@@ -289,17 +323,29 @@ export function toItem(draft: RequestDraft, existing?: CollectionItem): Collecti
       (url.includes('?') ? '&' : '?') +
       query.map((x) => `${encodeQueryPart(x.key)}=${encodeQueryPart(x.value)}`).join('&');
   const auth = writeAuth(draft.auth);
+  // As Postman stores them: the URL as an object with the values of its `:name` segments.
+  const variable = pathVariableRows(draft.url, draft.pathVariables ?? []).map((x) => ({
+    key: x.key,
+    value: x.value,
+  }));
+  const previous = typeof existing?.request === 'object' ? existing.request : {};
+  const previousBody = previous['body'] as Record<string, unknown> | undefined;
   const body =
     draft.protocol === 'graphql'
       ? { mode: 'graphql', graphql: { query: draft.body, variables: draft.graphqlVariables } }
       : draft.bodyMode === 'raw'
         ? { mode: 'raw', raw: draft.body, options: { raw: { language: draft.bodyLanguage } } }
-        : {
-            mode: draft.bodyMode,
-            [draft.bodyMode]: draft.form
-              .filter((x) => x.key)
-              .map((x) => ({ key: x.key, value: x.value, disabled: !x.enabled, type: 'text' })),
-          };
+        : draft.bodyMode === 'none'
+          ? { mode: 'none' }
+          : !editableBodyModes.includes(draft.bodyMode) && previousBody?.['mode'] === draft.bodyMode
+            ? // A body Nexo cannot edit (a binary file) is kept as it was.
+              previousBody
+            : {
+                mode: draft.bodyMode,
+                [draft.bodyMode]: draft.form
+                  .filter((x) => x.key)
+                  .map((x) => ({ key: x.key, value: x.value, disabled: !x.enabled, type: 'text' })),
+              };
   const disabledQuery = draft.query
     .filter((x) => !x.enabled && x.key)
     .map((x) => ({ key: x.key, value: x.value }));
@@ -312,9 +358,9 @@ export function toItem(draft: RequestDraft, existing?: CollectionItem): Collecti
     nexoTransport: draft.transport,
     ...(draft.realtime ? { nexoProtocol: storedRealtime(draft.realtime) } : {}),
     request: {
-      ...(typeof existing?.request === 'object' ? existing.request : {}),
+      ...previous,
       method: draft.method,
-      url,
+      url: variable.length ? { raw: url, variable } : url,
       header: headers,
       auth,
       body,

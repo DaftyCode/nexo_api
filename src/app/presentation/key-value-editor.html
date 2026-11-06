@@ -6,31 +6,42 @@
   </div>
   @for (field of fields; track field; let index = $index) {
     <div class="kv-row">
-      <input
-        type="checkbox"
-        [formField]="field.enabled"
-        [attr.aria-label]="'Enable row' | transloco"
-      />
-      <input
-        [formField]="field.key"
-        [placeholder]="'Key' | transloco"
-        [attr.aria-label]="'Key' | transloco"
-        spellcheck="false"
-      />
+      @if (fixedKeys()) {
+        <span></span>
+        <code class="kv-key">{{ field.key().value() }}</code>
+      } @else {
+        <input
+          type="checkbox"
+          [formField]="field.enabled"
+          [attr.aria-label]="'Enable row' | transloco"
+        />
+        <input
+          [formField]="field.key"
+          [placeholder]="'Key' | transloco"
+          [attr.aria-label]="'Key' | transloco"
+          spellcheck="false"
+        />
+      }
       <input
         [formField]="field.value"
         [placeholder]="'Value' | transloco"
-        [attr.aria-label]="'Value' | transloco"
+        [attr.aria-label]="fixedKeys() ? field.key().value() : ('Value' | transloco)"
         spellcheck="false"
       />
-      <button
-        class="icon-button"
-        (click)="remove(index)"
-        [attr.aria-label]="'Remove row' | transloco"
-      >
-        ×
-      </button>
+      @if (fixedKeys()) {
+        <span></span>
+      } @else {
+        <button
+          class="icon-button"
+          (click)="remove(index)"
+          [attr.aria-label]="'Remove row' | transloco"
+        >
+          ×
+        </button>
+      }
     </div>
   }
-  <button class="text-button kv-add" (click)="add()">{{ '+ Add row' | transloco }}</button>
+  @if (!fixedKeys()) {
+    <button class="text-button kv-add" (click)="add()">{{ '+ Add row' | transloco }}</button>
+  }
 </div>
