@@ -30,7 +30,7 @@
         <span
           [class.success]="r.status < 400 && r.status > 0"
           [class.danger]="r.status >= 400 || r.error"
-          >{{ r.status }} {{ r.statusText }}</span
+          >{{ r.status || ('Error' | transloco) }} {{ r.statusText }}</span
         ><span>{{ 'units.duration' | transloco: { v0: r.time } }}</span
         ><span>{{ 'units.size' | transloco: { v0: (r.size / 1024).toFixed(2) } }}</span>
       </div>
@@ -54,44 +54,47 @@
     }
     @switch (tab()) {
       @case ('body') {
-        <div class="response-actions">
-          <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">
-            {{ 'Pretty' | transloco }}</button
-          ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
-            {{ 'Raw' | transloco }}</button
-          ><button class="pill" (click)="download()">{{ 'Download' | transloco }}</button
-          ><span class="muted">{{
-            r.truncated
-              ? ('Preview limited to 8 MB' | transloco)
-              : large()
-                ? ('Large body shown without formatting' | transloco)
-                : ''
-          }}</span>
-        </div>
-        @for (warning of r.warnings ?? []; track warning) {
-          <div class="alert">{{ warning }}</div>
-        }
-        @if (binary()) {
-          @if (imageUrl()) {
-            <img class="response-image" [src]="imageUrl()" [alt]="'Response image' | transloco" />
-          } @else {
-            <div class="empty-response">
-              <h3>{{ 'Binary response' | transloco }}</h3>
-              <p>{{ contentType() }}</p>
-              <button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
-            </div>
+        <!-- A request that got no answer has no body to format or download, as in Postman. -->
+        @if (!r.error || r.body) {
+          <div class="response-actions">
+            <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">
+              {{ 'Pretty' | transloco }}</button
+            ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
+              {{ 'Raw' | transloco }}</button
+            ><button class="pill" (click)="download()">{{ 'Download' | transloco }}</button
+            ><span class="muted">{{
+              r.truncated
+                ? ('Preview limited to 8 MB' | transloco)
+                : large()
+                  ? ('Large body shown without formatting' | transloco)
+                  : ''
+            }}</span>
+          </div>
+          @for (warning of r.warnings ?? []; track warning) {
+            <div class="alert">{{ warning }}</div>
           }
-        } @else {
-          <pre class="response-code">{{ text() }}</pre>
-          @if (truncated()) {
-            <div class="row">
-              <span class="muted">{{
-                'Only the beginning of this response is shown.' | transloco
-              }}</span
-              ><button class="button" (click)="showAll()">
-                {{ 'Show full response' | transloco }}</button
-              ><button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
-            </div>
+          @if (binary()) {
+            @if (imageUrl()) {
+              <img class="response-image" [src]="imageUrl()" [alt]="'Response image' | transloco" />
+            } @else {
+              <div class="empty-response">
+                <h3>{{ 'Binary response' | transloco }}</h3>
+                <p>{{ contentType() }}</p>
+                <button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+              </div>
+            }
+          } @else {
+            <pre class="response-code">{{ text() }}</pre>
+            @if (truncated()) {
+              <div class="row">
+                <span class="muted">{{
+                  'Only the beginning of this response is shown.' | transloco
+                }}</span
+                ><button class="button" (click)="showAll()">
+                  {{ 'Show full response' | transloco }}</button
+                ><button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+              </div>
+            }
           }
         }
       }

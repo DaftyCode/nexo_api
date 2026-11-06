@@ -726,5 +726,6 @@
   "Resize the request and the response": "Resize the request and the response",
   "Resize the context panel": "Resize the context panel",
   "Reset layout": "Reset layout",
-  "Reset layout: panels back to the template size": "Reset layout: panels back to the template size"
+  "Reset layout: panels back to the template size": "Reset layout: panels back to the template size",
+  "Error": "Error"
 }
