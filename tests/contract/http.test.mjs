@@ -125,14 +125,14 @@ test('path variables of a Postman URL are filled in, with their own variables re
       request: {
         method: 'GET',
         url: {
-          raw: `${echo.url}/polizas/:poliza/siniestros?ramo=6`,
-          variable: [{ key: 'poliza', value: '{{policy}}' }],
+          raw: `${echo.url}/orders/:order/items?status=6`,
+          variable: [{ key: 'order', value: '{{order}}' }],
         },
       },
     },
-    variables: [{ key: 'policy', value: '6458273', enabled: true }],
+    variables: [{ key: 'order', value: '1234567', enabled: true }],
   });
-  assert.equal(JSON.parse(result.body).path, '/polizas/6458273/siniestros?ramo=6');
+  assert.equal(JSON.parse(result.body).path, '/orders/1234567/items?status=6');
 });
 
 test('runs keep folder variables in their folder, order test scripts and iterate data', async () => {

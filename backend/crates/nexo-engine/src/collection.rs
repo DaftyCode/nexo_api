@@ -439,13 +439,13 @@ mod tests {
     #[test]
     fn fills_path_variables_like_postman() {
         let url = json!({
-            "raw": "http://localhost:8080/v1/polizas/:poliza/siniestros/:empty?ramo=:poliza#:poliza",
-            "variable": [{"key": "poliza", "value": "6458273"}, {"key": "empty", "value": ""}]
+            "raw": "http://localhost:8080/v1/orders/:order/items/:empty?status=:order#:order",
+            "variable": [{"key": "order", "value": "1234567"}, {"key": "empty", "value": ""}]
         });
         // The port and the query keep their colons; a variable without a value stays.
         assert_eq!(
             request_url(&url),
-            "http://localhost:8080/v1/polizas/6458273/siniestros/:empty?ramo=:poliza#:poliza"
+            "http://localhost:8080/v1/orders/1234567/items/:empty?status=:order#:order"
         );
         let built = json!({
             "protocol": "https", "host": ["api", "test"], "path": ["users", ":id"],

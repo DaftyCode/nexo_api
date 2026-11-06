@@ -124,13 +124,13 @@ test('a Postman export opens with its body and path variables, and sends them', 
         { mode: 'urlencoded', urlencoded: [] },
         {
           raw: `${nexo.echo}/contexto/:clave`,
-          variable: [{ key: 'clave', value: 'cead1876' }],
+          variable: [{ key: 'clave', value: 'k1' }],
         },
       ),
       request(
         'cache',
         'POST',
-        { mode: 'raw', raw: '{"canal":"MEDIADORES"}', options: { raw: { language: 'json' } } },
+        { mode: 'raw', raw: '{"channel":"web"}', options: { raw: { language: 'json' } } },
         { raw: `${nexo.echo}/contexto` },
       ),
     ],
@@ -144,7 +144,7 @@ test('a Postman export opens with its body and path variables, and sends them', 
   // The POST "cache" shows the body it sends.
   await collection.locator('.tree-row', { hasText: 'POST' }).click();
   await configuration.getByRole('button', { name: 'Body' }).click();
-  await expect(page.getByLabel('Request body')).toHaveValue('{"canal":"MEDIADORES"}');
+  await expect(page.getByLabel('Request body')).toHaveValue('{"channel":"web"}');
 
   // The GET "cache" shows its path variable, which is edited and sent. A request panel made
   // small grows to show it.
@@ -160,7 +160,7 @@ test('a Postman export opens with its body and path variables, and sends them', 
     .poll(() => page.locator('.request-content').evaluate((e) => e.scrollHeight - e.clientHeight))
     .toBeLessThanOrEqual(1);
   const clave = page.getByRole('textbox', { name: 'clave', exact: true });
-  await expect(clave).toHaveValue('cead1876');
+  await expect(clave).toHaveValue('k1');
   await clave.fill('k2');
   await page.getByRole('button', { name: 'Send' }).first().click();
   await expect(page.locator('.response-section')).toContainText('/contexto/k2');
@@ -222,7 +222,7 @@ test('item actions float over the next panel and stay usable with long names', a
 }) => {
   // The "Move to" select lists the collection and folder names. A long name used to widen
   // the menu past the sidebar's left edge, where the sidebar clipped every action.
-  const name = '[DEV-mediadores] Comunicador Siniestros BFF con un nombre muy largo';
+  const name = '[development] Orders service folder with a very long name';
   await page.setViewportSize({ width: 900, height: 700 });
   await nexo.signIn(page);
   await page.getByRole('button', { name: 'Create collection' }).first().click();

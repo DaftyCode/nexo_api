@@ -168,13 +168,13 @@ describe('collection item conversion', () => {
           port: '8080',
           path: ['v1', 'contexto', ':clave'],
           query: [{ key: 'ramo', value: '6' }],
-          variable: [{ key: 'clave', value: 'cead1876' }],
+          variable: [{ key: 'clave', value: 'k1' }],
         },
       },
     };
     const draft = fromItem(exported, 'r1');
     expect(draft.url).toBe('http://localhost:8080/v1/contexto/:clave');
-    expect(draft.pathVariables).toEqual([{ key: 'clave', value: 'cead1876', enabled: true }]);
+    expect(draft.pathVariables).toEqual([{ key: 'clave', value: 'k1', enabled: true }]);
     expect(draft.bodyLanguage).toBe('xml');
     expect(draft.body).toBe('<a/>');
     const saved = toItem(
