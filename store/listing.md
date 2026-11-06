@@ -35,6 +35,8 @@ Every authorization type, sign-in like Postman and a lighter app.
 
 - All the authorizations of Postman, Bruno and Insomnia: OAuth 2.0 (every grant, PKCE, token management, automatic refresh and Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc.
 - OAuth 2.0 sign-in in a window of the app, like Postman: it takes the token by itself, whatever the Callback URL.
+- Postman collections open complete: path variables (:id), body format and body type. Folders fold like their collection.
+- Panels resize with the mouse and keep their size; Reset layout and a Back button from settings.
 - Allowed domains for each vault secret: it is only sent to the domains you choose, also after a redirect.
 - The engine now runs in Rust inside the app, without Node: it starts faster, uses less memory and runs scripts in an isolated sandbox.
 - Post-quantum key exchange (X25519MLKEM768) preferred for TLS connections.
@@ -95,6 +97,8 @@ Todas las autorizaciones, inicio de sesión como en Postman y una aplicación m�
 
 - Todas las autorizaciones de Postman, Bruno e Insomnia: OAuth 2.0 (todos los flujos, PKCE, gestión de tokens, renovación automática y Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc.
 - Inicio de sesión de OAuth 2.0 en una ventana de la aplicación, como en Postman: recoge el token sola, sea cual sea la Callback URL.
+- Las colecciones de Postman se abren completas: variables de ruta (:id), formato y tipo de body. Las carpetas se pliegan como su colección.
+- Los paneles se redimensionan con el ratón y guardan su tamaño; Restablecer vista y botón Volver desde los ajustes.
 - Dominios permitidos para cada secreto del vault: solo se envía a los dominios que elijas, también tras una redirección.
 - El motor funciona ahora en Rust dentro de la aplicación, sin Node: arranca antes, usa menos memoria y ejecuta los scripts en un sandbox aislado.
 - Intercambio de claves poscuántico (X25519MLKEM768) preferido en las conexiones TLS.
