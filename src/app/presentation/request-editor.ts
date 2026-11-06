@@ -1,8 +1,12 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
+  afterRenderEffect,
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
+  inject,
+  untracked,
   model,
   signal,
   output,
@@ -19,6 +23,7 @@ import {
 } from '../domain/models';
 import { AuthDraft, Inheritance } from '../domain/auth';
 import { ResolvedVariable } from '../domain/variables';
+import { AppearanceState } from './appearance-state';
 import { AuthEditor } from './auth-editor';
 import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
@@ -55,6 +60,30 @@ export class RequestEditor {
   protected readonly tab = signal('params');
   protected readonly scriptTab = signal('tests');
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly appearance = inject(AppearanceState);
+  private readonly requestId = computed(() => this.request().id);
+  private readonly pathVariableCount = computed(() => this.pathVariables().length);
+
+  constructor() {
+    // Opening a request (or adding a `:name` to its URL) shows all its parameters: a panel
+    // made smaller grows to fit them, up to 60% of the space. The size is not kept, and the
+    // divider still moves it.
+    afterRenderEffect(() => {
+      this.requestId();
+      this.pathVariableCount();
+      if (this.tab() !== 'params' || this.appearance.current() === 'canvas') return;
+      const content = this.host.querySelector<HTMLElement>('.request-content');
+      const main = this.host.closest('.main-workspace');
+      if (!content || !main) return;
+      const hidden = content.scrollHeight - content.clientHeight;
+      if (hidden <= 1) return;
+      const room =
+        (main.getBoundingClientRect().bottom - content.getBoundingClientRect().top) * 0.6;
+      const size = Math.min(content.offsetHeight + hidden, Math.max(content.offsetHeight, room));
+      if (size > content.offsetHeight + 1) untracked(() => this.appearance.resize('request', size));
+    });
+  }
   /** One row per `:name` segment of the URL, with the value entered for it. */
   protected readonly pathVariables = computed(() =>
     pathVariableRows(this.request().url, this.request().pathVariables ?? []),

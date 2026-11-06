@@ -103,7 +103,7 @@
         </div>
         <app-key-value-editor [rows]="request().query" (rowsChange)="rows('query', $event)" />
         @if (pathVariables().length) {
-          <div class="section-caption">
+          <div class="section-caption path-variables-caption">
             {{ 'Path variables' | transloco }}
             <span>{{ 'Values of the :name segments of the URL.' | transloco }}</span>
           </div>

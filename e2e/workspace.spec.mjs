@@ -99,6 +99,7 @@ test('a Postman export opens with its body and path variables, and sends them', 
   page,
   nexo,
 }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
   await nexo.signIn(page);
   const request = (name, method, body, url) => ({
     name,
@@ -138,9 +139,19 @@ test('a Postman export opens with its body and path variables, and sends them', 
   await configuration.getByRole('button', { name: 'Body' }).click();
   await expect(page.getByLabel('Request body')).toHaveValue('{"canal":"MEDIADORES"}');
 
-  // The GET "cache" shows its path variable, which is edited and sent.
-  await collection.locator('.tree-row', { hasText: 'GET' }).click();
+  // The GET "cache" shows its path variable, which is edited and sent. A request panel made
+  // small grows to show it.
   await configuration.getByRole('button', { name: 'Params' }).click();
+  const divider = page.getByRole('separator', { name: 'Resize the request and the response' });
+  const box = await divider.boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2, box.y - 400, { steps: 4 });
+  await page.mouse.up();
+  await collection.locator('.tree-row', { hasText: 'GET' }).click();
+  await expect
+    .poll(() => page.locator('.request-content').evaluate((e) => e.scrollHeight - e.clientHeight))
+    .toBeLessThanOrEqual(1);
   const clave = page.getByRole('textbox', { name: 'clave', exact: true });
   await expect(clave).toHaveValue('cead1876');
   await clave.fill('k2');
