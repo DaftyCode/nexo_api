@@ -133,6 +133,22 @@ export class Workspace {
       this.state.section.set('collections');
     }
   }
+  /** Collapsed state key of a folder, next to the ids of collapsed collections. */
+  protected folderKey(collection: string, path: readonly number[]) {
+    return `${collection}/${path.join('.')}`;
+  }
+  /** Items of a collection shown in the tree: those inside a collapsed folder are hidden. */
+  protected visibleEntries(collection: string) {
+    const collapsed = this.collapsed();
+    return (this.state.trees().get(collection) ?? []).filter(
+      (entry) =>
+        !entry.path
+          .slice(0, -1)
+          .some((_, index) =>
+            collapsed.includes(this.folderKey(collection, entry.path.slice(0, index + 1))),
+          ),
+    );
+  }
   protected toggle(id: string) {
     this.collapsed.update((list) =>
       list.includes(id) ? list.filter((x) => x !== id) : [...list, id],

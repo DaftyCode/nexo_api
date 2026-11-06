@@ -246,10 +246,18 @@ bash install-web.sh  (macOS / Linux)</pre>
                       class="tree-toggle"
                       (click)="toggle(collection.id)"
                       [attr.aria-expanded]="!collapsed().includes(collection.id)"
+                      [attr.aria-label]="collection.name"
                     >
-                      {{ collapsed().includes(collection.id) ? '›' : '⌄' }}</button
-                    ><button class="collection-name" (click)="toggle(collection.id)">
-                      <span class="folder-icon" aria-hidden="true">▱</span>{{ collection.name }}
+                      <app-studio-icon name="chevron" /></button
+                    ><button
+                      class="collection-name"
+                      [title]="collection.name"
+                      (click)="toggle(collection.id)"
+                    >
+                      <app-studio-icon
+                        class="tree-icon collection-icon"
+                        name="collections"
+                      /><span>{{ collection.name }}</span>
                     </button>
                     <details class="collection-menu" (toggle)="placeMenu($event)">
                       <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
@@ -272,14 +280,26 @@ bash install-web.sh  (macOS / Linux)</pre>
                     </details>
                   </div>
                   @if (!collapsed().includes(collection.id)) {
-                    @for (
-                      entry of state.trees().get(collection.id) ?? [];
-                      track entry.path.join('.')
-                    ) {
-                      <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 14">
+                    @for (entry of visibleEntries(collection.id); track entry.path.join('.')) {
+                      <div class="tree-row" [style.padding-left.px]="14 + entry.depth * 22">
                         @if (entry.item.item) {
-                          <span class="folder-icon" aria-hidden="true">▱</span
-                          ><span>{{ entry.item.name }}</span
+                          <button
+                            class="tree-toggle"
+                            (click)="toggle(folderKey(collection.id, entry.path))"
+                            [attr.aria-expanded]="
+                              !collapsed().includes(folderKey(collection.id, entry.path))
+                            "
+                            [attr.aria-label]="entry.item.name"
+                          >
+                            <app-studio-icon name="chevron" /></button
+                          ><button
+                            class="folder-name"
+                            [title]="entry.item.name"
+                            (click)="toggle(folderKey(collection.id, entry.path))"
+                          >
+                            <app-studio-icon class="tree-icon" name="folder" /><span>{{
+                              entry.item.name
+                            }}</span></button
                           ><button
                             class="icon-button"
                             (click)="state.addRequest(collection, entry.path)"

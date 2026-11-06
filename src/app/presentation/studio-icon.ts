@@ -24,6 +24,8 @@ const paths: Record<string, string> = {
   save: 'M4 3h13l4 4v14H3V3h1Zm3 0v7h10V3M7 21v-7h10v7',
   code: 'm7 6-5 6 5 6m10-12 5 6-5 6M14 3l-4 18',
   send: 'm3 10 18-7-7 18-3-8-8-3Zm8 3L21 3',
+  chevron: 'm9 6 6 6-6 6',
+  folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
 };
 
 @Component({

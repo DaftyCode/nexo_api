@@ -88,8 +88,15 @@ test('a request is created, renamed, moved into a folder and sent', async ({ pag
   // Inside the folder the request is indented one level deeper.
   await expect(collection.locator('.tree-row', { hasText: 'List users' })).toHaveAttribute(
     'style',
-    /padding-left: 28px/,
+    /padding-left: 36px/,
   );
+  // Folders open and close like their collection.
+  const users = collection.getByRole('button', { name: 'Users', exact: true }).first();
+  await expect(users).toHaveAttribute('aria-expanded', 'true');
+  await users.click();
+  await expect(collection.locator('.tree-row', { hasText: 'List users' })).toBeHidden();
+  await users.click();
+  await expect(collection.locator('.tree-row', { hasText: 'List users' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Send' }).first().click();
   await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();

@@ -556,25 +556,55 @@ small {
   position: relative;
 }
 .tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 5px;
   color: var(--muted);
-  font-size: 18px;
-  padding: 0 5px;
 }
-.collection-name {
+.tree-toggle:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.tree-toggle app-studio-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s;
+}
+.tree-toggle[aria-expanded='true'] app-studio-icon {
+  transform: rotate(90deg);
+}
+.collection-name,
+.folder-name {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+}
+.folder-name {
+  font-size: 12.5px;
+}
+.collection-name > span,
+.folder-name > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 500;
 }
-.folder-icon {
-  color: #aaa18d;
-  font-size: 20px;
+.tree-icon {
+  width: 17px;
+  height: 17px;
+  color: #e3b35c;
+}
+.tree-icon.collection-icon {
+  color: var(--accent);
 }
 .tree-row {
   display: flex;
@@ -586,7 +616,7 @@ small {
   background: #ffffff04;
   border-radius: 4px;
 }
-.tree-row > span:not(.folder-icon) {
+.tree-row > span {
   flex: 1;
   font-size: 11px;
 }

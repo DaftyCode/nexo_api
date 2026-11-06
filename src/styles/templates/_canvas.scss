@@ -247,8 +247,11 @@
   .collection-menu > div {
     box-shadow: 0 8px 25px #34406320;
   }
-  .folder-icon {
-    color: #8e7adc;
+  .tree-icon {
+    color: #d39a2c;
+  }
+  .tree-icon.collection-icon {
+    color: var(--accent);
   }
   .main-workspace {
     display: grid;
