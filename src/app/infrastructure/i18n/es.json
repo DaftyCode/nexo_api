@@ -724,5 +724,7 @@
   "Back to": "Volver a",
   "Resize the sidebar": "Cambiar el tamaño de la barra lateral",
   "Resize the request and the response": "Cambiar el tamaño de la petición y la respuesta",
-  "Resize the context panel": "Cambiar el tamaño del panel de contexto"
+  "Resize the context panel": "Cambiar el tamaño del panel de contexto",
+  "Reset layout": "Restablecer vista",
+  "Reset layout: panels back to the template size": "Restablecer vista: los paneles vuelven al tamaño de la plantilla"
 }

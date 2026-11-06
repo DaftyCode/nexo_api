@@ -874,8 +874,10 @@ small {
   color: var(--green);
 }
 .request-content {
-  /* Room for the body on tall windows; the divider below resizes it. */
-  height: clamp(213px, 34vh, 440px);
+  /* As tall as its content (a few params, or the body editor) up to a share of the
+     window; dragging the divider below fixes a height instead. */
+  height: auto;
+  max-height: clamp(213px, 45vh, 560px);
   overflow: auto;
   padding: 13px 21px 16px;
 }

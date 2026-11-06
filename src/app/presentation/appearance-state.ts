@@ -37,6 +37,13 @@ export class AppearanceState {
     this.layouts.update((layouts) => resizePanel(layouts, this.current(), name));
     this.save();
   }
+  /** Whether a panel of the current template was resized. */
+  readonly resized = computed(() => Object.keys(this.layout()).length > 0);
+  /** "Reset layout": every panel of the current template back to its size. */
+  resetLayout() {
+    this.layouts.update((layouts) => ({ ...layouts, [this.current()]: {} }));
+    this.save();
+  }
   /** Keeps the sizes once a drag ends. */
   save() {
     this.cases.saveLayouts(this.layouts());

@@ -414,7 +414,7 @@
     height: 18px;
   }
   .request-content {
-    height: clamp(198px, 34vh, 440px);
+    max-height: clamp(198px, 45vh, 560px);
     padding: 17px 25px 21px;
   }
   .section-caption {
@@ -462,7 +462,8 @@
     height: 16px;
   }
   .response-section {
-    margin: 0 18px 0 0;
+    /* Aligned with the request content above it. */
+    margin: 0 18px;
     border: 1px solid #354a77;
     border-radius: 17px 17px 0 0;
     overflow: hidden;
@@ -771,7 +772,7 @@
       display: none;
     }
     .response-section {
-      margin-right: 10px;
+      margin: 0 10px;
     }
     .response-tabs {
       padding: 0 14px;

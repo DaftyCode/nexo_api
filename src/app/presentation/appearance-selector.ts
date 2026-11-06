@@ -25,10 +25,22 @@ import { AppearanceState } from './appearance-state';
         }
       </select>
     </label>
+    <button
+      type="button"
+      class="reset-layout"
+      [disabled]="!appearance.resized()"
+      [attr.aria-label]="'Reset layout' | transloco"
+      [title]="'Reset layout: panels back to the template size' | transloco"
+      (click)="appearance.resetLayout()"
+    >
+      ↺
+    </button>
   `,
   styles: `
     :host {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       flex-shrink: 0;
     }
     .template-selector {
@@ -44,6 +56,19 @@ import { AppearanceState } from './appearance-state';
       border-radius: 8px;
       font-weight: 600;
       color: var(--text);
+    }
+    .reset-layout {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1;
+    }
+    .reset-layout:disabled {
+      opacity: 0.35;
+      cursor: default;
     }
     @media (max-width: 1100px) {
       .template-selector > span {

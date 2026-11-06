@@ -56,7 +56,7 @@
   flex-direction: column;
 }
 .request-content.fill > .code-editor:not(.small) {
-  flex: 1 0 120px;
-  min-height: 120px;
+  flex: 1 0 auto;
+  min-height: clamp(175px, 26vh, 380px);
   resize: none;
 }

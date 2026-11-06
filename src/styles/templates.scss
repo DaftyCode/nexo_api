@@ -95,6 +95,12 @@
   }
   .studio.sized-request:not([data-template='canvas']) .request-content {
     height: var(--nexo-request);
+    max-height: none;
+  }
+  .studio.sized-request:not([data-template='canvas'])
+    .request-content.fill
+    > .code-editor:not(.small) {
+    min-height: 120px;
   }
   .studio.sized-context[data-template='studio'] app-workspace-context {
     width: var(--nexo-context);

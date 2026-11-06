@@ -177,6 +177,17 @@ test('panels resize by dragging their dividers, and Back leaves the settings', a
     .poll(async () => (await page.locator('.request-content').boundingBox())?.height)
     .toBe(resized);
 
+  // "Reset layout" gives the panels back their template size.
+  await page
+    .getByRole('navigation', { name: 'Request configuration' })
+    .getByRole('button', { name: 'Body' })
+    .click();
+  await page.getByRole('button', { name: 'Reset layout' }).click();
+  await expect
+    .poll(async () => (await page.locator('.request-content').boundingBox())?.height)
+    .toBe(before);
+  await expect(page.getByRole('button', { name: 'Reset layout' })).toBeDisabled();
+
   await page.getByRole('button', { name: 'Create collection' }).first().click();
   await page.getByPlaceholder('Give it a name').fill('Back API');
   await page.getByRole('button', { name: 'Create', exact: true }).click();
