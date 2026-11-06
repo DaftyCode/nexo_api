@@ -1,14 +1,14 @@
 cask "nexo-api" do
-  version "0.1.0"
+  version "0.3.0"
 
   on_arm do
-    sha256 "33114ea5e1f53f4cf6a76de7e45c1072b772b9deb29c287cabbeaac4411f60a6"
-    url "https://github.com/DaftyCode/nexo_api/releases/download/v0.1.0/Nexo.API_0.1.0_aarch64.dmg"
+    sha256 "7518efd14847d953ba905332d2f8d9c4e538fb026d705216aa022958d5e08d86"
+    url "https://github.com/DaftyCode/nexo_api/releases/download/v0.3.0/Nexo.API_0.3.0_aarch64.dmg"
   end
 
   on_intel do
-    sha256 "ece1747f9e71771e6b7a9e566d26f1953aec6075ee6a2854ed44b7c9418f2a8d"
-    url "https://github.com/DaftyCode/nexo_api/releases/download/v0.1.0/Nexo.API_0.1.0_x64.dmg"
+    sha256 "bd8ade7a14062be4db9243af89c7b9243af1c4912155fbee52f3ec37e41be228"
+    url "https://github.com/DaftyCode/nexo_api/releases/download/v0.3.0/Nexo.API_0.3.0_x64.dmg"
   end
 
   name "Nexo API"
