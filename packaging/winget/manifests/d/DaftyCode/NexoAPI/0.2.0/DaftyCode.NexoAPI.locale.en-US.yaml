@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
+
+PackageIdentifier: DaftyCode.NexoAPI
+PackageVersion: 0.2.0
+PackageLocale: en-US
+Publisher: DaftyCode
+PublisherUrl: https://github.com/DaftyCode
+PackageName: Nexo API
+PackageUrl: https://github.com/DaftyCode/nexo_api
+License: MIT
+LicenseUrl: https://github.com/DaftyCode/nexo_api/blob/master/LICENSE
+ShortDescription: Open source API workspace for desktop and self-hosted servers.
+Tags:
+  - api
+  - developer-tools
+  - http
+  - tauri
+  - rust
+ManifestType: defaultLocale
+ManifestVersion: 1.12.0
