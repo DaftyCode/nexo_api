@@ -52,4 +52,90 @@ describe('Workspace context', () => {
     expect(select.value).toBe('prod');
     expect(fixture.nativeElement.textContent).toContain('https://prod.example.test');
   });
+
+  describe('recent requests and the current collection', () => {
+    const history = (id: string, name: string, updated: number, value: unknown = undefined) => ({
+      id,
+      workspace_id: 'local',
+      kind: 'history',
+      name,
+      revision: 1,
+      updated_at: updated,
+      value,
+    });
+    let state: WorkspaceState;
+    beforeEach(() => {
+      TestBed.configureTestingModule({ imports: [WorkspaceContext], providers: testProviders() });
+      state = TestBed.inject(WorkspaceState);
+      state.documents.set([
+        history('h1', 'GET /users', 1),
+        history('h2', 'POST /users', 3, {
+          request: { method: 'POST' },
+          response: { status: 201 },
+        }),
+        history('h3', 'DELETE /users/1', 2, {
+          request: { method: 'DELETE' },
+          response: { status: 404 },
+        }),
+        history('h4', '', 0),
+        {
+          id: 'shop',
+          workspace_id: 'local',
+          kind: 'collection',
+          name: 'Shop',
+          revision: 1,
+          updated_at: 1,
+          value: {
+            info: { name: 'Shop' },
+            item: [
+              { name: 'List', request: { method: 'GET', url: 'x' } },
+              { name: 'Orders', item: [{ name: 'Create', request: { method: 'POST' } }] },
+            ],
+          },
+        },
+      ]);
+    });
+
+    it('lists the latest history in the side panel and opens the collection tools', async () => {
+      const fixture = TestBed.createComponent(WorkspaceContext);
+      await fixture.whenStable();
+      const root = fixture.nativeElement as HTMLElement;
+      const rows = [...root.querySelectorAll('.context-history-row')];
+      expect(rows.map((row) => row.querySelector('.method-tag')?.textContent?.trim())).toEqual([
+        'POST',
+        'DELETE',
+        'GET',
+        'HTTP',
+      ]);
+      expect(root.querySelector('.context-status.danger')?.textContent).toBe('404');
+      expect(root.textContent).toContain('Open a saved request to see its collection.');
+      expect(root.textContent).toContain('Select an environment with variables.');
+
+      state.newTab(undefined, 'shop', [0]);
+      await fixture.whenStable();
+      expect(root.querySelector('.context-collection-name')?.textContent).toBe('Shop');
+      expect(root.textContent).toContain('2');
+      root.querySelector<HTMLButtonElement>('[aria-label="Open runner"]')!.click();
+      expect(state.section()).toBe('runner');
+      root.querySelector<HTMLButtonElement>('[aria-label="Manage environments"]')!.click();
+      expect(state.section()).toBe('environments');
+      [...root.querySelectorAll<HTMLButtonElement>('.text-button')]
+        .find((button) => button.textContent?.includes('View all'))!
+        .click();
+      expect(state.section()).toBe('history');
+    });
+
+    it('shows a strip of recent requests in the canvas layout', async () => {
+      const fixture = TestBed.createComponent(WorkspaceContext);
+      fixture.componentRef.setInput('layout', 'strip');
+      await fixture.whenStable();
+      const root = fixture.nativeElement as HTMLElement;
+      expect(root.querySelectorAll('.recent-strip button')).toHaveLength(5);
+      root.querySelector<HTMLButtonElement>('.recent-view-all')!.click();
+      expect(state.section()).toBe('history');
+      state.documents.set([]);
+      await fixture.whenStable();
+      expect(root.textContent).toContain('Send a request to start your history.');
+    });
+  });
 });

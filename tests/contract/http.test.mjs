@@ -235,6 +235,40 @@ test('vault secrets reach the request, stay hidden from scripts and are redacted
   assert.deepEqual((await server.api('GET', '/secrets')).body.names, ['token']);
 });
 
+test('overridden built-ins cannot capture vault secrets while the engine fills them', async () => {
+  await server.api('PUT', '/secrets/token', { value: 'super-secret-value' });
+  // Reversed, so that redaction does not hide a capture from the assertion.
+  const reversed = 'super-secret-value'.split('').reverse().join('');
+  const result = await server.execute('request', {
+    request: {
+      url: `${echo.url}/secret`,
+      headers: [{ key: 'X-Token', value: '{{vault:token}}', enabled: true }],
+      prerequest: [
+        'globalThis.seen = [];',
+        'const own = Object.hasOwn;',
+        'Object.hasOwn = (o, k) => { seen.push(JSON.stringify(o)); return own(o, k); };',
+        'const replace = String.prototype.replace;',
+        'String.prototype.replace = function (p, f) {',
+        '  if (typeof f === "function") seen.push(f("{{vault:token}}", "vault:token"));',
+        '  return replace.call(this, p, f);',
+        '};',
+      ].join('\n'),
+      tests: [
+        'const text = seen.join("|");',
+        'pm.environment.set("capture", text.split("").reverse().join(""));',
+        'pm.sendRequest({ url: pm.variables.replaceIn("{{echo}}/send"), method: "POST",',
+        '  header: [{ key: "X-Token", value: "{{vault:token}}" }] },',
+        '  (error, response) => pm.environment.set("sent", response.json().token));',
+      ].join('\n'),
+    },
+    variables: [{ key: 'echo', value: echo.url, enabled: true }],
+  });
+  assert.equal(JSON.parse(result.body).token, '[REDACTED]', 'the request itself gets the secret');
+  assert.ok(!JSON.stringify(result).includes(reversed), 'a script captured the secret');
+  const environment = rows(result.variables.environment.values);
+  assert.equal(environment.sent, '{{vault:token}}', 'script requests carry no secrets');
+});
+
 test('scripts have no host access, cannot generate code and stop at the time limit', async () => {
   const result = await server.execute('request', {
     request: {
@@ -367,6 +401,20 @@ test('the deny-private egress policy blocks private destinations', async () => {
       assert.equal(blocked.status, 0, url);
       assert.match(blocked.error, /egress policy/, url);
     }
+    const scripted = await restricted.execute('request', {
+      request: {
+        url: `${echo.url}/blocked`,
+        prerequest: [
+          `pm.sendRequest("${echo.url}/from-script", (error) =>`,
+          '  pm.environment.set("scriptError", error ? error.message : "sent"));',
+        ].join('\n'),
+      },
+    });
+    assert.match(
+      rows(scripted.variables.environment.values).scriptError,
+      /egress policy/,
+      'pm.sendRequest follows the egress policy',
+    );
     await assert.rejects(
       restricted.execute('oauth.token', { url: `${echo.url}/token`, fields: { grant_type: 'x' } }),
       /egress policy/,

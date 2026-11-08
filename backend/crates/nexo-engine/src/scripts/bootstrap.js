@@ -1,5 +1,6 @@
 // Script API (pm.* / nx.*) evaluated inside an isolated QuickJS context.
-// The host only exchanges JSON strings with it through __nexo.
+// The host only exchanges JSON strings with it through __nexo. The file ends without a
+// semicolon: the engine appends `(seed)` to call this function.
 (function bootstrap(seed) {
   const state = {
     ...seed,
@@ -152,13 +153,17 @@
       replaceIn: (text) => replace(text),
     };
   }
-  // Vault secrets are substituted only into the outgoing request by the host. Scripts never
-  // read them, so an imported or shared collection cannot send the user's secrets elsewhere.
+  // Vault secrets and OAuth 2.0 tokens never enter this context: the host fills their
+  // references into the outgoing request after this replacement, so neither a script nor a
+  // built-in it overrides can read them.
   const scriptScopes = ['local', 'data', 'environment', 'collection', 'globals'];
-  function replace(value, scopes = scriptScopes) {
+  const secretReference = (key) => key.startsWith('vault:') || key.startsWith('$oauth2.');
+  function replace(value, scopes = scriptScopes, keepSecrets = false) {
     if (typeof value === 'string')
       return value.replace(/\{\{([^{}]+)\}\}/g, (match, raw) => {
         const key = raw.trim();
+        // The host resolves these; a variable with the same name must not shadow them.
+        if (keepSecrets && secretReference(key)) return match;
         if (key === '$guid' || key === '$randomUUID') return state.uuid;
         if (key === '$timestamp') return String(Math.floor(Date.now() / 1000));
         if (key === '$isoTimestamp') return new Date().toISOString();
@@ -167,10 +172,10 @@
           if (Object.hasOwn(state[name], key)) return String(state[name][key]);
         return match;
       });
-    if (Array.isArray(value)) return value.map((item) => replace(item, scopes));
+    if (Array.isArray(value)) return value.map((item) => replace(item, scopes, keepSecrets));
     if (value && typeof value === 'object')
       return Object.fromEntries(
-        Object.entries(value).map(([key, item]) => [key, replace(item, scopes)]),
+        Object.entries(value).map(([key, item]) => [key, replace(item, scopes, keepSecrets)]),
       );
     return value;
   }
@@ -298,12 +303,39 @@
   };
   globalThis.nx = api;
   globalThis.pm = api;
+  // Logs are bounded: 1000 entries of at most 16,384 characters each, so a script cannot fill
+  // memory or the run state with them. Values that cannot be serialized are still logged.
+  const LOG_ENTRIES = 1000;
+  const LOG_ENTRY_CHARACTERS = 16_384;
+  const logText = (value) => {
+    try {
+      return typeof value === 'string' ? value : (stringify(value) ?? String(value));
+    } catch {
+      try {
+        return String(value);
+      } catch {
+        return '[unserializable value]';
+      }
+    }
+  };
   globalThis.console = Object.fromEntries(
     ['log', 'info', 'warn', 'error', 'debug'].map((level) => [
       level,
       (...items) => {
-        if (state.logs.length < 1000)
-          state.logs.push({ level, values: items.map(serialize), iteration: state.iteration });
+        if (state.logs.length >= LOG_ENTRIES) return;
+        let room = LOG_ENTRY_CHARACTERS;
+        const values = [];
+        for (const item of items) {
+          if (room <= 0) break;
+          const text = logText(item);
+          values.push(
+            text.length > room
+              ? `${text.slice(0, room)}… [${text.length - room} more characters]`
+              : text,
+          );
+          room -= Math.max(text.length, 1);
+        }
+        state.logs.push({ level, values, iteration: state.iteration });
       },
     ]),
   );
@@ -312,7 +344,6 @@
       snapshot: () =>
         stringify({
           ...state,
-          secrets: undefined,
           queue: undefined,
           callbacks: undefined,
           request: {
@@ -322,7 +353,7 @@
             body: api.request.body,
           },
         }),
-      replace: (value) => stringify(replace(value, ['secrets', ...scriptScopes])),
+      replace: (value) => stringify(replace(value, scriptScopes, true)),
       queue: () => {
         const queue = state.queue;
         state.queue = [];

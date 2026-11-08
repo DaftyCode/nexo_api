@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { WorkspaceUseCases } from '../../application/workspace-use-cases';
-import { WorkspaceDocument } from '../../domain/models';
+import { RequestDraft, WorkspaceDocument, asCollection } from '../../domain/models';
 import { TabsStore } from '../tabs-store';
+import { CollectionsStore } from './collections-store';
 import { DocumentsStore } from './documents-store';
 import { SessionStore } from './session-store';
 import { StateContext, StatusStore } from './state-context';
@@ -68,6 +69,33 @@ describe('workspace stores', () => {
     documents.documents.set([]);
     variables.validate();
     expect(variables.environmentId()).toBe('');
+  });
+
+  it('rename the open tab of a renamed request, so saving it keeps the new name', async () => {
+    const saved: WorkspaceDocument[] = [];
+    const ctx = context({
+      saveDocument: async (d: WorkspaceDocument) => (saved.push(d), d),
+      saveRequest: (d: WorkspaceDocument, path: number[], request: RequestDraft) =>
+        new WorkspaceUseCases(
+          { save: async (next: WorkspaceDocument) => (saved.push(next), next) } as never,
+          { id: () => 'x' } as never,
+        ).saveRequest(d, path, request),
+    });
+    const documents = new DocumentsStore(ctx);
+    const collections = new CollectionsStore(ctx, documents);
+    const shop = document('shop', 'collection', 0, {
+      info: { name: 'Shop' },
+      item: [{ id: 'r1', name: 'New request', request: { method: 'GET', url: 'http://x' } }],
+    });
+    documents.documents.set([shop]);
+    collections.open(shop, asCollection(shop.value).item[0], [0]);
+    await collections.change(shop, (tree, value) => tree.renameItem(value, [0], 'List orders'));
+    expect(ctx.tabs.active()?.request.name).toBe('List orders');
+    expect(ctx.tabs.active()?.dirty).toBe(false);
+
+    ctx.tabs.edit({ ...ctx.tabs.active()!.request, url: 'http://y' });
+    await collections.saveActive();
+    expect(asCollection(saved.at(-1)!.value).item[0].name).toBe('List orders');
   });
 
   it('switch workspaces only after confirming unsaved changes', async () => {

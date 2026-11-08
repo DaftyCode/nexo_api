@@ -99,8 +99,9 @@ export class CollectionsStore {
     this.context.section.set('collections');
   }
   /**
-   * Saves a change to a collection tree. Open requests follow their item to its new path;
-   * requests whose item was removed stay open, detached from the collection.
+   * Saves a change to a collection tree. Open requests follow their item to its new path and
+   * take its new name, as in Postman, so saving them does not undo a rename. Requests whose
+   * item was removed stay open, detached from the collection.
    */
   async change(
     document: WorkspaceDocument,
@@ -118,7 +119,11 @@ export class CollectionsStore {
         const entry = followed.find((f) => f.tab === tab.id);
         if (!entry) return tab;
         const path = entry.item ? tree.pathOf(value, entry.item) : undefined;
-        return path ? { ...tab, path } : { ...tab, documentId: '', path: [], dirty: true };
+        if (!path) return { ...tab, documentId: '', path: [], dirty: true };
+        const name = tree.itemAt(value, path)?.name;
+        return name && name !== tab.request.name
+          ? { ...tab, path, request: { ...tab.request, name } }
+          : { ...tab, path };
       }),
     );
   }

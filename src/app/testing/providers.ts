@@ -1,3 +1,4 @@
+import { InjectionToken } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { LANGUAGE, languageProviders } from '../composition/language-providers';
 import { LanguageUseCases } from '../application/language-use-cases';
@@ -9,9 +10,38 @@ import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
 import { ApiPort, FilePort } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
-export function testProviders() {
+
+/** What the fake engine answers to an operation: a value, or a function of the payload. */
+export type FakeResponse = unknown | ((payload: Record<string, unknown>) => unknown);
+
+/** The in-memory API behind `testProviders`, with what it was asked. */
+export interface TestApi extends ApiPort {
+  readonly documentsStore: WorkspaceDocument[];
+  readonly calls: { operation: string; payload: Record<string, unknown> }[];
+  readonly gitCalls: { operation: string; payload: unknown }[];
+  readonly downloads: { name: string; content: string }[];
+  /** Answers by operation, set before or during a test. */
+  readonly responses: Record<string, FakeResponse>;
+  secretNames: string[];
+}
+export const TEST_API = new InjectionToken<TestApi>('TEST_API');
+
+/** Answers that match the engine's shapes, so screens can render without one. */
+const defaults: Record<string, FakeResponse> = {
+  'oauth2.tokens': { tokens: [] },
+  'mock.list': [],
+};
+
+export function testProviders(responses: Record<string, FakeResponse> = {}) {
   const documents: WorkspaceDocument[] = [];
-  const api: ApiPort = {
+  const answers: Record<string, FakeResponse> = { ...defaults, ...responses };
+  const api: TestApi = {
+    documentsStore: documents,
+    calls: [],
+    gitCalls: [],
+    downloads: [],
+    responses: answers,
+    secretNames: [],
     async initialize() {},
     async health() {
       return { name: 'Nexo API', version: 'test', mode: 'desktop', engineReady: true };
@@ -28,7 +58,8 @@ export function testProviders() {
     },
     async deleteWorkspace() {},
     async documents() {
-      return documents;
+      // A new list each time, as the engine returns.
+      return [...documents];
     },
     async save(document) {
       const saved = { ...document, revision: document.revision + 1 };
@@ -42,33 +73,50 @@ export function testProviders() {
       if (!found) throw new Error('Not found');
       return found;
     },
-    async remove() {},
-    async execute<T>() {
-      return {} as T;
+    async remove(document) {
+      const index = documents.findIndex((d) => d.id === document.id);
+      if (index >= 0) documents.splice(index, 1);
     },
-    async git<T>() {
-      return {} as T;
+    async execute<T>(operation: string, payload: unknown) {
+      const body = (payload ?? {}) as Record<string, unknown>;
+      api.calls.push({ operation, payload: body });
+      const answer = answers[operation];
+      const value = typeof answer === 'function' ? await answer(body) : answer;
+      return (value ?? {}) as T;
+    },
+    async git<T>(operation: string, payload: unknown) {
+      api.gitCalls.push({ operation, payload });
+      const answer = answers[`git.${operation}`];
+      const value = typeof answer === 'function' ? await answer(payload as never) : answer;
+      return (value ?? {}) as T;
     },
     async revisions() {
       return [];
     },
-    async putSecret() {},
-    async removeSecret() {},
-    async secrets() {
-      return [];
+    async putSecret(name) {
+      if (!api.secretNames.includes(name)) api.secretNames.push(name);
     },
-  };
+    async removeSecret(name) {
+      api.secretNames = api.secretNames.filter((secret) => secret !== name);
+    },
+    async secrets() {
+      return api.secretNames.map((name) => ({ name, allowedHosts: [] }));
+    },
+  } as TestApi;
   let id = 0;
   const files: FilePort = {
     id: () => `fixture-${++id}`,
     async read(file) {
       return file.text();
     },
-    download() {},
+    download(name, content) {
+      api.downloads.push({ name, content: String(content) });
+    },
   };
   return [
     provideRouter([]),
     ...languageProviders(),
+    { provide: TEST_API, useValue: api },
     { provide: LANGUAGE, useValue: new LanguageUseCases({ load: () => 'en', save() {} }) },
     { provide: WORKSPACE, useValue: new WorkspaceUseCases(api, files) },
     { provide: INTEGRATION, useValue: new IntegrationUseCases(api) },

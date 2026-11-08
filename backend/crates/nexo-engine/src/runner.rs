@@ -652,9 +652,11 @@ async fn run_steps(
             send_queued(&session, transport).await?;
             let state = session.snapshot()?;
             if state["skip"] != true {
-                // Where restricted secrets go, read before their references are replaced.
-                let placements = crate::secret_hosts::placements(&restricted, &state["request"]);
-                let mut outgoing = session.replace(&state["request"])?;
+                // Script variables first; where restricted secrets go is read from the
+                // references left in that result, right before the host fills them.
+                let substituted = session.replace_variables(&state["request"])?;
+                let placements = crate::secret_hosts::placements(&restricted, &substituted);
+                let mut outgoing = session.fill_secrets(&substituted);
                 let url = request_url(&outgoing["url"]);
                 outgoing["url"] = json!(url);
                 let mut result = match transport.request(&outgoing, &placements).await {

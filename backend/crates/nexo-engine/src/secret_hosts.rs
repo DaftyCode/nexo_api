@@ -1,8 +1,9 @@
 //! Vault secrets restricted to allowed hosts, like Postman's "allowed domains": where each
 //! one travels in a request and whether it may go to a host.
 //!
-//! Requests: variables are replaced in one pass, so a secret only enters a request where its
-//! `{{vault:name}}` reference is written in the request about to be sent. The reference's
+//! Requests: the script context replaces the variables, which never include secrets, and the
+//! host then fills the secret references in one pass. A secret only enters a request where
+//! its `{{vault:name}}` reference is in the request about to be sent. The reference's
 //! field tells where it travels: every field goes to the request's own host, while a
 //! redirect to another origin carries only the body (307/308) and the headers that are not
 //! credentials (credentials go too with "trust redirect credentials").
@@ -68,7 +69,7 @@ pub struct Placement {
 }
 
 /// The restricted secrets a collection-format request (`url`, `header`, `body`, `auth`)
-/// carries, before its variables are replaced.
+/// carries, before the host fills its secrets.
 pub fn placements(restricted: &[Restricted], request: &Value) -> Vec<Placement> {
     let method = request["method"]
         .as_str()

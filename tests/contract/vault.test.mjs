@@ -72,6 +72,18 @@ test('a secret limited to some domains is only sent there, also after redirects'
   // Also when only the URL carries it.
   const inUrl = await send(`${other}/q?key={{vault:api}}`, {});
   assert.equal(inUrl.error, 'Secret api cannot be sent to localhost');
+  // Also when a variable holds the reference: it is checked where the variable is used.
+  const throughVariable = (url) =>
+    server.execute('request', {
+      request: { url, headers: [{ key: 'X-Token', value: '{{token}}', enabled: true }] },
+      variables: [{ key: 'token', value: '{{vault:api}}', enabled: true }],
+    });
+  assert.equal(
+    (await throughVariable(`${other}/variable`)).error,
+    'Secret api cannot be sent to localhost',
+  );
+  const viaVariable = await throughVariable(`${echo.url}/variable`);
+  assert.equal(JSON.parse(viaVariable.body).token, '[REDACTED]');
 
   // A redirect elsewhere would carry a custom header: stopped before following it.
   const redirected = await send(`${echo.url}/hop`, { 'X-Token': '{{vault:api}}' });
