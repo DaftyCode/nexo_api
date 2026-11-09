@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { generateKeyPairSync } from 'node:crypto';
+import { createHash, generateKeyPairSync } from 'node:crypto';
 import { expect, test } from './fixture.mjs';
 
 /** Serious and critical axe violations, reduced to rule and target for readable failures. */
@@ -703,4 +703,69 @@ test('Ctrl+Enter in a script editor does not send the request', async ({ page, n
   await expect(page.getByRole('status').filter({ hasText: '200' })).toHaveCount(0);
   await page.keyboard.press('F1');
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
+});
+
+test('files chosen for form-data and binary bodies are sent byte for byte', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff, 0xfe]);
+  const sha256 = createHash('sha256').update(png).digest('hex');
+  // A Postman export keeps only the path of the file: it has to be chosen again.
+  const exported = {
+    info: {
+      name: 'Uploads',
+      schema: 'https://schema.getpostman.com/json/collection/v2.1.0/collection.json',
+    },
+    item: [
+      {
+        name: 'Avatar',
+        request: {
+          method: 'POST',
+          url: `${nexo.echo}/upload`,
+          body: {
+            mode: 'formdata',
+            formdata: [
+              { key: 'note', value: 'hi', type: 'text' },
+              { key: 'avatar', type: 'file', src: '/Users/ana/avatar.png' },
+            ],
+          },
+        },
+      },
+    ],
+  };
+  await page.getByRole('button', { name: 'Import' }).first().click();
+  await page.getByLabel('Import content').fill(JSON.stringify(exported));
+  await page.getByRole('button', { name: 'Import', exact: true }).last().click();
+  await page.locator('.collection', { hasText: 'Uploads' }).locator('.tree-row').click();
+  const configuration = page.getByRole('navigation', { name: 'Request configuration' });
+  await configuration.getByRole('button', { name: 'Body' }).click();
+  await expect(page.locator('.kv-file-missing')).toContainText('/Users/ana/avatar.png');
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(
+    page.getByText('Choose the file /Users/ana/avatar.png for the form-data field avatar'),
+  ).toBeVisible();
+
+  await page
+    .getByLabel('Select files')
+    .setInputFiles({ name: 'avatar.png', mimeType: 'image/png', buffer: png });
+  await expect(page.locator('.kv-file-names')).toHaveText('avatar.png');
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.locator('.response-code')).toContainText(
+    `avatar:avatar.png:image/png:${sha256}`,
+  );
+
+  // Saved by name, as Postman does; the file stays chosen in the open request.
+  await page.getByRole('button', { name: /Save/ }).first().click();
+  await expect(page.locator('.kv-file-names')).toHaveText('avatar.png');
+
+  // A binary body sends exactly the bytes of the file.
+  await page.locator('.body-options select').first().selectOption('file');
+  await page
+    .getByLabel('Select file', { exact: true })
+    .setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: png });
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.locator('.response-code')).toContainText(`"sha256": "${sha256}"`);
+  await expect(page.locator('.response-code')).toContainText('"type": "image/png"');
 });

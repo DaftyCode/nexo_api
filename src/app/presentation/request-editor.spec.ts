@@ -4,6 +4,7 @@ import { buttons, clickButton, exerciseControls } from '../testing/controls';
 import { newRequest } from '../domain/models';
 import { readAuth } from '../domain/auth';
 import { RequestEditor } from './request-editor';
+import { WorkspaceState } from './workspace-state';
 
 describe('RequestEditor', () => {
   let component: RequestEditor;
@@ -73,7 +74,7 @@ describe('RequestEditor', () => {
   });
 
   it('switches body types, formats JSON and keeps unknown imported types', async () => {
-    fixture.componentRef.setInput('request', { ...newRequest('r1'), bodyMode: 'file' });
+    fixture.componentRef.setInput('request', { ...newRequest('r1'), bodyMode: 'other-tool' });
     await tab('Body');
     expect(root().textContent).toContain('This body type is not edited in Nexo');
     component.request.update((r) => ({ ...r, protocol: 'graphql' }));
@@ -187,5 +188,86 @@ describe('RequestEditor', () => {
     await clickButton(fixture, 'Cancel');
     expect(emitted).toEqual(['variables', 'code', 'save', 'send', 'cancel']);
     expect(root().querySelector('.editor-tabs .count')?.textContent).toBe('2');
+  });
+
+  it('chooses files for form-data fields and a binary body', async () => {
+    const choose = async (input: HTMLInputElement, files: File[]) => {
+      Object.defineProperty(input, 'files', { value: files, configurable: true });
+      input.dispatchEvent(new Event('change'));
+      for (let i = 0; i < 4; i++) await fixture.whenStable();
+    };
+    fixture.componentRef.setInput('request', {
+      ...newRequest('r1'),
+      method: 'POST',
+      bodyMode: 'formdata',
+      form: [{ key: 'avatar', value: '', enabled: true }],
+    });
+    await tab('Body');
+    const type = root().querySelector<HTMLSelectElement>('[aria-label="Field type"]')!;
+    type.value = 'file';
+    type.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(component.request().form[0]).toMatchObject({ key: 'avatar', type: 'file', src: '' });
+    const files = root().querySelector<HTMLInputElement>('input[type="file"]')!;
+    await choose(files, [
+      new File([new Uint8Array([1, 2, 3])], 'a.png', { type: 'image/png' }),
+      new File(['b'], 'b.txt', { type: 'text/plain' }),
+    ]);
+    const [row] = component.request().form;
+    expect(row.src).toEqual(['a.png', 'b.txt']);
+    expect(
+      row.files?.map((file) => [file.name, file.contentType, file.size, file.content]),
+    ).toEqual([
+      ['a.png', 'image/png', 3, 'AQID'],
+      ['b.txt', 'text/plain', 1, 'Yg=='],
+    ]);
+    expect(root().querySelector('.kv-file-names')?.textContent).toBe('a.png, b.txt');
+
+    // A saved request keeps the names only: the files are asked for again.
+    component.request.update((r) => ({ ...r, form: [{ ...r.form[0], files: undefined }] }));
+    await fixture.whenStable();
+    expect(root().querySelector('.kv-file-missing')?.textContent).toContain('a.png, b.txt');
+    type.value = 'text';
+    type.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    const text = component.request().form[0];
+    expect([text.key, text.value, text.type, text.src, text.files]).toEqual([
+      'avatar',
+      '',
+      undefined,
+      undefined,
+      undefined,
+    ]);
+
+    const mode = root().querySelector<HTMLSelectElement>('.body-options select')!;
+    mode.value = 'file';
+    mode.dispatchEvent(new Event('input'));
+    mode.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(root().textContent).toContain('The bytes of the file are sent as the body.');
+    await choose(root().querySelector<HTMLInputElement>('.binary-body input')!, [
+      new File(['%PDF'], 'doc.pdf', { type: 'application/pdf' }),
+    ]);
+    expect(component.request().bodyFile).toMatchObject({
+      src: 'doc.pdf',
+      file: { name: 'doc.pdf', contentType: 'application/pdf', content: 'JVBERg==' },
+    });
+    component.request.update((r) => ({ ...r, bodyFile: { src: 'doc.pdf' } }));
+    await fixture.whenStable();
+    expect(root().querySelector('.binary-missing')?.textContent).toContain('doc.pdf');
+  });
+
+  it('refuses files above the request limit', async () => {
+    const state = TestBed.inject(WorkspaceState);
+    fixture.componentRef.setInput('request', { ...newRequest('r1'), bodyMode: 'file' });
+    await tab('Body');
+    const input = root().querySelector<HTMLInputElement>('.binary-body input')!;
+    const big = new File(['x'], 'big.bin');
+    Object.defineProperty(big, 'size', { value: 33 * 1024 * 1024 });
+    Object.defineProperty(input, 'files', { value: [big] });
+    input.dispatchEvent(new Event('change'));
+    for (let i = 0; i < 4; i++) await fixture.whenStable();
+    expect(state.error()).toBe('Files sent with a request can add up to 32 MB');
+    expect(component.request().bodyFile).toBeUndefined();
   });
 });

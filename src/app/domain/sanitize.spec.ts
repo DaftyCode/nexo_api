@@ -198,4 +198,24 @@ describe('sanitize', () => {
     expect(text).toContain('bob');
     expect(text).not.toContain('wsse-secret');
   });
+
+  it('keeps only the names of the files a history request sent', () => {
+    const request = newRequest('r');
+    const file = { name: 'a.png', contentType: 'image/png', size: 3, content: 'AQID' };
+    request.form = [
+      { key: 'a', value: '', enabled: true, type: 'file', src: 'a.png', files: [file] },
+    ];
+    request.bodyFile = { src: 'a.png', file };
+    const saved = historyRequest(request);
+    expect(saved.form[0]).toEqual({
+      key: 'a',
+      value: '',
+      enabled: true,
+      type: 'file',
+      src: 'a.png',
+    });
+    expect(saved.bodyFile).toEqual({ src: 'a.png' });
+    expect(JSON.stringify(saved)).not.toContain('AQID');
+    expect(historyRequest(newRequest('r')).bodyFile).toBeUndefined();
+  });
 });

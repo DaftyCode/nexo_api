@@ -75,7 +75,12 @@ function setup() {
     },
   } as unknown as ApiPort;
   let id = 0;
-  const files: FilePort = { id: () => `id-${++id}`, read: async () => '', download() {} };
+  const files: FilePort = {
+    id: () => `id-${++id}`,
+    read: async () => '',
+    readBase64: async () => '',
+    download() {},
+  };
   const cases = new WorkspaceUseCases(api, files, {
     read: (key) => preferences.get(key),
     write: (key, value) => void preferences.set(key, value),

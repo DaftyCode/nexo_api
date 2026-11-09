@@ -10,10 +10,16 @@ function hide(value: string): string {
   return !value || placeholder.test(value) ? value : masked;
 }
 
-/** Request saved in history: credentials and credential headers are never persisted. */
+/**
+ * Request saved in history: credentials and credential headers are never persisted, and
+ * chosen files keep only their names.
+ */
 export function historyRequest(request: RequestDraft): RequestDraft {
+  const { bodyFile } = request;
   return {
     ...request,
+    form: request.form.map(({ files: _files, ...row }) => row),
+    ...(bodyFile ? { bodyFile: { src: bodyFile.src } } : {}),
     headers: request.headers.map((row) =>
       sensitiveHeader.test(row.key) ? { ...row, value: hide(row.value) } : row,
     ),

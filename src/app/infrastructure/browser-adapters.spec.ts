@@ -39,6 +39,11 @@ describe('browser adapters', () => {
     vi.advanceTimersByTime(1000);
     expect(revoked).toEqual(['blob:1', 'blob:2']);
     expect(await files.read(new File(['content'], 'a.txt'))).toBe('content');
+    // Larger than the chunk read at a time, and not valid UTF-8.
+    const bytes = Uint8Array.from({ length: 0x8000 * 2 + 5 }, (_, i) => (i * 7) % 256);
+    expect(await files.readBase64(new File([bytes], 'a.bin'))).toBe(
+      btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join('')),
+    );
     expect(files.id()).toMatch(/^[0-9a-f-]{36}$/);
   });
 

@@ -11,9 +11,12 @@ import { PayloadOf } from './payloads';
 import { itemAt } from '../domain/collection-tree';
 import { OAuth2SignIn, OAuth2SignInStatus, OAuth2Token, OAuth2TokenDetails } from '../domain/auth';
 import {
+  AttachedFile,
   Collection,
   ExecutionResponse,
+  MAX_REQUEST_FILES,
   RequestDraft,
+  requestFiles,
   WorkspaceDocument,
   schema,
   toItem,
@@ -159,6 +162,7 @@ export class WorkspaceUseCases {
     id: string,
   ): Promise<ExecutionResponse> {
     if (!request.url.trim()) throw new Error('Enter a request URL');
+    const files = requestFiles(request);
     // The backend finds `{{vault:name}}` references itself and resolves them for this actor.
     return this.api.execute<ExecutionResponse>('request', {
       ...(context.workspace ? { workspace: context.workspace } : {}),
@@ -171,7 +175,19 @@ export class WorkspaceUseCases {
       timeout: request.timeout,
       strictSSL: request.strictSSL,
       followRedirects: request.followRedirects,
+      ...(files.length ? { files } : {}),
     });
+  }
+  /** Reads a file chosen to send with a request; its content stays in the open request. */
+  async attachFile(file: File): Promise<AttachedFile> {
+    if (file.size > MAX_REQUEST_FILES)
+      throw new Error('Files sent with a request can add up to 32 MB');
+    return {
+      name: file.name,
+      contentType: file.type,
+      size: file.size,
+      content: await this.files.readBase64(file),
+    };
   }
   /**
    * "Get New Access Token" or, with a refresh token, its renewal for an OAuth 2.0

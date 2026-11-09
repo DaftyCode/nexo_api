@@ -180,22 +180,56 @@ pub fn decode_body(bytes: &[u8], content_type: &str) -> (String, Option<&'static
     (String::from_utf8_lossy(bytes).into_owned(), None)
 }
 
-fn multipart(rows: &[Value]) -> (String, Vec<u8>) {
+/// A `multipart/form-data` body. Text rows are sent as text, with their `contentType` when
+/// they have one; file rows send the files chosen for them, with their name and type, and a
+/// file row whose file was not chosen fails, as a file cannot be read from its path.
+fn multipart(rows: &[Value]) -> Result<(String, Vec<u8>)> {
     let boundary = format!("----nexo{}", uuid::Uuid::new_v4().simple());
+    // As browsers do: quotes encoded and line breaks removed from names.
+    let escape = |value: &str| value.replace('"', "%22").replace(['\r', '\n'], " ");
+    let header = |value: &str| value.replace(['\r', '\n'], " ");
     let mut body = Vec::new();
     for row in rows.iter().filter(|row| row["disabled"] != true) {
-        let escape = |value: &str| value.replace('"', "%22").replace(['\r', '\n'], " ");
+        let name = escape(&string(row.get("key")));
+        if crate::files::is_file(row) {
+            let sources = crate::files::sources(&row["src"]);
+            let parts = crate::files::attached(row)?;
+            if parts.len() < sources.len() {
+                let missing = &sources[parts.len()];
+                return Err(Error::Validation(format!(
+                    "Choose the file {missing} for the form-data field {}",
+                    string(row.get("key"))
+                )));
+            }
+            for part in parts {
+                body.extend_from_slice(
+                    format!(
+                        "--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"; filename=\"{}\"\r\nContent-Type: {}\r\n\r\n",
+                        escape(&part.name),
+                        header(&part.content_type)
+                    )
+                    .as_bytes(),
+                );
+                body.extend_from_slice(&part.bytes);
+                body.extend_from_slice(b"\r\n");
+            }
+            continue;
+        }
+        let content_type = row["contentType"]
+            .as_str()
+            .filter(|value| !value.trim().is_empty())
+            .map(|value| format!("Content-Type: {}\r\n", header(value)))
+            .unwrap_or_default();
         body.extend_from_slice(
             format!(
-                "--{boundary}\r\nContent-Disposition: form-data; name=\"{}\"\r\n\r\n{}\r\n",
-                escape(&string(row.get("key"))),
+                "--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n{content_type}\r\n{}\r\n",
                 string(row.get("value"))
             )
             .as_bytes(),
         );
     }
     body.extend_from_slice(format!("--{boundary}--\r\n").as_bytes());
-    (format!("multipart/form-data; boundary={boundary}"), body)
+    Ok((format!("multipart/form-data; boundary={boundary}"), body))
 }
 
 pub struct Transport {
@@ -334,18 +368,28 @@ impl Transport {
                         .as_array()
                         .cloned()
                         .unwrap_or_default();
-                    if rows
-                        .iter()
-                        .any(|row| row["type"] == "file" && row["disabled"] != true)
-                    {
-                        return Err(Error::Validation(
-                            "Supply file contents explicitly; filesystem paths are unavailable"
-                                .into(),
-                        ));
-                    }
-                    let (content_type, data) = multipart(&rows);
+                    let (content_type, data) = multipart(&rows)?;
                     headers.set("content-type", &content_type);
                     body = Some(data);
+                }
+                // Postman's "binary": the bytes of one file, as chosen.
+                Some("file") => {
+                    let file = &body_input["file"];
+                    let src = file["src"].as_str().unwrap_or_default();
+                    match crate::files::attached(file)?.into_iter().next() {
+                        Some(part) => {
+                            if !headers.has("content-type") {
+                                headers.set("content-type", &part.content_type);
+                            }
+                            body = Some(part.bytes);
+                        }
+                        None if !src.trim().is_empty() => {
+                            return Err(Error::Validation(format!(
+                                "Choose the file {src} to send as the body"
+                            )));
+                        }
+                        None => {}
+                    }
                 }
                 Some("graphql") => {
                     let variables_text =
@@ -671,5 +715,38 @@ mod tests {
         );
         assert_eq!(text, "España");
         assert_eq!(decode_body(b"{\"a\":1}", "application/json").0, "{\"a\":1}");
+    }
+    #[test]
+    fn multipart_sends_file_bytes_as_chosen() {
+        let bytes = [0x89u8, 0x50, 0x00, 0xff, 0xfe, b'\r', b'\n'];
+        let mut request = json!({"body": {"mode": "formdata", "formdata": [
+            {"key": "note", "value": "hi", "contentType": "text/plain"},
+            {"key": "avatar\"", "type": "file", "src": "my \"photo\".png"},
+            {"key": "off", "type": "file", "src": "x.bin", "disabled": true},
+            {"key": "empty", "type": "file"},
+        ]}});
+        crate::files::Files::from_payload(&json!({"files": [
+            {"src": "my \"photo\".png", "content": STANDARD.encode(bytes), "contentType": "image/png"}
+        ]}))
+        .unwrap()
+        .attach(&mut request);
+        let (content_type, body) =
+            multipart(request["body"]["formdata"].as_array().unwrap()).unwrap();
+        let boundary = content_type.split("boundary=").nth(1).unwrap();
+        let mut expected = format!(
+            "--{boundary}\r\nContent-Disposition: form-data; name=\"note\"\r\nContent-Type: text/plain\r\n\r\nhi\r\n\
+             --{boundary}\r\nContent-Disposition: form-data; name=\"avatar%22\"; filename=\"my %22photo%22.png\"\r\nContent-Type: image/png\r\n\r\n"
+        )
+        .into_bytes();
+        expected.extend_from_slice(&bytes);
+        expected.extend_from_slice(format!("\r\n--{boundary}--\r\n").as_bytes());
+        assert_eq!(body, expected);
+
+        let missing = json!([{"key": "avatar", "type": "file", "src": "photo.png"}]);
+        let error = multipart(missing.as_array().unwrap()).unwrap_err();
+        assert_eq!(
+            error.to_string(),
+            "Choose the file photo.png for the form-data field avatar"
+        );
     }
 }

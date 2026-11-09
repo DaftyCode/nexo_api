@@ -109,6 +109,9 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     async read(file) {
       return file.text();
     },
+    async readBase64(file) {
+      return btoa(String.fromCharCode(...new Uint8Array(await file.arrayBuffer())));
+    },
     download(name, content) {
       api.downloads.push({ name, content: String(content) });
     },

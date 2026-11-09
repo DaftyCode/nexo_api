@@ -27,6 +27,7 @@ import { AppearanceState } from './appearance-state';
 import { AuthEditor } from './auth-editor';
 import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
+import { WorkspaceState } from './workspace-state';
 
 @Component({
   imports: [TranslocoPipe, FormField, KeyValueEditor, StudioIcon, AuthEditor],
@@ -62,6 +63,7 @@ export class RequestEditor {
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly appearance = inject(AppearanceState);
+  private readonly state = inject(WorkspaceState);
   private readonly requestId = computed(() => this.request().id);
   private readonly pathVariableCount = computed(() => this.pathVariables().length);
 
@@ -114,6 +116,19 @@ export class RequestEditor {
     if (variable.scope === 'dynamic') return 'Generated for each request';
     if (variable.scope === 'vault') return 'Resolved from your vault when sent';
     return variable.secret ? '••••••••' : (variable.value ?? '');
+  }
+  /** The file of a binary body: sent with the request, while the collection keeps its name. */
+  protected async chooseBody(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const chosen = target.files?.[0];
+    target.value = '';
+    if (!chosen) return;
+    try {
+      const file = await this.state.cases.attachFile(chosen);
+      this.request.update((r) => ({ ...r, bodyFile: { src: file.name, file } }));
+    } catch (error) {
+      this.state.error.set(this.state.describe(error));
+    }
   }
   protected format() {
     this.request.update((r) => ({ ...r, body: formatJson(r.body) }));

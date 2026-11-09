@@ -188,7 +188,11 @@ pub fn router(
         .route("/documents", get(documents).put(save_document))
         .route("/documents/{id}", get(document).delete(delete_document))
         .route("/documents/{id}/revisions", get(revisions))
-        .route("/execute/{operation}", post(execute))
+        // Requests may bring the files they send (up to 32 MB, in base64).
+        .route(
+            "/execute/{operation}",
+            post(execute).layer(DefaultBodyLimit::max(48 * 1024 * 1024)),
+        )
         .route("/git/{operation}", post(git))
         .route("/secrets", get(secrets))
         .route("/secrets/{name}", put(put_secret).delete(remove_secret))

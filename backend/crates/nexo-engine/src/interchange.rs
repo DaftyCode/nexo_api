@@ -534,7 +534,18 @@ pub fn generate(payload: &Value) -> Result<Value> {
             }
             if body_spec["mode"] == "formdata" {
                 for row in body_spec["formdata"].as_array().into_iter().flatten().filter(|row| row["disabled"] != true) {
-                    code.push_str(&format!(" \\\n  --form-string {}", shell(&format!("{}={}", js_string(&row["key"]), js_string(&row["value"])))));
+                    if crate::files::is_file(row) {
+                        // As Postman writes them: the file is read by curl from its path.
+                        for src in crate::files::sources(&row["src"]) {
+                            code.push_str(&format!(" \\\n  --form {}", shell(&format!("{}=@\"{}\"", js_string(&row["key"]), src.replace('"', "\\\"")))));
+                        }
+                    } else {
+                        code.push_str(&format!(" \\\n  --form-string {}", shell(&format!("{}={}", js_string(&row["key"]), js_string(&row["value"])))));
+                    }
+                }
+            } else if body_spec["mode"] == "file" {
+                if let Some(src) = body_spec["file"]["src"].as_str().filter(|src| !src.is_empty()) {
+                    code.push_str(&format!(" \\\n  --data-binary {}", shell(&format!("@{src}"))));
                 }
             } else if !body.is_empty() {
                 code.push_str(&format!(" \\\n  --data-raw {}", shell(&body)));
@@ -717,5 +728,25 @@ paths:
             9
         );
         assert!(generate(&json!({"language": "cobol", "request": request})).is_err());
+    }
+    #[test]
+    fn curl_reads_files_from_their_paths() {
+        let code = |body: Value| {
+            let item = json!({"name": "Upload", "request": {"method": "POST", "url": "https://x.test", "body": body}});
+            generate(&json!({"language": "cURL", "request": item})).unwrap()["code"]
+                .as_str()
+                .unwrap()
+                .to_string()
+        };
+        let form = code(json!({"mode": "formdata", "formdata": [
+            {"key": "note", "value": "hi", "type": "text"},
+            {"key": "avatar", "type": "file", "src": "img/me.png"},
+            {"key": "docs", "type": "file", "src": ["a.pdf", "b.pdf"]},
+        ]}));
+        assert!(form.contains("--form-string 'note=hi'"), "{form}");
+        assert!(form.contains("--form 'avatar=@\"img/me.png\"'"), "{form}");
+        assert!(form.contains("--form 'docs=@\"b.pdf\"'"), "{form}");
+        let binary = code(json!({"mode": "file", "file": {"src": "data.bin"}}));
+        assert!(binary.contains("--data-binary '@data.bin'"), "{binary}");
     }
 }

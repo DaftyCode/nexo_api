@@ -268,7 +268,13 @@ impl Application {
                 | Operation::Oauth2Token
                 | Operation::Oauth2Authorize
         ) {
+            // The contents of chosen files are sent as they are: no references are read in
+            // them, and they are not copied to look.
+            let files = payload.remove("files");
             let names = vault_references(&Value::Object(payload.clone()));
+            if let Some(files) = files {
+                payload.insert("files".into(), files);
+            }
             if !names.is_empty() {
                 let mut secrets = Map::new();
                 for name in &names {

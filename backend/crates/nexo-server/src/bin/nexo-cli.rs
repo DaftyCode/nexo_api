@@ -1,15 +1,17 @@
+use base64::{Engine as _, engine::general_purpose::STANDARD};
 use nexo_application::{operations::Operation, payloads, ports::ExecutionGateway};
 use nexo_engine::Engine;
 use serde_json::{Value, json};
 use std::{
-    path::PathBuf,
+    collections::HashMap,
+    path::{Path, PathBuf},
     time::{Duration, Instant},
 };
 
 const HELP: &str = "Nexo API CLI
 
   nexo-cli run <collection.json> [options]
-  nexo-cli request <request.json> [--insecure]
+  nexo-cli request <request.json> [--insecure] [--working-dir <dir>]
   nexo-cli import <input.yaml|json|har|txt> --report <collection.json>
 
 Run options:
@@ -20,6 +22,8 @@ Run options:
   --data <file>          Iteration data as a JSON array or CSV file
   --timeout <seconds>    Stop the run after this time (default 600)
   --insecure             Do not verify TLS certificates
+  --working-dir <dir>    Folder of the files that form-data fields and binary bodies send
+                         (default: the folder of the collection)
   --report <file>        Write the result as JSON
   --junit <file>         Write a JUnit XML report
 
@@ -51,6 +55,69 @@ impl Arguments {
 fn read_json(path: &str) -> Result<Value, Box<dyn std::error::Error>> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("Cannot read {path}: {e}"))?;
     Ok(serde_json::from_str(&text).map_err(|e| format!("{path} is not valid JSON: {e}"))?)
+}
+/// The files a collection or request sends (form-data `file` fields and binary bodies), read
+/// from `folder` when their paths are relative, as `files` for the engine. A request uses each
+/// entry once, so a name referenced twice in one request is sent twice.
+fn files(source: &Value, folder: &Path) -> Value {
+    fn requests<'a>(node: &'a Value, found: &mut Vec<&'a Value>) {
+        if let Some(items) = node["item"].as_array() {
+            items.iter().for_each(|item| requests(item, found));
+        }
+        if node["request"].is_object() {
+            found.push(&node["request"]);
+        } else if node["body"].is_object() {
+            found.push(node);
+        }
+    }
+    let mut found = Vec::new();
+    requests(source, &mut found);
+    let mut needed: Vec<(String, usize)> = Vec::new();
+    for request in found {
+        let body = &request["body"];
+        let mut names: Vec<String> = match body["mode"].as_str() {
+            Some("formdata") => body["formdata"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter(|row| nexo_engine::files::is_file(row) && row["disabled"] != true)
+                .flat_map(|row| nexo_engine::files::sources(&row["src"]))
+                .collect(),
+            Some("file") => nexo_engine::files::sources(&body["file"]["src"]),
+            _ => Vec::new(),
+        };
+        names.sort();
+        for name in names.chunk_by(|a, b| a == b) {
+            match needed.iter_mut().find(|(src, _)| src == &name[0]) {
+                Some((_, count)) => *count = (*count).max(name.len()),
+                None => needed.push((name[0].clone(), name.len())),
+            }
+        }
+    }
+    let mut read: HashMap<String, String> = HashMap::new();
+    let mut entries = Vec::new();
+    for (src, count) in needed {
+        let path = folder.join(&src);
+        let content = match read.get(&src) {
+            Some(content) => content.clone(),
+            None => match std::fs::read(&path) {
+                Ok(bytes) => {
+                    let content = STANDARD.encode(bytes);
+                    read.insert(src.clone(), content.clone());
+                    content
+                }
+                // The request reports the file it could not send.
+                Err(error) => {
+                    eprintln!("Cannot read {}: {error}", path.display());
+                    continue;
+                }
+            },
+        };
+        for _ in 0..count {
+            entries.push(json!({"src": src, "content": content}));
+        }
+    }
+    Value::Array(entries)
 }
 fn rows(value: Value) -> Value {
     value.get("values").cloned().unwrap_or(value)
@@ -128,6 +195,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let source = std::fs::read_to_string(&source_path)
             .map_err(|e| format!("Cannot read {source_path}: {e}"))?;
         let strict = !args.has("--insecure");
+        let folder = args
+            .flag("--working-dir")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| {
+                Path::new(&source_path)
+                    .parent()
+                    .map(Path::to_path_buf)
+                    .unwrap_or_default()
+            });
         Ok(match command.as_str() {
             "import" => execute(&engine, Operation::Import, json!({"content":source})).await?,
             "request" => {
@@ -136,7 +212,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 execute(
                     &engine,
                     Operation::Request,
-                    json!({"request":request,"strictSSL":strict}),
+                    json!({"request":request,"strictSSL":strict,"files":files(&request, &folder)}),
                 )
                 .await?
             }
@@ -187,7 +263,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Operation::Run,
                     json!({"collection":collection,"variables":variables,"globals":globals,
                             "data":data,"iterations":iterations,"strictSSL":strict,
-                            "globalTimeout":timeout * 1000}),
+                            "globalTimeout":timeout * 1000,"files":files(&collection, &folder)}),
                 )
                 .await?;
                 let deadline = Instant::now() + Duration::from_secs(timeout + 5);
@@ -259,5 +335,39 @@ mod tests {
         assert!(report.contains("x &amp; y"));
         assert!(report.contains("<skipped/>"));
         assert!(!report.contains('\u{0001}'));
+    }
+    #[test]
+    fn files_are_read_next_to_the_collection_once_per_use() {
+        let folder = std::env::temp_dir().join(format!("nexo-cli-files-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(folder.join("img")).unwrap();
+        std::fs::write(folder.join("img/a.png"), [1u8, 2]).unwrap();
+        std::fs::write(folder.join("body.bin"), [3u8]).unwrap();
+        let collection = json!({"item": [
+            {"name": "Form", "request": {"body": {"mode": "formdata", "formdata": [
+                {"key": "x", "type": "file", "src": "img/a.png"},
+                {"key": "y", "type": "file", "src": ["img/a.png", "missing.txt"]},
+                {"key": "z", "type": "file", "src": "img/a.png", "disabled": true},
+                {"key": "t", "value": "text"}
+            ]}}},
+            {"name": "Folder", "item": [
+                {"name": "Binary", "request": {"body": {"mode": "file", "file": {"src": "body.bin"}}}},
+                {"name": "Again", "request": {"body": {"mode": "file", "file": {"src": "img/a.png"}}}}
+            ]}
+        ]});
+        let entries = files(&collection, &folder);
+        let names: Vec<&str> = entries
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|entry| entry["src"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, ["img/a.png", "img/a.png", "body.bin"]);
+        assert_eq!(entries[0]["content"], STANDARD.encode([1u8, 2]));
+        let request = json!({"body": {"mode": "file", "file": {"src": "body.bin"}}});
+        assert_eq!(
+            files(&request, &folder)[0]["content"],
+            STANDARD.encode([3u8])
+        );
+        std::fs::remove_dir_all(folder).unwrap();
     }
 }

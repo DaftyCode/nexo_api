@@ -727,5 +727,15 @@
   "Resize the context panel": "Cambiar el tamaño del panel de contexto",
   "Reset layout": "Restablecer vista",
   "Reset layout: panels back to the template size": "Restablecer vista: los paneles vuelven al tamaño de la plantilla",
-  "Error": "Error"
+  "Error": "Error",
+  "Field type": "Tipo de campo",
+  "File": "Fichero",
+  "Select files": "Elegir ficheros",
+  "Change files": "Cambiar ficheros",
+  "Binary": "Binario",
+  "Select file": "Elegir fichero",
+  "Change file": "Cambiar fichero",
+  "The bytes of the file are sent as the body.": "Los bytes del fichero se envían como cuerpo.",
+  "files.chooseAgain": "{{v0}}: vuelve a elegirlo (los ficheros no se guardan)",
+  "Files sent with a request can add up to 32 MB": "Los ficheros de una petición pueden sumar como máximo 32 MB"
 }

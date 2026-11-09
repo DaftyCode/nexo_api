@@ -727,5 +727,15 @@
   "Resize the context panel": "Resize the context panel",
   "Reset layout": "Reset layout",
   "Reset layout: panels back to the template size": "Reset layout: panels back to the template size",
-  "Error": "Error"
+  "Error": "Error",
+  "Field type": "Field type",
+  "File": "File",
+  "Select files": "Select files",
+  "Change files": "Change files",
+  "Binary": "Binary",
+  "Select file": "Select file",
+  "Change file": "Change file",
+  "The bytes of the file are sent as the body.": "The bytes of the file are sent as the body.",
+  "files.chooseAgain": "{{v0}}: choose it again (files are not saved)",
+  "Files sent with a request can add up to 32 MB": "Files sent with a request can add up to 32 MB"
 }

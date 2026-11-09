@@ -1,6 +1,7 @@
 // Starts nexo-server with the built interface and signs the browser in with a one-time link.
 import { test as base } from '@playwright/test';
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import http from 'node:http';
 import net from 'node:net';
@@ -58,6 +59,29 @@ export const test = base.extend({
       // A local API the requests in the tests can reach.
       const echo = http.createServer((request, response) => {
         response.setHeader('content-type', 'application/json');
+        // Uploads: the type of the body and the SHA-256 of each file or of the whole body.
+        if (request.url.startsWith('/upload')) {
+          const chunks = [];
+          request.on('data', (chunk) => chunks.push(chunk));
+          request.on('end', async () => {
+            const body = Buffer.concat(chunks);
+            const type = request.headers['content-type'] ?? '';
+            const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+            const files = [];
+            if (type.startsWith('multipart/form-data')) {
+              const form = await new Response(body, {
+                headers: { 'content-type': type },
+              }).formData();
+              for (const [field, value] of form.entries())
+                if (typeof value !== 'string')
+                  files.push(
+                    `${field}:${value.name}:${value.type}:${hash(Buffer.from(await value.arrayBuffer()))}`,
+                  );
+            }
+            response.end(JSON.stringify({ type, sha256: hash(body), files }));
+          });
+          return;
+        }
         // A sign-in page and a token endpoint for the OAuth 2.0 tests.
         if (request.url.startsWith('/authorize')) {
           const query = new URL(request.url, 'http://e2e').searchParams;

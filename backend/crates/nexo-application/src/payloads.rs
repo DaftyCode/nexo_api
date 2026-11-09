@@ -105,6 +105,19 @@ payload! {
 }
 
 payload! {
+    /// A file chosen for a request: the name its form-data field or binary body references
+    /// (`src`) and its contents in base64. It is sent apart from the request, so scripts and
+    /// saved documents only see the name.
+    closed FileAttachment {
+        required {
+            src "src": String => "string",
+            content "content": String => "string",
+        }
+        optional { content_type "contentType": String => "string" }
+    }
+}
+
+payload! {
     /// What a run status has already delivered; it answers only what is new.
     closed RunCursor {
         required {}
@@ -134,6 +147,7 @@ payload! {
             follow_redirects "followRedirects": bool => "boolean",
             trust_redirect_credentials "trustRedirectCredentials": bool => "boolean",
             transport "transport": Value => "unknown",
+            files "files": Vec<FileAttachment> => "readonly FileAttachment[]",
         }
     }
 }
@@ -161,6 +175,7 @@ payload! {
             follow_redirects "followRedirects": bool => "boolean",
             trust_redirect_credentials "trustRedirectCredentials": bool => "boolean",
             transport "transport": Value => "unknown",
+            files "files": Vec<FileAttachment> => "readonly FileAttachment[]",
         }
     }
 }
@@ -582,6 +597,7 @@ pub fn typescript_contract() -> String {
         VariableRow::TYPESCRIPT.to_string(),
         ExecutionContext::TYPESCRIPT.to_string(),
         RunCursor::TYPESCRIPT.to_string(),
+        FileAttachment::TYPESCRIPT.to_string(),
         GitFile::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));

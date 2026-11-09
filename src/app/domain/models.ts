@@ -4,7 +4,34 @@ export interface KeyValue {
   key: string;
   value: string;
   enabled: boolean;
+  /** Form-data rows: `file` sends files instead of text, as in Postman. */
+  type?: 'text' | 'file';
+  /** Form-data file rows: the names of their files, as collections store them. */
+  src?: string | string[];
+  /** Form-data rows: the media type of the part. */
+  contentType?: string;
+  /** Form-data file rows: the files chosen in this session; never saved. */
+  files?: AttachedFile[];
 }
+/**
+ * A file chosen to send with a request. Its content stays in the open request only:
+ * collections, history and exports keep its name, as in Postman.
+ */
+export interface AttachedFile {
+  name: string;
+  contentType: string;
+  size: number;
+  /** Base64. */
+  content: string;
+}
+/** A file as the engine receives it to send: the name it was chosen for and its content. */
+export interface FileUpload {
+  src: string;
+  content: string;
+  contentType?: string;
+}
+/** The most a request may send in files. */
+export const MAX_REQUEST_FILES = 32 * 1024 * 1024;
 export type Protocol = 'http' | 'graphql' | 'grpc' | 'websocket' | 'socketio' | 'mqtt';
 export interface RequestDraft {
   id: string;
@@ -19,6 +46,8 @@ export interface RequestDraft {
   form: KeyValue[];
   body: string;
   bodyMode: string;
+  /** Binary body (`bodyMode` `file`): the file's name and, once chosen, its content. */
+  bodyFile?: { src: string; file?: AttachedFile };
   bodyLanguage: string;
   graphqlVariables: string;
   auth: AuthDraft;
@@ -249,6 +278,22 @@ export function asCollection(value: unknown): Collection {
 function editableRow(x: { key: string; value: unknown; disabled?: boolean }): KeyValue {
   return { key: String(x.key ?? ''), value: String(x.value ?? ''), enabled: !x.disabled };
 }
+/** A stored form-data row, which may send files (`type: file`, `src`) or set `contentType`. */
+function formRow(x: Record<string, unknown>): KeyValue {
+  const row = editableRow(x as { key: string; value: unknown; disabled?: boolean });
+  if (typeof x['contentType'] === 'string' && x['contentType']) row.contentType = x['contentType'];
+  if (x['type'] !== 'file') return row;
+  const src = Array.isArray(x['src'])
+    ? x['src'].filter((name): name is string => typeof name === 'string' && !!name)
+    : typeof x['src'] === 'string'
+      ? x['src']
+      : '';
+  return { ...row, value: '', type: 'file', src };
+}
+/** The names a file row sends, in order. */
+export function fileNames(row: KeyValue): string[] {
+  return (Array.isArray(row.src) ? row.src : [row.src ?? '']).filter(Boolean);
+}
 export function fromItem(item: CollectionItem, id: string): RequestDraft {
   const draft = newRequest(id);
   draft.name = item.name;
@@ -295,10 +340,16 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
       draft.body = gql?.['query'] ?? '';
       draft.graphqlVariables = gql?.['variables'] ?? '{}';
     }
+    if (body['mode'] === 'file') {
+      const file = body['file'] as { src?: unknown } | undefined;
+      draft.bodyFile = { src: typeof file?.src === 'string' ? file.src : '' };
+    }
     if (Array.isArray(body[draft.bodyMode]))
-      draft.form = (
-        body[draft.bodyMode] as { key: string; value: string; disabled?: boolean }[]
-      ).map(editableRow);
+      draft.form = (body[draft.bodyMode] as Record<string, unknown>[]).map((x) =>
+        draft.bodyMode === 'formdata'
+          ? formRow(x)
+          : editableRow(x as { key: string; value: unknown; disabled?: boolean }),
+      );
   }
   draft.auth = readAuth(request['auth']);
   for (const event of item.event ?? []) {
@@ -310,8 +361,54 @@ export function fromItem(item: CollectionItem, id: string): RequestDraft {
   }
   return draft;
 }
-/** Body modes edited in the request editor; others (a binary file) are kept unchanged. */
-export const editableBodyModes = ['none', 'raw', 'urlencoded', 'formdata'];
+/** Body modes edited in the request editor; others are kept unchanged. */
+export const editableBodyModes = ['none', 'raw', 'urlencoded', 'formdata', 'file'];
+/** A form row as Postman stores it: files by name only, never their content. */
+function storedFormRow(x: KeyValue, mode: string) {
+  const row: Record<string, unknown> = { key: x.key };
+  if (mode === 'formdata' && x.type === 'file') {
+    const names = fileNames(x);
+    row['type'] = 'file';
+    row['src'] = Array.isArray(x.src) ? names : (names[0] ?? null);
+  } else {
+    row['value'] = x.value;
+    row['type'] = 'text';
+  }
+  if (mode === 'formdata' && x.contentType) row['contentType'] = x.contentType;
+  row['disabled'] = !x.enabled;
+  return row;
+}
+/**
+ * The files a request sends, in the order the engine matches them to their names: each
+ * enabled file row of a form-data body, then a binary body. Files not chosen again after
+ * opening a saved request are left out, and the engine reports them.
+ */
+export function requestFiles(draft: RequestDraft): FileUpload[] {
+  const chosen: AttachedFile[] = [];
+  const names: string[] = [];
+  if (draft.protocol !== 'graphql' && draft.bodyMode === 'formdata')
+    for (const row of draft.form)
+      if (row.enabled && row.key && row.type === 'file') {
+        const files = row.files ?? [];
+        fileNames(row).forEach((name, index) => {
+          if (files[index]) {
+            names.push(name);
+            chosen.push(files[index]);
+          }
+        });
+      }
+  if (draft.protocol !== 'graphql' && draft.bodyMode === 'file' && draft.bodyFile?.file) {
+    names.push(draft.bodyFile.src);
+    chosen.push(draft.bodyFile.file);
+  }
+  if (chosen.reduce((total, file) => total + file.size, 0) > MAX_REQUEST_FILES)
+    throw new Error('Files sent with a request can add up to 32 MB');
+  return chosen.map((file, index) => ({
+    src: names[index],
+    content: file.content,
+    ...(file.contentType ? { contentType: file.contentType } : {}),
+  }));
+}
 export function toItem(draft: RequestDraft, existing?: CollectionItem): CollectionItem {
   const headers = draft.headers
     .filter((x) => x.key)
@@ -337,15 +434,19 @@ export function toItem(draft: RequestDraft, existing?: CollectionItem): Collecti
         ? { mode: 'raw', raw: draft.body, options: { raw: { language: draft.bodyLanguage } } }
         : draft.bodyMode === 'none'
           ? { mode: 'none' }
-          : !editableBodyModes.includes(draft.bodyMode) && previousBody?.['mode'] === draft.bodyMode
-            ? // A body Nexo cannot edit (a binary file) is kept as it was.
-              previousBody
-            : {
-                mode: draft.bodyMode,
-                [draft.bodyMode]: draft.form
-                  .filter((x) => x.key)
-                  .map((x) => ({ key: x.key, value: x.value, disabled: !x.enabled, type: 'text' })),
-              };
+          : draft.bodyMode === 'file'
+            ? // Postman's binary body: the file by name only.
+              { mode: 'file', file: { src: draft.bodyFile?.src ?? '' } }
+            : !editableBodyModes.includes(draft.bodyMode) &&
+                previousBody?.['mode'] === draft.bodyMode
+              ? // A body Nexo cannot edit is kept as it was.
+                previousBody
+              : {
+                  mode: draft.bodyMode,
+                  [draft.bodyMode]: draft.form
+                    .filter((x) => x.key)
+                    .map((x) => storedFormRow(x, draft.bodyMode)),
+                };
   const disabledQuery = draft.query
     .filter((x) => !x.enabled && x.key)
     .map((x) => ({ key: x.key, value: x.value }));

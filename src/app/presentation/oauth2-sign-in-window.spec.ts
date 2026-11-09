@@ -50,7 +50,12 @@ function setup(ending: SignInWindowOutcome, mode = 'manual') {
       return answers[String(payload['action'])] as T;
     },
   } as unknown as ApiPort;
-  const files: FilePort = { id: () => 'id', read: async () => '', download() {} };
+  const files: FilePort = {
+    id: () => 'id',
+    read: async () => '',
+    readBase64: async () => '',
+    download() {},
+  };
   const opened: string[][] = [];
   let closed = 0;
   const signInWindow: SignInWindowPort = {

@@ -98,6 +98,8 @@ export interface ApiPort
 export interface FilePort {
   download(name: string, content: string | Blob, type?: string): void;
   read(file: File): Promise<string>;
+  /** The bytes of a file, in base64. */
+  readBase64(file: File): Promise<string>;
   id(): string;
 }
 /** Small device-local preferences, such as the active environment of each workspace. */

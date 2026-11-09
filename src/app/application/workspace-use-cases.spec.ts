@@ -18,7 +18,12 @@ function fixture() {
     },
   } as unknown as ApiPort;
   let id = 0;
-  const files: FilePort = { id: () => `id-${++id}`, read: async () => '', download() {} };
+  const files: FilePort = {
+    id: () => `id-${++id}`,
+    read: async () => '',
+    readBase64: async () => '',
+    download() {},
+  };
   const preferences = new Map<string, string>();
   const cases = new WorkspaceUseCases(api, files, {
     read: (key) => preferences.get(key),
@@ -63,6 +68,31 @@ describe('WorkspaceUseCases variables', () => {
       ],
     });
     expect(payload['secretNames']).toBeUndefined();
+  });
+
+  it('sends the chosen files apart from the request and reads them in base64', async () => {
+    const { cases, executed } = fixture();
+    const request = newRequest('r');
+    request.url = 'http://x';
+    request.method = 'POST';
+    request.bodyMode = 'file';
+    request.bodyFile = {
+      src: 'a.bin',
+      file: { name: 'a.bin', contentType: 'application/octet-stream', size: 1, content: 'AQ==' },
+    };
+    await cases.send(request, { environment: [], globals: [], ancestors: [] }, 'exec-2');
+    const payload = executed[0].payload;
+    expect(payload['files']).toEqual([
+      { src: 'a.bin', content: 'AQ==', contentType: 'application/octet-stream' },
+    ]);
+    expect(JSON.stringify(payload['request'])).not.toContain('AQ==');
+    request.bodyMode = 'raw';
+    await cases.send(request, { environment: [], globals: [], ancestors: [] }, 'exec-3');
+    expect(executed[1].payload['files']).toBeUndefined();
+
+    const big = new File(['x'], 'big.bin');
+    Object.defineProperty(big, 'size', { value: 32 * 1024 * 1024 + 1 });
+    await expect(cases.attachFile(big)).rejects.toThrow('can add up to 32 MB');
   });
 
   it('remembers the active environment per workspace', () => {

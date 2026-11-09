@@ -291,7 +291,14 @@ pub fn request_item(input: &Value) -> Result<Value> {
             "mode": kind,
             kind: rows(input.get("form").unwrap_or(&Value::Null), true)
                 .into_iter()
-                .map(|x| json!({"key": x["key"], "value": text(x.get("value")), "type": "text"}))
+                .map(|x| {
+                    // Form-data file fields keep the names of their files.
+                    if kind == "formdata" && x.get("type").and_then(Value::as_str) == Some("file") {
+                        json!({"key": x["key"], "type": "file", "src": x["src"]})
+                    } else {
+                        json!({"key": x["key"], "value": text(x.get("value")), "type": "text"})
+                    }
+                })
                 .collect::<Vec<_>>()
         })
     };
@@ -424,6 +431,20 @@ mod tests {
         assert_eq!(item["event"][0]["listen"], "test");
         let inherit = request_item(&json!({"url": "x", "auth": {"type": "inherit"}})).unwrap();
         assert!(inherit["request"].get("auth").is_none());
+        let form = request_item(
+            &json!({"url": "x", "method": "POST", "bodyMode": "formdata", "form": [
+                {"key": "note", "value": "hi", "enabled": true},
+                {"key": "avatar", "type": "file", "src": "a.png", "enabled": true}
+            ]}),
+        )
+        .unwrap();
+        assert_eq!(
+            form["request"]["body"]["formdata"],
+            json!([
+                {"key": "note", "value": "hi", "type": "text"},
+                {"key": "avatar", "type": "file", "src": "a.png"}
+            ])
+        );
     }
     #[test]
     fn nests_a_request_inside_its_ancestors() {

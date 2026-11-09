@@ -1,0 +1,60 @@
+// Form-data rows: the key with its Text/File type, and a file chooser as the value.
+.kv-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  border-left: 1px solid var(--border);
+}
+.kv-cell > input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  height: 33px;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+.kv-cell > select {
+  border: 0;
+  background: none;
+  font-size: 10px;
+  color: var(--muted);
+  padding: 0 6px;
+}
+.kv-file {
+  gap: 8px;
+  padding: 0 9px;
+  font-size: 11px;
+}
+.kv-file label {
+  position: relative;
+  white-space: nowrap;
+  cursor: pointer;
+}
+// The native input stays focusable and clickable over its label.
+.kv-file label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.kv-file label:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.kv-file-names,
+.kv-file-missing {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.kv-file-missing {
+  color: #e0b252;
+}
+.kv-file small {
+  color: var(--dim);
+  white-space: nowrap;
+}

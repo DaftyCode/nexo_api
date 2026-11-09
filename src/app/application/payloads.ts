@@ -21,6 +21,12 @@ export interface RunCursor {
   logs?: number;
 }
 
+export interface FileAttachment {
+  src: string;
+  content: string;
+  contentType?: string;
+}
+
 export interface GitFile {
   id: string;
   value: unknown;
@@ -40,6 +46,7 @@ export interface RequestPayload {
   followRedirects?: boolean;
   trustRedirectCredentials?: boolean;
   transport?: unknown;
+  files?: readonly FileAttachment[];
 }
 
 export interface RunPayload {
@@ -61,6 +68,7 @@ export interface RunPayload {
   followRedirects?: boolean;
   trustRedirectCredentials?: boolean;
   transport?: unknown;
+  files?: readonly FileAttachment[];
 }
 
 export interface IdPayload {

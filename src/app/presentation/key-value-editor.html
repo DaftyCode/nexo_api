@@ -1,4 +1,4 @@
-<div class="kv-table">
+<div class="kv-table" [class.form-data]="files()">
   <div class="kv-head">
     <span></span><span>{{ 'Key' | transloco }}</span
     ><span>{{ 'Value' | transloco }}</span
@@ -15,19 +15,59 @@
           [formField]="field.enabled"
           [attr.aria-label]="'Enable row' | transloco"
         />
+        @if (files()) {
+          <div class="kv-cell">
+            <input
+              [formField]="field.key"
+              [placeholder]="'Key' | transloco"
+              [attr.aria-label]="'Key' | transloco"
+              spellcheck="false"
+            /><select
+              [value]="rows()[index].type === 'file' ? 'file' : 'text'"
+              (change)="setType(index, $event)"
+              [attr.aria-label]="'Field type' | transloco"
+            >
+              <option value="text">{{ 'Text' | transloco }}</option>
+              <option value="file">{{ 'File' | transloco }}</option>
+            </select>
+          </div>
+        } @else {
+          <input
+            [formField]="field.key"
+            [placeholder]="'Key' | transloco"
+            [attr.aria-label]="'Key' | transloco"
+            spellcheck="false"
+          />
+        }
+      }
+      @if (files() && rows()[index].type === 'file') {
+        @let file = fileState(rows()[index]);
+        <div class="kv-cell kv-file">
+          <label class="text-button"
+            >{{ (file.names ? 'Change files' : 'Select files') | transloco
+            }}<input
+              type="file"
+              multiple
+              (change)="choose(index, $event)"
+              [attr.aria-label]="'Select files' | transloco"
+          /></label>
+          @if (file.missing) {
+            <span class="kv-file-missing" [title]="file.names">{{
+              'files.chooseAgain' | transloco: { v0: file.names }
+            }}</span>
+          } @else if (file.names) {
+            <span class="kv-file-names" [title]="file.names">{{ file.names }}</span>
+            <small>{{ 'units.size' | transloco: { v0: file.kilobytes } }}</small>
+          }
+        </div>
+      } @else {
         <input
-          [formField]="field.key"
-          [placeholder]="'Key' | transloco"
-          [attr.aria-label]="'Key' | transloco"
+          [formField]="field.value"
+          [placeholder]="'Value' | transloco"
+          [attr.aria-label]="fixedKeys() ? field.key().value() : ('Value' | transloco)"
           spellcheck="false"
         />
       }
-      <input
-        [formField]="field.value"
-        [placeholder]="'Value' | transloco"
-        [attr.aria-label]="fixedKeys() ? field.key().value() : ('Value' | transloco)"
-        spellcheck="false"
-      />
       @if (fixedKeys()) {
         <span></span>
       } @else {

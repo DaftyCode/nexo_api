@@ -15,6 +15,7 @@ pub mod auth;
 pub mod collection;
 pub mod datasets;
 pub mod egress;
+pub mod files;
 pub mod grpc;
 pub mod hex;
 pub mod interchange;

@@ -579,6 +579,8 @@ async fn run_steps(
     flatten(&collection, &[], &mut steps);
     let secrets = session_secrets(payload);
     let restricted = crate::secret_hosts::restricted(payload);
+    // Files chosen for this request; collection runs from the interface bring none.
+    let files = crate::files::Files::from_payload(payload)?;
     let jar = jars.get(&cookie_scope(payload));
     outcome.collection = values(&collection["variable"]);
     let mut local = Map::new();
@@ -657,6 +659,7 @@ async fn run_steps(
                 let substituted = session.replace_variables(&state["request"])?;
                 let placements = crate::secret_hosts::placements(&restricted, &substituted);
                 let mut outgoing = session.fill_secrets(&substituted);
+                files.attach(&mut outgoing);
                 let url = request_url(&outgoing["url"]);
                 outgoing["url"] = json!(url);
                 let mut result = match transport.request(&outgoing, &placements).await {
@@ -670,7 +673,8 @@ async fn run_steps(
                 result["id"] = item["id"].clone();
                 result["name"] = item.get("name").cloned().unwrap_or(json!(url));
                 result["iteration"] = json!(iteration);
-                result["request"] = outgoing;
+                // The contents of the files are not returned: only their names.
+                result["request"] = crate::files::without_contents(outgoing);
                 job.state
                     .lock()
                     .unwrap_or_else(|e| e.into_inner())

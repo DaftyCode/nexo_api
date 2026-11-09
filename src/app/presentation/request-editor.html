@@ -127,6 +127,7 @@
               <option value="raw">{{ 'Raw' | transloco }}</option>
               <option value="urlencoded">{{ 'x-www-form-urlencoded' | transloco }}</option>
               <option value="formdata">{{ 'Form data' | transloco }}</option>
+              <option value="file">{{ 'Binary' | transloco }}</option>
               @if (keptBodyMode()) {
                 <option [value]="request().bodyMode">{{ request().bodyMode }}</option>
               }
@@ -151,6 +152,29 @@
                 | transloco
             }}
           </p>
+        } @else if (request().bodyMode === 'file') {
+          @let binary = request().bodyFile;
+          <div class="binary-body">
+            <label class="button"
+              >{{ (binary?.src ? 'Change file' : 'Select file') | transloco
+              }}<input
+                type="file"
+                (change)="chooseBody($event)"
+                [attr.aria-label]="'Select file' | transloco"
+            /></label>
+            @if (binary?.file; as file) {
+              <span>{{ file.name }}</span>
+              <small>{{ 'units.size' | transloco: { v0: (file.size / 1024).toFixed(1) } }}</small>
+            } @else if (binary?.src) {
+              <span class="binary-missing">{{
+                'files.chooseAgain' | transloco: { v0: binary!.src }
+              }}</span>
+            } @else {
+              <span class="muted">{{
+                'The bytes of the file are sent as the body.' | transloco
+              }}</span>
+            }
+          </div>
         } @else if (request().bodyMode === 'raw') {
           <textarea
             class="code-editor"
@@ -160,7 +184,11 @@
             spellcheck="false"
           ></textarea>
         } @else {
-          <app-key-value-editor [rows]="request().form" (rowsChange)="rows('form', $event)" />
+          <app-key-value-editor
+            [rows]="request().form"
+            (rowsChange)="rows('form', $event)"
+            [files]="request().bodyMode === 'formdata'"
+          />
         }
         @if (request().protocol === 'graphql') {
           <label class="field"
