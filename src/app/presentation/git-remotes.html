@@ -1,0 +1,100 @@
+<section class="git-remotes" [attr.aria-label]="'Remotes' | transloco">
+  @if (task.error()) {
+    <div class="git-error" role="alert">
+      <p>{{ errorParts().advice | transloco }}</p>
+      @if (errorParts().details) {
+        <pre>{{ errorParts().details }}</pre>
+      }
+      <button
+        class="icon-button"
+        (click)="task.error.set('')"
+        [attr.aria-label]="'Dismiss error' | transloco"
+      >
+        ×
+      </button>
+    </div>
+  }
+  <h3>{{ 'Remotes' | transloco }}</h3>
+  <ul class="remotes">
+    @for (remote of remotes(); track remote.name) {
+      <li>
+        <strong>{{ remote.name }}</strong>
+        <code>{{ remote.url }}</code>
+        <button
+          type="button"
+          class="text-button danger"
+          (click)="removeRemote(remote.name)"
+          [attr.aria-label]="'git.removeRemote' | transloco: { v0: remote.name }"
+        >
+          {{ 'Remove' | transloco }}
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'No remotes. Add one to fetch, pull and push.' | transloco }}</li>
+    }
+  </ul>
+  <div class="remote-form">
+    <label class="field"
+      >{{ 'Remote name' | transloco }}<input [formField]="fields.remote" spellcheck="false"
+    /></label>
+    <label class="field grow"
+      >{{ 'Remote URL' | transloco
+      }}<input
+        [formField]="fields.url"
+        placeholder="https://github.com/acme/api.git"
+        spellcheck="false"
+    /></label>
+    <button type="button" class="button" (click)="addRemote()">
+      {{ 'Add remote' | transloco }}
+    </button>
+  </div>
+
+  <h3>{{ 'Sync' | transloco }}</h3>
+  <div class="row">
+    <button type="button" class="button" (click)="sync('fetch')">
+      {{ 'Fetch' | transloco }}</button
+    ><button type="button" class="button" (click)="sync('pull')">
+      {{ 'Pull' | transloco }}</button
+    ><button type="button" class="button" (click)="sync('push')">
+      {{ 'Push' | transloco }}
+    </button>
+  </div>
+  <label class="check-field"
+    ><input type="checkbox" [formField]="fields.rebase" />{{
+      'Pull with rebase instead of fast-forward only' | transloco
+    }}</label
+  >
+  <label class="check-field"
+    ><input type="checkbox" [formField]="fields.forceWithLease" />{{
+      'Push with force with lease' | transloco
+    }}</label
+  >
+  <p class="muted">
+    {{
+      'Git signs in with your credential manager or SSH agent. Nexo never stores Git credentials. Only https:// and ssh:// remotes are allowed, within the egress policy.'
+        | transloco
+    }}
+  </p>
+  <p class="muted">
+    {{
+      'Pull adds the repository collections to this workspace and updates those that changed; collections only in this workspace stay.'
+        | transloco
+    }}
+  </p>
+
+  <h3>{{ 'Clone' | transloco }}</h3>
+  <label class="field"
+    >{{ 'Repository URL' | transloco
+    }}<input
+      [formField]="fields.cloneUrl"
+      placeholder="git@github.com:acme/api.git"
+      spellcheck="false"
+  /></label>
+  <label class="field"
+    >{{ 'New workspace name' | transloco
+    }}<input [formField]="fields.cloneName" [placeholder]="suggestedName()"
+  /></label>
+  <button type="button" class="button primary" (click)="clone()">
+    {{ 'Clone into a new workspace' | transloco }}
+  </button>
+</section>

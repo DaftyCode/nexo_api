@@ -32,7 +32,15 @@ export interface FileUpload {
 }
 /** The most a request may send in files. */
 export const MAX_REQUEST_FILES = 32 * 1024 * 1024;
-export type Protocol = 'http' | 'graphql' | 'grpc' | 'websocket' | 'socketio' | 'mqtt';
+export type Protocol =
+  | 'http'
+  | 'graphql'
+  | 'grpc'
+  | 'websocket'
+  | 'socketio'
+  | 'mqtt'
+  | 'graphql-subscription'
+  | 'kafka';
 export interface RequestDraft {
   id: string;
   name: string;
@@ -57,11 +65,11 @@ export interface RequestDraft {
   strictSSL: boolean;
   followRedirects: boolean;
   transport: string;
-  /** WebSocket, Socket.IO, MQTT and gRPC settings edited in the protocols panel. */
+  /** WebSocket, Socket.IO, MQTT, gRPC and GraphQL subscription settings of the protocols panel. */
   realtime?: RealtimeSettings;
 }
 export interface RealtimeSettings {
-  protocol: 'websocket' | 'socketio' | 'mqtt' | 'grpc';
+  protocol: 'websocket' | 'socketio' | 'mqtt' | 'grpc' | 'graphql-subscription' | 'kafka';
   url: string;
   message: string;
   grpcMessage: string;
@@ -78,8 +86,31 @@ export interface RealtimeSettings {
   password: string;
   qos: string;
   headers: KeyValue[];
+  /** GraphQL subscriptions: the operation, its variables and `connection_init` payload (JSON). */
+  query?: string;
+  variables?: string;
+  connectionParams?: string;
+  /** `graphql-transport-ws` (current) or `graphql-ws` (`subscriptions-transport-ws`). */
+  graphqlProtocol?: string;
+  /** gRPC: the server describes its services by reflection; no descriptors are saved. */
+  reflection?: boolean;
+  /** Socket.IO: `auto` (long polling, then WebSocket), `websocket` or `polling`. */
+  transports?: string;
+  /** Kafka: SASL mechanism, record key and partition, and where reading starts. */
+  saslMechanism?: string;
+  key?: string;
+  partition?: string;
+  from?: string;
+  offset?: string;
 }
-const realtimeProtocols = ['websocket', 'socketio', 'mqtt', 'grpc'];
+const realtimeProtocols = [
+  'websocket',
+  'socketio',
+  'mqtt',
+  'grpc',
+  'graphql-subscription',
+  'kafka',
+];
 const isReference = (value: string) => /^\s*\{\{[^{}]+\}\}\s*$/.test(value);
 /** Realtime settings as stored in a collection: literal passwords are never written. */
 export function storedRealtime(settings: RealtimeSettings): RealtimeSettings {

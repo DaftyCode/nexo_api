@@ -5,6 +5,8 @@ import { newRequest } from '../domain/models';
 import { readAuth } from '../domain/auth';
 import { RequestEditor } from './request-editor';
 import { WorkspaceState } from './workspace-state';
+import { TEST_API } from '../testing/providers';
+import { introspection } from '../testing/graphql';
 
 describe('RequestEditor', () => {
   let component: RequestEditor;
@@ -143,6 +145,7 @@ describe('RequestEditor', () => {
     component.cancelRequest.subscribe(() => emitted.push('cancel'));
     component.save.subscribe(() => emitted.push('save'));
     component.code.subscribe(() => emitted.push('code'));
+    component.cookies.subscribe(() => emitted.push('cookies'));
     component.manageVariables.subscribe(() => emitted.push('variables'));
     fixture.componentRef.setInput('variables', [
       {
@@ -180,13 +183,14 @@ describe('RequestEditor', () => {
       ]),
     );
     (strip.querySelector('button') as HTMLButtonElement).click();
+    await clickButton(fixture, 'Cookies');
     await clickButton(fixture, 'Code');
     await clickButton(fixture, 'Save');
     await clickButton(fixture, 'Send');
     fixture.componentRef.setInput('running', true);
     await fixture.whenStable();
     await clickButton(fixture, 'Cancel');
-    expect(emitted).toEqual(['variables', 'code', 'save', 'send', 'cancel']);
+    expect(emitted).toEqual(['variables', 'cookies', 'code', 'save', 'send', 'cancel']);
     expect(root().querySelector('.editor-tabs .count')?.textContent).toBe('2');
   });
 
@@ -255,6 +259,54 @@ describe('RequestEditor', () => {
     component.request.update((r) => ({ ...r, bodyFile: { src: 'doc.pdf' } }));
     await fixture.whenStable();
     expect(root().querySelector('.binary-missing')?.textContent).toContain('doc.pdf');
+  });
+
+  it('edits a GraphQL body and inserts fields from the loaded schema', async () => {
+    const state = TestBed.inject(WorkspaceState);
+    const api = TestBed.inject(TEST_API);
+    api.responses['request'] = ({ request }: Record<string, unknown>) => ({
+      status: 200,
+      statusText: 'OK',
+      headers: [],
+      body: JSON.stringify(introspection),
+      time: 1,
+      size: 1,
+      assertions: [],
+      logs: [],
+      sent: request,
+    });
+    const request = { ...newRequest('g1'), method: 'POST', url: 'https://api.test/graphql' };
+    state.newTab(request);
+    fixture.componentRef.setInput('request', request);
+    await tab('Body');
+    const mode = root().querySelector<HTMLSelectElement>('.body-options select')!;
+    mode.value = 'graphql';
+    mode.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(component.request()).toMatchObject({ protocol: 'graphql', bodyMode: 'raw' });
+    expect(mode.value).toBe('graphql');
+    expect(root().textContent).not.toContain('Beautify');
+
+    await clickButton(fixture, 'Load schema');
+    for (let i = 0; i < 4; i++) await fixture.whenStable();
+    const sent = api.calls.find((call) => call.operation === 'request')!.payload;
+    expect(JSON.stringify(sent['request'])).toContain('IntrospectionQuery');
+    expect(state.graphqlSchemas()['https://api.test/graphql']?.queryType).toBe('Query');
+    expect(root().textContent).toContain('user(id: ID!): User');
+
+    const query = root().querySelector<HTMLTextAreaElement>('[aria-label="GraphQL query"]')!;
+    query.value = 'query {\n  \n}';
+    query.dispatchEvent(new Event('input'));
+    await fixture.whenStable();
+    query.setSelectionRange(10, 10);
+    buttons(root(), 'Insert')[0].click();
+    await fixture.whenStable();
+    expect(component.request().body).toBe('query {\n  user(id: $id) {\n  \n}\n}');
+
+    mode.value = 'formdata';
+    mode.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(component.request()).toMatchObject({ protocol: 'http', bodyMode: 'formdata' });
   });
 
   it('refuses files above the request limit', async () => {

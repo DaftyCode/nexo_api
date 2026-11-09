@@ -1,4 +1,5 @@
-//! WebSocket, Socket.IO and MQTT connections whose events clients read by polling.
+//! WebSocket, Socket.IO, MQTT, Kafka and GraphQL subscription connections whose events clients
+//! read by polling.
 use crate::mqtt;
 use crate::{egress::Policy, tls::client_config};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
@@ -10,7 +11,7 @@ use rumqttc::{
 };
 use serde_json::{Value, json};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeMap, HashMap, VecDeque},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
 };
@@ -32,6 +33,8 @@ const MAX_EVENTS: usize = 1000;
 const CLOSED_SESSION_TTL: Duration = Duration::from_secs(5 * 60);
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
 const MAX_MESSAGE: usize = 8 * 1024 * 1024;
+/// How long a GraphQL server has to acknowledge `connection_init`, as `graphql-ws` waits.
+const ACK_TIMEOUT: Duration = Duration::from_secs(10);
 
 fn invalid(message: impl Into<String>) -> Error {
     Error::Validation(message.into())
@@ -60,6 +63,18 @@ enum Command {
         event: String,
         value: Value,
     },
+    Kafka(KafkaCommand),
+}
+
+enum KafkaCommand {
+    Produce(crate::kafka::Outgoing),
+    Subscribe {
+        topic: String,
+        partition: Option<i32>,
+        start: crate::kafka::Start,
+    },
+    Unsubscribe,
+    Topics,
 }
 
 #[derive(Default)]
@@ -151,12 +166,28 @@ impl Realtime {
             ));
         }
         let protocol = payload["protocol"].as_str().unwrap_or("");
+        if protocol == "kafka" {
+            return self.connect_kafka(payload);
+        }
+        // Vault references in the credentials (MQTT), only towards the hosts they allow.
+        let payload = &with_credentials(payload)?;
         let allowed: &[&str] = match protocol {
             "websocket" => &["ws", "wss"],
             "mqtt" => &["mqtt", "mqtts", "ws", "wss"],
             "socketio" => &["http", "https"],
-            _ => return Err(invalid("Select WebSocket, Socket.IO or MQTT")),
+            // GraphQL endpoints are often written with http(s): they are reached over ws(s).
+            "graphql-subscription" => &["ws", "wss", "http", "https"],
+            _ => {
+                return Err(invalid(
+                    "Select WebSocket, Socket.IO, MQTT, Kafka or GraphQL subscription",
+                ));
+            }
         };
+        if protocol == "graphql-subscription" {
+            // Checked before connecting, so a mistake is answered at once.
+            crate::graphql_ws::Protocol::from_name(payload["graphqlProtocol"].as_str())?;
+            crate::graphql_ws::Operation::from_payload(payload)?;
+        }
         let text = payload["url"].as_str().unwrap_or("");
         let url = Url::parse(text).map_err(|_| invalid("A complete URL is required"))?;
         if !allowed.contains(&url.scheme()) {
@@ -196,10 +227,13 @@ impl Realtime {
             tls,
             addresses,
             id: id.clone(),
+            egress: self.egress.clone(),
+            loopback_ports: ports,
         };
         match protocol {
             "websocket" => tokio::spawn(task.websocket()),
             "socketio" => tokio::spawn(task.socketio()),
+            "graphql-subscription" => tokio::spawn(task.graphql()),
             _ => tokio::spawn(task.mqtt()),
         };
         self.sessions
@@ -210,6 +244,42 @@ impl Realtime {
                 Session {
                     protocol: protocol.into(),
                     url: text.into(),
+                    events,
+                    commands,
+                    stop,
+                },
+            );
+        Ok(json!({"id": id, "state": "connecting"}))
+    }
+    /// A Kafka connection: the settings are checked at once, the cluster is reached in the
+    /// background like the other protocols.
+    fn connect_kafka(&self, payload: &Value) -> Result<Value> {
+        let settings = crate::kafka::Settings::from_payload(
+            payload,
+            self.egress.clone(),
+            (self.loopback_ports)(),
+        )?;
+        let id = uuid::Uuid::new_v4().to_string();
+        let events = Events(Arc::new(Mutex::new(Log {
+            state: "connecting".into(),
+            ..Default::default()
+        })));
+        let (commands, receiver) = mpsc::unbounded_channel();
+        let stop = CancellationToken::new();
+        tokio::spawn(kafka_session(
+            settings,
+            events.clone(),
+            receiver,
+            stop.clone(),
+        ));
+        self.sessions
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(
+                id.clone(),
+                Session {
+                    protocol: "kafka".into(),
+                    url: payload["url"].as_str().unwrap_or_default().into(),
                     events,
                     commands,
                     stop,
@@ -233,6 +303,12 @@ impl Realtime {
         let qos = qos(&payload["qos"]);
         let command = match session.protocol.as_str() {
             "websocket" => Command::Text(message),
+            "kafka" => Command::Kafka(kafka_command(payload, &message)?),
+            "graphql-subscription" => {
+                return Err(invalid(
+                    "A subscription only receives; change the query and connect again",
+                ));
+            }
             "mqtt" => {
                 let topic = payload["topic"]
                     .as_str()
@@ -312,6 +388,428 @@ impl Realtime {
         }
     }
 }
+/// The Engine.IO endpoint of a Socket.IO URL: its `path` (`/socket.io/` by default) with
+/// `EIO=4`, without the namespace, which travels in the packets.
+fn socketio_url(url: &Url, payload: &Value) -> Url {
+    let mut base = url.clone();
+    let path = payload["path"]
+        .as_str()
+        .filter(|p| !p.is_empty())
+        .unwrap_or("/socket.io");
+    base.set_path(&format!("{}/", path.trim_end_matches('/')));
+    base.set_query(None);
+    base.query_pairs_mut().append_pair("EIO", "4");
+    base
+}
+
+/// An Engine.IO long-polling session: a GET waits for packets, a POST sends them. Each request
+/// carries the connection's headers and the session cookies, as sticky sessions need.
+struct Polling {
+    transport: Arc<crate::transport::Transport>,
+    url: Url,
+    sid: String,
+    upgrades: Vec<String>,
+    headers: Vec<(String, String)>,
+    jar: crate::transport::CookieJar,
+    /// Packets that came with the handshake.
+    buffered: Vec<crate::socketio::Frame>,
+}
+impl Polling {
+    async fn open(task: &Task, base: &Url) -> Result<Self> {
+        let jar: crate::transport::CookieJar = Arc::default();
+        let options = crate::transport::Options {
+            strict_ssl: task.payload["strictSSL"] != false,
+            follow_redirects: false,
+            // A long poll is held until the server has packets or pings, every 25 s by default.
+            timeout: Duration::from_secs(60),
+            trust_redirect_credentials: false,
+            transport: json!({"caPem": task.payload["caPem"]}),
+            egress: task.egress.clone(),
+            loopback_ports: task.loopback_ports.clone(),
+        };
+        let transport = Arc::new(crate::transport::Transport::new(options, jar.clone())?);
+        let mut url = base.clone();
+        url.query_pairs_mut().append_pair("transport", "polling");
+        let mut polling = Self {
+            transport,
+            url,
+            sid: String::new(),
+            upgrades: Vec::new(),
+            headers: header_rows(&task.payload["headers"]),
+            jar,
+            buffered: Vec::new(),
+        };
+        let mut frames = polling.get().await?.into_iter();
+        let open = match frames.next() {
+            Some(crate::socketio::Frame::Text(text)) => crate::socketio::handshake(&text),
+            _ => None,
+        }
+        .ok_or_else(|| invalid("The server did not open a long-polling session"))?;
+        polling.sid = open.sid;
+        polling.upgrades = open.upgrades;
+        polling.buffered = frames.collect();
+        Ok(polling)
+    }
+    fn address(&self) -> String {
+        let mut url = self.url.clone();
+        if !self.sid.is_empty() {
+            url.query_pairs_mut().append_pair("sid", &self.sid);
+        }
+        // As the official client does, so no cache answers a poll.
+        url.query_pairs_mut()
+            .append_pair("t", &uuid::Uuid::new_v4().simple().to_string()[..8]);
+        url.to_string()
+    }
+    fn header(&self, extra: &[(&str, &str)]) -> Value {
+        Value::Array(
+            self.headers
+                .iter()
+                .map(|(key, value)| json!({"key": key, "value": value}))
+                .chain(
+                    extra
+                        .iter()
+                        .map(|(key, value)| json!({"key": key, "value": value})),
+                )
+                .collect(),
+        )
+    }
+    async fn get(&self) -> Result<Vec<crate::socketio::Frame>> {
+        let answer = self
+            .transport
+            .request(
+                &json!({"method": "GET", "url": self.address(), "header": self.header(&[])}),
+                &[],
+            )
+            .await?;
+        Ok(crate::socketio::decode_payload(&Self::body(&answer)?))
+    }
+    async fn post(&self, frames: &[crate::socketio::Frame]) -> Result<()> {
+        let body = crate::socketio::encode_payload(frames);
+        let answer = self
+            .transport
+            .request(
+                &json!({
+                    "method": "POST",
+                    "url": self.address(),
+                    "header": self.header(&[("Content-Type", "text/plain;charset=UTF-8")]),
+                    "body": {"mode": "raw", "raw": body},
+                }),
+                &[],
+            )
+            .await?;
+        Self::body(&answer).map(|_| ())
+    }
+    fn body(answer: &Value) -> Result<String> {
+        let status = answer["status"].as_u64().unwrap_or(0);
+        let body = answer["body"].as_str().unwrap_or_default().to_string();
+        if (200..300).contains(&status) {
+            Ok(body)
+        } else {
+            Err(invalid(format!(
+                "Long polling failed (HTTP {status}): {body}"
+            )))
+        }
+    }
+    /// The session cookies for a URL, as a `Cookie` header.
+    fn cookie(&self, url: &Url) -> Option<String> {
+        let jar = self.jar.lock().unwrap_or_else(|e| e.into_inner());
+        let cookie = jar
+            .get_request_values(url)
+            .map(|(name, value)| format!("{name}={value}"))
+            .collect::<Vec<_>>()
+            .join("; ");
+        (!cookie.is_empty()).then_some(cookie)
+    }
+    /// Polls in the background, one request at a time, until the session ends.
+    fn start(self) -> PollingLink {
+        let session = Arc::new(self);
+        let (sender, receiver) = mpsc::channel(16);
+        let poller = session.clone();
+        let task = tokio::spawn(async move {
+            loop {
+                let polled = poller.get().await;
+                let closed = polled.as_ref().map_or(true, |frames| {
+                    frames
+                        .iter()
+                        .any(|frame| frame == &crate::socketio::Frame::Text("1".into()))
+                });
+                if sender.send(polled).await.is_err() || closed {
+                    return;
+                }
+            }
+        });
+        let pending = session.buffered.clone().into();
+        PollingLink {
+            session,
+            receiver,
+            task,
+            pending,
+        }
+    }
+}
+
+/// A long-polling session whose answers arrive from a background poll.
+struct PollingLink {
+    session: Arc<Polling>,
+    receiver: mpsc::Receiver<Result<Vec<crate::socketio::Frame>>>,
+    task: tokio::task::JoinHandle<()>,
+    pending: VecDeque<crate::socketio::Frame>,
+}
+impl Drop for PollingLink {
+    fn drop(&mut self) {
+        self.task.abort();
+    }
+}
+
+/// The transport a Socket.IO connection uses.
+enum SocketIoLink {
+    Socket(Box<Socket>),
+    Polling(Box<PollingLink>),
+}
+impl SocketIoLink {
+    fn name(&self) -> &'static str {
+        match self {
+            Self::Socket(_) => "websocket",
+            Self::Polling(_) => "polling",
+        }
+    }
+    async fn send(
+        &mut self,
+        frames: Vec<crate::socketio::Frame>,
+    ) -> std::result::Result<(), String> {
+        match self {
+            Self::Socket(socket) => {
+                for frame in frames {
+                    let message = match frame {
+                        crate::socketio::Frame::Text(text) => Message::text(text),
+                        crate::socketio::Frame::Binary(bytes) => Message::binary(bytes),
+                    };
+                    socket
+                        .send(message)
+                        .await
+                        .map_err(|error| error.to_string())?;
+                }
+                Ok(())
+            }
+            Self::Polling(link) => link
+                .session
+                .post(&frames)
+                .await
+                .map_err(|error| error.to_string()),
+        }
+    }
+    async fn next(&mut self) -> Option<std::result::Result<crate::socketio::Frame, String>> {
+        match self {
+            Self::Socket(socket) => loop {
+                return match socket.next().await? {
+                    Ok(Message::Text(text)) => {
+                        Some(Ok(crate::socketio::Frame::Text(text.to_string())))
+                    }
+                    Ok(Message::Binary(bytes)) => {
+                        Some(Ok(crate::socketio::Frame::Binary(bytes.to_vec())))
+                    }
+                    Ok(Message::Close(_)) => None,
+                    Ok(_) => continue,
+                    Err(error) => Some(Err(error.to_string())),
+                };
+            },
+            Self::Polling(link) => loop {
+                if let Some(frame) = link.pending.pop_front() {
+                    return Some(Ok(frame));
+                }
+                match link.receiver.recv().await? {
+                    Ok(frames) => link.pending.extend(frames),
+                    Err(error) => return Some(Err(error.to_string())),
+                }
+            },
+        }
+    }
+    /// Leaves the namespace (when given) and ends the session.
+    async fn close(&mut self, disconnect: &str) {
+        let mut frames = Vec::new();
+        if !disconnect.is_empty() {
+            frames.push(crate::socketio::Frame::Text(disconnect.to_string()));
+        }
+        match self {
+            Self::Socket(socket) => {
+                for frame in frames {
+                    if let crate::socketio::Frame::Text(text) = frame {
+                        let _ = socket.send(Message::text(text)).await;
+                    }
+                }
+                let _ = Socket::close(socket.as_mut(), None).await;
+            }
+            Self::Polling(link) => {
+                frames.push(crate::socketio::Frame::Text("1".into()));
+                let _ = link.session.post(&frames).await;
+            }
+        }
+    }
+}
+
+/// Replaces vault references in `username` and `password` with the secrets the application
+/// resolved, and fails when one may not go to the connection's host.
+fn with_credentials(payload: &Value) -> Result<Value> {
+    let referenced =
+        nexo_application::vault_references(&json!([payload["username"], payload["password"]]));
+    if referenced.is_empty() {
+        return Ok(payload.clone());
+    }
+    let host = Url::parse(payload["url"].as_str().unwrap_or_default())
+        .ok()
+        .and_then(|url| url.host_str().map(String::from))
+        .unwrap_or_default();
+    for secret in crate::secret_hosts::restricted(payload) {
+        if referenced.contains(&secret.name) && !secret.hosts.allows(&host) {
+            return Err(crate::secret_hosts::denied(&secret.name, &host));
+        }
+    }
+    let secrets: serde_json::Map<String, Value> = payload["resolvedSecrets"]
+        .as_object()
+        .into_iter()
+        .flatten()
+        .map(|(name, value)| (format!("vault:{name}"), value.clone()))
+        .collect();
+    let mut filled = payload.clone();
+    for field in ["username", "password"] {
+        if let Some(text) = payload[field].as_str() {
+            filled[field] = json!(crate::scripts::fill(text, &secrets));
+        }
+    }
+    Ok(filled)
+}
+
+/// A Kafka `realtime.send`: `produce` by default, or `subscribe`, `unsubscribe`, `topics`.
+fn kafka_command(payload: &Value, message: &str) -> Result<KafkaCommand> {
+    let topic = || {
+        payload["topic"]
+            .as_str()
+            .map(str::trim)
+            .filter(|topic| !topic.is_empty())
+            .map(String::from)
+            .ok_or_else(|| invalid("Enter a Kafka topic"))
+    };
+    let partition = payload["partition"]
+        .as_i64()
+        .map(|partition| i32::try_from(partition).map_err(|_| invalid("Enter a valid partition")))
+        .transpose()?;
+    Ok(match payload["action"].as_str().unwrap_or("produce") {
+        "subscribe" => KafkaCommand::Subscribe {
+            topic: topic()?,
+            partition,
+            start: crate::kafka::Start::from_payload(payload)?,
+        },
+        "unsubscribe" => KafkaCommand::Unsubscribe,
+        "topics" => KafkaCommand::Topics,
+        "produce" | "publish" => KafkaCommand::Produce(crate::kafka::Outgoing {
+            topic: topic()?,
+            partition,
+            key: payload["key"]
+                .as_str()
+                .filter(|key| !key.is_empty())
+                .map(crate::kafka::bytes_of)
+                .transpose()?,
+            value: Some(crate::kafka::bytes_of(message)?),
+            headers: header_rows(&payload["headers"])
+                .into_iter()
+                .map(|(name, value)| Ok((name, crate::kafka::bytes_of(&value)?)))
+                .collect::<Result<_>>()?,
+        }),
+        other => return Err(invalid(format!("Unknown Kafka action {other}"))),
+    })
+}
+
+/// A Kafka connection: commands produce and choose what is read; while a topic is being read,
+/// its new messages are fetched between commands.
+async fn kafka_session(
+    settings: crate::kafka::Settings,
+    events: Events,
+    mut commands: mpsc::UnboundedReceiver<Command>,
+    stop: CancellationToken,
+) {
+    let fail = |message: String| {
+        events.emit("error", json!(message));
+        events.set("error");
+    };
+    let mut cluster = tokio::select! {
+        _ = stop.cancelled() => return,
+        connected = tokio::time::timeout(CONNECT_TIMEOUT * 2, crate::kafka::Cluster::connect(settings)) => match connected {
+            Ok(Ok(cluster)) => cluster,
+            Ok(Err(error)) => return fail(error.to_string()),
+            Err(_) => return fail("Connecting to the cluster timed out".into()),
+        },
+    };
+    events.set("connected");
+    events.emit("open", json!("Connected"));
+    let topics = |topics: Vec<crate::kafka::Topic>| {
+        json!(topics
+            .into_iter()
+            .map(|topic| json!({"name": topic.name, "partitions": topic.leaders.len(), "internal": topic.internal}))
+            .collect::<Vec<_>>())
+    };
+    match cluster.topics().await {
+        Ok(listed) => events.emit("topics", topics(listed)),
+        Err(error) => events.emit("error", json!(error.to_string())),
+    }
+    let mut reading: Option<(String, BTreeMap<i32, i64>)> = None;
+    loop {
+        tokio::select! {
+            biased;
+            _ = stop.cancelled() => {
+                events.set("closed");
+                return;
+            }
+            command = commands.recv() => {
+                let Some(Command::Kafka(command)) = command else {
+                    if command.is_none() {
+                        return;
+                    }
+                    continue;
+                };
+                match command {
+                    KafkaCommand::Produce(message) => match cluster.produce(message).await {
+                        Ok(written) => events.emit("produced", written),
+                        Err(error) => events.emit("error", json!(error.to_string())),
+                    },
+                    KafkaCommand::Subscribe { topic, partition, start } => {
+                        match cluster.positions(&topic, partition, start).await {
+                            Ok(positions) => {
+                                events.emit("subscribed", json!({"topic": topic, "positions": positions}));
+                                reading = Some((topic, positions));
+                            }
+                            Err(error) => events.emit("error", json!(error.to_string())),
+                        }
+                    }
+                    KafkaCommand::Unsubscribe => {
+                        if let Some((topic, _)) = reading.take() {
+                            events.emit("unsubscribed", json!({"topic": topic}));
+                        }
+                    }
+                    KafkaCommand::Topics => match cluster.topics().await {
+                        Ok(listed) => events.emit("topics", topics(listed)),
+                        Err(error) => events.emit("error", json!(error.to_string())),
+                    },
+                }
+            }
+            // Waits up to half a second for new messages, then lets commands in again.
+            _ = std::future::ready(()), if reading.is_some() => {
+                let (topic, positions) = reading.as_mut().expect("reading");
+                match cluster.fetch(topic, positions).await {
+                    Ok(messages) => {
+                        for message in messages {
+                            events.emit("message", message);
+                        }
+                    }
+                    Err(error) => {
+                        events.emit("error", json!(error.to_string()));
+                        reading = None;
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn qos(value: &Value) -> QoS {
     match value
         .as_u64()
@@ -356,6 +854,9 @@ struct Task {
     tls: Option<Arc<rustls::ClientConfig>>,
     addresses: Vec<std::net::SocketAddr>,
     id: String,
+    /// For HTTP long polling, which checks every request against the policy itself.
+    egress: Policy,
+    loopback_ports: Vec<u16>,
 }
 impl Task {
     fn fail(&self, message: String) {
@@ -364,11 +865,23 @@ impl Task {
     }
     /// Opens a WebSocket to the address the egress policy approved.
     async fn open_socket(&self, url: &Url, protocols: &[String]) -> Result<Socket> {
+        self.open_socket_with(url, protocols, &[]).await
+    }
+    /// Opens a WebSocket with headers besides the connection's own, such as a session cookie.
+    async fn open_socket_with(
+        &self,
+        url: &Url,
+        protocols: &[String],
+        extra: &[(String, String)],
+    ) -> Result<Socket> {
         let mut request = url
             .as_str()
             .into_client_request()
             .map_err(|error| invalid(error.to_string()))?;
-        for (key, value) in header_rows(&self.payload["headers"]) {
+        for (key, value) in header_rows(&self.payload["headers"])
+            .into_iter()
+            .chain(extra.iter().cloned())
+        {
             let name = HeaderName::try_from(key.as_str())
                 .map_err(|_| invalid(format!("Invalid header {key}")))?;
             let value = HeaderValue::try_from(value)
@@ -456,81 +969,180 @@ impl Task {
         }
     }
 
-    /// Socket.IO v4 (Engine.IO v4) over a WebSocket, without long polling.
-    async fn socketio(mut self) {
+    /// A GraphQL subscription over WebSocket, with `graphql-transport-ws` or the legacy
+    /// `graphql-ws`. Each result is a `next` event; closing ends the subscription first.
+    async fn graphql(mut self) {
+        use crate::graphql_ws::{self, Incoming};
+        let (protocol, operation) = match (
+            graphql_ws::Protocol::from_name(self.payload["graphqlProtocol"].as_str()),
+            graphql_ws::Operation::from_payload(&self.payload),
+        ) {
+            (Ok(protocol), Ok(operation)) => (protocol, operation),
+            (Err(error), _) | (_, Err(error)) => return self.fail(error.to_string()),
+        };
         let mut url = self.url.clone();
-        let namespace = match url.path() {
+        match url.scheme() {
+            "http" => {
+                let _ = url.set_scheme("ws");
+            }
+            "https" => {
+                let _ = url.set_scheme("wss");
+            }
+            _ => {}
+        }
+        let subprotocols = [protocol.subprotocol().to_string()];
+        let mut socket = tokio::select! {
+            _ = self.stop.cancelled() => return,
+            opened = self.open_socket(&url, &subprotocols) => match opened {
+                Ok(socket) => socket,
+                Err(error) => return self.fail(error.to_string()),
+            },
+        };
+        if let Err(error) = socket
+            .send(Message::text(graphql_ws::init(&operation)))
+            .await
+        {
+            return self.fail(error.to_string());
+        }
+        let acknowledged = tokio::time::sleep(ACK_TIMEOUT);
+        tokio::pin!(acknowledged);
+        let mut subscribed = false;
+        loop {
+            tokio::select! {
+                _ = self.stop.cancelled() => {
+                    if subscribed {
+                        for message in graphql_ws::stop(protocol) {
+                            let _ = socket.send(Message::text(message)).await;
+                        }
+                    }
+                    let _ = socket.close(None).await;
+                    return;
+                }
+                _ = &mut acknowledged, if !subscribed => {
+                    let _ = socket.close(None).await;
+                    return self.fail("The server did not acknowledge the connection".into());
+                }
+                // Nothing is sent from the panel: the subscription only receives.
+                _ = self.commands.recv() => {}
+                message = socket.next() => match message {
+                    Some(Ok(Message::Text(text))) => match graphql_ws::parse(protocol, text.as_str()) {
+                        Incoming::Ack if !subscribed => {
+                            if let Err(error) = socket.send(Message::text(graphql_ws::subscribe(protocol, &operation))).await {
+                                return self.fail(error.to_string());
+                            }
+                            subscribed = true;
+                            self.events.set("connected");
+                            self.events.emit("open", json!("Subscribed"));
+                        }
+                        Incoming::Ack | Incoming::Quiet => {}
+                        Incoming::Next(payload) => self.events.emit("next", payload),
+                        Incoming::Error(payload) => self.events.emit("error", payload),
+                        Incoming::Ping(payload) => {
+                            let _ = socket.send(Message::text(graphql_ws::pong(&payload))).await;
+                        }
+                        Incoming::Complete => {
+                            self.events.emit("complete", json!("The server ended the subscription"));
+                            let _ = socket.close(None).await;
+                            self.events.set("closed");
+                            return;
+                        }
+                        Incoming::Other(message) => self.events.emit("message", message),
+                    },
+                    Some(Ok(Message::Close(frame))) => {
+                        let (code, reason) = frame.map(|f| (u16::from(f.code), f.reason.to_string())).unwrap_or((1005, String::new()));
+                        self.events.emit("close", json!({"code": code, "reason": reason}));
+                        self.events.set("closed");
+                        return;
+                    }
+                    Some(Ok(_)) => {}
+                    Some(Err(error)) => return self.fail(error.to_string()),
+                    None => {
+                        self.events.emit("close", json!({"code": 1006, "reason": ""}));
+                        self.events.set("closed");
+                        return;
+                    }
+                },
+            }
+        }
+    }
+
+    /// Socket.IO v4 over Engine.IO v4. `transports` chooses how: `websocket`, `polling`
+    /// (HTTP long polling, for networks whose proxies block WebSocket) or, by default, both as
+    /// the official client does: long polling first, upgraded to WebSocket when the server
+    /// offers it. Binary events arrive and are sent as `{"$binary": base64}`.
+    async fn socketio(mut self) {
+        use crate::socketio::{self, Frame};
+        let namespace = match self.url.path() {
             "" | "/" => "/".to_string(),
             path => path.trim_end_matches('/').to_string(),
         };
-        let _ = url.set_scheme(if url.scheme() == "https" { "wss" } else { "ws" });
-        let path = self.payload["path"]
+        let mode = self.payload["transports"]
             .as_str()
-            .filter(|p| !p.is_empty())
-            .unwrap_or("/socket.io");
-        url.set_path(&format!("{}/", path.trim_end_matches('/')));
-        url.query_pairs_mut()
-            .append_pair("EIO", "4")
-            .append_pair("transport", "websocket");
+            .unwrap_or("auto")
+            .to_string();
         let opened = tokio::select! {
             _ = self.stop.cancelled() => return,
-            opened = self.open_socket(&url, &[]) => opened,
+            opened = self.socketio_link(&mode) => opened,
         };
-        let mut socket = match opened {
-            Ok(socket) => socket,
+        let (mut link, handshaken) = match opened {
+            Ok(opened) => opened,
             Err(error) => return self.fail(error.to_string()),
         };
-        let prefix = if namespace == "/" {
-            String::new()
-        } else {
-            format!("{namespace},")
-        };
-        let auth = if self.payload["auth"].is_object() {
-            self.payload["auth"].to_string()
-        } else {
-            String::new()
-        };
+        let connect = socketio::connect(&namespace, &self.payload["auth"]);
+        if handshaken && let Err(error) = link.send(vec![Frame::Text(connect.clone())]).await {
+            return self.fail(error);
+        }
+        let mut decoder = socketio::Decoder::default();
         let deadline = tokio::time::sleep(CONNECT_TIMEOUT);
         tokio::pin!(deadline);
         loop {
             tokio::select! {
                 _ = self.stop.cancelled() => {
-                    let _ = socket.send(Message::text(format!("41{prefix}"))).await;
-                    let _ = socket.close(None).await;
+                    link.close(&socketio::disconnect(&namespace)).await;
                     return;
                 }
                 _ = &mut deadline, if self.events.state() == "connecting" => {
-                    let _ = socket.close(None).await;
+                    link.close(&socketio::disconnect(&namespace)).await;
                     return self.fail("timeout".into());
                 }
                 command = self.commands.recv() => {
                     if let Some(Command::Emit { event, value }) = command {
-                        let packet = json!([event, value]).to_string();
-                        if let Err(error) = socket.send(Message::text(format!("42{prefix}{packet}"))).await {
-                            self.events.emit("error", json!(error.to_string()));
+                        match socketio::event(&namespace, &event, &value) {
+                            Ok(frames) => if let Err(error) = link.send(frames).await {
+                                self.events.emit("error", json!(error));
+                            },
+                            Err(error) => self.events.emit("error", json!(error)),
                         }
                     }
                 }
-                message = socket.next() => {
-                    let text = match message {
-                        Some(Ok(Message::Text(text))) => text.to_string(),
-                        Some(Ok(Message::Close(_))) | None => {
+                frame = link.next() => {
+                    let text = match frame {
+                        Some(Ok(Frame::Text(text))) => text,
+                        Some(Ok(Frame::Binary(bytes))) => {
+                            if let Some(packet) = decoder.binary(bytes) {
+                                self.socketio_packet(packet, &namespace);
+                            }
+                            continue;
+                        }
+                        Some(Err(error)) => return self.fail(error),
+                        None => {
                             if self.events.state() == "connecting" {
-                                return self.fail("websocket error".into());
+                                return self.fail("transport error".into());
                             }
                             self.events.emit("close", json!("transport close"));
                             self.events.set("closed");
                             return;
                         }
-                        Some(Ok(_)) => continue,
-                        Some(Err(error)) => return self.fail(error.to_string()),
                     };
                     match text.as_bytes().first() {
+                        // A WebSocket-only connection is opened by the server's handshake.
                         Some(b'0') => {
-                            let _ = socket.send(Message::text(format!("40{prefix}{auth}"))).await;
+                            if let Err(error) = link.send(vec![Frame::Text(connect.clone())]).await {
+                                return self.fail(error);
+                            }
                         }
                         Some(b'2') => {
-                            let _ = socket.send(Message::text("3")).await;
+                            let _ = link.send(vec![Frame::Text("3".into())]).await;
                         }
                         Some(b'1') => {
                             self.events.emit("close", json!("transport close"));
@@ -538,35 +1150,28 @@ impl Task {
                             return;
                         }
                         Some(b'4') => {
-                            let Some((kind, packet_namespace, data)) = socketio_packet(&text[1..]) else { continue };
-                            if packet_namespace != namespace {
+                            let Some(packet) = decoder.text(&text[1..]) else { continue };
+                            if packet.namespace != namespace {
                                 continue;
                             }
-                            match kind {
-                                b'0' => {
+                            match packet.kind {
+                                0 => {
                                     self.events.set("connected");
-                                    self.events.emit("open", data.get("sid").cloned().unwrap_or(json!(self.id)));
+                                    self.events.emit("open", packet.data.get("sid").cloned().unwrap_or(json!(self.id)));
+                                    self.events.emit("transport", json!(link.name()));
                                 }
-                                b'1' => {
+                                1 => {
                                     self.events.emit("close", json!("io server disconnect"));
                                     self.events.set("closed");
-                                    let _ = socket.close(None).await;
+                                    link.close("").await;
                                     return;
                                 }
-                                b'2' => {
-                                    if let Some(items) = data.as_array()
-                                        && let Some((event, rest)) = items.split_first()
-                                    {
-                                        self.events.emit("message", json!({"event": event, "data": rest}));
-                                    }
-                                }
-                                b'4' => {
-                                    let _ = socket.close(None).await;
-                                    let message = data["message"].as_str().map(String::from).unwrap_or_else(|| data.to_string());
+                                4 => {
+                                    link.close("").await;
+                                    let message = packet.data["message"].as_str().map(String::from).unwrap_or_else(|| packet.data.to_string());
                                     return self.fail(message);
                                 }
-                                b'5' => self.events.emit("message", json!({"event": "binary", "data": ["Binary Socket.IO events are not supported"]})),
-                                _ => {}
+                                _ => self.socketio_packet(packet, &namespace),
                             }
                         }
                         _ => {}
@@ -574,6 +1179,96 @@ impl Task {
                 }
             }
         }
+    }
+
+    /// Shows an event or an acknowledgement, binary data included.
+    fn socketio_packet(&self, packet: crate::socketio::Packet, namespace: &str) {
+        if packet.namespace != namespace {
+            return;
+        }
+        match packet.kind {
+            2 | 5 => {
+                if let Some(items) = packet.data.as_array()
+                    && let Some((event, rest)) = items.split_first()
+                {
+                    self.events
+                        .emit("message", json!({"event": event, "data": rest}));
+                }
+            }
+            3 | 6 => self
+                .events
+                .emit("ack", json!({"id": packet.id, "data": packet.data})),
+            _ => {}
+        }
+    }
+
+    /// Opens the Socket.IO connection with the transports chosen. Returns whether the
+    /// Engine.IO handshake is already done (long polling) or still to come (WebSocket).
+    async fn socketio_link(&self, mode: &str) -> Result<(SocketIoLink, bool)> {
+        let base = socketio_url(&self.url, &self.payload);
+        if mode == "websocket" {
+            return Ok((
+                SocketIoLink::Socket(Box::new(self.socketio_socket(&base, None).await?)),
+                false,
+            ));
+        }
+        let polling = match Polling::open(self, &base).await {
+            Ok(polling) => polling,
+            // A server that only accepts WebSocket refuses the long-polling handshake.
+            Err(error) if mode == "polling" => return Err(error),
+            Err(_) => {
+                return Ok((
+                    SocketIoLink::Socket(Box::new(self.socketio_socket(&base, None).await?)),
+                    false,
+                ));
+            }
+        };
+        if mode == "auto"
+            && polling
+                .upgrades
+                .iter()
+                .any(|upgrade| upgrade == "websocket")
+        {
+            let upgraded = tokio::time::timeout(CONNECT_TIMEOUT, async {
+                let mut socket = self.socketio_socket(&base, Some(&polling)).await?;
+                socket
+                    .send(Message::text("2probe"))
+                    .await
+                    .map_err(|error| invalid(error.to_string()))?;
+                match socket.next().await {
+                    Some(Ok(Message::Text(text))) if text.as_str() == "3probe" => {}
+                    _ => return Err(invalid("The upgrade probe failed")),
+                }
+                socket
+                    .send(Message::text("5"))
+                    .await
+                    .map_err(|error| invalid(error.to_string()))?;
+                Ok(socket)
+            })
+            .await;
+            // If the upgrade fails, the connection stays on long polling.
+            if let Ok(Ok(socket)) = upgraded {
+                self.events.emit("upgrade", json!("websocket"));
+                return Ok((SocketIoLink::Socket(Box::new(socket)), true));
+            }
+        }
+        Ok((SocketIoLink::Polling(Box::new(polling.start())), true))
+    }
+
+    /// A WebSocket to the Socket.IO endpoint; for an upgrade, of the long-polling session and
+    /// with its cookies (sticky sessions).
+    async fn socketio_socket(&self, base: &Url, session: Option<&Polling>) -> Result<Socket> {
+        let mut url = base.clone();
+        let _ = url.set_scheme(if url.scheme() == "https" { "wss" } else { "ws" });
+        url.query_pairs_mut().append_pair("transport", "websocket");
+        let mut extra = Vec::new();
+        if let Some(session) = session {
+            url.query_pairs_mut().append_pair("sid", &session.sid);
+            if let Some(cookie) = session.cookie(base) {
+                extra.push(("cookie".to_string(), cookie));
+            }
+        }
+        self.open_socket_with(&url, &[], &extra).await
     }
 
     async fn mqtt(mut self) {
@@ -771,30 +1466,6 @@ impl Task {
 }
 
 /// Splits a Socket.IO packet into type, namespace and JSON data.
-fn socketio_packet(text: &str) -> Option<(u8, String, Value)> {
-    let bytes = text.as_bytes();
-    let kind = *bytes.first()?;
-    let mut rest = &text[1..];
-    if kind == b'5' || kind == b'6' {
-        let dash = rest.find('-')?;
-        rest = &rest[dash + 1..];
-    }
-    let mut namespace = "/".to_string();
-    if rest.starts_with('/') {
-        let end = rest.find(',').unwrap_or(rest.len());
-        namespace = rest[..end].to_string();
-        rest = rest.get(end + 1..).unwrap_or("");
-    }
-    let digits = rest.bytes().take_while(u8::is_ascii_digit).count();
-    rest = &rest[digits..];
-    let data = if rest.is_empty() {
-        Value::Null
-    } else {
-        serde_json::from_str(rest).ok()?
-    };
-    Some((kind, namespace, data))
-}
-
 #[cfg(test)]
 #[allow(clippy::result_large_err)]
 mod tests {
@@ -815,23 +1486,6 @@ mod tests {
         panic!(
             "condition not reached: {}",
             realtime.poll(&json!({"id": id})).unwrap()
-        );
-    }
-
-    #[test]
-    fn parses_socketio_packets() {
-        assert_eq!(
-            socketio_packet("2[\"hi\",1]").unwrap(),
-            (b'2', "/".into(), json!(["hi", 1]))
-        );
-        assert_eq!(
-            socketio_packet("0/admin,{\"sid\":\"x\"}").unwrap(),
-            (b'0', "/admin".into(), json!({"sid": "x"}))
-        );
-        assert_eq!(socketio_packet("212[\"ack\"]").unwrap().2, json!(["ack"]));
-        assert_eq!(
-            socketio_packet("1").unwrap(),
-            (b'1', "/".into(), Value::Null)
         );
     }
 
@@ -933,20 +1587,22 @@ mod tests {
         });
         let realtime = realtime();
         let connected = realtime
-            .connect(&json!({"protocol": "socketio", "url": format!("http://{address}"), "auth": {"token": "t"}}))
+            .connect(&json!({"protocol": "socketio", "url": format!("http://{address}"), "auth": {"token": "t"}, "transports": "websocket"}))
             .await
             .unwrap();
         let id = connected["id"].as_str().unwrap();
         let polled = wait_for(&realtime, id, |p| {
-            p["events"].as_array().unwrap().len() >= 3
+            p["events"].as_array().unwrap().len() >= 4
         })
         .await;
         assert_eq!(polled["events"][0]["data"], "s1");
+        assert_eq!(polled["events"][1]["type"], "transport");
+        assert_eq!(polled["events"][1]["data"], "websocket");
         realtime
             .send(&json!({"id": id, "event": "say", "message": "{\"b\":2}"}))
             .unwrap();
         let polled = wait_for(&realtime, id, |p| {
-            p["events"].as_array().unwrap().len() >= 4
+            p["events"].as_array().unwrap().len() >= 5
         })
         .await;
         let data: Vec<Value> = polled["events"]
@@ -968,6 +1624,124 @@ mod tests {
             "{data:?}"
         );
         realtime.disconnect(&json!({"id": id})).unwrap();
+    }
+
+    #[tokio::test]
+    async fn kafka_lists_topics_produces_and_reads() {
+        let (port, _) = crate::kafka::tests::start(Default::default()).await;
+        let realtime = realtime();
+        let connected = realtime
+            .connect(&json!({"protocol": "kafka", "url": format!("127.0.0.1:{port}")}))
+            .await
+            .unwrap();
+        let id = connected["id"].as_str().unwrap();
+        let has = |kind: &'static str| {
+            move |polled: &Value| {
+                polled["events"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .any(|event| event["type"] == kind)
+            }
+        };
+        let polled = wait_for(&realtime, id, has("topics")).await;
+        assert_eq!(polled["state"], "connected");
+        let topics = polled["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["type"] == "topics")
+            .unwrap();
+        assert_eq!(
+            topics["data"],
+            json!([{"name": "orders", "partitions": 2, "internal": false}])
+        );
+
+        realtime
+            .send(
+                &json!({"id": id, "action": "produce", "topic": "orders", "partition": 1,
+                "key": "k1", "message": "hello", "headers": [{"key": "trace", "value": "t1"}]}),
+            )
+            .unwrap();
+        wait_for(&realtime, id, has("produced")).await;
+        realtime
+            .send(&json!({"id": id, "action": "subscribe", "topic": "orders", "from": "earliest"}))
+            .unwrap();
+        let polled = wait_for(&realtime, id, has("message")).await;
+        let message = polled["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|e| e["type"] == "message")
+            .unwrap();
+        assert_eq!(message["data"]["value"], "hello");
+        assert_eq!(message["data"]["key"], "k1");
+        assert_eq!(message["data"]["headers"], json!({"trace": "t1"}));
+        assert_eq!(
+            (
+                message["data"]["partition"].clone(),
+                message["data"]["offset"].clone()
+            ),
+            (json!(1), json!(0))
+        );
+        realtime
+            .send(&json!({"id": id, "action": "unsubscribe"}))
+            .unwrap();
+        wait_for(&realtime, id, has("unsubscribed")).await;
+        realtime
+            .send(&json!({"id": id, "action": "topics"}))
+            .unwrap();
+        assert!(
+            realtime
+                .send(&json!({"id": id, "action": "produce"}))
+                .unwrap_err()
+                .to_string()
+                .contains("Kafka topic")
+        );
+        assert!(
+            realtime
+                .send(&json!({"id": id, "action": "rewind", "topic": "a"}))
+                .is_err()
+        );
+        realtime.disconnect(&json!({"id": id})).unwrap();
+
+        assert!(
+            realtime
+                .connect(&json!({"protocol": "kafka", "url": ""}))
+                .await
+                .is_err()
+        );
+        let refused = realtime
+            .connect(&json!({"protocol": "kafka", "url": "127.0.0.1:9"}))
+            .await
+            .unwrap();
+        let polled = wait_for(&realtime, refused["id"].as_str().unwrap(), |p| {
+            p["state"] == "error"
+        })
+        .await;
+        assert!(
+            polled["events"][0]["data"]
+                .as_str()
+                .unwrap()
+                .contains("127.0.0.1:9")
+        );
+    }
+
+    #[test]
+    fn credentials_come_from_the_vault_for_their_hosts() {
+        let payload = json!({"url": "mqtt://broker.example.com", "username": "u", "password": "{{vault:mqtt}}",
+            "resolvedSecrets": {"mqtt": "s3cret"}, "secretHosts": {"mqtt": ["*.example.com"]}});
+        assert_eq!(with_credentials(&payload).unwrap()["password"], "s3cret");
+        let mut elsewhere = payload.clone();
+        elsewhere["url"] = json!("mqtt://evil.test");
+        assert!(
+            with_credentials(&elsewhere)
+                .unwrap_err()
+                .to_string()
+                .contains("Secret mqtt cannot be sent to evil.test")
+        );
+        let plain = json!({"url": "mqtt://x", "password": "literal"});
+        assert_eq!(with_credentials(&plain).unwrap(), plain);
     }
 
     #[tokio::test]

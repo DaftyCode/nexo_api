@@ -49,5 +49,14 @@ aws-lc-rs = "1.19.0"
 # does not offer: RSA-SHA1 (OAuth 1.0), MD4, MD5, HMAC-MD5 and DES (NTLM, Digest).
 aws-lc-sys = "0.47.0"
 rustls-native-certs = "0.8.5"
+# Only the Kafka wire codec: connections, TLS, SASL and the egress policy are this crate's.
+# `broker` adds no crates; with `client` it provides the generic request trait. gzip and
+# snappy only: its lz4 and zstd features build C libraries.
+kafka-protocol = { version = "0.18.0", default-features = false, features = ["client", "broker", "gzip", "snappy"] }
+# Pure-Rust decoders for lz4 and zstd batches, which many Java producers send.
+lz4_flex = { version = "0.14.0", default-features = false, features = ["frame", "safe-decode"] }
+ruzstd = { version = "0.9.1", default-features = false, features = ["std"] }
+indexmap = "2"
+anyhow = "1"
 tower = { version = "0.5.3", features = ["util"] }
 hyper-util = { version = "0.1.21", features = ["tokio"] }

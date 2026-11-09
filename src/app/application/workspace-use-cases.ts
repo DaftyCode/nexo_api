@@ -9,6 +9,8 @@ import {
 import { ExecutionOperation } from './operations';
 import { PayloadOf } from './payloads';
 import { itemAt } from '../domain/collection-tree';
+import { CookieChange, CookieKey, StoredCookie } from '../domain/cookies';
+import { GraphQLSchema, INTROSPECTION_QUERY, readSchema } from '../domain/graphql-schema';
 import { OAuth2SignIn, OAuth2SignInStatus, OAuth2Token, OAuth2TokenDetails } from '../domain/auth';
 import {
   AttachedFile,
@@ -178,6 +180,33 @@ export class WorkspaceUseCases {
       ...(files.length ? { files } : {}),
     });
   }
+  /**
+   * Loads the schema of a GraphQL endpoint by introspection, with the URL, headers,
+   * authorization and variables of the request, as Postman does. Scripts are not run.
+   */
+  async introspect(
+    request: RequestDraft,
+    context: ExecutionContext,
+    id: string,
+  ): Promise<GraphQLSchema> {
+    const response = await this.send(
+      {
+        ...request,
+        protocol: 'graphql',
+        method: 'POST',
+        body: INTROSPECTION_QUERY,
+        graphqlVariables: '{}',
+        prerequest: '',
+        tests: '',
+      },
+      { ...context, ancestors: context.ancestors.map(({ event: _event, ...rest }) => rest) },
+      id,
+    );
+    if (response.error) throw new Error(response.error);
+    if (response.status >= 400 && !response.body.includes('__schema'))
+      throw new Error(`The server did not answer with a GraphQL schema (HTTP ${response.status})`);
+    return readSchema(response.body);
+  }
   /** Reads a file chosen to send with a request; its content stays in the open request. */
   async attachFile(file: File): Promise<AttachedFile> {
     if (file.size > MAX_REQUEST_FILES)
@@ -232,6 +261,28 @@ export class WorkspaceUseCases {
   }
   deleteOAuth2Token(workspace: string, id: string) {
     return this.api.execute('oauth2.tokens', { workspace, action: 'delete', id });
+  }
+  /** The cookies of the workspace jar that have not expired. */
+  async cookies(workspace: string) {
+    const { cookies } = await this.api.execute<{ cookies: StoredCookie[] }>('cookies.list', {
+      workspace,
+    });
+    return cookies;
+  }
+  /** Adds a cookie, or replaces the `original` one; the next request uses it. */
+  async setCookie(workspace: string, change: CookieChange, original?: CookieKey) {
+    const { cookie } = await this.api.execute<{ cookie: StoredCookie }>('cookies.set', {
+      workspace,
+      ...change,
+      ...(original ? { original } : {}),
+    });
+    return cookie;
+  }
+  deleteCookie(workspace: string, key: CookieKey) {
+    return this.api.execute('cookies.delete', { workspace, ...key });
+  }
+  clearCookies(workspace: string) {
+    return this.api.execute('cookies.clear', { workspace });
   }
   /**
    * Starts a browser sign-in (authorization code, PKCE or implicit). With a sign-in window

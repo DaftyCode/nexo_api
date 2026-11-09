@@ -28,6 +28,7 @@ import { WorkspaceContext } from './workspace-context';
 import { VariableQuickLook } from './variable-quick-look';
 import { OAuth2SignInDialog } from './oauth2-sign-in';
 import { OAuth2TokensDialog } from './oauth2-tokens';
+import { CookiesDialog } from './cookies-dialog';
 
 @Component({
   imports: [
@@ -45,6 +46,7 @@ import { OAuth2TokensDialog } from './oauth2-tokens';
     VariableQuickLook,
     OAuth2SignInDialog,
     OAuth2TokensDialog,
+    CookiesDialog,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-workspace',

@@ -144,4 +144,50 @@ describe('RunnerPanel', () => {
     expect(api.calls.at(-1)).toMatchObject({ operation: 'cancel', payload: { id: 'run-2' } });
     expect(root().textContent).toContain('cancelled');
   });
+
+  it('pauses and resumes a run, with a delay between requests', async () => {
+    await state.createCollection('Shop');
+    await settle();
+    let state_ = 'running';
+    api.responses['run'] = ({ action }: Record<string, unknown>) =>
+      action === 'status'
+        ? { id: 'run-3', state: state_, results: [], assertions: [], logs: [], counts: {} }
+        : { id: 'run-3', state: 'running' };
+    api.responses['run.pause'] = () => ((state_ = 'paused'), { id: 'run-3', state: 'paused' });
+    api.responses['run.resume'] = () => ((state_ = 'running'), { id: 'run-3', state: 'running' });
+    api.responses['cancel'] = {
+      id: 'run-3',
+      state: 'cancelled',
+      results: [],
+      assertions: [],
+      logs: [],
+    };
+    await type('Delay between requests (ms)', '250');
+    await clickButton(fixture, 'Run collection');
+    await settle();
+    expect(api.calls.find((call) => call.operation === 'run')?.payload['delay']).toBe(250);
+
+    await clickButton(fixture, 'Pause');
+    await settle();
+    expect(api.calls.at(-1)).toMatchObject({ operation: 'run.pause', payload: { id: 'run-3' } });
+    expect(root().textContent).toContain('Run paused');
+    expect(root().textContent).toContain('the next one waits for Resume');
+    // While paused, the status is asked for less often: after the poll already scheduled,
+    // the next one waits two seconds.
+    const polls = () => api.calls.filter((call) => call.payload['action'] === 'status').length;
+    await waitPoll();
+    await settle();
+    const before = polls();
+    await waitPoll();
+    await settle();
+    expect(polls()).toBe(before);
+
+    await clickButton(fixture, 'Resume');
+    await settle();
+    expect(api.calls.at(-1)?.operation).toBe('run.resume');
+    expect(root().textContent).toContain('Running collection');
+    await clickButton(fixture, 'Stop run');
+    await settle();
+    expect(api.calls.at(-1)?.operation).toBe('cancel');
+  });
 });

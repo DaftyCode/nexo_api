@@ -59,6 +59,13 @@ pub trait SecretVault: Send + Sync {
     /// The stored secrets with their allowed hosts, never their values.
     async fn secrets(&self) -> Result<Vec<SecretSummary>>;
 }
+/// The egress policy, for tools that connect on their own (Git) instead of through the
+/// engine's transport.
+#[async_trait]
+pub trait NetworkPolicy: Send + Sync {
+    /// Refuses a destination the egress policy blocks, after resolving it.
+    async fn check_destination(&self, host: &str, port: u16) -> Result<()>;
+}
 #[async_trait]
 pub trait VersionControl: Send + Sync {
     async fn execute(

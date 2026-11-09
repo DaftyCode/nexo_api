@@ -1,19 +1,17 @@
 //! Collection runs and single requests: variables, scripts, transport and results.
+pub use crate::cookies::Jars;
 use crate::{
     collection::{as_collection, request_url},
     egress::Policy,
     scripts::ScriptSession,
-    transport::{CookieJar, Options, Transport, transport_settings},
-    vault::{Vault, write_atomic},
+    transport::{Options, Transport, transport_settings},
+    vault::Vault,
 };
-use aws_lc_rs::digest;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use cookie_store::CookieStore;
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value, json};
 use std::{
     collections::HashMap,
-    path::PathBuf,
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, Ordering},
@@ -66,63 +64,6 @@ pub fn redact(value: &Value, secrets: &[String]) -> Value {
     }
 }
 
-/// Cookie jars per workspace, kept on disk between sessions.
-pub struct Jars {
-    directory: PathBuf,
-    jars: Mutex<HashMap<String, CookieJar>>,
-}
-impl Jars {
-    pub fn new(directory: PathBuf) -> Self {
-        Self {
-            directory,
-            jars: Mutex::new(HashMap::new()),
-        }
-    }
-    fn path(&self, scope: &str) -> PathBuf {
-        self.directory.join(format!(
-            "{}.json",
-            crate::hex::encode(digest::digest(&digest::SHA256, scope.as_bytes()))
-        ))
-    }
-    pub fn get(&self, scope: &str) -> CookieJar {
-        let mut jars = self.jars.lock().unwrap_or_else(|e| e.into_inner());
-        jars.entry(scope.to_string())
-            .or_insert_with(|| {
-                let store = std::fs::File::open(self.path(scope))
-                    .ok()
-                    .and_then(|file| {
-                        cookie_store::serde::json::load(std::io::BufReader::new(file)).ok()
-                    })
-                    .unwrap_or_default();
-                Arc::new(Mutex::new(store))
-            })
-            .clone()
-    }
-    pub fn save(&self, scope: &str) {
-        let jar = self.get(scope);
-        let mut buffer = Vec::new();
-        let saved = {
-            let store = jar.lock().unwrap_or_else(|e| e.into_inner());
-            cookie_store::serde::json::save(&store, &mut buffer).is_ok()
-        };
-        if saved && std::fs::create_dir_all(&self.directory).is_ok() {
-            let _ = write_atomic(&self.path(scope), &buffer);
-        }
-    }
-    pub fn list(&self, scope: &str) -> Vec<Value> {
-        let jar = self.get(scope);
-        let store = jar.lock().unwrap_or_else(|e| e.into_inner());
-        store
-            .iter_unexpired()
-            .map(|cookie| json!({"key": cookie.name(), "value": cookie.value(), "domain": cookie.domain(), "path": cookie.path()}))
-            .collect()
-    }
-    pub fn clear(&self, scope: &str) {
-        let jar = self.get(scope);
-        *jar.lock().unwrap_or_else(|e| e.into_inner()) = CookieStore::default();
-        let _ = std::fs::remove_file(self.path(scope));
-    }
-}
 pub fn cookie_scope(payload: &Value) -> String {
     payload["workspace"].as_str().unwrap_or("local").to_string()
 }
@@ -146,6 +87,10 @@ pub struct Job {
     started_at: u64,
     state: Mutex<JobState>,
     cancelled: Arc<AtomicBool>,
+    /// Paused between requests; the request being sent finishes first.
+    paused: AtomicBool,
+    /// Wakes a paused run when it is resumed or cancelled.
+    resumed: tokio::sync::Notify,
     secrets: Vec<String>,
     done: tokio::sync::Notify,
 }
@@ -153,8 +98,58 @@ impl Job {
     pub fn id(&self) -> &str {
         &self.id
     }
+    #[cfg(test)]
+    fn done_state_settled(&self) -> bool {
+        self.state
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .duration
+            > 0
+    }
+    /// Running or paused: not finished yet.
     fn running(&self) -> bool {
-        self.state.lock().unwrap_or_else(|e| e.into_inner()).state == "running"
+        matches!(
+            self.state
+                .lock()
+                .unwrap_or_else(|e| e.into_inner())
+                .state
+                .as_str(),
+            "running" | "paused"
+        )
+    }
+    fn set_state(&self, state: &str) {
+        self.state.lock().unwrap_or_else(|e| e.into_inner()).state = state.into();
+    }
+    /// Waits while the run is paused, and returns how long it waited. A cancelled run stops.
+    async fn wait_while_paused(&self) -> Result<Duration> {
+        let started = Instant::now();
+        loop {
+            // Registered before checking, so a resume between the check and the wait is seen.
+            let resumed = self.resumed.notified();
+            tokio::pin!(resumed);
+            resumed.as_mut().enable();
+            if self.cancelled.load(Ordering::Relaxed) {
+                return Err(Error::Validation("Execution cancelled".into()));
+            }
+            if !self.paused.load(Ordering::Relaxed) {
+                return Ok(started.elapsed());
+            }
+            resumed.await;
+        }
+    }
+    /// The delay between requests, which a pause stops and a cancel ends. Returns how long
+    /// the run was paused in it.
+    async fn delay(&self, delay: Duration) -> Result<Duration> {
+        let mut paused = Duration::ZERO;
+        let mut left = delay;
+        while !left.is_zero() {
+            paused += self.wait_while_paused().await?;
+            let step = left.min(Duration::from_millis(50));
+            tokio::time::sleep(step).await;
+            left -= step;
+        }
+        paused += self.wait_while_paused().await?;
+        Ok(paused)
     }
     /// The job as returned to clients, with secrets redacted.
     pub fn view(&self) -> Value {
@@ -178,10 +173,13 @@ impl Job {
             },
             "startedAt": self.started_at,
         });
+        if self.paused.load(Ordering::Relaxed) && state.state == "paused" {
+            view["paused"] = json!(true);
+        }
         if let Some(error) = &state.error {
             view["error"] = json!(error);
         }
-        if state.state != "running" {
+        if !matches!(state.state.as_str(), "running" | "paused") {
             view["duration"] = json!(state.duration);
             view["environment"] = state.environment.clone();
             view["globals"] = state.globals.clone();
@@ -266,6 +264,8 @@ impl Runs {
                 ..Default::default()
             }),
             cancelled: Arc::new(AtomicBool::new(false)),
+            paused: AtomicBool::new(false),
+            resumed: tokio::sync::Notify::new(),
             secrets: secret_variants(&secrets),
             done: tokio::sync::Notify::new(),
         });
@@ -292,8 +292,9 @@ impl Runs {
                     Ok(runtime) => runtime.block_on(execute(&payload, &worker, &jars, &context)),
                     Err(error) => Err(Error::Infrastructure(error.to_string())),
                 };
-                finish(&worker, outcome);
+                // Saved before it reports the end, so a restart right after keeps the cookies.
                 jars.save(&cookie_scope(&payload));
+                finish(&worker, outcome);
             })
             .map_err(|error| Error::Infrastructure(error.to_string()))?;
         Ok(job)
@@ -313,9 +314,32 @@ impl Runs {
         let job = self.job(id)?;
         if job.running() {
             job.cancelled.store(true, Ordering::Relaxed);
-            let mut state = job.state.lock().unwrap_or_else(|e| e.into_inner());
-            state.state = "cancelled".into();
-            state.finished_at = Some(Instant::now());
+            {
+                let mut state = job.state.lock().unwrap_or_else(|e| e.into_inner());
+                state.state = "cancelled".into();
+                state.finished_at = Some(Instant::now());
+            }
+            // A paused run wakes up to stop.
+            job.resumed.notify_waiters();
+        }
+        Ok(job.view())
+    }
+    /// Pauses a run between requests: the one being sent finishes, no other starts.
+    pub fn pause(&self, id: &str) -> Result<Value> {
+        let job = self.job(id)?;
+        if job.running() {
+            job.paused.store(true, Ordering::Relaxed);
+            job.set_state("paused");
+        }
+        Ok(job.view())
+    }
+    /// Continues a paused run with its next request.
+    pub fn resume(&self, id: &str) -> Result<Value> {
+        let job = self.job(id)?;
+        if job.running() {
+            job.paused.store(false, Ordering::Relaxed);
+            job.set_state("running");
+            job.resumed.notify_waiters();
         }
         Ok(job.view())
     }
@@ -323,6 +347,7 @@ impl Runs {
     pub fn cancel_all(&self) {
         for job in self.jobs.lock().unwrap_or_else(|e| e.into_inner()).values() {
             job.cancelled.store(true, Ordering::Relaxed);
+            job.resumed.notify_waiters();
         }
     }
     /// Runs one request and waits for it, as the interface's Send button does.
@@ -376,7 +401,7 @@ fn finish(job: &Job, outcome: Result<Outcome>) {
                     .map(|(k, v)| json!({"key": k, "value": v}))
                     .collect(),
             );
-            if state.state == "running" {
+            if matches!(state.state.as_str(), "running" | "paused") {
                 state.state = if outcome.failure.is_some() {
                     "failed"
                 } else {
@@ -387,7 +412,7 @@ fn finish(job: &Job, outcome: Result<Outcome>) {
             state.error = state.error.take().or(outcome.failure);
         }
         Err(error) => {
-            if state.state == "running" {
+            if matches!(state.state.as_str(), "running" | "paused") {
                 state.state = "failed".into();
             }
             state.error = Some(error.to_string());
@@ -585,13 +610,16 @@ async fn run_steps(
     outcome.collection = values(&collection["variable"]);
     let mut local = Map::new();
     let iterations = payload["iterations"].as_u64().unwrap_or(1).clamp(1, 10_000);
-    let deadline = Instant::now()
+    let mut deadline = Instant::now()
         + Duration::from_millis(
             payload["globalTimeout"]
                 .as_u64()
                 .unwrap_or(300_000)
                 .min(3_600_000),
         );
+    // Postman's "Delay" between requests, up to a minute.
+    let delay = Duration::from_millis(payload["delay"].as_u64().unwrap_or(0).min(60_000));
+    let mut first = true;
     let mut transports: HashMap<String, Transport> = HashMap::new();
     'iterations: for iteration in 0..iterations {
         let mut index = 0usize;
@@ -600,6 +628,15 @@ async fn run_steps(
             if job.cancelled.load(Ordering::Relaxed) {
                 return Err(Error::Validation("Execution cancelled".into()));
             }
+            // Waits the delay between requests, and while paused; time paused does not count
+            // towards the run time limit.
+            let waited = if first {
+                job.wait_while_paused().await?
+            } else {
+                job.delay(delay).await?
+            };
+            first = false;
+            deadline += waited;
             if Instant::now() > deadline || steps_taken > 10_000 {
                 return Err(Error::Validation("Execution exceeded time limit".into()));
             }
@@ -808,6 +845,10 @@ mod tests {
                 }),
             )
             .route(
+                "/remember",
+                get(|| async { ([("set-cookie", "remember=yes; Path=/; Max-Age=3600")], "ok") }),
+            )
+            .route(
                 "/echo",
                 get(|headers: HeaderMap| async move {
                     format!(
@@ -841,6 +882,96 @@ mod tests {
     }
     fn exec(lines: &str, listen: &str) -> Value {
         json!([{"listen": listen, "script": {"exec": lines.lines().collect::<Vec<_>>()}}])
+    }
+
+    /// A server that counts the requests it receives.
+    async fn counting() -> (String, Arc<std::sync::atomic::AtomicUsize>) {
+        use axum::{Router, routing::get};
+        use std::sync::atomic::AtomicUsize;
+        let count = Arc::new(AtomicUsize::new(0));
+        let counter = count.clone();
+        let app = Router::new().route(
+            "/count",
+            get(move || {
+                let counter = counter.clone();
+                async move { counter.fetch_add(1, Ordering::SeqCst).to_string() }
+            }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        (format!("http://{address}/count"), count)
+    }
+    fn ten_requests(url: &str) -> Value {
+        json!({"info": {"name": "c"}, "item": (0..10)
+            .map(|i| json!({"id": i.to_string(), "name": format!("r{i}"), "request": {"method": "GET", "url": url}}))
+            .collect::<Vec<_>>()})
+    }
+    async fn until(check: impl Fn() -> bool) {
+        for _ in 0..500 {
+            if check() {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        panic!("timed out");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_paused_run_stops_between_requests_and_resumes_with_the_next() {
+        use std::sync::atomic::Ordering::SeqCst;
+        let (url, count) = counting().await;
+        let runs = runs();
+        let job = runs
+            .start(json!({"collection": ten_requests(&url), "delay": 40, "globalTimeout": 5_000}))
+            .unwrap();
+        until(|| count.load(SeqCst) >= 3).await;
+        let view = runs.pause(job.id()).unwrap();
+        assert_eq!(view["state"], "paused");
+        assert_eq!(view["paused"], true);
+        assert!(
+            view.get("duration").is_none(),
+            "a paused run is not finished"
+        );
+        // The request being sent may finish; then nothing more is sent.
+        tokio::time::sleep(Duration::from_millis(150)).await;
+        let stopped = count.load(SeqCst);
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        assert_eq!(count.load(SeqCst), stopped);
+        assert!(stopped < 10);
+        assert!(job.running());
+        // Pausing longer than the run's time limit does not make it fail.
+        tokio::time::sleep(Duration::from_millis(5_100)).await;
+        assert_eq!(count.load(SeqCst), stopped);
+        assert_eq!(runs.resume(job.id()).unwrap()["state"], "running");
+        until(|| !job.running()).await;
+        let view = job.view();
+        assert_eq!(view["state"], "completed", "{view}");
+        assert_eq!(count.load(SeqCst), 10);
+        assert_eq!(view["results"].as_array().unwrap().len(), 10);
+        // Pausing or resuming a finished run changes nothing.
+        assert_eq!(runs.pause(job.id()).unwrap()["state"], "completed");
+        assert_eq!(runs.resume(job.id()).unwrap()["state"], "completed");
+        assert!(runs.pause("missing").is_err());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn cancelling_a_paused_run_ends_it() {
+        use std::sync::atomic::Ordering::SeqCst;
+        let (url, count) = counting().await;
+        let runs = runs();
+        let job = runs
+            .start(json!({"collection": ten_requests(&url), "delay": 1_000}))
+            .unwrap();
+        until(|| count.load(SeqCst) >= 1).await;
+        // Paused during the delay: it does not go on when the delay would end.
+        runs.pause(job.id()).unwrap();
+        tokio::time::sleep(Duration::from_millis(1_300)).await;
+        assert_eq!(count.load(SeqCst), 1);
+        assert_eq!(runs.cancel(job.id()).unwrap()["state"], "cancelled");
+        until(|| job.done_state_settled()).await;
+        assert_eq!(job.view()["state"], "cancelled");
+        assert_eq!(count.load(SeqCst), 1);
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -886,6 +1017,52 @@ mod tests {
         assert!(!view.to_string().contains("secret-value"));
         assert_eq!(runs.jars.list("w1").len(), 1);
         assert!(runs.jars.list("w2").is_empty());
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn cookies_survive_a_restart_and_manager_changes_reach_the_next_request() {
+        let base = server().await;
+        let directory = std::env::temp_dir().join(format!("nexo-jars-{}", uuid::Uuid::new_v4()));
+        let open = || {
+            Runs::new(
+                Arc::new(Jars::new(directory.clone())),
+                Context {
+                    egress: Policy::AllowAll,
+                    loopback_ports: Arc::new(Vec::new),
+                    vault: None,
+                },
+            )
+        };
+        let get = |path: &str| json!({"workspace": "w1", "request": {"method": "GET", "url": format!("{base}{path}")}});
+        let first = open();
+        for path in ["/login", "/remember"] {
+            first.request(get(path), false).await.unwrap();
+        }
+        drop(first);
+
+        // A new engine on the same directory sends the session and the persistent cookie.
+        let second = open();
+        let echoed = second.request(get("/echo"), false).await.unwrap();
+        let body = echoed["body"].as_str().unwrap().to_string();
+        assert!(body.contains("session=abc"), "{body}");
+        assert!(body.contains("remember=yes"), "{body}");
+
+        // What the manager changes is what the next request sends.
+        second
+            .jars
+            .set(
+                "w1",
+                &json!({"name": "session", "value": "edited", "domain": "127.0.0.1"}),
+            )
+            .unwrap();
+        assert!(second.jars.delete("w1", "127.0.0.1", "/", "remember"));
+        let echoed = second.request(get("/echo"), false).await.unwrap();
+        assert_eq!(
+            echoed["body"], "auth= cookie=session=edited",
+            "{}",
+            echoed["body"]
+        );
+        let _ = std::fs::remove_dir_all(directory);
     }
 
     #[tokio::test(flavor = "multi_thread")]

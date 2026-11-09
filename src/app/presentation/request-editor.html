@@ -5,7 +5,10 @@
       <input [formField]="fields.name" [attr.aria-label]="'Request name' | transloco" />
     </div>
     <div class="row">
-      <button class="button subtle" (click)="code.emit()">
+      <button class="button subtle" (click)="cookies.emit()">
+        <app-studio-icon name="cookies" />
+        {{ 'Cookies' | transloco }}</button
+      ><button class="button subtle" (click)="code.emit()">
         <app-studio-icon name="code" />
         {{ 'Code' | transloco }}</button
       ><button class="button" (click)="save.emit()" [disabled]="readonly()">
@@ -122,28 +125,62 @@
         <div class="body-options">
           <label
             >{{ 'Body type' | transloco
-            }}<select [formField]="fields.bodyMode">
+            }}<select [value]="bodyType()" (change)="setBodyType($event)">
               <option value="none">{{ 'None' | transloco }}</option>
               <option value="raw">{{ 'Raw' | transloco }}</option>
               <option value="urlencoded">{{ 'x-www-form-urlencoded' | transloco }}</option>
               <option value="formdata">{{ 'Form data' | transloco }}</option>
               <option value="file">{{ 'Binary' | transloco }}</option>
+              <option value="graphql">GraphQL</option>
               @if (keptBodyMode()) {
                 <option [value]="request().bodyMode">{{ request().bodyMode }}</option>
               }
             </select></label
-          ><label
-            >{{ 'Format' | transloco
-            }}<select [formField]="fields.bodyLanguage">
-              <option value="json">JSON</option>
-              <option value="text">{{ 'Text' | transloco }}</option>
-              <option value="xml">XML</option>
-              <option value="html">HTML</option>
-              <option value="javascript">JavaScript</option>
-            </select></label
-          ><button class="text-button" (click)="format()">{{ 'Beautify' | transloco }}</button>
+          >
+          @if (request().protocol !== 'graphql') {
+            <label
+              >{{ 'Format' | transloco
+              }}<select [formField]="fields.bodyLanguage">
+                <option value="json">JSON</option>
+                <option value="text">{{ 'Text' | transloco }}</option>
+                <option value="xml">XML</option>
+                <option value="html">HTML</option>
+                <option value="javascript">JavaScript</option>
+              </select></label
+            ><button class="text-button" (click)="format()">{{ 'Beautify' | transloco }}</button>
+          }
         </div>
-        @if (request().bodyMode === 'none') {
+        @if (request().protocol === 'graphql') {
+          <div class="graphql-body">
+            <div class="graphql-editors">
+              <label class="field"
+                >{{ 'Query' | transloco
+                }}<textarea
+                  #query
+                  class="code-editor"
+                  [formField]="fields.body"
+                  [attr.aria-label]="'GraphQL query' | transloco"
+                  [placeholder]="'query { … }'"
+                  spellcheck="false"
+                ></textarea></label
+              ><label class="field"
+                >{{ 'GraphQL variables' | transloco
+                }}<textarea
+                  class="code-editor small"
+                  [formField]="fields.graphqlVariables"
+                  [attr.aria-label]="'GraphQL variables' | transloco"
+                  spellcheck="false"
+                ></textarea>
+              </label>
+            </div>
+            <app-graphql-explorer
+              [schema]="schema()"
+              [loading]="state.loadingSchema()"
+              (loadSchema)="state.loadGraphqlSchema()"
+              (insert)="insertField($event)"
+            />
+          </div>
+        } @else if (request().bodyMode === 'none') {
           <p class="editor-hint">{{ 'This request does not have a body.' | transloco }}</p>
         } @else if (keptBodyMode()) {
           <p class="editor-hint">
@@ -189,16 +226,6 @@
             (rowsChange)="rows('form', $event)"
             [files]="request().bodyMode === 'formdata'"
           />
-        }
-        @if (request().protocol === 'graphql') {
-          <label class="field"
-            >{{ 'GraphQL variables' | transloco
-            }}<textarea
-              class="code-editor small"
-              [formField]="fields.graphqlVariables"
-              [attr.aria-label]="'GraphQL variables' | transloco"
-            ></textarea>
-          </label>
         }
       }
       @case ('authorization') {
@@ -273,6 +300,8 @@
               <option value="websocket">WebSocket</option>
               <option value="socketio">Socket.IO</option>
               <option value="mqtt">MQTT</option>
+              <option value="graphql-subscription">{{ 'GraphQL subscription' | transloco }}</option>
+              <option value="kafka">Kafka</option>
             </select></label
           >
         </div>

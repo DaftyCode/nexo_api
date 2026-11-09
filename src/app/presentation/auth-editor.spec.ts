@@ -112,6 +112,7 @@ describe('AuthEditor', () => {
     expect(saved.asap.map((row) => row.key)).not.toContain('issuer');
   });
 
+  // Every control of every type or grant: slower than a single interaction.
   it('stores every field of every authorization type', async () => {
     for (const type of types) {
       fixture.componentRef.setInput('auth', emptyAuth(type));
@@ -125,8 +126,9 @@ describe('AuthEditor', () => {
       expect(unchanged, type).toEqual([]);
       expect(fixture.componentInstance.auth().type).toBe(type);
     }
-  });
+  }, 30_000);
 
+  // Every control of every type or grant: slower than a single interaction.
   it('stores every OAuth 2.0 field of every grant type and asks for tokens', async () => {
     const requested: boolean[] = [];
     fixture.componentInstance.tokenRequested.subscribe((refresh) => requested.push(refresh));
@@ -162,7 +164,7 @@ describe('AuthEditor', () => {
     }
     await clickButton(fixture, 'Get new access token');
     expect(requested).toContain(false);
-  });
+  }, 30_000);
 
   it('uses, refreshes and reveals a stored OAuth 2.0 token', async () => {
     const state = TestBed.inject(WorkspaceState);

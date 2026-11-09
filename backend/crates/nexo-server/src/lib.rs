@@ -85,7 +85,10 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         store,
         engine.clone(),
         engine.clone(),
-        Arc::new(GitAdapter::new(config.data.join("projects"))),
+        Arc::new(GitAdapter::new(
+            config.data.join("projects"),
+            engine.clone(),
+        )),
     );
     Ok((Arc::new(application), engine))
 }

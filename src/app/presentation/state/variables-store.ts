@@ -1,4 +1,5 @@
 import { computed, signal } from '@angular/core';
+import { failureCode } from '../../application/ports';
 import { ExecutionResponse, WorkspaceDocument } from '../../domain/models';
 import { VariableRow, toPortableRows, toVariableRows } from '../../domain/variables';
 import { DocumentsStore } from './documents-store';
@@ -41,26 +42,56 @@ export class VariablesStore {
   validate() {
     if (this.environmentId() && !this.environmentDocument()) this.environmentId.set('');
   }
+  /**
+   * Saves an environment. Returns `undefined` when it changed elsewhere and the person
+   * chose to keep that version.
+   */
   async saveEnvironment(id: string, name: string, rows: readonly VariableRow[]) {
+    const workspace = this.context.workspaceId();
     const existing = this.documents.environments().find((d) => d.id === id);
-    const saved = await this.context.cases.saveEnvironment(
-      this.context.workspaceId(),
-      existing,
-      name,
-      rows,
+    const saved = await this.overLatest(
+      () => this.context.cases.saveEnvironment(workspace, existing, name, rows),
+      () => {
+        const latest = this.documents.environments().find((d) => d.id === id);
+        return latest && this.context.cases.saveEnvironment(workspace, latest, name, rows);
+      },
     );
-    this.documents.applySaved([saved]);
-    if (!existing && !this.environmentId()) this.select(saved.id);
+    if (saved && !existing && !this.environmentId()) this.select(saved.id);
     return saved;
   }
+  /** Saves the global variables, as `saveEnvironment` does. */
   async saveGlobals(rows: readonly VariableRow[]) {
-    this.documents.applySaved([
-      await this.context.cases.saveGlobals(
-        this.context.workspaceId(),
-        this.documents.globalsDocument(),
-        rows,
-      ),
-    ]);
+    const workspace = this.context.workspaceId();
+    return this.overLatest(
+      () => this.context.cases.saveGlobals(workspace, this.documents.globalsDocument(), rows),
+      () => this.context.cases.saveGlobals(workspace, this.documents.globalsDocument(), rows),
+    );
+  }
+  /**
+   * Saves, and when the document changed in the meantime (409, from another window or
+   * device), reloads it and asks before saving over the latest version, as for collections.
+   */
+  private async overLatest(
+    save: () => Promise<WorkspaceDocument>,
+    again: () => Promise<WorkspaceDocument> | undefined,
+  ): Promise<WorkspaceDocument | undefined> {
+    let saved: WorkspaceDocument;
+    try {
+      saved = await save();
+    } catch (error) {
+      if (failureCode(error) !== 'conflict') throw error;
+      await this.documents.refresh();
+      const message =
+        'These variables changed since you opened them. Save your changes over the latest version?';
+      const retried = this.context.confirm(message) ? again() : undefined;
+      if (!retried) {
+        this.context.status.notice.set('Variables reloaded');
+        return undefined;
+      }
+      saved = await retried;
+    }
+    this.documents.applySaved([saved]);
+    return saved;
   }
   /** Saves the values scripts changed; a failure never hides a successful response. */
   async persist(

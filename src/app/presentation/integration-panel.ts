@@ -13,6 +13,7 @@ import {
 import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
+import { GitRemotes } from './git-remotes';
 import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, WorkspaceDocument, row } from '../domain/models';
 import { GitOperation } from '../application/operations';
@@ -29,6 +30,21 @@ import {
 } from '../domain/integration-views';
 import { SecretSummary, formatAllowedDomains } from '../domain/secrets';
 
+/** The local Git operations of the panel; remotes have their own component. */
+type PanelGitOperation = Extract<
+  GitOperation,
+  | 'init'
+  | 'export'
+  | 'status'
+  | 'diff'
+  | 'log'
+  | 'branches'
+  | 'stash'
+  | 'branch'
+  | 'checkout'
+  | 'commit'
+>;
+
 /** Structured result shown above the raw output. */
 type View =
   | { kind: 'git'; status: GitStatus }
@@ -36,7 +52,7 @@ type View =
   | { kind: 'token'; view: ReturnType<typeof tokenView> };
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor],
+  imports: [TranslocoPipe, FormField, KeyValueEditor, GitRemotes],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',
   styleUrl: './integration-panel.scss',
@@ -118,7 +134,7 @@ export class IntegrationPanel {
       });
     });
   }
-  protected readonly gitActions: readonly GitOperation[] = [
+  protected readonly gitActions: readonly PanelGitOperation[] = [
     'init',
     'export',
     'status',
@@ -127,7 +143,20 @@ export class IntegrationPanel {
     'branches',
     'stash',
   ];
-  protected git(operation: GitOperation) {
+  /** The output of a remote operation, and the status it leaves. */
+  protected gitResult(text: string) {
+    this.output.set(text);
+    void this.refreshStatus();
+  }
+  private async refreshStatus() {
+    try {
+      const result = await this.integration.git(this.state.workspaceId(), 'status');
+      if (result.success) this.view.set({ kind: 'git', status: parseGitStatus(result.stdout) });
+    } catch {
+      // A project without a repository has no status to show.
+    }
+  }
+  protected git(operation: PanelGitOperation) {
     this.view.set(undefined);
     void this.task.run(async () => {
       const workspace = this.state.workspaceId();

@@ -24,6 +24,17 @@ export interface ConnectionOptions {
   username?: string;
   password?: string;
   headers?: { key: string; value: string; enabled: boolean }[];
+  /** GraphQL subscriptions: the operation and the JSON text of its variables. */
+  query?: string;
+  variables?: string;
+  /** JSON text of the `connection_init` payload. */
+  connectionParams?: string;
+  graphqlProtocol?: string;
+  /** Socket.IO: `auto`, `websocket` or `polling`. */
+  transports?: string;
+  /** Kafka: TLS, and SASL with `PLAIN`, `SCRAM-SHA-256` or `SCRAM-SHA-512`. */
+  tls?: boolean;
+  saslMechanism?: string;
 }
 export interface RealtimeMessage {
   action: string;
@@ -31,10 +42,18 @@ export interface RealtimeMessage {
   topic: string;
   event: string;
   qos: number;
+  /** Kafka: the record key, its partition and headers, and where reading starts. */
+  key?: string;
+  partition?: number;
+  headers?: { key: string; value: string; enabled: boolean }[];
+  from?: 'earliest' | 'latest' | 'offset';
+  offset?: number;
 }
 export interface GrpcCall {
   url: string;
   proto: string;
+  /** The server describes its services (`grpc.reflection.v1` or `v1alpha`): no proto. */
+  reflection?: boolean;
   service: string;
   method: string;
   tls: boolean;
@@ -43,6 +62,22 @@ export interface GrpcCall {
   message: string;
   /** JSON text of the metadata rows. */
   metadata: string;
+}
+
+/** A method of a discovered service. */
+export interface GrpcMethod {
+  name: string;
+  input: string;
+  output: string;
+  clientStreaming: boolean;
+  serverStreaming: boolean;
+}
+/** The services of a proto or a server, with their methods. */
+export interface GrpcDiscovery {
+  services: string[];
+  methods: Record<string, GrpcMethod[]>;
+  /** The reflection version the server answered, when discovered by reflection. */
+  reflection?: string;
 }
 
 function json(text: string, label: string): unknown {
@@ -72,13 +107,30 @@ export class ProtocolUseCases {
     return this.api.execute('realtime.close', { workspace, id });
   }
   async grpc(workspace: string, call: GrpcCall) {
-    const { message, metadata, caPem, ...rest } = call;
+    const { message, metadata, caPem, proto, reflection, ...rest } = call;
     return this.api.execute<unknown>('grpc', {
       workspace,
       ...rest,
+      ...(reflection ? { reflection: true } : { proto }),
       ...(caPem?.trim() ? { caPem } : {}),
       message: json(message, 'The request message'),
       metadata: json(metadata || '[]', 'Metadata'),
+    });
+  }
+  /** Lists the services and methods of the proto, or of the server by reflection. */
+  discoverGrpc(
+    workspace: string,
+    call: Pick<GrpcCall, 'url' | 'proto' | 'reflection' | 'tls' | 'caPem' | 'metadata'>,
+  ) {
+    if (call.reflection && !call.url.trim())
+      throw new Error('Enter the gRPC server address (host:port)');
+    return this.api.execute<GrpcDiscovery>('grpc', {
+      workspace,
+      ...(call.reflection
+        ? { reflection: true, url: call.url, tls: call.tls }
+        : { proto: call.proto }),
+      ...(call.caPem?.trim() ? { caPem: call.caPem } : {}),
+      metadata: json(call.metadata || '[]', 'Metadata'),
     });
   }
 }

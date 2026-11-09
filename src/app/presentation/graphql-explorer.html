@@ -1,0 +1,101 @@
+<section class="graphql-explorer" [attr.aria-label]="'Schema explorer' | transloco">
+  <div class="explorer-heading">
+    <strong>{{ 'Schema' | transloco }}</strong>
+    <button class="text-button" type="button" (click)="loadSchema.emit()" [disabled]="loading()">
+      {{ (loading() ? 'Loading schema…' : schema() ? 'Reload schema' : 'Load schema') | transloco }}
+    </button>
+  </div>
+  @if (schema()) {
+    <input
+      type="search"
+      [value]="search()"
+      (input)="find($event)"
+      [placeholder]="'Search types and fields' | transloco"
+      [attr.aria-label]="'Search types and fields' | transloco"
+    />
+    @if (search().trim()) {
+      <ul class="explorer-list">
+        @for (result of results(); track $index) {
+          <li>
+            <button type="button" class="text-button" (click)="open(result.type.name)">
+              {{ result.type.name }}{{ result.field ? '.' + result.field.name : '' }}
+            </button>
+            @if (result.field && result.type.kind !== 'ENUM') {
+              <button type="button" class="pill" (click)="add(result.field)">
+                {{ 'Insert' | transloco }}
+              </button>
+            }
+          </li>
+        } @empty {
+          <li class="muted">{{ 'Nothing matches.' | transloco }}</li>
+        }
+      </ul>
+    } @else {
+      <nav class="explorer-roots" [attr.aria-label]="'Root types' | transloco">
+        @for (root of roots(); track root.name) {
+          <button
+            type="button"
+            class="pill"
+            [class.selected]="current()?.name === root.name"
+            (click)="trail.set([root.name])"
+          >
+            {{ root.label }}
+          </button>
+        }
+      </nav>
+      @if (current(); as type) {
+        <div class="explorer-type">
+          @if (trail().length) {
+            <button type="button" class="text-button" (click)="back()">
+              {{ '← Back' | transloco }}
+            </button>
+          }
+          <h3>
+            {{ type.name }} <small>{{ type.kind }}</small>
+          </h3>
+          @if (type.description) {
+            <p class="muted">{{ type.description }}</p>
+          }
+          <ul class="explorer-list">
+            @for (field of type.fields; track field.name) {
+              <li [class.deprecated]="!!field.deprecated">
+                <div>
+                  <code>{{ signature(field) }}</code>
+                  @if (field.deprecated) {
+                    <span class="badge" [title]="field.deprecated">{{
+                      'Deprecated' | transloco
+                    }}</span>
+                  }
+                  @if (field.description) {
+                    <p class="muted">{{ field.description }}</p>
+                  }
+                </div>
+                <div class="explorer-actions">
+                  @if (opens(field)) {
+                    <button type="button" class="text-button" (click)="open(field.typeName)">
+                      {{ field.typeName }}
+                    </button>
+                  }
+                  @if (type.kind !== 'ENUM' && type.kind !== 'INPUT_OBJECT') {
+                    <button type="button" class="pill" (click)="add(field)">
+                      {{ 'Insert' | transloco }}
+                    </button>
+                  }
+                </div>
+              </li>
+            } @empty {
+              <li class="muted">{{ 'This type has no fields.' | transloco }}</li>
+            }
+          </ul>
+        </div>
+      }
+    }
+  } @else {
+    <p class="muted">
+      {{
+        'Load the schema to browse its types and insert fields. It is fetched with the URL, headers and authorization of this request.'
+          | transloco
+      }}
+    </p>
+  }
+</section>

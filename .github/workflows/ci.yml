@@ -74,7 +74,12 @@ jobs:
           sudo apt-get install -y libdbus-1-dev pkg-config
       - run: rustup show active-toolchain
       - run: npm ci --no-audit --no-fund
+      - name: Start a Kafka broker (Redpanda) for the Kafka contract tests
+        run: bash tools/kafka-fixture.sh start
       - run: npm run engine:test
+      - name: Stop the Kafka broker
+        if: always()
+        run: bash tools/kafka-fixture.sh stop
       - run: npm run backend:build
       - run: npm run test:server
       - run: npm run build

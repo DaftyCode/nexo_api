@@ -30,6 +30,8 @@ export const TEST_API = new InjectionToken<TestApi>('TEST_API');
 const defaults: Record<string, FakeResponse> = {
   'oauth2.tokens': { tokens: [] },
   'mock.list': [],
+  'cookies.list': { cookies: [] },
+  'git.remote.list': { remotes: [] },
 };
 
 export function testProviders(responses: Record<string, FakeResponse> = {}) {

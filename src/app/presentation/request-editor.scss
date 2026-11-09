@@ -90,3 +90,31 @@
 .binary-missing {
   color: #e0b252;
 }
+// GraphQL: query and variables beside the schema explorer, as in Postman.
+.graphql-body {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr);
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.graphql-editors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.graphql-editors > label:first-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.graphql-editors > label:first-child textarea {
+  flex: 1;
+  min-height: 120px;
+}
+@media (max-width: 900px) {
+  .graphql-body {
+    grid-template-columns: 1fr;
+  }
+}

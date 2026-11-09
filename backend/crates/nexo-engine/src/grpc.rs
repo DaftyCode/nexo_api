@@ -1,10 +1,11 @@
-//! gRPC calls described by `.proto` source, with dynamic messages.
+//! gRPC calls described by `.proto` source or by server reflection, with dynamic messages.
 use crate::egress::Policy;
 use hyper_util::rt::TokioIo;
 use nexo_domain::{Error, Result};
 use prost::Message as _;
 use prost_reflect::{
     DescriptorPool, DynamicMessage, MessageDescriptor, MethodDescriptor, SerializeOptions,
+    ServiceDescriptor,
 };
 use protox::file::{ChainFileResolver, File, FileResolver, GoogleFileResolver};
 use serde_json::{Value, json};
@@ -14,9 +15,10 @@ use std::{
 };
 use tonic::{
     Status,
+    client::Grpc,
     codec::{Codec, DecodeBuf, Decoder, EncodeBuf, Encoder},
     metadata::{AsciiMetadataValue, BinaryMetadataValue, MetadataKey, MetadataMap},
-    transport::{Certificate, ClientTlsConfig, Endpoint},
+    transport::{Certificate, Channel, ClientTlsConfig, Endpoint},
 };
 
 const MAX_PROTO: usize = 2 * 1024 * 1024;
@@ -56,10 +58,11 @@ pub fn compile(source: &str) -> Result<DescriptorPool> {
     Ok(compiler.descriptor_pool())
 }
 
+/// Encodes and decodes messages described at run time.
 #[derive(Clone)]
-struct DynamicCodec(MessageDescriptor);
-struct DynamicEncoder;
-struct DynamicDecoder(MessageDescriptor);
+pub(crate) struct DynamicCodec(pub(crate) MessageDescriptor);
+pub(crate) struct DynamicEncoder;
+pub(crate) struct DynamicDecoder(MessageDescriptor);
 impl Codec for DynamicCodec {
     type Encode = DynamicMessage;
     type Decode = DynamicMessage;
@@ -120,7 +123,7 @@ fn from_json(descriptor: &MessageDescriptor, value: &Value) -> Result<DynamicMes
         ))
     })
 }
-fn status_error(status: Status) -> Error {
+pub(crate) fn status_error(status: Status) -> Error {
     invalid(format!(
         "{} {:?}: {}",
         status.code() as i32,
@@ -173,10 +176,45 @@ fn metadata(value: &Value) -> Result<MetadataMap> {
     Ok(map)
 }
 
+/// Lists the services of a definition or a server, with their methods, or calls a method.
+///
+/// With `reflection`, the server describes its services (`grpc.reflection.v1` or `v1alpha`)
+/// and no `.proto` is needed. Without `service`, the services and their methods are listed.
 pub async fn request(payload: &Value, egress: &Policy, loopback_ports: &[u16]) -> Result<Value> {
+    if payload["reflection"] == true {
+        let (mut client, timeout) = connect(payload, egress, loopback_ports).await?;
+        let headers = metadata(&payload["metadata"])?;
+        let reflection =
+            crate::grpc_reflection::Reflection::open(&mut client, timeout, &headers).await?;
+        let version = reflection.version.name();
+        let Some(name) = selected_service(payload) else {
+            let pool = reflection
+                .pool(&mut client, timeout, &headers, &reflection.services)
+                .await?;
+            let mut listed = discovery(&pool, &reflection.services);
+            listed["reflection"] = json!(version);
+            return Ok(listed);
+        };
+        if !reflection.services.iter().any(|service| service == name) {
+            return Err(invalid(format!(
+                "The server does not offer {name}. Available: {}",
+                reflection.services.join(", ")
+            )));
+        }
+        let pool = reflection
+            .pool(&mut client, timeout, &headers, &[name.to_string()])
+            .await?;
+        let service = pool
+            .get_service_by_name(name)
+            .ok_or_else(|| invalid(format!("The server did not describe {name}")))?;
+        let method = method_of(&service, payload)?;
+        return invoke(client, method, payload, timeout).await;
+    }
     let proto = payload["proto"].as_str().unwrap_or("");
     if proto.trim().is_empty() {
-        return Err(invalid("Provide a .proto service definition"));
+        return Err(invalid(
+            "Provide a .proto service definition or use server reflection",
+        ));
     }
     if proto.len() > MAX_PROTO {
         return Err(invalid("Proto definition is too large"));
@@ -187,18 +225,20 @@ pub async fn request(payload: &Value, egress: &Policy, loopback_ports: &[u16]) -
         .filter(|service| service.parent_file().name() == SOURCE)
         .map(|service| service.full_name().to_string())
         .collect();
-    let Some(service) = payload["service"]
-        .as_str()
-        .and_then(|name| pool.get_service_by_name(name))
+    let Some(service) = selected_service(payload).and_then(|name| pool.get_service_by_name(name))
     else {
-        return Ok(json!({"services": services}));
+        return Ok(discovery(&pool, &services));
     };
-    let address = payload["url"]
-        .as_str()
-        .filter(|u| !u.trim().is_empty())
-        .ok_or_else(|| invalid("Enter the gRPC server address (host:port)"))?;
+    // A wrong method name is answered before connecting.
+    let method = method_of(&service, payload)?;
+    let (client, timeout) = connect(payload, egress, loopback_ports).await?;
+    invoke(client, method, payload, timeout).await
+}
+
+/// The method of the service the payload names.
+fn method_of(service: &ServiceDescriptor, payload: &Value) -> Result<MethodDescriptor> {
     let name = payload["method"].as_str().unwrap_or("");
-    let method: MethodDescriptor = service
+    service
         .methods()
         .find(|method| method.name() == name)
         .ok_or_else(|| {
@@ -210,7 +250,51 @@ pub async fn request(payload: &Value, egress: &Policy, loopback_ports: &[u16]) -
                     .collect::<Vec<_>>()
                     .join(", ")
             ))
-        })?;
+        })
+}
+
+fn selected_service(payload: &Value) -> Option<&str> {
+    payload["service"]
+        .as_str()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+}
+
+/// The services and, for each, its methods and how they stream.
+fn discovery(pool: &DescriptorPool, services: &[String]) -> Value {
+    let methods: serde_json::Map<String, Value> = services
+        .iter()
+        .filter_map(|name| pool.get_service_by_name(name))
+        .map(|service| {
+            let methods: Vec<Value> = service
+                .methods()
+                .map(|method| {
+                    json!({
+                        "name": method.name(),
+                        "input": method.input().full_name(),
+                        "output": method.output().full_name(),
+                        "clientStreaming": method.is_client_streaming(),
+                        "serverStreaming": method.is_server_streaming(),
+                    })
+                })
+                .collect();
+            (service.full_name().to_string(), Value::Array(methods))
+        })
+        .collect();
+    json!({"services": services, "methods": methods})
+}
+
+/// A client for the server address, through the addresses the egress policy approved, with
+/// TLS, a custom CA and a client certificate when asked for.
+async fn connect(
+    payload: &Value,
+    egress: &Policy,
+    loopback_ports: &[u16],
+) -> Result<(Grpc<Channel>, Duration)> {
+    let address = payload["url"]
+        .as_str()
+        .filter(|u| !u.trim().is_empty())
+        .ok_or_else(|| invalid("Enter the gRPC server address (host:port)"))?;
     let tls = payload["tls"] == true;
     let uri = format!(
         "{}://{}",
@@ -263,14 +347,26 @@ pub async fn request(payload: &Value, egress: &Policy, loopback_ports: &[u16]) -
         .connect_with_connector(connector)
         .await
         .map_err(|error| invalid(format!("14 Unavailable: {}", source_chain(&error))))?;
-    let mut client = tonic::client::Grpc::new(channel);
+    Ok((Grpc::new(channel), timeout))
+}
+
+/// Calls a method of the service with the payload's message (or messages) and metadata.
+async fn invoke(
+    mut client: Grpc<Channel>,
+    method: MethodDescriptor,
+    payload: &Value,
+    timeout: Duration,
+) -> Result<Value> {
     client
         .ready()
         .await
         .map_err(|error| invalid(error.to_string()))?;
-    let path =
-        http::uri::PathAndQuery::try_from(format!("/{}/{}", service.full_name(), method.name()))
-            .map_err(|error| invalid(error.to_string()))?;
+    let path = http::uri::PathAndQuery::try_from(format!(
+        "/{}/{}",
+        method.parent_service().full_name(),
+        method.name()
+    ))
+    .map_err(|error| invalid(error.to_string()))?;
     let codec = DynamicCodec(method.output());
     let input = method.input();
     let messages: Vec<DynamicMessage> = if method.is_client_streaming() {
@@ -375,7 +471,16 @@ service Greeter { rpc Say (Hello) returns (Hello); rpc Watch (Hello) returns (st
         let result = request(&json!({"proto": PROTO}), &Policy::AllowAll, &[])
             .await
             .unwrap();
-        assert_eq!(result, json!({"services": ["demo.Greeter"]}));
+        assert_eq!(result["services"], json!(["demo.Greeter"]));
+        assert_eq!(
+            result["methods"]["demo.Greeter"],
+            json!([
+                {"name": "Say", "input": "demo.Hello", "output": "demo.Hello",
+                 "clientStreaming": false, "serverStreaming": false},
+                {"name": "Watch", "input": "demo.Hello", "output": "demo.Hello",
+                 "clientStreaming": false, "serverStreaming": true},
+            ])
+        );
         let missing = request(
             &json!({"proto": "syntax = \"proto3\"; import \"other.proto\";"}),
             &Policy::AllowAll,

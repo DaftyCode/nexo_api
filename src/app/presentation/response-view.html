@@ -84,7 +84,12 @@
               </div>
             }
           } @else {
-            <pre class="response-code">{{ text() }}</pre>
+            <!-- Focusable, so the keyboard can scroll a long body. -->
+            <pre
+              class="response-code"
+              tabindex="0"
+              [attr.aria-label]="'Response body' | transloco"
+              >{{ text() }}</pre>
             @if (truncated()) {
               <div class="row">
                 <span class="muted">{{
@@ -117,7 +122,11 @@
         </table>
       }
       @case ('cookies') {
-        <pre class="response-code">{{ r.cookies | json }}</pre>
+        <pre
+          class="response-code"
+          tabindex="0"
+          [attr.aria-label]="'Response cookies' | transloco"
+          >{{ r.cookies | json }}</pre>
       }
       @case ('tests') {
         @if (!r.assertions.length) {

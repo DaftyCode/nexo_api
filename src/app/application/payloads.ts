@@ -27,6 +27,12 @@ export interface FileAttachment {
   contentType?: string;
 }
 
+export interface CookieKey {
+  domain: string;
+  path: string;
+  name: string;
+}
+
 export interface GitFile {
   id: string;
   value: unknown;
@@ -62,6 +68,7 @@ export interface RunPayload {
   context?: ExecutionContext;
   data?: readonly unknown[];
   iterations?: number;
+  delay?: number;
   globalTimeout?: number;
   timeout?: number;
   strictSSL?: boolean;
@@ -96,6 +103,7 @@ export interface RealtimeConnectPayload {
   headers?: Record<string, string> | readonly object[];
   subprotocols?: readonly string[];
   path?: string;
+  transports?: string;
   auth?: Record<string, unknown>;
   clientId?: string;
   clean?: boolean;
@@ -107,6 +115,13 @@ export interface RealtimeConnectPayload {
   caPem?: string;
   certPem?: string;
   keyPem?: string;
+  tls?: boolean;
+  saslMechanism?: string;
+  query?: string;
+  variables?: unknown;
+  operationName?: string;
+  graphqlProtocol?: string;
+  connectionParams?: unknown;
 }
 
 export interface RealtimeSendPayload {
@@ -118,6 +133,11 @@ export interface RealtimeSendPayload {
   event?: string;
   qos?: number;
   retain?: boolean;
+  key?: string;
+  partition?: number;
+  headers?: Record<string, string> | readonly object[];
+  from?: 'earliest' | 'latest' | 'offset';
+  offset?: number;
 }
 
 export interface RealtimePollPayload {
@@ -134,6 +154,7 @@ export interface GrpcPayload {
   workspace?: string;
   url?: string;
   proto?: string;
+  reflection?: boolean;
   service?: string;
   method?: string;
   tls?: boolean;
@@ -218,6 +239,27 @@ export interface Oauth2TokensPayload {
   expiresIn?: number;
 }
 
+export interface CookieSetPayload {
+  name: string;
+  value: string;
+  domain: string;
+  workspace?: string;
+  path?: string;
+  expires?: number;
+  includeSubdomains?: boolean;
+  secure?: boolean;
+  httpOnly?: boolean;
+  sameSite?: 'Strict' | 'Lax' | 'None';
+  original?: CookieKey;
+}
+
+export interface CookieDeletePayload {
+  domain: string;
+  path: string;
+  name: string;
+  workspace?: string;
+}
+
 export interface PerformancePayload {
   workspace?: string;
   action?: 'status';
@@ -238,6 +280,10 @@ export interface GitPayload {
   branch?: string;
   message?: string;
   files?: readonly GitFile[];
+  remote?: string;
+  url?: string;
+  rebase?: boolean;
+  forceWithLease?: boolean;
 }
 
 /** The payload of each execution operation, checked by the backend. */
@@ -245,6 +291,8 @@ export interface OperationPayloads {
   request: RequestPayload;
   run: RunPayload;
   cancel: IdPayload;
+  'run.pause': IdPayload;
+  'run.resume': IdPayload;
   import: ImportPayload;
   codegen: CodegenPayload;
   'realtime.connect': RealtimeConnectPayload;
@@ -268,6 +316,8 @@ export interface OperationPayloads {
   'oauth2.tokens': Oauth2TokensPayload;
   'cookies.list': WorkspacePayload;
   'cookies.clear': WorkspacePayload;
+  'cookies.set': CookieSetPayload;
+  'cookies.delete': CookieDeletePayload;
   performance: PerformancePayload;
   'performance.cancel': IdPayload;
 }

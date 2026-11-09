@@ -37,6 +37,8 @@ operations!(
     Operation, "Unknown execution operation", {
         Request => "request",
         Run => "run",
+        RunPause => "run.pause",
+        RunResume => "run.resume",
         Cancel => "cancel",
         Import => "import",
         Codegen => "codegen",
@@ -61,6 +63,8 @@ operations!(
         Oauth2Tokens => "oauth2.tokens",
         CookiesList => "cookies.list",
         CookiesClear => "cookies.clear",
+        CookiesSet => "cookies.set",
+        CookiesDelete => "cookies.delete",
         Performance => "performance",
         PerformanceCancel => "performance.cancel",
     }
@@ -76,12 +80,14 @@ impl Operation {
                 | Self::DatasetDelete
                 | Self::CookiesList
                 | Self::CookiesClear
+                | Self::CookiesSet
+                | Self::CookiesDelete
         )
     }
 }
 
 operations!(
-    /// Local Git operations on a workspace export.
+    /// Git operations on a workspace project, local and with its remotes.
     GitOperation, "Unsupported Git operation", {
         Init => "init",
         Status => "status",
@@ -93,6 +99,14 @@ operations!(
         Commit => "commit",
         Stash => "stash",
         Export => "export",
+        Files => "files",
+        RemoteList => "remote.list",
+        RemoteAdd => "remote.add",
+        RemoteRemove => "remote.remove",
+        Fetch => "fetch",
+        Pull => "pull",
+        Push => "push",
+        Clone => "clone",
     }
 );
 
@@ -137,7 +151,10 @@ mod tests {
         }
         assert!(Operation::parse("shell.exec").is_err());
         assert!(Operation::parse("vault.get").is_err());
-        assert!(GitOperation::parse("push").is_err());
+        // Only the operations Nexo runs itself: never arbitrary Git commands.
+        for name in ["config", "gc", "remote", "submodule", "filter-branch"] {
+            assert!(GitOperation::parse(name).is_err(), "{name}");
+        }
     }
     #[test]
     fn typescript_contract_is_current() {

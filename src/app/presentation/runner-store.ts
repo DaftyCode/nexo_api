@@ -19,7 +19,7 @@ export class RunnerStore {
     inject(DestroyRef).onDestroy(() => this.stopPolling());
   }
 
-  async start(collectionId: string, iterations: number, data: unknown[]) {
+  async start(collectionId: string, iterations: number, data: unknown[], delay = 0) {
     await this.task.run(async () => {
       const collection = this.state.collections().find((d) => d.id === collectionId);
       if (!collection) throw new Error('Choose a collection');
@@ -32,12 +32,32 @@ export class RunnerStore {
           globals: toPortableRows(this.state.globalRows()),
           iterations,
           data,
+          ...(delay > 0 ? { delay } : {}),
         },
       );
       this.collectionId = collection.id;
       this.run.set({ ...started, results: [], assertions: [], logs: [] });
       this.stopPolling();
       this.schedule(started.id);
+    });
+  }
+  /** Pauses between requests: the one being sent finishes, no other starts. */
+  async pause() {
+    await this.control('run.pause');
+  }
+  /** Continues with the next request. */
+  async resume() {
+    await this.control('run.resume');
+  }
+  private async control(operation: 'run.pause' | 'run.resume') {
+    const current = this.run();
+    if (!current) return;
+    await this.task.run(async () => {
+      const answer = await this.cases.execute<Run>(this.state.workspaceId(), operation, {
+        id: current.id,
+      });
+      // Only the state: the results arrive with the next poll.
+      this.run.update((run) => (run?.id === current.id ? { ...run, state: answer.state } : run));
     });
   }
   async cancel() {
@@ -54,10 +74,11 @@ export class RunnerStore {
     if (this.timer) clearTimeout(this.timer);
     this.timer = undefined;
   }
-  /** Polls sequentially, and less often while the window is hidden. */
+  /** Polls sequentially, and less often while the window is hidden or the run paused. */
   private schedule(id: string) {
     const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
-    this.timer = setTimeout(() => void this.poll(id), hidden ? 3000 : 400);
+    const slow = hidden || this.run()?.state === 'paused';
+    this.timer = setTimeout(() => void this.poll(id), slow ? 2000 : 400);
   }
   private async poll(id: string) {
     if (this.run()?.id !== id) return;
@@ -71,7 +92,7 @@ export class RunnerStore {
       if (!previous || this.run()?.id !== id) return;
       const current = mergeRun(previous, update);
       this.run.set(current);
-      if (current.state === 'running') {
+      if (current.state === 'running' || current.state === 'paused') {
         this.schedule(id);
         return;
       }

@@ -222,7 +222,7 @@ fn script_response(result: &Value) -> Value {
 
 /// Replaces `{{ name }}` with the secret of that name, with the runtime's syntax: no braces
 /// inside, surrounding spaces ignored. Unknown names are left as written.
-fn fill(text: &str, secrets: &Map<String, Value>) -> String {
+pub(crate) fn fill(text: &str, secrets: &Map<String, Value>) -> String {
     if secrets.is_empty() || !text.contains("{{") {
         return text.to_string();
     }

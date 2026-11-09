@@ -73,6 +73,7 @@
         ><button class="button primary" (click)="git('commit')">
           {{ 'Commit changes' | transloco }}
         </button>
+        <app-git-remotes (result)="gitResult($event)" />
       }
       @case ('mcp') {
         <label class="field">{{ 'Server URL' | transloco }}<input [formField]="fields.url" /></label

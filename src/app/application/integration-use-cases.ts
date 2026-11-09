@@ -8,9 +8,19 @@ import {
 import { GitOperation } from './operations';
 import { RequestDraft, WorkspaceDocument, toItem } from '../domain/models';
 import { exportableCollection } from '../domain/sanitize';
+import { GitRemote, RepositoryFile, repositoryImport } from '../domain/repository';
 import { parseAllowedDomains } from '../domain/secrets';
 import { RequestAncestor, toPortableRows } from '../domain/variables';
 
+/** What a Git operation takes besides the workspace. */
+export interface GitInput {
+  branch?: string;
+  message?: string;
+  remote?: string;
+  url?: string;
+  rebase?: boolean;
+  forceWithLease?: boolean;
+}
 export interface GitResult {
   success: boolean;
   stdout: string;
@@ -68,10 +78,28 @@ export class IntegrationUseCases {
   }
   git(
     workspace: string,
-    operation: Exclude<GitOperation, 'export'>,
-    input: { branch: string; message: string },
+    operation: Exclude<GitOperation, 'export' | 'files'>,
+    input: GitInput = {},
   ) {
     return this.api.git<GitResult>(operation, { workspace, ...input });
+  }
+  /** The remotes of the workspace project. */
+  async remotes(workspace: string) {
+    const { remotes } = await this.api.git<{ remotes: GitRemote[] }>('remote.list', {
+      workspace,
+    });
+    return remotes ?? [];
+  }
+  /**
+   * Brings the project's collections into the workspace after a pull or a clone: new ones
+   * are added and changed ones updated, keeping the credentials the export masked. Those
+   * only in the workspace stay.
+   */
+  async importRepository(workspace: string, documents: readonly WorkspaceDocument[]) {
+    const { files } = await this.api.git<{ files: RepositoryFile[] }>('files', { workspace });
+    const plan = repositoryImport(files, documents, workspace);
+    for (const document of plan.save) await this.api.save(document);
+    return plan;
   }
 
   secrets() {

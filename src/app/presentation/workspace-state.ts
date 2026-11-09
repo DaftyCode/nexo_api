@@ -2,6 +2,8 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { TranslocoService } from '@jsverse/transloco';
 import { WORKSPACE } from '../composition/providers';
 import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
+import { GraphQLSchema } from '../domain/graphql-schema';
+import { CookieChange, CookieKey, StoredCookie, cookieKey, sameCookie } from '../domain/cookies';
 import {
   RequestAncestor,
   ResolvedVariable,
@@ -189,6 +191,10 @@ export class WorkspaceState {
   selectWorkspace(id: string) {
     return this.session.select(id);
   }
+  /** Opens a workspace created outside the workspace menu, such as a cloned repository. */
+  openWorkspace(id: string) {
+    return this.session.open(id);
+  }
   async refresh() {
     await this.store.refresh();
     this.variableStore.validate();
@@ -331,6 +337,56 @@ export class WorkspaceState {
       this.notice.set('Token deleted');
     });
   }
+  /** The cookies of the workspace jar, for Postman's "Manage Cookies". */
+  readonly cookies = signal<StoredCookie[]>([]);
+  /** Whether the "Manage Cookies" dialog is open. */
+  readonly managingCookies = signal(false);
+  /** Opens "Manage Cookies" with the cookies the jar has now. */
+  manageCookies() {
+    this.managingCookies.set(true);
+    return this.loadCookies();
+  }
+  loadCookies() {
+    return this.guard(async () => this.cookies.set(await this.cases.cookies(this.workspaceId())));
+  }
+  /** Saves a new or edited cookie; returns whether it was saved. */
+  async saveCookie(change: CookieChange, original?: CookieKey) {
+    let saved = false;
+    await this.guard(async () => {
+      const cookie = await this.cases.setCookie(this.workspaceId(), change, original);
+      const replaced = (other: StoredCookie) =>
+        sameCookie(cookieKey(other), cookieKey(cookie)) ||
+        (!!original && sameCookie(cookieKey(other), original));
+      this.cookies.update((cookies) => [...cookies.filter((other) => !replaced(other)), cookie]);
+      this.notice.set('Cookie saved');
+      saved = true;
+    });
+    return saved;
+  }
+  deleteCookie(key: CookieKey) {
+    return this.guard(async () => {
+      await this.cases.deleteCookie(this.workspaceId(), key);
+      this.cookies.update((cookies) =>
+        cookies.filter((cookie) => !sameCookie(cookieKey(cookie), key)),
+      );
+      this.notice.set('Cookie deleted');
+    });
+  }
+  /** Deletes every cookie of a domain, or of the whole jar without one. */
+  clearCookies(domain?: string) {
+    return this.guard(async () => {
+      const workspace = this.workspaceId();
+      if (domain === undefined) {
+        await this.cases.clearCookies(workspace);
+        this.cookies.set([]);
+      } else {
+        for (const cookie of this.cookies().filter((c) => c.domain === domain))
+          await this.cases.deleteCookie(workspace, cookieKey(cookie));
+        this.cookies.update((cookies) => cookies.filter((c) => c.domain !== domain));
+      }
+      this.notice.set('Cookies deleted');
+    });
+  }
   /** The browser sign-in in progress, shown in a dialog until it finishes. */
   readonly oauth2SignIn = signal<OAuth2SignIn | undefined>(undefined);
   /** Status returned by pasting the address, read by the polling loop. */
@@ -458,6 +514,35 @@ export class WorkspaceState {
   cancel() {
     return this.guard(() => this.requests.cancel());
   }
+
+  // GraphQL schemas, by endpoint URL. As in Postman, they are loaded again in each session
+  // rather than saved in the collection.
+  readonly graphqlSchemas = signal<Readonly<Record<string, GraphQLSchema>>>({});
+  readonly loadingSchema = signal(false);
+  /** Loads the schema of the active request's endpoint by introspection. */
+  async loadGraphqlSchema() {
+    const request = this.active()?.request;
+    if (!request || this.loadingSchema()) return;
+    this.loadingSchema.set(true);
+    try {
+      await this.guard(async () => {
+        const schema = await this.cases.introspect(
+          request,
+          {
+            workspace: this.workspaceId(),
+            environment: this.environmentRows(),
+            globals: this.globalRows(),
+            ancestors: this.activeAncestors(),
+          },
+          this.cases.files.id(),
+        );
+        this.graphqlSchemas.update((schemas) => ({ ...schemas, [request.url]: schema }));
+        this.notice.set('Schema loaded');
+      });
+    } finally {
+      this.loadingSchema.set(false);
+    }
+  }
   openHistory(document: WorkspaceDocument) {
     return this.guard(() => this.requests.openHistory(document));
   }
@@ -490,14 +575,16 @@ export class WorkspaceState {
     let saved: WorkspaceDocument | undefined;
     await this.guard(async () => {
       saved = await this.variableStore.saveEnvironment(id, name, rows);
-      this.notice.set('Environment saved');
+      if (saved) this.notice.set('Environment saved');
     });
     return saved;
   }
-  saveGlobals(rows: readonly VariableRow[]) {
-    return this.guard(async () => {
-      await this.variableStore.saveGlobals(rows);
-      this.notice.set('Global variables saved');
+  async saveGlobals(rows: readonly VariableRow[]) {
+    let saved: WorkspaceDocument | undefined;
+    await this.guard(async () => {
+      saved = await this.variableStore.saveGlobals(rows);
+      if (saved) this.notice.set('Global variables saved');
     });
+    return saved;
   }
 }

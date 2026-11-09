@@ -312,6 +312,25 @@ describe('protocol requests in collections', () => {
     draft.realtime = { ...settings, protocol: 'mqtt', password: '{{vault:mqtt}}' };
     expect(fromItem(toItem(draft), 'm1').realtime?.password).toBe('{{vault:mqtt}}');
   });
+  it('reopen a saved GraphQL subscription with its operation and protocol', () => {
+    const draft = newRequest('s1');
+    draft.realtime = {
+      ...settings,
+      protocol: 'graphql-subscription',
+      query: 'subscription { ticks }',
+      variables: '{"from": 1}',
+      connectionParams: '{"token": "{{token}}"}',
+      graphqlProtocol: 'graphql-ws',
+    };
+    const reopened = fromItem(toItem(draft), 's1');
+    expect(reopened.protocol).toBe('graphql-subscription');
+    expect(reopened.realtime).toMatchObject({
+      query: 'subscription { ticks }',
+      variables: '{"from": 1}',
+      connectionParams: '{"token": "{{token}}"}',
+      graphqlProtocol: 'graphql-ws',
+    });
+  });
 });
 
 describe('Files sent with a request', () => {

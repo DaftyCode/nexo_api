@@ -15,5 +15,6 @@ uuid.workspace = true
 tokio.workspace = true
 rusqlite.workspace = true
 keyring.workspace = true
+url = "2.5.8"
 [dev-dependencies]
 futures-util.workspace = true

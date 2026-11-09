@@ -6,7 +6,14 @@ import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 import { VariablesStore } from './variables-store';
 
-const realtimeProtocols = ['websocket', 'socketio', 'mqtt', 'grpc'];
+const realtimeProtocols = [
+  'websocket',
+  'socketio',
+  'mqtt',
+  'grpc',
+  'graphql-subscription',
+  'kafka',
+];
 
 /** Sending the active request, its history and saving collection run results. */
 export class RequestsStore {

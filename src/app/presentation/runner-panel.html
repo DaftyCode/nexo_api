@@ -31,6 +31,9 @@
     ><label class="field"
       >{{ 'Iterations' | transloco }}<input type="number" [formField]="fields.iterations" /></label
     ><label class="field"
+      >{{ 'Delay between requests (ms)' | transloco
+      }}<input type="number" [formField]="fields.delay" /></label
+    ><label class="field"
       >{{ 'Iteration data (JSON array)' | transloco
       }}<textarea class="code-editor small" [formField]="fields.data"></textarea></label
     ><label class="file-label"
@@ -43,10 +46,27 @@
       <code>nx.iterationData</code>
       {{ 'in scripts.' | transloco }}
     </p>
-    @if (runner.run()?.state === 'running') {
-      <button class="button danger" (click)="runner.cancel()">
-        {{ 'Stop run' | transloco }}
-      </button>
+    @if (runner.run()?.state === 'running' || runner.run()?.state === 'paused') {
+      <div class="row">
+        @if (runner.run()?.state === 'paused') {
+          <button class="button primary" (click)="runner.resume()">
+            {{ '▷ Resume' | transloco }}
+          </button>
+        } @else {
+          <button class="button" (click)="runner.pause()">{{ '❚❚ Pause' | transloco }}</button>
+        }
+        <button class="button danger" (click)="runner.cancel()">
+          {{ 'Stop run' | transloco }}
+        </button>
+      </div>
+      @if (runner.run()?.state === 'paused') {
+        <p class="muted" role="status">
+          {{
+            'Paused: the request being sent finished, and the next one waits for Resume.'
+              | transloco
+          }}
+        </p>
+      }
     } @else {
       <button
         class="button primary wide"
@@ -64,9 +84,11 @@
           {{
             run.state === 'running'
               ? ('Running collection' | transloco)
-              : run.state === 'completed'
-                ? ('Run completed' | transloco)
-                : (run.state | transloco)
+              : run.state === 'paused'
+                ? ('Run paused' | transloco)
+                : run.state === 'completed'
+                  ? ('Run completed' | transloco)
+                  : (run.state | transloco)
           }}
         </h2>
         <span class="status-pill" [class.failed]="run.state === 'failed'">{{

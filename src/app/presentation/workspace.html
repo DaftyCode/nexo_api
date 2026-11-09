@@ -495,6 +495,7 @@ bash install-web.sh  (macOS / Linux)</pre>
               (cancelRequest)="state.cancel()"
               (save)="state.saveActive()"
               (code)="state.section.set('code')"
+              (cookies)="state.manageCookies()"
             />
             @if (appearance.current() === 'canvas') {
               <app-splitter
@@ -655,4 +656,5 @@ bash install-web.sh  (macOS / Linux)</pre>
   }
   <app-oauth2-sign-in />
   <app-oauth2-tokens />
+  <app-cookies-dialog />
 </div>

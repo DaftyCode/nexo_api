@@ -73,6 +73,28 @@ describe('IntegrationPanel', () => {
     expect(api.downloads[0].name).toBe('nexo-output.txt');
   });
 
+  it('shows the output of a remote operation and the status it leaves', async () => {
+    api.responses['git.fetch'] = { success: true, stdout: 'From github.com:acme/api', stderr: '' };
+    api.responses['git.status'] = {
+      success: true,
+      stdout: '# branch.head main\n# branch.ab +0 -3',
+      stderr: '',
+    };
+    fixture.componentRef.setInput('section', 'git');
+    await fixture.whenStable();
+    await clickButton(fixture, /^\s*Fetch\s*$/);
+    await settle();
+    expect(root().textContent).toContain('From github.com:acme/api');
+    expect(root().textContent).toContain('↓3');
+    // Without a repository there is no status to show.
+    api.responses['git.status'] = () => {
+      throw new Error('Initialize the repository first (Git → Init)');
+    };
+    await clickButton(fixture, /^\s*Fetch\s*$/);
+    await settle();
+    expect(root().textContent).toContain('↓3');
+  });
+
   it('calls an MCP server and lists its tools, texts and errors', async () => {
     api.responses['mcp.request'] = {
       status: 200,

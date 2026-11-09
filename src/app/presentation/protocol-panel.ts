@@ -4,6 +4,7 @@ import {
   ChangeDetectionStrategy,
   inject,
   signal,
+  computed,
   DestroyRef,
   effect,
   untracked,
@@ -13,7 +14,7 @@ import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, RealtimeSettings, row } from '../domain/models';
-import { StreamEvent } from '../application/protocol-use-cases';
+import { GrpcDiscovery, StreamEvent } from '../application/protocol-use-cases';
 import { PROTOCOLS } from '../composition/providers';
 
 @Component({
@@ -46,6 +47,17 @@ export class ProtocolPanel {
     username: '',
     password: '',
     qos: '0',
+    query: 'subscription {\n  \n}',
+    variables: '{}',
+    connectionParams: '{}',
+    graphqlProtocol: 'graphql-transport-ws',
+    reflection: false,
+    transports: 'auto',
+    saslMechanism: 'none',
+    key: '',
+    partition: '',
+    from: 'latest',
+    offset: '',
   });
   protected readonly fields = form(this.model);
   protected readonly headers = signal<KeyValue[]>([row()]);
@@ -53,6 +65,28 @@ export class ProtocolPanel {
   protected readonly status = signal('disconnected');
   protected readonly events = signal<StreamEvent[]>([]);
   protected readonly result = signal('');
+  /** How a Socket.IO message writes binary data. */
+  protected readonly binaryExample = '{"$binary": "<base64>"}';
+  /** How a Kafka password refers to a vault secret. */
+  protected readonly vaultExample = '{{vault:name}}';
+  /** Services found for each server address (reflection) or proto, during the session. */
+  private readonly discoveries = signal<Readonly<Record<string, GrpcDiscovery>>>({});
+  private discoveryKey() {
+    const m = this.model();
+    return m.reflection ? `reflection:${m.url.trim()}` : `proto:${m.proto}`;
+  }
+  protected readonly discovery = computed(() => this.discoveries()[this.discoveryKey()]);
+  protected readonly methods = computed(
+    () => this.discovery()?.methods[this.model().service] ?? [],
+  );
+  protected readonly streaming = computed(() => {
+    const method = this.methods().find((item) => item.name === this.model().method);
+    if (!method) return '';
+    if (method.clientStreaming && method.serverStreaming) return 'Bidirectional streaming';
+    if (method.clientStreaming) return 'Client streaming';
+    if (method.serverStreaming) return 'Server streaming';
+    return 'Unary';
+  });
   private timer: ReturnType<typeof setTimeout> | undefined;
   /** Tab whose saved settings were loaded into the panel. */
   private loadedTab = '';
@@ -85,7 +119,24 @@ export class ProtocolPanel {
       strictSSL: m.strictSSL,
       ...(m.caPem.trim() ? { caPem: m.caPem } : {}),
       ...(m.protocol === 'mqtt' ? { username: m.username, password: m.password } : {}),
-      headers: this.headers().filter((h) => h.enabled && h.key),
+      ...(m.protocol === 'kafka'
+        ? {
+            tls: m.tls,
+            saslMechanism: m.saslMechanism,
+            ...(m.saslMechanism !== 'none' ? { username: m.username, password: m.password } : {}),
+          }
+        : {}),
+      ...(m.protocol === 'socketio' ? { transports: m.transports } : {}),
+      ...(m.protocol === 'graphql-subscription'
+        ? {
+            query: m.query,
+            variables: m.variables,
+            connectionParams: m.connectionParams,
+            graphqlProtocol: m.graphqlProtocol,
+          }
+        : {}),
+      // Kafka headers belong to each record, not to the connection.
+      headers: m.protocol === 'kafka' ? [] : this.headers().filter((h) => h.enabled && h.key),
     };
   }
   /** Saves this configuration as a request in a collection. */
@@ -158,14 +209,52 @@ export class ProtocolPanel {
   protected send(action = 'publish') {
     void this.task.run(async () => {
       const m = this.model();
+      const partition = m.partition.trim();
+      const offset = m.offset.trim();
       await this.protocols.send(this.state.workspaceId(), this.connection(), {
         action,
         message: m.message,
         topic: m.topic,
         event: m.event,
         qos: Number(m.qos),
+        ...(m.protocol === 'kafka'
+          ? {
+              key: m.key,
+              headers: this.headers().filter((h) => h.enabled && h.key),
+              from: m.from as 'earliest' | 'latest' | 'offset',
+              ...(partition ? { partition: Number(partition) } : {}),
+              ...(m.from === 'offset' && offset ? { offset: Number(offset) } : {}),
+            }
+          : {}),
       });
     });
+  }
+  /** Lists the services and methods, and selects the first ones if none is chosen. */
+  protected discover() {
+    void this.task.run(async () => {
+      const m = this.model();
+      const key = this.discoveryKey();
+      const found = await this.protocols.discoverGrpc(this.state.workspaceId(), {
+        url: m.url,
+        proto: m.proto,
+        reflection: m.reflection,
+        tls: m.tls,
+        caPem: m.caPem,
+        metadata: m.metadata,
+      });
+      this.discoveries.update((all) => ({ ...all, [key]: found }));
+      const service = found.services.includes(m.service) ? m.service : (found.services[0] ?? '');
+      const methods = found.methods[service] ?? [];
+      const method = methods.some((item) => item.name === m.method)
+        ? m.method
+        : (methods[0]?.name ?? '');
+      this.model.update((x) => ({ ...x, service, method }));
+    });
+  }
+  protected chooseService(event: Event) {
+    const service = (event.target as HTMLSelectElement).value;
+    const method = this.discovery()?.methods[service]?.[0]?.name ?? '';
+    this.model.update((m) => ({ ...m, service, method }));
   }
   protected invoke() {
     void this.task.run(async () => {
@@ -173,6 +262,7 @@ export class ProtocolPanel {
       const result = await this.protocols.grpc(this.state.workspaceId(), {
         url: m.url,
         proto: m.proto,
+        reflection: m.reflection,
         service: m.service,
         method: m.method,
         tls: m.tls,

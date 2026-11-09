@@ -207,9 +207,66 @@ test('cookies persist per workspace and can be listed and cleared', async () => 
   const result = await server.execute('request', { request: { url: `${echo.url}/after` } });
   assert.equal(JSON.parse(result.body).cookie, 'session=abc');
   const { cookies } = await server.execute('cookies.list');
-  assert.equal(cookies[0].key, 'session');
+  assert.equal(cookies[0].name, 'session');
+  assert.equal(cookies[0].expires, null, 'a session cookie is kept');
   await server.execute('cookies.clear');
   assert.deepEqual((await server.execute('cookies.list')).cookies, []);
+});
+
+test('the cookie manager adds, edits and deletes cookies that the next request sends', async () => {
+  const domain = new URL(echo.url).hostname;
+  const cookieOf = async () =>
+    JSON.parse((await server.execute('request', { request: { url: `${echo.url}/after` } })).body)
+      .cookie;
+  const { cookie } = await server.execute('cookies.set', {
+    name: 'theme',
+    value: 'dark',
+    domain,
+    path: '/',
+    expires: Date.now() + 3_600_000,
+    httpOnly: true,
+    sameSite: 'Lax',
+  });
+  assert.equal(cookie.domain, domain);
+  assert.equal(cookie.hostOnly, true);
+  assert.equal(cookie.sameSite, 'Lax');
+  assert.equal(await cookieOf(), 'theme=dark');
+
+  await server.execute('cookies.set', {
+    name: 'mode',
+    value: 'light',
+    domain,
+    original: { domain, path: '/', name: 'theme' },
+  });
+  assert.equal(await cookieOf(), 'mode=light');
+  assert.deepEqual(
+    (await server.execute('cookies.list')).cookies.map((c) => c.name),
+    ['mode'],
+  );
+
+  assert.equal(
+    (await server.execute('cookies.delete', { domain, path: '/', name: 'mode' })).deleted,
+    true,
+  );
+  assert.equal(await cookieOf(), null);
+
+  await assert.rejects(
+    server.execute('cookies.set', { name: 'a', value: 'b', domain: 'https://x.test/' }),
+    /is not a domain/,
+  );
+  await assert.rejects(
+    server.execute('cookies.set', { name: 'a b', value: 'b', domain }),
+    /name cannot contain/,
+  );
+  await assert.rejects(
+    server.execute('cookies.set', { name: 'a', value: 'b', domain, expires: 1 }),
+    /already passed/,
+  );
+  await assert.rejects(server.execute('cookies.delete', { domain }), /path/);
+  await assert.rejects(
+    server.execute('cookies.set', { name: 'a', value: 'b', domain, unknown: true }),
+    /unknown/,
+  );
 });
 
 test('vault secrets reach the request, stay hidden from scripts and are redacted', async () => {
@@ -368,6 +425,41 @@ test('imports and code generation', async () => {
   const response = await generated();
   assert.equal(response.path, '/generated');
   assert.equal(response.body, 'hello');
+});
+
+test('a run pauses between requests, resumes, and stops when cancelled while paused', async () => {
+  const collection = {
+    item: Array.from({ length: 10 }, (_, index) => ({
+      name: `r${index}`,
+      request: { url: `${echo.url}/paused/${index}` },
+    })),
+  };
+  const status = (id) => server.execute('run', { action: 'status', id });
+  const started = await server.execute('run', { collection, delay: 50 });
+  await until(async () => (await status(started.id)).counts.results >= 2);
+  assert.equal((await server.execute('run.pause', { id: started.id })).state, 'paused');
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  const sent = (await status(started.id)).counts.results;
+  await new Promise((resolve) => setTimeout(resolve, 300));
+  const paused = await status(started.id);
+  assert.equal(paused.state, 'paused');
+  assert.equal(paused.counts.results, sent, 'nothing is sent while paused');
+  assert.ok(sent < 10);
+  assert.equal((await server.execute('run.resume', { id: started.id })).state, 'running');
+  const finished = await until(async () => {
+    const view = await status(started.id);
+    return view.state === 'completed' && view;
+  });
+  assert.equal(finished.counts.results, 10);
+
+  const again = await server.execute('run', { collection, delay: 1000 });
+  await server.execute('run.pause', { id: again.id });
+  assert.equal((await server.execute('cancel', { id: again.id })).state, 'cancelled');
+  await new Promise((resolve) => setTimeout(resolve, 1200));
+  const cancelled = await status(again.id);
+  assert.equal(cancelled.state, 'cancelled');
+  assert.ok(cancelled.counts.results <= 1);
+  await assert.rejects(server.execute('run.pause', { id: 'missing' }), /not found/);
 });
 
 test('cancelled runs stop and unknown executions are reported', async () => {

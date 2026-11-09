@@ -24,7 +24,9 @@
       <option value="websocket">WebSocket</option>
       <option value="socketio">Socket.IO</option>
       <option value="mqtt">MQTT</option>
-      <option value="grpc">gRPC</option></select
+      <option value="grpc">gRPC</option>
+      <option value="graphql-subscription">{{ 'GraphQL subscription' | transloco }}</option>
+      <option value="kafka">Kafka</option></select
     ><input
       class="grow"
       [formField]="fields.url"
@@ -47,26 +49,130 @@
       {{
         model().protocol === 'grpc'
           ? ('Service definition' | transloco)
-          : ('Compose message' | transloco)
+          : model().protocol === 'graphql-subscription'
+            ? ('Subscription' | transloco)
+            : ('Compose message' | transloco)
       }}
     </h2>
     @if (model().protocol === 'grpc') {
-      <label class="field"
-        >{{ 'Proto definition' | transloco
-        }}<textarea class="code-editor" [formField]="fields.proto" spellcheck="false"></textarea>
-      </label>
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields.reflection" />
+        {{ 'Use server reflection' | transloco }}</label
+      >
+      @if (!model().reflection) {
+        <label class="field"
+          >{{ 'Proto definition' | transloco
+          }}<textarea class="code-editor" [formField]="fields.proto" spellcheck="false"></textarea>
+        </label>
+      }
       <div class="row">
-        <label class="field grow"
-          >{{ 'Service' | transloco }}<input [formField]="fields.service" /></label
-        ><label class="field grow"
-          >{{ 'Method' | transloco }}<input [formField]="fields.method"
-        /></label>
+        <button class="button" (click)="discover()">{{ 'Discover services' | transloco }}</button>
+        @if (discovery()?.reflection; as version) {
+          <span class="muted">{{ 'grpc.reflectionVersion' | transloco: { v0: version } }}</span>
+        }
       </div>
+      @if (discovery(); as found) {
+        <div class="row">
+          <label class="field grow"
+            >{{ 'Service' | transloco
+            }}<select [value]="model().service" (change)="chooseService($event)">
+              @for (service of found.services; track service) {
+                <option [value]="service">{{ service }}</option>
+              }
+            </select></label
+          ><label class="field grow"
+            >{{ 'Method' | transloco
+            }}<select [formField]="fields.method">
+              @for (method of methods(); track method.name) {
+                <option [value]="method.name">{{ method.name }}</option>
+              }
+            </select></label
+          >
+        </div>
+        @if (streaming(); as kind) {
+          <p class="muted">{{ kind | transloco }}</p>
+        }
+      } @else {
+        <div class="row">
+          <label class="field grow"
+            >{{ 'Service' | transloco }}<input [formField]="fields.service" /></label
+          ><label class="field grow"
+            >{{ 'Method' | transloco }}<input [formField]="fields.method"
+          /></label>
+        </div>
+      }
       <label class="check-field"
         ><input type="checkbox" [formField]="fields.tls" /> {{ 'Use TLS' | transloco }}</label
       ><label class="field"
         >{{ 'Metadata (JSON key/value array)' | transloco }}<input [formField]="fields.metadata"
       /></label>
+    }
+    @if (model().protocol === 'kafka') {
+      <p class="editor-hint">
+        {{ 'Bootstrap servers as host:port, separated by commas.' | transloco }}
+      </p>
+      <div class="row">
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.tls" /> {{ 'Use TLS' | transloco }}</label
+        ><label class="field grow"
+          >{{ 'SASL' | transloco
+          }}<select [formField]="fields.saslMechanism">
+            <option value="none">{{ 'None' | transloco }}</option>
+            <option value="PLAIN">PLAIN</option>
+            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+            <option value="SCRAM-SHA-512">SCRAM-SHA-512</option>
+          </select></label
+        >
+      </div>
+      @if (model().saslMechanism !== 'none') {
+        <div class="row">
+          <label class="field grow"
+            >{{ 'Username' | transloco
+            }}<input [formField]="fields.username" autocomplete="off" /></label
+          ><label class="field grow"
+            >{{ 'Password' | transloco
+            }}<input type="password" [formField]="fields.password" autocomplete="off"
+          /></label>
+        </div>
+        <p class="editor-hint">
+          {{ 'Keep the password in the vault and write its reference:' | transloco }}
+          <code>{{ vaultExample }}</code
+          >. {{ 'It is only sent to the brokers its allowed domains include.' | transloco }}
+        </p>
+      }
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Topic' | transloco }}<input [formField]="fields.topic" /></label
+        ><label class="field grow">{{ 'Key' | transloco }}<input [formField]="fields.key" /></label
+        ><label class="field"
+          >{{ 'Partition' | transloco
+          }}<input [formField]="fields.partition" [placeholder]="'Any' | transloco"
+        /></label>
+      </div>
+      <div class="section-caption">{{ 'Message headers' | transloco }}</div>
+      <app-key-value-editor [(rows)]="headers" />
+      <div class="row">
+        <label class="field"
+          >{{ 'Read from' | transloco
+          }}<select [formField]="fields.from">
+            <option value="latest">{{ 'New messages' | transloco }}</option>
+            <option value="earliest">{{ 'The beginning' | transloco }}</option>
+            <option value="offset">{{ 'An offset' | transloco }}</option>
+          </select></label
+        >
+        @if (model().from === 'offset') {
+          <label class="field"
+            >{{ 'Offset' | transloco }}<input [formField]="fields.offset"
+          /></label>
+        }
+        <button class="button" (click)="send('subscribe')" [disabled]="!connection()">
+          {{ 'Read topic' | transloco }}</button
+        ><button class="button" (click)="send('unsubscribe')" [disabled]="!connection()">
+          {{ 'Stop reading' | transloco }}</button
+        ><button class="button" (click)="send('topics')" [disabled]="!connection()">
+          {{ 'List topics' | transloco }}
+        </button>
+      </div>
     }
     @if (model().protocol === 'mqtt') {
       <label class="field">{{ 'Topic' | transloco }}<input [formField]="fields.topic" /></label>
@@ -86,7 +192,21 @@
       </div>
     }
     @if (model().protocol === 'socketio') {
-      <label class="field">{{ 'Event' | transloco }}<input [formField]="fields.event" /></label>
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Event' | transloco }}<input [formField]="fields.event" /></label
+        ><label class="field"
+          >{{ 'Transport' | transloco
+          }}<select [formField]="fields.transports">
+            <option value="auto">{{ 'Long polling, then WebSocket' | transloco }}</option>
+            <option value="websocket">{{ 'WebSocket only' | transloco }}</option>
+            <option value="polling">{{ 'Long polling only' | transloco }}</option>
+          </select></label
+        >
+      </div>
+      <p class="editor-hint">
+        {{ 'socketio.binaryHint' | transloco: { v0: binaryExample } }}
+      </p>
     }
     @if (model().protocol === 'mqtt') {
       <div class="row">
@@ -99,7 +219,44 @@
         /></label>
       </div>
     }
-    @if (model().protocol === 'websocket' || model().protocol === 'socketio') {
+    @if (model().protocol === 'graphql-subscription') {
+      <label class="field"
+        >{{ 'Subscription protocol' | transloco
+        }}<select [formField]="fields.graphqlProtocol">
+          <option value="graphql-transport-ws">graphql-transport-ws</option>
+          <option value="graphql-ws">
+            {{ 'graphql-ws (subscriptions-transport-ws, legacy)' | transloco }}
+          </option>
+        </select></label
+      ><label class="field"
+        >{{ 'Subscription' | transloco
+        }}<textarea
+          class="code-editor"
+          [formField]="fields.query"
+          [attr.aria-label]="'GraphQL subscription' | transloco"
+          spellcheck="false"
+        ></textarea></label
+      ><label class="field"
+        >{{ 'GraphQL variables' | transloco
+        }}<textarea
+          class="code-editor small"
+          [formField]="fields.variables"
+          spellcheck="false"
+        ></textarea></label
+      ><label class="field"
+        >{{ 'Connection parameters (JSON)' | transloco
+        }}<textarea
+          class="code-editor small"
+          [formField]="fields.connectionParams"
+          spellcheck="false"
+        ></textarea>
+      </label>
+    }
+    @if (
+      model().protocol === 'websocket' ||
+      model().protocol === 'socketio' ||
+      model().protocol === 'graphql-subscription'
+    ) {
       <div class="section-caption">{{ 'Connection headers' | transloco }}</div>
       <app-key-value-editor [(rows)]="headers" />
     }
@@ -129,9 +286,9 @@
           spellcheck="false"
         ></textarea>
       </label>
-    } @else {
+    } @else if (model().protocol !== 'graphql-subscription') {
       <label class="field"
-        >{{ 'Message' | transloco
+        >{{ (model().protocol === 'kafka' ? 'Value' : 'Message') | transloco
         }}<textarea
           class="code-editor small"
           [formField]="fields.message"
@@ -142,7 +299,15 @@
     @if (model().protocol === 'grpc') {
       <button class="button primary" (click)="invoke()">{{ 'Invoke method ↗' | transloco }}</button
       ><button class="button" (click)="save()">{{ 'Save to collection' | transloco }}</button>
-    } @else {
+    } @else if (model().protocol === 'kafka') {
+      <button
+        class="button primary"
+        (click)="send('produce')"
+        [disabled]="status() !== 'connected'"
+      >
+        {{ 'Produce message ↗' | transloco }}
+      </button>
+    } @else if (model().protocol !== 'graphql-subscription') {
       <button class="button primary" (click)="send()" [disabled]="status() !== 'connected'">
         {{ 'Send message ↗' | transloco }}
       </button>

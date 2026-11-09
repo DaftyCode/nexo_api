@@ -3,6 +3,8 @@
 export const EXECUTION_OPERATIONS = [
   'request',
   'run',
+  'run.pause',
+  'run.resume',
   'cancel',
   'import',
   'codegen',
@@ -27,6 +29,8 @@ export const EXECUTION_OPERATIONS = [
   'oauth2.tokens',
   'cookies.list',
   'cookies.clear',
+  'cookies.set',
+  'cookies.delete',
   'performance',
   'performance.cancel',
 ] as const;
@@ -42,5 +46,13 @@ export const GIT_OPERATIONS = [
   'commit',
   'stash',
   'export',
+  'files',
+  'remote.list',
+  'remote.add',
+  'remote.remove',
+  'fetch',
+  'pull',
+  'push',
+  'clone',
 ] as const;
 export type GitOperation = (typeof GIT_OPERATIONS)[number];

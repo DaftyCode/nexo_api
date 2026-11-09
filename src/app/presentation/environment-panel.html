@@ -70,6 +70,12 @@
       </div>
     }
     <app-variable-editor [rows]="rows()" (rowsChange)="editRows($event)" />
+    @if (dirty() && changed()) {
+      <p class="unsaved" role="status">
+        {{ 'These variables changed since you opened them, for example by a script.' | transloco }}
+        <button class="text-button" (click)="reload()">{{ 'Show the latest' | transloco }}</button>
+      </p>
+    }
     @if (dirty()) {
       <p class="unsaved">{{ 'Unsaved changes' | transloco }}</p>
     }

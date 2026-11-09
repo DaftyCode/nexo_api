@@ -1,0 +1,224 @@
+@if (state.managingCookies()) {
+  <div class="modal-backdrop">
+    <section
+      class="modal cookies-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Manage Cookies' | transloco"
+    >
+      <div class="modal-heading">
+        <h2>{{ 'Manage Cookies' | transloco }}</h2>
+        <button
+          class="icon-button"
+          (click)="close()"
+          [attr.aria-label]="'Close dialog' | transloco"
+        >
+          ×
+        </button>
+      </div>
+      <div class="cookies-toolbar">
+        <input
+          type="search"
+          [value]="filter()"
+          (input)="setFilter($event)"
+          [placeholder]="'Filter by domain or name' | transloco"
+          [attr.aria-label]="'Filter cookies' | transloco"
+        />
+        <button type="button" class="button" (click)="add()">
+          {{ '＋ Add cookie' | transloco }}
+        </button>
+      </div>
+
+      @if (editing() !== undefined) {
+        <form class="cookie-form" (submit)="$event.preventDefault(); save()" novalidate>
+          <h3>{{ (editing() ? 'Edit cookie' : 'New cookie') | transloco }}</h3>
+          <div class="cookie-grid">
+            <label class="field"
+              >{{ 'Name' | transloco }}<input [formField]="fields.name" spellcheck="false" />
+              @if (fields.name().touched()) {
+                @for (error of fields.name().errors(); track error.kind) {
+                  <small class="field-error">{{ error.message ?? '' | transloco }}</small>
+                }
+              }
+            </label>
+            <label class="field"
+              >{{ 'Value' | transloco }}<input [formField]="fields.value" spellcheck="false" />
+              @if (fields.value().touched()) {
+                @for (error of fields.value().errors(); track error.kind) {
+                  <small class="field-error">{{ error.message ?? '' | transloco }}</small>
+                }
+              }
+            </label>
+            <label class="field"
+              >{{ 'Domain' | transloco
+              }}<input
+                [formField]="fields.domain"
+                placeholder="api.example.com"
+                spellcheck="false"
+              />
+              @if (fields.domain().touched()) {
+                @for (error of fields.domain().errors(); track error.kind) {
+                  <small class="field-error">{{ error.message ?? '' | transloco }}</small>
+                }
+              }
+            </label>
+            <label class="field"
+              >{{ 'Path' | transloco }}<input [formField]="fields.path" spellcheck="false" />
+              @if (fields.path().touched()) {
+                @for (error of fields.path().errors(); track error.kind) {
+                  <small class="field-error">{{ error.message ?? '' | transloco }}</small>
+                }
+              }
+            </label>
+            <label class="field"
+              >{{ 'Expires' | transloco
+              }}<input type="datetime-local" [formField]="fields.expires" />
+              <small class="muted">{{
+                'Empty: a session cookie, kept until you delete it.' | transloco
+              }}</small>
+              @if (fields.expires().touched()) {
+                @for (error of fields.expires().errors(); track error.kind) {
+                  <small class="field-error">{{ error.message ?? '' | transloco }}</small>
+                }
+              }
+            </label>
+            <label class="field"
+              >SameSite<select [formField]="fields.sameSite">
+                <option value="">{{ 'Not set' | transloco }}</option>
+                <option value="Lax">Lax</option>
+                <option value="Strict">Strict</option>
+                <option value="None">None</option>
+              </select></label
+            >
+          </div>
+          <div class="cookie-flags">
+            @if (!ipDomain()) {
+              <label class="check-field"
+                ><input type="checkbox" [formField]="fields.includeSubdomains" />{{
+                  'Also for subdomains' | transloco
+                }}</label
+              >
+            }
+            <label class="check-field"
+              ><input type="checkbox" [formField]="fields.secure" />{{
+                'Secure (HTTPS only)' | transloco
+              }}</label
+            ><label class="check-field"
+              ><input type="checkbox" [formField]="fields.httpOnly" />HttpOnly</label
+            >
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="button" (click)="cancel()">
+              {{ 'Cancel' | transloco }}
+            </button>
+            <button type="submit" class="button primary" [disabled]="state.busy()">
+              {{ 'Save cookie' | transloco }}
+            </button>
+          </div>
+        </form>
+      }
+
+      @if (!state.cookies().length) {
+        <p class="muted">
+          {{
+            'No cookies yet. Responses add them, or add one to send it with the next request.'
+              | transloco
+          }}
+        </p>
+      } @else if (!domains().length) {
+        <p class="muted">{{ 'No cookie matches the filter.' | transloco }}</p>
+      }
+      <div class="cookie-domains">
+        @for (group of domains(); track group.domain) {
+          <section class="cookie-domain" [attr.aria-label]="group.domain">
+            <div class="cookie-domain-heading">
+              <h3>{{ group.domain }}</h3>
+              <span class="muted">{{
+                'cookies.count' | transloco: { v0: group.cookies.length }
+              }}</span>
+              <span class="actions">
+                <button type="button" class="text-button" (click)="add(group.domain)">
+                  {{ 'Add' | transloco }}</button
+                ><button
+                  type="button"
+                  class="text-button danger"
+                  (click)="removeDomain(group.domain)"
+                >
+                  {{ 'Delete all' | transloco }}
+                </button>
+              </span>
+            </div>
+            <table class="cookie-table">
+              <thead>
+                <tr>
+                  <th>{{ 'Name' | transloco }}</th>
+                  <th>{{ 'Value' | transloco }}</th>
+                  <th>{{ 'Path' | transloco }}</th>
+                  <th>{{ 'Expires' | transloco }}</th>
+                  <th>{{ 'Attributes' | transloco }}</th>
+                  <th [attr.aria-label]="'Actions' | transloco"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cookie of group.cookies; track cookie.path + ' ' + cookie.name) {
+                  <tr [class.editing]="isEditing(cookie)">
+                    <td>
+                      <code>{{ cookie.name }}</code>
+                    </td>
+                    <td class="cookie-value">
+                      <code>{{ cookie.value }}</code>
+                    </td>
+                    <td>
+                      <code>{{ cookie.path }}</code>
+                    </td>
+                    <td>
+                      @if (cookie.expires === null) {
+                        {{ 'Session' | transloco }}
+                      } @else {
+                        {{ cookie.expires | date: 'medium' }}
+                      }
+                    </td>
+                    <td class="muted">
+                      @if (!cookie.hostOnly) {
+                        <span>{{ 'Subdomains' | transloco }}</span>
+                      }
+                      @if (cookie.secure) {
+                        <span>Secure</span>
+                      }
+                      @if (cookie.httpOnly) {
+                        <span>HttpOnly</span>
+                      }
+                      @if (cookie.sameSite) {
+                        <span>SameSite={{ cookie.sameSite }}</span>
+                      }
+                    </td>
+                    <td class="actions">
+                      <button type="button" class="text-button" (click)="edit(cookie)">
+                        {{ 'Edit' | transloco }}</button
+                      ><button
+                        type="button"
+                        class="text-button danger"
+                        (click)="remove(cookie)"
+                        [attr.aria-label]="'cookies.delete' | transloco: { v0: cookie.name }"
+                      >
+                        {{ 'Delete' | transloco }}
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </section>
+        }
+      </div>
+      <div class="modal-actions">
+        @if (state.cookies().length) {
+          <button class="button danger" (click)="clear()">
+            {{ 'Delete all cookies' | transloco }}
+          </button>
+        }
+        <button class="button" (click)="close()">{{ 'Close' | transloco }}</button>
+      </div>
+    </section>
+  </div>
+}

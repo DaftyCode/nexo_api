@@ -5,7 +5,10 @@ import { emptyVariable } from '../domain/variables';
 
 function fixture() {
   const saved: WorkspaceDocument[] = [];
-  const executed: { operation: string; payload: Record<string, unknown> }[] = [];
+  const executed: { operation: string; payload: Record<string, unknown> }[] & {
+    /** What the engine answers; `{status: 200}` by default. */
+    answer?: unknown;
+  } = [];
   const api = {
     async save(document: WorkspaceDocument) {
       const next = { ...document, revision: document.revision + 1 };
@@ -14,7 +17,7 @@ function fixture() {
     },
     async execute<T>(operation: string, payload: Record<string, unknown>) {
       executed.push({ operation, payload });
-      return { status: 200 } as T;
+      return (executed.answer ?? { status: 200 }) as T;
     },
   } as unknown as ApiPort;
   let id = 0;
@@ -93,6 +96,38 @@ describe('WorkspaceUseCases variables', () => {
     const big = new File(['x'], 'big.bin');
     Object.defineProperty(big, 'size', { value: 32 * 1024 * 1024 + 1 });
     await expect(cases.attachFile(big)).rejects.toThrow('can add up to 32 MB');
+  });
+
+  it('loads a GraphQL schema with the request settings but without its scripts', async () => {
+    const { cases, executed } = fixture();
+    const request = newRequest('g');
+    request.url = 'https://api.test/graphql';
+    request.method = 'GET';
+    request.prerequest = 'pm.environment.set("a", 1)';
+    request.headers = [{ key: 'X-Tenant', value: 'acme', enabled: true }];
+    const context = {
+      environment: [],
+      globals: [],
+      ancestors: [{ name: 'API', event: [{ listen: 'prerequest' }], auth: { type: 'bearer' } }],
+    };
+    executed.answer = {
+      status: 200,
+      body: '{"data":{"__schema":{"queryType":{"name":"Query"},"types":[]}}}',
+    };
+    const schema = await cases.introspect(request, context, 'x');
+    expect(schema.queryType).toBe('Query');
+    const payload = executed[0].payload as Record<string, Record<string, unknown>>;
+    const sent = payload['request']['request'] as Record<string, unknown>;
+    expect(sent['method']).toBe('POST');
+    expect(JSON.stringify(sent['body'])).toContain('IntrospectionQuery');
+    expect(sent['header']).toEqual([{ key: 'X-Tenant', value: 'acme', disabled: false }]);
+    expect(JSON.stringify(payload['request']['event'])).not.toContain('environment.set');
+    expect(payload['context']).toEqual({ ancestors: [{ name: 'API', auth: { type: 'bearer' } }] });
+
+    executed.answer = { status: 0, body: '', error: 'connection refused' };
+    await expect(cases.introspect(request, context, 'x')).rejects.toThrow('connection refused');
+    executed.answer = { status: 404, body: 'Not found' };
+    await expect(cases.introspect(request, context, 'x')).rejects.toThrow('(HTTP 404)');
   });
 
   it('remembers the active environment per workspace', () => {

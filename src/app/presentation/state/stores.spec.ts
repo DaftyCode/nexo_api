@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import { WorkspaceUseCases } from '../../application/workspace-use-cases';
+import { ApiFailure } from '../../application/ports';
 import { RequestDraft, WorkspaceDocument, asCollection } from '../../domain/models';
 import { TabsStore } from '../tabs-store';
 import { CollectionsStore } from './collections-store';
@@ -96,6 +97,41 @@ describe('workspace stores', () => {
     ctx.tabs.edit({ ...ctx.tabs.active()!.request, url: 'http://y' });
     await collections.saveActive();
     expect(asCollection(saved.at(-1)!.value).item[0].name).toBe('List orders');
+  });
+
+  it('save variables over a version changed elsewhere only when confirmed', async () => {
+    const conflict = new ApiFailure('Revision conflict', 'conflict', 409);
+    const globals = document('g', 'globals', 0, { values: [] });
+    let attempts = 0;
+    let answer = true;
+    const ctx = context({
+      saveGlobals: async (_w: string, existing: WorkspaceDocument) => {
+        if (++attempts === 1) throw conflict;
+        return { ...existing, revision: existing.revision + 1 };
+      },
+      documents: async () => [{ ...globals, revision: 5 }],
+    });
+    ctx.confirm = () => answer;
+    const documents = new DocumentsStore(ctx);
+    documents.documents.set([globals]);
+    const variables = new VariablesStore(ctx, documents);
+    const saved = await variables.saveGlobals([]);
+    expect(saved?.revision).toBe(6);
+    expect(documents.globalsDocument()?.revision).toBe(6);
+
+    attempts = 0;
+    answer = false;
+    expect(await variables.saveGlobals([])).toBeUndefined();
+    expect(ctx.status.notice()).toBe('Variables reloaded');
+    expect(documents.globalsDocument()?.revision).toBe(5);
+    const failing = context({
+      saveGlobals: async () => {
+        throw new Error('disk full');
+      },
+    });
+    await expect(
+      new VariablesStore(failing, new DocumentsStore(failing)).saveGlobals([]),
+    ).rejects.toThrow('disk full');
   });
 
   it('switch workspaces only after confirming unsaved changes', async () => {

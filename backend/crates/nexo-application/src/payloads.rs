@@ -118,6 +118,53 @@ payload! {
 }
 
 payload! {
+    /// A cookie of a jar: its domain, path and name identify it.
+    closed CookieKey {
+        required {
+            domain "domain": String => "string",
+            path "path": String => "string",
+            name "name": String => "string",
+        }
+        optional {}
+    }
+}
+
+payload! {
+    /// `cookies.set`: adds a cookie to the workspace jar, or replaces the `original` one when
+    /// it is edited. Without `expires` (milliseconds since 1970) it is a session cookie, kept
+    /// until it is deleted.
+    closed CookieSetPayload {
+        required {
+            name "name": String => "string",
+            value "value": String => "string",
+            domain "domain": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            path "path": String => "string",
+            expires "expires": u64 => "number",
+            include_subdomains "includeSubdomains": bool => "boolean",
+            secure "secure": bool => "boolean",
+            http_only "httpOnly": bool => "boolean",
+            same_site "sameSite": String => "'Strict' | 'Lax' | 'None'",
+            original "original": CookieKey => "CookieKey",
+        }
+    }
+}
+
+payload! {
+    /// `cookies.delete`: one cookie of the workspace jar.
+    closed CookieDeletePayload {
+        required {
+            domain "domain": String => "string",
+            path "path": String => "string",
+            name "name": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
     /// What a run status has already delivered; it answers only what is new.
     closed RunCursor {
         required {}
@@ -169,6 +216,7 @@ payload! {
             context "context": ExecutionContext => "ExecutionContext",
             data "data": Vec<Value> => "readonly unknown[]",
             iterations "iterations": u64 => "number",
+            delay "delay": u64 => "number",
             global_timeout "globalTimeout": u64 => "number",
             timeout "timeout": u64 => "number",
             strict_ssl "strictSSL": bool => "boolean",
@@ -181,7 +229,8 @@ payload! {
 }
 
 payload! {
-    /// `cancel`, `realtime.close`, `mock.stop`, `performance.cancel`: an identifier.
+    /// `cancel`, `run.pause`, `run.resume`, `realtime.close`, `mock.stop`,
+    /// `performance.cancel`: an identifier.
     closed IdPayload {
         required { id "id": String => "string" }
         optional { workspace "workspace": String => "string" }
@@ -266,7 +315,8 @@ payload! {
 }
 
 payload! {
-    /// `realtime.connect`: a WebSocket, Socket.IO or MQTT connection.
+    /// `realtime.connect`: a WebSocket, Socket.IO, MQTT, Kafka or GraphQL subscription
+    /// connection.
     closed RealtimeConnectPayload {
         required {}
         optional {
@@ -276,6 +326,7 @@ payload! {
             headers "headers": Value => "Record<string, string> | readonly object[]",
             subprotocols "subprotocols": Vec<String> => "readonly string[]",
             path "path": String => "string",
+            transports "transports": String => "string",
             auth "auth": Map<String, Value> => "Record<string, unknown>",
             client_id "clientId": String => "string",
             clean "clean": bool => "boolean",
@@ -287,12 +338,21 @@ payload! {
             ca_pem "caPem": String => "string",
             cert_pem "certPem": String => "string",
             key_pem "keyPem": String => "string",
+            tls "tls": bool => "boolean",
+            sasl_mechanism "saslMechanism": String => "string",
+            query "query": String => "string",
+            variables "variables": Value => "unknown",
+            operation_name "operationName": String => "string",
+            graphql_protocol "graphqlProtocol": String => "string",
+            connection_params "connectionParams": Value => "unknown",
         }
     }
 }
 
 payload! {
-    /// `realtime.send`: a message, or an MQTT subscribe/unsubscribe with `action`.
+    /// `realtime.send`: a message, an MQTT subscribe/unsubscribe with `action`, or for Kafka
+    /// `produce` (key, headers, partition), `subscribe` (from earliest, latest or an offset),
+    /// `unsubscribe` and `topics`.
     closed RealtimeSendPayload {
         required { id "id": String => "string" }
         optional {
@@ -303,6 +363,11 @@ payload! {
             event "event": String => "string",
             qos "qos": u8 => "number",
             retain "retain": bool => "boolean",
+            key "key": String => "string",
+            partition "partition": i32 => "number",
+            headers "headers": Value => "Record<string, string> | readonly object[]",
+            from "from": String => "'earliest' | 'latest' | 'offset'",
+            offset "offset": i64 => "number",
         }
     }
 }
@@ -326,6 +391,7 @@ payload! {
             workspace "workspace": String => "string",
             url "url": String => "string",
             proto "proto": String => "string",
+            reflection "reflection": bool => "boolean",
             service "service": String => "string",
             method "method": String => "string",
             tls "tls": bool => "boolean",
@@ -455,6 +521,10 @@ payload! {
             branch "branch": String => "string",
             message "message": String => "string",
             files "files": Vec<GitFile> => "readonly GitFile[]",
+            remote "remote": String => "string",
+            url "url": String => "string",
+            rebase "rebase": bool => "boolean",
+            force_with_lease "forceWithLease": bool => "boolean",
         }
     }
 }
@@ -555,6 +625,8 @@ operation_payloads! {
     Request => RequestPayload,
     Run => RunPayload,
     Cancel => IdPayload,
+    RunPause => IdPayload,
+    RunResume => IdPayload,
     Import => ImportPayload,
     Codegen => CodegenPayload,
     RealtimeConnect => RealtimeConnectPayload,
@@ -578,6 +650,8 @@ operation_payloads! {
     Oauth2Tokens => Oauth2TokensPayload,
     CookiesList => WorkspacePayload,
     CookiesClear => WorkspacePayload,
+    CookiesSet => CookieSetPayload,
+    CookiesDelete => CookieDeletePayload,
     Performance => PerformancePayload,
     PerformanceCancel => IdPayload,
 }
@@ -598,6 +672,7 @@ pub fn typescript_contract() -> String {
         ExecutionContext::TYPESCRIPT.to_string(),
         RunCursor::TYPESCRIPT.to_string(),
         FileAttachment::TYPESCRIPT.to_string(),
+        CookieKey::TYPESCRIPT.to_string(),
         GitFile::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
@@ -682,6 +757,8 @@ mod tests {
             let required = matches!(
                 operation,
                 Operation::Cancel
+                    | Operation::RunPause
+                    | Operation::RunResume
                     | Operation::Import
                     | Operation::RealtimeSend
                     | Operation::RealtimeClose
@@ -691,6 +768,8 @@ mod tests {
                     | Operation::DatasetSchema
                     | Operation::DatasetDelete
                     | Operation::OauthToken
+                    | Operation::CookiesSet
+                    | Operation::CookiesDelete
                     | Operation::PerformanceCancel
             );
             assert_eq!(result.is_err(), required, "{operation}");

@@ -267,6 +267,8 @@ impl Application {
                 | Operation::Performance
                 | Operation::Oauth2Token
                 | Operation::Oauth2Authorize
+                // Credentials of MQTT and Kafka connections may come from the vault.
+                | Operation::RealtimeConnect
         ) {
             // The contents of chosen files are sent as they are: no references are read in
             // them, and they are not copied to look.

@@ -21,10 +21,12 @@ export class RunnerPanel {
   /** Starting, polling and cancelling runs report their errors in this panel. */
   protected readonly task = this.runner.task;
   protected readonly blocked = blockedSecret;
-  protected readonly model = signal({ collection: '', iterations: 1, data: '[]' });
+  protected readonly model = signal({ collection: '', iterations: 1, delay: 0, data: '[]' });
   protected readonly fields = form(this.model, (p) => {
     min(p.iterations, 1);
     max(p.iterations, 10000);
+    min(p.delay, 0);
+    max(p.delay, 60000);
   });
   protected start() {
     void this.task.run(async () => {
@@ -36,7 +38,12 @@ export class RunnerPanel {
         throw new Error('Iteration data must be a JSON array');
       }
       if (!Array.isArray(data)) throw new Error('Iteration data must be a JSON array');
-      await this.runner.start(m.collection || this.state.collections()[0]?.id, m.iterations, data);
+      await this.runner.start(
+        m.collection || this.state.collections()[0]?.id,
+        m.iterations,
+        data,
+        Math.min(Math.max(Number(m.delay) || 0, 0), 60000),
+      );
     });
   }
   protected async file(event: Event) {

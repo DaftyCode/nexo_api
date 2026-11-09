@@ -13,12 +13,16 @@ use std::{path::Path, sync::Arc, time::Duration};
 
 pub mod auth;
 pub mod collection;
+pub mod cookies;
 pub mod datasets;
 pub mod egress;
 pub mod files;
+pub mod graphql_ws;
 pub mod grpc;
+pub mod grpc_reflection;
 pub mod hex;
 pub mod interchange;
+pub mod kafka;
 pub mod mocks;
 pub mod mqtt;
 pub mod oauth2;
@@ -29,6 +33,7 @@ pub mod realtime;
 pub mod runner;
 pub mod scripts;
 pub mod secret_hosts;
+pub mod socketio;
 pub mod tls;
 pub mod transport;
 pub mod vault;
@@ -678,6 +683,16 @@ fn header_pairs(value: &Value) -> Vec<(String, String)> {
 }
 
 #[async_trait]
+impl nexo_application::ports::NetworkPolicy for Engine {
+    async fn check_destination(&self, host: &str, port: u16) -> Result<()> {
+        self.egress
+            .resolve(host, port, &self.mocks.ports())
+            .await
+            .map(|_| ())
+    }
+}
+
+#[async_trait]
 impl ExecutionGateway for Engine {
     async fn execute(&self, operation: Operation, payload: Value) -> Result<Value> {
         let payload = self.with_secret_hosts(payload).await?;
@@ -695,6 +710,8 @@ impl ExecutionGateway for Engine {
                 Ok(json!({"id": job.id(), "state": "running"}))
             }
             Operation::Cancel => self.runs.cancel(id(&payload)),
+            Operation::RunPause => self.runs.pause(id(&payload)),
+            Operation::RunResume => self.runs.resume(id(&payload)),
             Operation::Import => interchange::import(&payload),
             Operation::Codegen => interchange::generate(&payload),
             Operation::RealtimeConnect => self.realtime.connect(&payload).await,
@@ -733,6 +750,17 @@ impl ExecutionGateway for Engine {
                 self.runs.jars.clear(&cookie_scope(&payload));
                 Ok(json!({"cleared": true}))
             }
+            Operation::CookiesSet => Ok(json!({
+                "cookie": self.runs.jars.set(&cookie_scope(&payload), &payload)?
+            })),
+            Operation::CookiesDelete => Ok(json!({
+                "deleted": self.runs.jars.delete(
+                    &cookie_scope(&payload),
+                    payload["domain"].as_str().unwrap_or(""),
+                    payload["path"].as_str().unwrap_or(""),
+                    payload["name"].as_str().unwrap_or(""),
+                )
+            })),
             Operation::Performance if payload["action"] == "status" => {
                 self.performance.status(id(&payload))
             }

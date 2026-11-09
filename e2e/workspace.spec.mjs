@@ -769,3 +769,179 @@ test('files chosen for form-data and binary bodies are sent byte for byte', asyn
   await expect(page.locator('.response-code')).toContainText(`"sha256": "${sha256}"`);
   await expect(page.locator('.response-code')).toContainText('"type": "image/png"');
 });
+
+test('GraphQL: the schema is loaded and explored, and a subscription receives its results', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/graphql`);
+  const configuration = page.getByRole('navigation', { name: 'Request configuration' });
+  await configuration.getByRole('button', { name: 'Body' }).click();
+  await page.locator('.body-options select').first().selectOption('graphql');
+  await page.getByRole('button', { name: 'Load schema' }).click();
+  const explorer = page.getByRole('region', { name: 'Schema explorer' });
+  await expect(explorer).toContainText('user(id: ID!): User');
+
+  const query = page.getByLabel('GraphQL query');
+  await query.fill('query {\n  \n}');
+  await query.evaluate((editor) => editor.setSelectionRange(10, 10));
+  await explorer.getByRole('button', { name: 'Insert' }).click();
+  await expect(query).toHaveValue('query {\n  user(id: $id) {\n  \n}\n}');
+  await explorer.getByRole('button', { name: 'User', exact: true }).click();
+  await expect(explorer).toContainText('name: String');
+  await query.fill('query { user(id: "1") { name } }');
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.locator('.response-code')).toContainText('"name": "Ana"');
+
+  // The same endpoint's subscription, in the protocols panel.
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'Protocols' })
+    .click();
+  await page.getByLabel('Protocol', { exact: true }).selectOption('graphql-subscription');
+  await page.getByLabel('Connection URL').fill(`${nexo.echo.replace('http', 'ws')}/subscriptions`);
+  await page.getByLabel('GraphQL subscription').fill('subscription { ticks }');
+  await page.getByRole('button', { name: /Connect/ }).click();
+  for (const tick of [1, 2, 3])
+    await expect(
+      page.locator('.stream-event').filter({ hasText: `"ticks": ${tick}` }),
+    ).toBeVisible();
+  await page.getByRole('button', { name: 'Disconnect' }).click();
+  await expect(page.getByRole('button', { name: /Connect/ })).toBeVisible();
+});
+
+test('a global a script writes is kept, used by the next request and edited', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  const sections = page.getByRole('navigation', { name: 'Workspace sections' });
+  const configuration = page.getByRole('navigation', { name: 'Request configuration' });
+  const send = async () => {
+    await page.getByRole('button', { name: 'Send' }).first().click();
+    await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+  };
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/login`);
+  await configuration.getByRole('button', { name: /Scripts/ }).click();
+  await page.getByLabel('Test scripts').fill('pm.globals.set("session", "abc123");');
+  await send();
+
+  // The next request resolves it.
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/orders/{{session}}`);
+  await send();
+  await expect(page.locator('.response-code')).toContainText('/orders/abc123');
+
+  // The editor shows it; a change made there is what the next request sends.
+  await sections.getByRole('button', { name: 'Environments' }).click();
+  await page.getByRole('button', { name: /Global variables/ }).click();
+  const row = page.locator('app-variable-editor .kv-row').first();
+  await expect(row.getByLabel('Variable name')).toHaveValue('session');
+  await expect(row.getByLabel('Variable value')).toHaveValue('abc123');
+  await row.getByLabel('Variable value').fill('xyz789');
+  await page.getByRole('button', { name: 'Save globals' }).click();
+  await expect(page.getByText('Unsaved changes')).toBeHidden();
+  await sections.getByRole('button', { name: 'Collections' }).click();
+  await send();
+  await expect(page.locator('.response-code')).toContainText('/orders/xyz789');
+
+  // Disabled, it is no longer resolved; deleted, it is gone.
+  await sections.getByRole('button', { name: 'Environments' }).click();
+  await page.getByRole('button', { name: /Global variables/ }).click();
+  await row.getByLabel('Enable variable').uncheck();
+  await page.getByRole('button', { name: 'Save globals' }).click();
+  await sections.getByRole('button', { name: 'Collections' }).click();
+  await send();
+  // Unresolved, the reference goes out as written (percent-encoded), as in Postman.
+  await expect(page.locator('.response-code')).toContainText('/orders/%7B%7Bsession%7D%7D');
+  await sections.getByRole('button', { name: 'Environments' }).click();
+  await page.getByRole('button', { name: /Global variables/ }).click();
+  await row.getByLabel('Remove variable').click();
+  await page.getByRole('button', { name: 'Save globals' }).click();
+  await expect(page.getByLabel('Variable name')).not.toHaveValue('session');
+});
+
+test('cookies a response sets are edited, added and deleted, and the next request sends them', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page.keyboard.press('Control+t');
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/set-cookie`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(page.getByRole('status').filter({ hasText: '200' })).toBeVisible();
+
+  await page.locator('.request-title').getByRole('button', { name: 'Cookies' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Manage Cookies' });
+  const domain = dialog.getByRole('region', { name: '127.0.0.1' });
+  await expect(domain.getByRole('row', { name: /e2e_session/ })).toContainText('abc');
+  await expect(domain.getByRole('row', { name: /e2e_session/ })).toContainText('Session');
+  expect(await violations(page)).toEqual([]);
+
+  // Edited: the new value replaces the one the response set.
+  await domain
+    .getByRole('row', { name: /e2e_session/ })
+    .getByRole('button', { name: 'Edit' })
+    .click();
+  await dialog.getByLabel('Value', { exact: true }).fill('edited');
+  await dialog.getByRole('button', { name: 'Save cookie' }).click();
+  await expect(domain.getByRole('row', { name: /e2e_session/ })).toContainText('edited');
+
+  // Added for the same domain, with an expiry.
+  await domain.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(dialog.getByLabel('Domain', { exact: true })).toHaveValue('127.0.0.1');
+  await dialog.getByLabel('Name', { exact: true }).fill('e2e_added');
+  await dialog.getByLabel('Value', { exact: true }).fill('yes');
+  await dialog.getByLabel('Expires').fill('2099-01-01T00:00');
+  await dialog.getByRole('button', { name: 'Save cookie' }).click();
+  await expect(domain.getByRole('row', { name: /e2e_added/ })).toContainText('2099');
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+
+  const response = page.locator('app-response-view');
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/cookies`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(response).toContainText('/cookies');
+  await expect(response).toContainText('e2e_session=edited');
+  await expect(response).toContainText('e2e_added=yes');
+
+  // Deleted: the next request no longer sends it.
+  page.once('dialog', (confirm) => confirm.accept());
+  await page.locator('.request-title').getByRole('button', { name: 'Cookies' }).click();
+  await dialog.getByRole('button', { name: 'Delete cookie e2e_added' }).click();
+  await expect(domain.getByRole('row', { name: /e2e_added/ })).toHaveCount(0);
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/cookies-again`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  await expect(response).toContainText('/cookies-again');
+  await expect(response).toContainText('e2e_session=edited');
+  await expect(response).not.toContainText('e2e_added');
+});
+
+test('Git remotes refuse unsafe addresses and are added and removed', async ({ page, nexo }) => {
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'Git' })
+    .click();
+  await page.getByRole('button', { name: 'Initialize' }).click();
+  await expect(
+    page.locator('.tool-output').filter({ hasText: /Initialized|Reinitialized/ }),
+  ).toBeVisible();
+  const remotes = page.getByRole('region', { name: 'Remotes' });
+  await expect(remotes).toContainText('No remotes.');
+
+  await remotes.getByLabel('Remote URL').fill('ext::sh -c touch% /tmp/pwned');
+  await remotes.getByRole('button', { name: 'Add remote' }).click();
+  await expect(remotes.getByRole('alert')).toContainText('Use an https:// or ssh:// address');
+
+  await remotes.getByLabel('Remote URL').fill('git@github.com:acme/api.git');
+  await remotes.getByRole('button', { name: 'Add remote' }).click();
+  await expect(remotes.getByRole('listitem').filter({ hasText: 'origin' })).toContainText(
+    'git@github.com:acme/api.git',
+  );
+  expect(await violations(page)).toEqual([]);
+
+  page.once('dialog', (confirm) => confirm.accept());
+  await remotes.getByRole('button', { name: 'Remove remote origin' }).click();
+  await expect(remotes).toContainText('No remotes.');
+});

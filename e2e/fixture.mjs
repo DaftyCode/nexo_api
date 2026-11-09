@@ -7,6 +7,46 @@ import http from 'node:http';
 import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { WebSocketServer } from 'ws';
+
+/** A small GraphQL schema, as introspection answers it. */
+const scalar = (name) => ({ kind: 'SCALAR', name, ofType: null });
+const introspection = {
+  data: {
+    __schema: {
+      queryType: { name: 'Query' },
+      mutationType: null,
+      subscriptionType: { name: 'Subscription' },
+      types: [
+        {
+          kind: 'OBJECT',
+          name: 'Query',
+          fields: [
+            {
+              name: 'user',
+              description: 'A user by ID',
+              args: [{ name: 'id', type: { kind: 'NON_NULL', name: null, ofType: scalar('ID') } }],
+              type: { kind: 'OBJECT', name: 'User', ofType: null },
+            },
+          ],
+        },
+        {
+          kind: 'OBJECT',
+          name: 'Subscription',
+          fields: [{ name: 'ticks', args: [], type: scalar('Int') }],
+        },
+        {
+          kind: 'OBJECT',
+          name: 'User',
+          fields: [{ name: 'name', args: [], type: scalar('String') }],
+        },
+        scalar('ID'),
+        scalar('Int'),
+        scalar('String'),
+      ],
+    },
+  },
+};
 
 const executable = `nexo-server${process.platform === 'win32' ? '.exe' : ''}`;
 const binary = resolve(
@@ -59,6 +99,19 @@ export const test = base.extend({
       // A local API the requests in the tests can reach.
       const echo = http.createServer((request, response) => {
         response.setHeader('content-type', 'application/json');
+        // GraphQL: the schema by introspection, and an answer to any other query.
+        if (request.url === '/graphql') {
+          let body = '';
+          request.on('data', (chunk) => (body += chunk));
+          request.on('end', () =>
+            response.end(
+              JSON.stringify(
+                body.includes('__schema') ? introspection : { data: { user: { name: 'Ana' } } },
+              ),
+            ),
+          );
+          return;
+        }
         // Uploads: the type of the body and the SHA-256 of each file or of the whole body.
         if (request.url.startsWith('/upload')) {
           const chunks = [];
@@ -93,6 +146,9 @@ export const test = base.extend({
           response.writeHead(302, { location: back.toString() });
           return response.end();
         }
+        // A session cookie, for the cookie manager.
+        if (request.url === '/set-cookie')
+          response.setHeader('set-cookie', 'e2e_session=abc; Path=/');
         if (request.url === '/token')
           return response.end(
             JSON.stringify({ access_token: 'e2e-token', refresh_token: 'r1', expires_in: 3600 }),
@@ -103,9 +159,33 @@ export const test = base.extend({
             method: request.method,
             authorization: request.headers.authorization ?? null,
             wsse: request.headers['x-wsse'] ?? null,
+            cookie: request.headers.cookie ?? null,
           }),
         );
       });
+      // GraphQL subscriptions (graphql-transport-ws): three ticks for each subscription.
+      const subscriptions = new WebSocketServer({
+        server: echo,
+        path: '/subscriptions',
+        handleProtocols: (offered) =>
+          offered.has('graphql-transport-ws') ? 'graphql-transport-ws' : false,
+      });
+      subscriptions.on('connection', (socket) =>
+        socket.on('message', (raw) => {
+          const message = JSON.parse(String(raw));
+          if (message.type === 'connection_init')
+            socket.send(JSON.stringify({ type: 'connection_ack' }));
+          if (message.type === 'subscribe')
+            for (const tick of [1, 2, 3])
+              socket.send(
+                JSON.stringify({
+                  id: message.id,
+                  type: 'next',
+                  payload: { data: { ticks: tick } },
+                }),
+              );
+        }),
+      );
       await new Promise((r) => echo.listen(0, '127.0.0.1', r));
       await use({
         base,
@@ -120,6 +200,7 @@ export const test = base.extend({
           await page.waitForURL(/\/workspace/);
         },
       });
+      subscriptions.close();
       echo.close();
       child.kill();
       await new Promise((r) => (child.exitCode === null ? child.once('exit', r) : r()));

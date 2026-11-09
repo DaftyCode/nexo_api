@@ -1,0 +1,82 @@
+.cookies-modal {
+  width: 860px;
+  max-height: 88vh;
+  overflow: auto;
+}
+.cookies-toolbar {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.cookies-toolbar input {
+  flex: 1;
+}
+.cookie-form {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.cookie-form h3,
+.cookie-domain h3 {
+  font-size: 13px;
+  margin: 0;
+}
+.cookie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px 14px;
+  margin: 10px 0;
+}
+.cookie-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+.field-error {
+  color: var(--red);
+}
+.cookie-domains {
+  display: grid;
+  gap: 16px;
+}
+.cookie-domain-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.cookie-domain-heading .actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+}
+.cookie-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.cookie-table th,
+.cookie-table td {
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.cookie-table td span + span::before {
+  content: ' · ';
+}
+.cookie-table .cookie-value {
+  max-width: 240px;
+  overflow-wrap: anywhere;
+}
+.cookie-table .actions {
+  white-space: nowrap;
+  text-align: right;
+}
+.cookie-table .actions button + button {
+  margin-left: 10px;
+}
+.cookie-table tr.editing td {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
