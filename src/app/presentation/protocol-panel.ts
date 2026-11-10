@@ -17,9 +17,10 @@ import { KeyValue, RealtimeSettings, row } from '../domain/models';
 import { GrpcDiscovery, StreamEvent } from '../application/protocol-use-cases';
 import { PROTOCOLS } from '../composition/providers';
 import { CodeEditor } from './code-editor';
+import { GraphqlQueryEditor } from './graphql-query-editor';
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor, CodeEditor],
+  imports: [TranslocoPipe, FormField, KeyValueEditor, CodeEditor, GraphqlQueryEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-protocol-panel',
   styleUrl: './protocol-panel.scss',
@@ -75,6 +76,12 @@ export class ProtocolPanel {
   private discoveryKey() {
     const m = this.model();
     return m.reflection ? `reflection:${m.url.trim()}` : `proto:${m.proto}`;
+  }
+  /** The schema of the subscription's endpoint, if loaded here or for its queries. */
+  protected readonly subscriptionSchema = computed(() => this.state.schemaFor(this.model().url));
+  /** Loads it by introspection with the connection headers. */
+  protected loadSchema() {
+    void this.task.run(() => this.state.loadEndpointSchema(this.model().url, this.headers()));
   }
   /** A message that looks like JSON is coloured as JSON. */
   protected readonly messageLanguage = computed(() =>

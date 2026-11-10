@@ -3,7 +3,16 @@
  * in. Kept apart so screens can choose a language and still load the editor deferred.
  */
 /** The languages the code editors colour. */
-export type CodeLanguage = 'json' | 'javascript' | 'yaml' | 'xml' | 'html' | 'graphql' | 'text';
+export type CodeLanguage =
+  | 'json'
+  | 'javascript'
+  /** JavaScript of request scripts, with the `pm` and `nx` API suggested. */
+  | 'script'
+  | 'yaml'
+  | 'xml'
+  | 'html'
+  | 'graphql'
+  | 'text';
 
 /** A problem shown on a line, such as a finding of the API linter. */
 export interface CodeMark {

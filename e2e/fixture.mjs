@@ -148,7 +148,11 @@ export const test = base.extend({
           });
           return;
         }
-        if (request.url === '/graphql') {
+        // GraphQL queries, also at the subscription address, as servers often serve both.
+        if (
+          request.url === '/graphql' ||
+          (request.url === '/subscriptions' && request.method === 'POST')
+        ) {
           let body = '';
           request.on('data', (chunk) => (body += chunk));
           request.on('end', () =>

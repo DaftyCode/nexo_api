@@ -998,5 +998,7 @@
   "It is in your vault, but the authorization could not be saved.": "It is in your vault, but the authorization could not be saved.",
   "oauth2.keptSaved": "Token \"{{v0}}\" saved and selected in the authorization.",
   "oauth2.keptUnsaved": "Token \"{{v0}}\" selected in the request. Save the request to keep using it.",
-  "oauth2.keptVault": "Token \"{{v0}}\" kept in your vault."
+  "oauth2.keptVault": "Token \"{{v0}}\" kept in your vault.",
+  "Fields and arguments of the schema are suggested as you type.": "Fields and arguments of the schema are suggested as you type.",
+  "Load the schema, by introspection over HTTP at this address, to get suggestions.": "Load the schema, by introspection over HTTP at this address, to get suggestions."
 }

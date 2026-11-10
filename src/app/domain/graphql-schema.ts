@@ -215,6 +215,16 @@ export function completeIntrospection(introspection: unknown): unknown {
   };
 }
 
+/**
+ * The HTTP address of a GraphQL endpoint, which is where its schema is asked for: a
+ * subscription address (`ws://`, `wss://`) and its queries share one schema.
+ */
+export function graphqlEndpoint(url: string) {
+  return url
+    .trim()
+    .replace(/^ws(s?):\/\//i, (_, secure: string) => `http${secure.toLowerCase()}://`);
+}
+
 /** The type of that name, if the schema has it. */
 export function schemaType(schema: GraphQLSchema, name: string | undefined) {
   return name ? schema.types.find((type) => type.name === name) : undefined;

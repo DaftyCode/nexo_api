@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
+import { completionStatus, currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { syntaxTree } from '@codemirror/language';
 import { diagnosticCount, forEachDiagnostic } from '@codemirror/lint';
 import { openSearchPanel, searchPanelOpen } from '@codemirror/search';
@@ -118,6 +119,41 @@ describe('CodeEditor', () => {
     host.size.set('large');
     await fixture.whenStable();
     expect(element.classList.contains('large')).toBe(true);
+  });
+
+  it('suggests the pm and nx API in scripts, with how each member is used', async () => {
+    host.language.set('script');
+    host.text.set('');
+    await fixture.whenStable();
+    await parser('Script');
+    const suggest = async (text: string) => {
+      view().dispatch({
+        changes: { from: 0, to: view().state.doc.length, insert: text },
+        selection: { anchor: text.length },
+      });
+      startCompletion(view());
+      await vi.waitFor(() => expect(completionStatus(view().state)).not.toBe('pending'));
+      return currentCompletions(view().state);
+    };
+    const api = await suggest('pm.');
+    expect(api.map((option) => option.label)).toContain('environment');
+    const set = (await suggest('nx.environment.')).find((option) => option.label === 'set')!;
+    expect(set.detail).toBe('(key, value)');
+    expect(set.info).toBe('Sets a variable, saved when the request ends.');
+    expect((await suggest('pm.response.to.')).map((option) => option.label)).toEqual(
+      expect.arrayContaining(['have', 'be']),
+    );
+    expect((await suggest('pm.expect(json.items).to.')).map((option) => option.label)).toEqual(
+      expect.arrayContaining(['equal', 'include', 'have']),
+    );
+    expect((await suggest('p')).map((option) => option.label)).toEqual(
+      expect.arrayContaining(['pm']),
+    );
+    // Not inside strings or comments.
+    expect((await suggest("const text = 'pm.")).map((option) => option.label)).not.toContain(
+      'environment',
+    );
+    expect((await suggest('// pm.')).map((option) => option.label)).not.toContain('environment');
   });
 
   it('chooses the language of a raw body from its type', () => {

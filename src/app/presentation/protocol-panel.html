@@ -240,15 +240,33 @@
       >
       <div class="field">
         <span>{{ 'Subscription' | transloco }}</span>
+        <!-- With the endpoint's schema, fields and arguments are suggested as in queries. -->
         @defer (on immediate) {
-          <app-code-editor
+          <app-graphql-query-editor
             [formField]="fields.query"
-            language="graphql"
+            [schema]="subscriptionSchema()"
             [label]="'GraphQL subscription' | transloco"
+            placeholder="subscription { … }"
           />
         } @placeholder {
           <div class="code-editor" aria-hidden="true"></div>
         }
+      </div>
+      <div class="row">
+        <button
+          type="button"
+          class="button"
+          [disabled]="state.loadingSchema()"
+          (click)="loadSchema()"
+        >
+          {{ (subscriptionSchema() ? 'Reload schema' : 'Load schema') | transloco }}
+        </button>
+        <span class="muted">{{
+          (subscriptionSchema()
+            ? 'Fields and arguments of the schema are suggested as you type.'
+            : 'Load the schema, by introspection over HTTP at this address, to get suggestions.'
+          ) | transloco
+        }}</span>
       </div>
       <div class="field">
         <span>{{ 'GraphQL variables' | transloco }}</span>

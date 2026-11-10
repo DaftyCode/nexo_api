@@ -712,6 +712,19 @@ test('Ctrl+Enter in a script editor does not send the request', async ({ page, n
   await editor.click();
   await editor.press('Control+Enter');
   await expect(page.getByRole('status').filter({ hasText: '200' })).toHaveCount(0);
+
+  // The script API is suggested as one types it, with how each member is used.
+  await editor.fill('');
+  await page.keyboard.type('pm.environment.s');
+  const suggestions = page.locator('.cm-tooltip-autocomplete');
+  await expect(suggestions).toContainText('set');
+  await expect(suggestions).toContainText('(key, value)');
+  await page.waitForTimeout(150);
+  await page.keyboard.press('Enter');
+  await expect(editor).toHaveText('pm.environment.set');
+  await page.keyboard.type("('a', 1);\npm.response.to.h");
+  await expect(suggestions).toContainText('have');
+  await page.keyboard.press('Escape');
   await page.keyboard.press('F1');
   await expect(page.getByRole('dialog', { name: 'Keyboard shortcuts' })).toBeVisible();
 });
@@ -836,7 +849,16 @@ test('GraphQL: the schema is loaded and explored, and a subscription receives it
     .click();
   await page.getByLabel('Protocol', { exact: true }).selectOption('graphql-subscription');
   await page.getByLabel('Connection URL').fill(`${nexo.echo.replace('http', 'ws')}/subscriptions`);
-  await page.getByLabel('GraphQL subscription').fill('subscription { ticks }');
+  // Its schema, loaded over HTTP at the same address, suggests the subscription's fields.
+  await page.getByRole('button', { name: 'Load schema' }).click();
+  await expect(page.getByText('suggested as you type')).toBeVisible();
+  const subscription = page.getByLabel('GraphQL subscription');
+  await subscription.fill('subscription {\n  ');
+  await page.keyboard.type('ti');
+  await expect(page.locator('.cm-tooltip-autocomplete')).toContainText('ticks');
+  await expect(page.locator('.cm-tooltip-autocomplete')).toContainText('Int');
+  await page.keyboard.press('Escape');
+  await subscription.fill('subscription { ticks }');
   await page.getByRole('button', { name: /Connect/ }).click();
   for (const tick of [1, 2, 3])
     await expect(

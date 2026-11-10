@@ -27,6 +27,13 @@ export async function languageSupport(language: CodeLanguage): Promise<Extension
       return (await import('@codemirror/lang-json')).json();
     case 'javascript':
       return (await import('@codemirror/lang-javascript')).javascript();
+    case 'script': {
+      const [{ javascript, javascriptLanguage }, { scriptCompletions }] = await Promise.all([
+        import('@codemirror/lang-javascript'),
+        import('./script-completion'),
+      ]);
+      return [javascript(), javascriptLanguage.data.of({ autocomplete: scriptCompletions })];
+    }
     case 'yaml':
       return (await import('@codemirror/lang-yaml')).yaml();
     case 'xml':

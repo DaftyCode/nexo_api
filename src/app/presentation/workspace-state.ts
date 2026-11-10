@@ -2,8 +2,15 @@ import { Injectable, computed, effect, inject, signal, untracked } from '@angula
 import { TranslocoService } from '@jsverse/transloco';
 import { REPORTS, WORKSPACE } from '../composition/providers';
 import { Report } from '../application/report-use-cases';
-import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
-import { GraphQLSchema } from '../domain/graphql-schema';
+import {
+  CollectionItem,
+  KeyValue,
+  RequestDraft,
+  Run,
+  WorkspaceDocument,
+  newRequest,
+} from '../domain/models';
+import { GraphQLSchema, graphqlEndpoint } from '../domain/graphql-schema';
 import { DropPosition, dropPlace, isWithin, staysInPlace } from '../domain/collection-tree';
 import { CookieChange, CookieKey, StoredCookie, cookieKey, sameCookie } from '../domain/cookies';
 import {
@@ -674,10 +681,33 @@ export class WorkspaceState {
   // rather than saved in the collection.
   readonly graphqlSchemas = signal<Readonly<Record<string, GraphQLSchema>>>({});
   readonly loadingSchema = signal(false);
+  /** The schema loaded for an endpoint, whether written with http(s) or ws(s). */
+  schemaFor(url: string): GraphQLSchema | undefined {
+    return this.graphqlSchemas()[graphqlEndpoint(url)];
+  }
   /** Loads the schema of the active request's endpoint by introspection. */
   async loadGraphqlSchema() {
     const request = this.active()?.request;
-    if (!request || this.loadingSchema()) return;
+    if (!request) return;
+    await this.introspect(request, this.activeAncestors());
+  }
+  /**
+   * Loads the schema of a subscription endpoint, over HTTP at the same address, with the
+   * connection's headers, such as its authorization.
+   */
+  loadEndpointSchema(url: string, headers: readonly KeyValue[]) {
+    return this.introspect(
+      {
+        ...newRequest(this.cases.files.id()),
+        protocol: 'graphql',
+        url: graphqlEndpoint(url),
+        headers: headers.filter((row) => row.enabled && row.key).map((row) => ({ ...row })),
+      },
+      [],
+    );
+  }
+  private async introspect(request: RequestDraft, ancestors: readonly RequestAncestor[]) {
+    if (this.loadingSchema()) return;
     this.loadingSchema.set(true);
     try {
       await this.guard(async () => {
@@ -687,11 +717,14 @@ export class WorkspaceState {
             workspace: this.workspaceId(),
             environment: this.environmentRows(),
             globals: this.globalRows(),
-            ancestors: this.activeAncestors(),
+            ancestors,
           },
           this.cases.files.id(),
         );
-        this.graphqlSchemas.update((schemas) => ({ ...schemas, [request.url]: schema }));
+        this.graphqlSchemas.update((schemas) => ({
+          ...schemas,
+          [graphqlEndpoint(request.url)]: schema,
+        }));
         this.notice.set('Schema loaded');
       });
     } finally {

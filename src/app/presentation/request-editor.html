@@ -273,7 +273,7 @@
           @defer (on immediate) {
             <app-code-editor
               [formField]="fields.tests"
-              language="javascript"
+              language="script"
               [label]="'Test scripts' | transloco"
               placeholder="nx.test('Status is 200', () => nx.response.to.have.status(200));"
             />
@@ -284,7 +284,7 @@
           @defer (on immediate) {
             <app-code-editor
               [formField]="fields.prerequest"
-              language="javascript"
+              language="script"
               [label]="'Pre-request scripts' | transloco"
               placeholder="nx.environment.set('timestamp', Date.now());"
             />

@@ -2,6 +2,7 @@ import {
   GraphQLSchema,
   INTROSPECTION_QUERY,
   completeIntrospection,
+  graphqlEndpoint,
   fieldSnippet,
   insertAt,
   readSchema,
@@ -105,6 +106,12 @@ describe('GraphQL schemas', () => {
     ]);
     for (const other of [undefined, null, 'x', { __schema: { types: 1 } }])
       expect(completeIntrospection(other)).toBe(other);
+  });
+
+  it('ask for the schema of a subscription address over HTTP', () => {
+    expect(graphqlEndpoint(' ws://api.test/graphql ')).toBe('http://api.test/graphql');
+    expect(graphqlEndpoint('WSS://api.test/graphql')).toBe('https://api.test/graphql');
+    expect(graphqlEndpoint('https://api.test/graphql')).toBe('https://api.test/graphql');
   });
 
   it('explains answers that are not a schema', () => {

@@ -82,7 +82,7 @@ export class RequestEditor {
   protected readonly state = inject(WorkspaceState);
   private readonly query = viewChild<GraphqlQueryEditor>('query');
   /** The schema loaded for this request's endpoint, if any. */
-  protected readonly schema = computed(() => this.state.graphqlSchemas()[this.request().url]);
+  protected readonly schema = computed(() => this.state.schemaFor(this.request().url));
   /** The colours of the raw body follow the type chosen next to it. */
   protected readonly rawLanguage = computed(() => bodyLanguage(this.request().bodyLanguage));
   /** The body type shown: GraphQL is a protocol of the request, as Postman lists it. */
