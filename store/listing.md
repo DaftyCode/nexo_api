@@ -10,7 +10,7 @@ Texts to paste into Partner Center → Store listings (one listing per language)
 
 Nexo API is a fast, open source workspace for building, organizing and testing APIs, built to run entirely on your computer.
 
-Send HTTP and GraphQL requests, organize them in collections and folders, switch between environments and keep your secrets encrypted on your device. Write pre-request and test scripts, run whole collections with data files and check every assertion. Connect to WebSocket, Socket.IO, MQTT and gRPC services, spin up local mock servers and query JSON or CSV datasets with SQL.
+Send HTTP and GraphQL requests, organize them in collections and folders, switch between environments and keep your secrets encrypted on your device. Write pre-request and test scripts, run whole collections with data files and check every assertion. Connect to WebSocket, Socket.IO, MQTT, Kafka and gRPC services, browse and edit MongoDB databases, spin up local mock servers and query JSON or CSV datasets with SQL.
 
 Nexo API has no accounts, no cloud sync and no telemetry: your collections, environments and history never leave your computer. Requests go only where you send them.
 
@@ -24,23 +24,21 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 - Encrypted vault for secrets, referenced as {{vault:name}} and redacted from results
 - Pre-request and test scripts in a sandbox, with assertions and logs
 - Collection runner with iterations and JSON/CSV data
-- WebSocket, Socket.IO, MQTT and gRPC clients
+- WebSocket, Socket.IO, MQTT, Kafka and gRPC clients
+- MongoDB explorer: queries, table, tree and JSON views, and writes with undo
 - Local mock servers and SQL queries over JSON/CSV datasets
 - Import cURL, OpenAPI/Swagger, HAR and portable collections; generate code in 8 languages
 - Works offline, without an account; English and Spanish; three visual themes
 
 ### What's new in this version
 
-Every authorization type, sign-in like Postman and a lighter app.
+MongoDB next to your API, Kafka, and editors with autocompletion.
 
-- All the authorizations of Postman, Bruno and Insomnia: OAuth 2.0 (every grant, PKCE, token management, automatic refresh and Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc.
-- OAuth 2.0 sign-in in a window of the app, like Postman: it takes the token by itself, whatever the Callback URL.
-- Postman collections open complete: path variables (:id), body format and body type. Folders fold like their collection.
-- Panels resize with the mouse and keep their size; Reset layout and a Back button from settings.
-- Allowed domains for each vault secret: it is only sent to the domains you choose, also after a redirect.
-- The engine now runs in Rust inside the app, without Node: it starts faster, uses less memory and runs scripts in an isolated sandbox.
-- Post-quantum key exchange (X25519MLKEM768) preferred for TLS connections.
-- English and Spanish switch without restarting, and two new templates: Aurora Studio and Canvas.
+- MongoDB: connections with the password in the vault (TLS, X.509, replica sets, Atlas, import from Compass), an explorer of databases and collections, queries in the shell syntax with table, tree and JSON views, and writes that keep BSON types, count before changing many documents, respect read-only connections and can be undone.
+- Kafka client, Socket.IO, gRPC server reflection, and a GraphQL schema explorer with autocompletion and subscriptions over SSE.
+- Code editors with highlighting and autocompletion of the pm and nx script APIs.
+- Files in form-data and binary bodies; each request tab keeps its own response.
+- Cookie manager, Git remotes (clone, pull, push), MCP resources and prompts, PDF reports, OpenAPI linting and comparison, pause and resume of runs, and drag and drop in the collection tree.
 - Many fixes and security improvements.
 
 ### Search terms
@@ -72,7 +70,7 @@ Every authorization type, sign-in like Postman and a lighter app.
 
 Nexo API es un espacio de trabajo rápido y de código abierto para crear, organizar y probar APIs, pensado para funcionar por completo en tu equipo.
 
-Envía peticiones HTTP y GraphQL, organízalas en colecciones y carpetas, cambia de entorno con un clic y guarda tus secretos cifrados en tu dispositivo. Escribe scripts previos y de pruebas, ejecuta colecciones completas con archivos de datos y comprueba cada aserción. Conéctate a servicios WebSocket, Socket.IO, MQTT y gRPC, arranca servidores mock locales y consulta datasets JSON o CSV con SQL.
+Envía peticiones HTTP y GraphQL, organízalas en colecciones y carpetas, cambia de entorno con un clic y guarda tus secretos cifrados en tu dispositivo. Escribe scripts previos y de pruebas, ejecuta colecciones completas con archivos de datos y comprueba cada aserción. Conéctate a servicios WebSocket, Socket.IO, MQTT, Kafka y gRPC, explora y edita bases de datos MongoDB, arranca servidores mock locales y consulta datasets JSON o CSV con SQL.
 
 Nexo API no tiene cuentas, ni sincronización en la nube, ni telemetría: tus colecciones, entornos e historial nunca salen de tu equipo. Las peticiones solo van adonde tú las envías.
 
@@ -86,23 +84,21 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 - Vault cifrado para secretos, usados como {{vault:nombre}} y ocultos en los resultados
 - Scripts previos y de pruebas en un entorno aislado, con aserciones y registros
 - Runner de colecciones con iteraciones y datos JSON/CSV
-- Clientes de WebSocket, Socket.IO, MQTT y gRPC
+- Clientes de WebSocket, Socket.IO, MQTT, Kafka y gRPC
+- Explorador de MongoDB: consultas, vistas de tabla, árbol y JSON, y escritura con deshacer
 - Servidores mock locales y consultas SQL sobre datasets JSON/CSV
 - Importa cURL, OpenAPI/Swagger, HAR y colecciones portables; genera código en 8 lenguajes
 - Funciona sin conexión y sin cuenta; en español e inglés; tres temas visuales
 
 ### Novedades de esta versión
 
-Todas las autorizaciones, inicio de sesión como en Postman y una aplicación más ligera.
+MongoDB junto a tu API, Kafka y editores con autocompletado.
 
-- Todas las autorizaciones de Postman, Bruno e Insomnia: OAuth 2.0 (todos los flujos, PKCE, gestión de tokens, renovación automática y Auto-fetch Token), OAuth 1.0, Digest, AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc.
-- Inicio de sesión de OAuth 2.0 en una ventana de la aplicación, como en Postman: recoge el token sola, sea cual sea la Callback URL.
-- Las colecciones de Postman se abren completas: variables de ruta (:id), formato y tipo de body. Las carpetas se pliegan como su colección.
-- Los paneles se redimensionan con el ratón y guardan su tamaño; Restablecer vista y botón Volver desde los ajustes.
-- Dominios permitidos para cada secreto del vault: solo se envía a los dominios que elijas, también tras una redirección.
-- El motor funciona ahora en Rust dentro de la aplicación, sin Node: arranca antes, usa menos memoria y ejecuta los scripts en un sandbox aislado.
-- Intercambio de claves poscuántico (X25519MLKEM768) preferido en las conexiones TLS.
-- Cambia entre español e inglés sin reiniciar, y dos plantillas nuevas: Aurora Studio y Canvas.
+- MongoDB: conexiones con la contraseña en el vault (TLS, X.509, replica sets, Atlas, importar de Compass), explorador de bases de datos y colecciones, consultas con la sintaxis de la shell y vistas de tabla, árbol y JSON, y escritura que conserva los tipos BSON, cuenta antes de cambiar muchos documentos, respeta las conexiones de solo lectura y se puede deshacer.
+- Cliente de Kafka, Socket.IO, reflexión de servidores gRPC y explorador del esquema GraphQL con autocompletado y subscriptions por SSE.
+- Editores de código con resaltado y autocompletado de las API de scripts pm y nx.
+- Ficheros en cuerpos form-data y binarios; cada pestaña de petición conserva su respuesta.
+- Gestor de cookies, remotos Git (clonar, pull, push), recursos y prompts MCP, informes en PDF, linter y comparación de OpenAPI, pausar y reanudar ejecuciones, y arrastrar y soltar en el árbol de colecciones.
 - Muchas correcciones y mejoras de seguridad.
 
 ### Términos de búsqueda
