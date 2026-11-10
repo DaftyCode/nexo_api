@@ -69,9 +69,14 @@ operations!(
         CookiesDelete => "cookies.delete",
         Performance => "performance",
         PerformanceCancel => "performance.cancel",
+        MongoTest => "mongo.test",
     }
 );
 impl Operation {
+    /// Operations of the document database adapter (MongoDB), not of the engine.
+    pub fn is_database(self) -> bool {
+        matches!(self, Self::MongoTest)
+    }
     /// Operations whose data belongs to a workspace and need one.
     pub fn needs_workspace(self) -> bool {
         matches!(

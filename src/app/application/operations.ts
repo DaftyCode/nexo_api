@@ -35,6 +35,7 @@ export const EXECUTION_OPERATIONS = [
   'cookies.delete',
   'performance',
   'performance.cancel',
+  'mongo.test',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

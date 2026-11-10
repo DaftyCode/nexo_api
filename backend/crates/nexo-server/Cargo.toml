@@ -12,6 +12,7 @@ nexo-application = { path = "../nexo-application" }
 nexo-infrastructure = { path = "../nexo-infrastructure" }
 nexo-http = { path = "../nexo-http" }
 nexo-engine = { path = "../nexo-engine" }
+nexo-mongo = { path = "../nexo-mongo" }
 tokio.workspace = true
 axum.workspace = true
 uuid.workspace = true

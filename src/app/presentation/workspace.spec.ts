@@ -117,6 +117,7 @@ describe('Workspace', () => {
         'Protocols',
         'Mocks',
         'Datasets',
+        'MongoDB',
         'Git',
         'MCP',
         'Settings',

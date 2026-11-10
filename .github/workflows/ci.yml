@@ -76,10 +76,14 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Start a Kafka broker (Redpanda) for the Kafka contract tests
         run: bash tools/kafka-fixture.sh start
+      - name: Start MongoDB servers and FerretDB for the MongoDB contract tests
+        run: bash tools/mongo-fixture.sh start
       - run: npm run engine:test
-      - name: Stop the Kafka broker
+      - name: Stop the Kafka broker and the MongoDB servers
         if: always()
-        run: bash tools/kafka-fixture.sh stop
+        run: |
+          bash tools/kafka-fixture.sh stop
+          bash tools/mongo-fixture.sh stop
       - run: npm run backend:build
       - run: npm run test:server
       - run: npm run build

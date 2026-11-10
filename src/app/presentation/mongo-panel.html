@@ -1,0 +1,474 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">{{ 'YOUR DATA, NEXT TO YOUR API.' | transloco }}</span>
+    <h1>{{ 'MongoDB' | transloco }}</h1>
+    <p>
+      {{
+        'Connect to MongoDB and compatible servers. Passwords and keys stay in the vault.'
+          | transloco
+      }}
+    </p>
+  </div>
+</div>
+<div class="mongo-layout">
+  <nav class="mongo-connections feature-card" [attr.aria-label]="'Connections' | transloco">
+    <div class="row between">
+      <h2>{{ 'Connections' | transloco }}</h2>
+      <button type="button" class="button small" (click)="newConnection()">
+        {{ '＋ New connection' | transloco }}
+      </button>
+    </div>
+    @for (group of folders(); track group.folder) {
+      @if (group.folder) {
+        <h3 class="mongo-folder">{{ group.folder }}</h3>
+      }
+      <ul>
+        @for (connection of group.connections; track connection.id) {
+          <li>
+            <button
+              type="button"
+              class="mongo-connection"
+              [class.selected]="connection.id === selectedId()"
+              [attr.aria-current]="connection.id === selectedId() ? 'true' : null"
+              (click)="open(connection)"
+            >
+              <span
+                class="mongo-color"
+                aria-hidden="true"
+                [style.background]="colorOf(connection) || 'transparent'"
+              ></span>
+              <span class="grow">{{ connection.name }}</span>
+              @if (isReadOnly(connection)) {
+                <span class="mongo-badge">{{ 'Read-only' | transloco }}</span>
+              }
+            </button>
+          </li>
+        }
+      </ul>
+    } @empty {
+      <p class="muted">{{ 'No connections yet. Create one or paste a URI.' | transloco }}</p>
+    }
+    <label class="file-label">
+      {{ 'Import from MongoDB Compass' | transloco }}
+      <input type="file" accept=".json,application/json" (change)="importCompass($event)" />
+    </label>
+  </nav>
+
+  <section class="feature-card mongo-editor" [attr.aria-label]="'Connection' | transloco">
+    <div class="row mongo-paste">
+      <label class="field grow"
+        >{{ 'Paste a connection string' | transloco
+        }}<input
+          [formField]="fields.paste"
+          placeholder="mongodb+srv://user:password@cluster0.example.net/"
+          spellcheck="false"
+          autocomplete="off"
+          (keydown.enter)="useUri()"
+      /></label>
+      <button type="button" class="button" (click)="useUri()">
+        {{ 'Use URI' | transloco }}
+      </button>
+    </div>
+    <div class="mongo-identity">
+      <label class="field grow"
+        >{{ 'Connection name' | transloco }}<input [formField]="fields.name"
+      /></label>
+      <label class="field"
+        >{{ 'Folder' | transloco
+        }}<input [formField]="fields.folder" list="mongo-folders" autocomplete="off"
+      /></label>
+      <datalist id="mongo-folders">
+        @for (folder of folderNames(); track folder) {
+          <option [value]="folder"></option>
+        }
+      </datalist>
+      <div class="mongo-colors" role="group" [attr.aria-label]="'Color' | transloco">
+        <button
+          type="button"
+          class="mongo-swatch none"
+          [attr.aria-pressed]="!model().color"
+          [attr.aria-label]="'No color' | transloco"
+          (click)="setColor('')"
+        ></button>
+        @for (color of colors; track color; let index = $index) {
+          <button
+            type="button"
+            class="mongo-swatch"
+            [style.background]="color"
+            [attr.aria-pressed]="model().color === color"
+            [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
+            (click)="setColor(color)"
+          ></button>
+        }
+      </div>
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields.readOnly" />{{
+          'Read-only: no writes' | transloco
+        }}</label
+      >
+    </div>
+
+    <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">
+      @for (t of tabs; track t) {
+        <button
+          type="button"
+          [class.active]="tab() === t"
+          [attr.aria-current]="tab() === t ? 'page' : null"
+          (click)="tab.set(t)"
+        >
+          {{
+            t === 'server'
+              ? ('Server' | transloco)
+              : t === 'authentication'
+                ? ('Authentication' | transloco)
+                : t === 'tls'
+                  ? ('TLS' | transloco)
+                  : t === 'options'
+                    ? ('Options' | transloco)
+                    : ('SSH tunnel' | transloco)
+          }}
+        </button>
+      }
+    </nav>
+
+    @switch (tab()) {
+      @case ('server') {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.srv" />{{
+            'DNS seed list (mongodb+srv://, as Atlas gives it)' | transloco
+          }}</label
+        >
+        <div class="field">
+          <span id="mongo-hosts">{{
+            (model().srv ? 'Host name' : 'Hosts, one host:port per line') | transloco
+          }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.hosts"
+              language="text"
+              size="small"
+              [label]="'Hosts' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
+        <div class="row">
+          <label class="field grow"
+            >{{ 'Replica set' | transloco
+            }}<input [formField]="fields.replicaSet" placeholder="rs0" spellcheck="false"
+          /></label>
+          <label class="field grow"
+            >{{ 'Default database' | transloco
+            }}<input [formField]="fields.database" spellcheck="false"
+          /></label>
+        </div>
+        <p class="muted">
+          {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
+        </p>
+      }
+      @case ('authentication') {
+        <label class="field"
+          >{{ 'Authentication' | transloco }}
+          <select [formField]="fields.auth">
+            @for (choice of authChoices; track choice) {
+              <option [value]="choice">
+                {{
+                  choice === 'none'
+                    ? ('None' | transloco)
+                    : choice === 'default'
+                      ? ('Username and password (negotiated SCRAM)' | transloco)
+                      : choice === 'MONGODB-X509'
+                        ? ('X.509 client certificate' | transloco)
+                        : choice
+                }}
+              </option>
+            }
+          </select>
+        </label>
+        @if (model().auth !== 'none') {
+          <div class="row">
+            <label class="field grow"
+              >{{ 'Username' | transloco
+              }}<input [formField]="fields.username" autocomplete="off" spellcheck="false"
+            /></label>
+            @if (model().auth !== 'MONGODB-X509') {
+              <label class="field grow"
+                >{{ 'Password' | transloco
+                }}<input
+                  type="password"
+                  [formField]="fields.password"
+                  autocomplete="new-password"
+                  [placeholder]="
+                    passwordStored() ? ('Saved in the vault; type to replace' | transloco) : ''
+                  "
+              /></label>
+            }
+            <label class="field grow"
+              >{{ 'Authentication database' | transloco
+              }}<input [formField]="fields.authSource" placeholder="admin" spellcheck="false"
+            /></label>
+          </div>
+          <p class="muted">
+            {{
+              'The password is saved in the vault, never in the URI. A vault reference also works.'
+                | transloco
+            }}
+          </p>
+        }
+        <p class="muted">
+          {{ 'Kerberos, LDAP, AWS IAM and OIDC are not supported yet.' | transloco }}
+        </p>
+      }
+      @case ('tls') {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.tls" />{{ 'Use TLS' | transloco }}</label
+        >
+        @if (model().tls) {
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.allowInvalidCertificates" />{{
+              'Allow invalid certificates' | transloco
+            }}</label
+          >
+          @if (model().allowInvalidCertificates) {
+            <p class="mongo-warning" role="note">
+              {{
+                'Any certificate is accepted: someone on the network could read or change what is sent.'
+                  | transloco
+              }}
+            </p>
+          }
+          <p class="muted">
+            {{
+              "The system's certificate authorities are trusted, and the server name is sent (SNI) and checked."
+                | transloco
+            }}
+          </p>
+          <div class="field">
+            <span>{{ 'CA certificate (PEM)' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [formField]="fields.caPem"
+                language="text"
+                size="small"
+                [label]="'CA certificate (PEM)' | transloco"
+                placeholder="-----BEGIN CERTIFICATE-----"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
+          <div class="field">
+            <span>{{ 'Client certificate (PEM)' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [formField]="fields.certPem"
+                language="text"
+                size="small"
+                [label]="'Client certificate (PEM)' | transloco"
+                placeholder="-----BEGIN CERTIFICATE-----"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
+          <div class="field">
+            <span>{{
+              (keyStored()
+                ? 'Client key: saved in the vault; paste to replace'
+                : 'Client key (PEM)'
+              ) | transloco
+            }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [formField]="fields.keyPem"
+                language="text"
+                size="small"
+                [label]="'Client key (PEM)' | transloco"
+                placeholder="-----BEGIN PRIVATE KEY-----"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
+        }
+      }
+      @case ('options') {
+        <div class="mongo-options">
+          <label class="field"
+            >{{ 'Read preference' | transloco }}
+            <select [formField]="fields.readPreference">
+              @for (preference of readPreferences; track preference) {
+                <option [value]="preference">
+                  {{ preference || ('Server default' | transloco) }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="field"
+            >{{ 'Read preference tags' | transloco
+            }}<input
+              [formField]="fields.readPreferenceTags"
+              placeholder="dc:east,rack:1"
+              spellcheck="false"
+          /></label>
+          <label class="field"
+            >{{ 'Write concern (w)' | transloco
+            }}<input [formField]="fields.w" placeholder="majority" spellcheck="false"
+          /></label>
+          <label class="field"
+            >{{ 'Write concern timeout (ms)' | transloco
+            }}<input [formField]="fields.wtimeoutMS" inputmode="numeric"
+          /></label>
+          <label class="field"
+            >{{ 'Connection timeout (ms)' | transloco
+            }}<input [formField]="fields.connectTimeoutMS" inputmode="numeric" placeholder="10000"
+          /></label>
+          <label class="field"
+            >{{ 'Socket timeout (ms)' | transloco
+            }}<input [formField]="fields.socketTimeoutMS" inputmode="numeric"
+          /></label>
+          <label class="field"
+            >{{ 'Server selection timeout (ms)' | transloco
+            }}<input
+              [formField]="fields.serverSelectionTimeoutMS"
+              inputmode="numeric"
+              placeholder="10000"
+          /></label>
+        </div>
+        <div class="button-grid">
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.journal" />{{
+              'Wait for the journal (j)' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.retryWrites" />{{
+              'Retry writes' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.directConnection" />{{
+              'Direct connection' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.loadBalanced" />{{
+              'Load balanced' | transloco
+            }}</label
+          >
+        </div>
+        <label class="field"
+          >{{ 'Other URI options' | transloco
+          }}<input
+            [formField]="fields.extra"
+            placeholder="appName=reports&compressors=zlib"
+            spellcheck="false"
+        /></label>
+      }
+      @case ('ssh') {
+        <p class="muted">
+          {{
+            'SSH tunnels and SOCKS5 proxies arrive in a later version. Until then, open the tunnel outside Nexo and connect to its local port.'
+              | transloco
+          }}
+        </p>
+      }
+    }
+
+    <div class="field">
+      <span>{{ 'Connection URI (without the password)' | transloco }}</span>
+      <code class="mongo-uri" data-testid="mongo-uri">{{ uri() }}</code>
+    </div>
+    @if (problem(); as problem) {
+      <p class="mongo-warning" role="note">{{ problem | transloco }}</p>
+    }
+    <div class="button-grid">
+      <button
+        type="button"
+        class="button primary"
+        [disabled]="!!problem() || state.busy()"
+        (click)="test()"
+      >
+        {{ 'Test connection' | transloco }}
+      </button>
+      <button type="button" class="button" [disabled]="!!problem()" (click)="save()">
+        {{ 'Save connection' | transloco }}
+      </button>
+      <button type="button" class="button subtle" (click)="copyUri()">
+        {{ 'Copy URI' | transloco }}
+      </button>
+      @if (selected()) {
+        <button type="button" class="button subtle danger" (click)="remove()">
+          {{ 'Delete connection' | transloco }}
+        </button>
+      }
+    </div>
+    @if (notice().key) {
+      <p class="success" role="status">{{ notice().key | transloco: notice().params }}</p>
+    }
+
+    @if (report(); as report) {
+      <section class="mongo-report" [attr.aria-label]="'Connection test' | transloco">
+        <h3>{{ 'Connected' | transloco }}</h3>
+        <dl>
+          <dt>{{ 'Server version' | transloco }}</dt>
+          <dd>{{ report.serverVersion }}{{ report.flavor ? ' · ' + report.flavor : '' }}</dd>
+          <dt>{{ 'Topology' | transloco }}</dt>
+          <dd>
+            {{ 'topology.' + report.topology | transloco
+            }}{{ report.replicaSet ? ' · ' + report.replicaSet : '' }}
+          </dd>
+          <dt>{{ 'Round trip' | transloco }}</dt>
+          <dd>{{ report.pingMs }} ms</dd>
+          <dt>TLS</dt>
+          <dd>{{ (report.tls ? 'Yes' : 'No') | transloco }}</dd>
+          <dt>{{ 'Authentication' | transloco }}</dt>
+          <dd>{{ report.authMechanism ?? ('None' | transloco) }}</dd>
+        </dl>
+        @if (report.direct) {
+          <p class="mongo-warning" role="note">
+            {{
+              'Connected to the first server only: the egress policy or a secret does not allow every server of the replica set.'
+                | transloco
+            }}
+          </p>
+        }
+        <table class="mongo-hosts" [attr.aria-label]="'Servers' | transloco">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Server' | transloco }}</th>
+              <th scope="col">{{ 'Role' | transloco }}</th>
+              <th scope="col">{{ 'Egress policy' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (host of report.hosts; track host.address) {
+              <tr>
+                <td>
+                  <code>{{ host.address }}</code>
+                </td>
+                <td>{{ 'role.' + host.role | transloco }}</td>
+                <td [class.success]="host.allowed" [class.danger]="!host.allowed">
+                  {{ host.allowed ? ('Allowed' | transloco) : host.reason }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+  </section>
+</div>

@@ -3336,11 +3336,15 @@ dependencies = [
 name = "nexo-mongo"
 version = "0.4.0"
 dependencies = [
+ "async-trait",
+ "base64 0.23.1",
  "mongodb",
  "nexo-application",
  "nexo-domain",
  "rustls",
+ "rustls-native-certs",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -3355,6 +3359,7 @@ dependencies = [
  "nexo-engine",
  "nexo-http",
  "nexo-infrastructure",
+ "nexo-mongo",
  "reqwest",
  "serde_json",
  "tokio",

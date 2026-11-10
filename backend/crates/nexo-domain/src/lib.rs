@@ -108,9 +108,12 @@ pub enum DocumentKind {
     Monitor,
     Comment,
     Settings,
+    /// A database connection (MongoDB): its URI without the password, which stays in the
+    /// vault.
+    Connection,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 11] = [
+    pub const ALL: [DocumentKind; 12] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -122,6 +125,7 @@ impl DocumentKind {
         Self::Monitor,
         Self::Comment,
         Self::Settings,
+        Self::Connection,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -136,6 +140,7 @@ impl DocumentKind {
             Self::Monitor => "monitor",
             Self::Comment => "comment",
             Self::Settings => "settings",
+            Self::Connection => "connection",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -180,8 +185,45 @@ impl Document {
         {
             return Err(Error::Validation("Variables need a values list".into()));
         }
+        if self.kind == DocumentKind::Connection {
+            let Some(uri) = self.value.get("uri").and_then(Value::as_str) else {
+                return Err(Error::Validation("A connection needs a URI".into()));
+            };
+            if uri_has_password(uri) {
+                return Err(Error::Validation(
+                    "Keep the password out of the connection URI: Nexo keeps it in the vault"
+                        .into(),
+                ));
+            }
+        }
         Ok(())
     }
+}
+
+/// Whether a connection URI (`scheme://user:password@hosts/…`) carries a password. Template
+/// variables (`{{name}}`, `{{vault:name}}`) are not read as one.
+pub fn uri_has_password(uri: &str) -> bool {
+    let Some((_, rest)) = uri.split_once("://") else {
+        return false;
+    };
+    let authority = rest.split(['/', '?']).next().unwrap_or_default();
+    let Some((userinfo, _)) = authority.rsplit_once('@') else {
+        return false;
+    };
+    let mut plain = String::new();
+    let mut remaining = userinfo;
+    while let Some(start) = remaining.find("{{") {
+        plain.push_str(&remaining[..start]);
+        match remaining[start..].find("}}") {
+            Some(end) => remaining = &remaining[start + end + 2..],
+            None => {
+                remaining = &remaining[start..];
+                break;
+            }
+        }
+    }
+    plain.push_str(remaining);
+    plain.contains(':')
 }
 
 /// Document metadata without its value, for listings.
@@ -260,6 +302,34 @@ mod tests {
                     .validate()
                     .is_ok()
             );
+        }
+    }
+    #[test]
+    fn connections_keep_their_password_out_of_the_uri() {
+        let connection =
+            |uri: &str| document(DocumentKind::Connection, serde_json::json!({"uri": uri}));
+        assert!(
+            document(DocumentKind::Connection, serde_json::json!({}))
+                .validate()
+                .is_err()
+        );
+        for uri in [
+            "mongodb://localhost:27017",
+            "mongodb://ana@db.test/?authSource=admin",
+            "mongodb+srv://{{user}}@cluster0.example.net/app",
+            "mongodb://{{vault:mongo-user}}@db.test",
+            "mongodb://db.test/app?replicaSet=rs0&a=b:c@d",
+        ] {
+            assert!(connection(uri).validate().is_ok(), "{uri}");
+        }
+        for uri in [
+            "mongodb://ana:secret@db.test",
+            "mongodb+srv://ana:{{vault:p}}@cluster0.example.net",
+            "mongodb://ana:@db.test/",
+            "mongodb://a%40b:p%2Fq@h1,h2/db",
+        ] {
+            let error = connection(uri).validate().unwrap_err();
+            assert!(error.to_string().contains("vault"), "{uri}");
         }
     }
     #[test]

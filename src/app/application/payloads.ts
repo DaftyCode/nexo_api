@@ -38,6 +38,14 @@ export interface GitFile {
   value: unknown;
 }
 
+export interface MongoConnection {
+  uri: string;
+  password?: string;
+  caPem?: string;
+  certPem?: string;
+  keyPem?: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -286,6 +294,11 @@ export interface PerformancePayload {
   followRedirects?: boolean;
 }
 
+export interface MongoTestPayload {
+  connection: MongoConnection;
+  workspace?: string;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -333,6 +346,7 @@ export interface OperationPayloads {
   'cookies.delete': CookieDeletePayload;
   performance: PerformancePayload;
   'performance.cancel': IdPayload;
+  'mongo.test': MongoTestPayload;
 }
 
 /** The payload of an operation. */

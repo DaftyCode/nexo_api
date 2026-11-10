@@ -8,6 +8,7 @@ import {
   APPEARANCE,
   DATA,
   INTEGRATION,
+  MONGO,
   PROTOCOLS,
   REPORTS,
   WORKSPACE,
@@ -15,6 +16,7 @@ import {
 import { ReportUseCases } from '../application/report-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
+import { MongoUseCases } from '../application/mongo-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
 import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
@@ -143,6 +145,13 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     { provide: INTEGRATION, useValue: new IntegrationUseCases(api) },
     { provide: DATA, useValue: new DataUseCases(api, files.id) },
     { provide: PROTOCOLS, useValue: new ProtocolUseCases(api) },
+    {
+      provide: MONGO,
+      useValue: (
+        (cases) => () =>
+          Promise.resolve(cases)
+      )(new MongoUseCases(api, files.id)),
+    },
     {
       provide: REPORTS,
       useValue: new ReportUseCases(

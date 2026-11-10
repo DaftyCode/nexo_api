@@ -523,6 +523,29 @@ payload! {
 }
 
 payload! {
+    /// A MongoDB connection: the URI without a password (`mongodb://` or `mongodb+srv://`),
+    /// the password (usually a `{{vault:…}}` reference) and the PEM of a CA to trust besides
+    /// the system's and of a client certificate and key.
+    closed MongoConnection {
+        required { uri "uri": String => "string" }
+        optional {
+            password "password": String => "string",
+            ca_pem "caPem": String => "string",
+            cert_pem "certPem": String => "string",
+            key_pem "keyPem": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.test`: connects, pings and describes the deployment.
+    closed MongoTestPayload {
+        required { connection "connection": MongoConnection => "MongoConnection" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
     /// A collection written to the workspace project by Git `export`.
     closed GitFile {
         required {
@@ -677,6 +700,7 @@ operation_payloads! {
     CookiesDelete => CookieDeletePayload,
     Performance => PerformancePayload,
     PerformanceCancel => IdPayload,
+    MongoTest => MongoTestPayload,
 }
 
 /// Checks the payload of a Git operation.
@@ -697,6 +721,7 @@ pub fn typescript_contract() -> String {
         FileAttachment::TYPESCRIPT.to_string(),
         CookieKey::TYPESCRIPT.to_string(),
         GitFile::TYPESCRIPT.to_string(),
+        MongoConnection::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
     parts.push(GitPayload::TYPESCRIPT.to_string());
@@ -796,6 +821,7 @@ mod tests {
                     | Operation::CookiesSet
                     | Operation::CookiesDelete
                     | Operation::PerformanceCancel
+                    | Operation::MongoTest
             );
             assert_eq!(result.is_err(), required, "{operation}");
             assert!(
@@ -857,6 +883,25 @@ mod tests {
                 .contains("at files[0]: missing field `value`"),
             "{error}"
         );
+    }
+
+    #[test]
+    fn mongo_payloads_name_their_fields() {
+        let test = json!({"workspace": "w1", "connection": {
+            "uri": "mongodb://ana@db.test", "password": "{{vault:mongo}}", "caPem": "-----BEGIN"
+        }});
+        assert_eq!(validate(Operation::MongoTest, test.clone()).unwrap(), test);
+        let error = validate(
+            Operation::MongoTest,
+            json!({"connection": {"uri": "mongodb://x", "tlsCAFile": "/etc/ca.pem"}}),
+        )
+        .unwrap_err();
+        assert!(
+            error.to_string().contains("at connection.tlsCAFile"),
+            "{error}"
+        );
+        let error = validate(Operation::MongoTest, json!({"connection": {}})).unwrap_err();
+        assert!(error.to_string().contains("missing field `uri`"), "{error}");
     }
 
     #[test]

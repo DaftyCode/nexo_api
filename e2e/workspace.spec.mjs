@@ -1299,3 +1299,50 @@ test('a long response scrolls to its end, with its actions in sight', async ({ p
   await page.keyboard.press('End');
   await expect(page.getByText('"item": 499')).toBeInViewport();
 });
+
+test('MongoDB: a pasted URI keeps its password in the vault, and a test explains failures', async ({
+  page,
+  nexo,
+}) => {
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'MongoDB' })
+    .click();
+  const editor = page.getByRole('region', { name: 'Connection', exact: true });
+  await editor
+    .getByLabel('Paste a connection string')
+    .fill('mongodb://ana:s3cret@127.0.0.1:9/?authSource=admin&serverSelectionTimeoutMS=500');
+  await editor.getByRole('button', { name: 'Use URI' }).click();
+  await expect(editor.getByText('The password left the URI')).toBeVisible();
+  const uri = editor.getByTestId('mongo-uri');
+  await expect(uri).toHaveText(
+    'mongodb://ana@127.0.0.1:9/?authSource=admin&serverSelectionTimeoutMS=500',
+  );
+  await editor.getByLabel('Connection name').fill('Local test');
+  await editor.getByLabel('Folder').fill('Local');
+  await editor.getByRole('button', { name: 'Save connection' }).click();
+  const list = page.getByRole('navigation', { name: 'Connections' });
+  await expect(list.getByRole('button', { name: 'Local test' })).toBeVisible();
+  await expect(list).toContainText('Local');
+
+  // Nothing listens on port 9: the test says so, with the password never shown.
+  await editor.getByRole('button', { name: 'Test connection' }).click();
+  const alert = page.getByRole('alert').filter({ hasText: 'No server answered' });
+  await expect(alert).toBeVisible({ timeout: 15000 });
+  await expect(alert).not.toContainText('s3cret');
+
+  // Fields write the URI; a DNS seed list has no port.
+  await editor.getByRole('button', { name: 'Options' }).click();
+  await editor.getByLabel('Write concern (w)').fill('majority');
+  await expect(uri).toContainText('&w=majority');
+  await editor.getByRole('button', { name: 'Server', exact: true }).click();
+  await editor.getByLabel('DNS seed list').check();
+  await expect(editor.getByRole('note')).toContainText('has no port');
+  await expect(editor.getByRole('button', { name: 'Test connection' })).toBeDisabled();
+  expect(await violations(page)).toEqual([]);
+
+  page.once('dialog', (confirm) => confirm.accept());
+  await editor.getByRole('button', { name: 'Delete connection' }).click();
+  await expect(list).toContainText('No connections yet.');
+});

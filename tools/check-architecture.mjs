@@ -46,17 +46,36 @@ for (const [crate, forbidden] of [
       'reqwest',
       'tokio',
       'mongodb',
+      'nexo-mongo',
     ],
   ],
   [
     'nexo-application',
-    ['nexo-infrastructure', 'nexo-http', 'axum', 'rusqlite', 'tauri', 'reqwest', 'mongodb'],
+    [
+      'nexo-infrastructure',
+      'nexo-http',
+      'axum',
+      'rusqlite',
+      'tauri',
+      'reqwest',
+      'mongodb',
+      'nexo-mongo',
+    ],
   ],
-  ['nexo-http', ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest', 'mongodb']],
+  [
+    'nexo-http',
+    ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest', 'mongodb', 'nexo-mongo'],
+  ],
   // The engine is an adapter: it implements application ports and never reaches the
   // HTTP layer, the other adapters or the desktop shell.
-  ['nexo-engine', ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri', 'mongodb']],
-  ['nexo-infrastructure', ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri', 'mongodb']],
+  [
+    'nexo-engine',
+    ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri', 'mongodb', 'nexo-mongo'],
+  ],
+  [
+    'nexo-infrastructure',
+    ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri', 'mongodb', 'nexo-mongo'],
+  ],
   // MongoDB is one more adapter: only it uses the driver, and nexo-server composes it.
   ['nexo-mongo', ['nexo-infrastructure', 'nexo-http', 'nexo-engine', 'nexo-server', 'tauri']],
 ]) {

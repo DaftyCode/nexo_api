@@ -8,6 +8,7 @@ const paths: Record<string, string> = {
   realtime: 'M3 7h16m-4-4 4 4-4 4M21 17H5m4-4-4 4 4 4',
   mocks: 'm12 3 9 5v9l-9 5-9-5V8l9-5Zm0 9v10M3 8l9 4 9-4',
   datasets: 'M5 3h14v18H5V3Zm0 6h14M5 15h14M10 3v18M15 3v18',
+  mongo: 'M12 2c4 4 5 8 5 11a5 5 0 0 1-10 0c0-3 1-7 5-11Zm0 0v20',
   git: 'M6 3v12a4 4 0 0 0 4 4h3m-7-4 0 0m12-12v5a4 4 0 0 1-4 4H6M3 3a3 3 0 1 0 6 0M15 3a3 3 0 1 0 6 0M13 19a3 3 0 1 0 6 0',
   mcp: 'M9 7H6a3 3 0 1 1 3-3v16a3 3 0 1 1-3-3h12a3 3 0 1 1-3 3V4a3 3 0 1 1 3 3H9',
   settings:

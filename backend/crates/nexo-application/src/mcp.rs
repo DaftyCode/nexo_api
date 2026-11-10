@@ -171,7 +171,10 @@ mod tests {
     use super::*;
     use crate::{
         operations::GitOperation,
-        ports::{ExecutionGateway, SecretVault, VersionControl, WorkspaceRepository},
+        ports::{
+            ConnectionReport, DatabaseConnection, DocumentDatabase, ExecutionGateway, SecretVault,
+            VersionControl, WorkspaceRepository,
+        },
     };
     use async_trait::async_trait;
     use nexo_domain::{
@@ -307,6 +310,12 @@ mod tests {
             Ok(Value::Null)
         }
     }
+    #[async_trait]
+    impl DocumentDatabase for Store {
+        async fn test(&self, _: DatabaseConnection) -> Result<ConnectionReport> {
+            Err(Error::NotFound)
+        }
+    }
 
     fn document(
         id: &str,
@@ -387,7 +396,13 @@ mod tests {
             ],
             vault_locked,
         });
-        Application::new(store.clone(), store.clone(), store.clone(), store)
+        Application::new(
+            store.clone(),
+            store.clone(),
+            store.clone(),
+            store.clone(),
+            store,
+        )
     }
     async fn call(application: &Application, method: &str, params: Value) -> Value {
         application

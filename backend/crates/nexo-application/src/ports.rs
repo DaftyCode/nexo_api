@@ -5,6 +5,7 @@ use nexo_domain::{
     Document, DocumentId, DocumentKind, DocumentSummary, Result, Revision, SecretSummary,
     Workspace, WorkspaceId, hosts::AllowedHosts,
 };
+use serde::Serialize;
 use serde_json::Value;
 
 #[async_trait]
@@ -65,6 +66,83 @@ pub trait SecretVault: Send + Sync {
 pub trait NetworkPolicy: Send + Sync {
     /// Refuses a destination the egress policy blocks, after resolving it.
     async fn check_destination(&self, host: &str, port: u16) -> Result<()>;
+    /// Whether the policy refuses some destinations (`deny-private`). Adapters that cannot
+    /// check every address their library connects to are stricter then.
+    fn restrictive(&self) -> bool {
+        false
+    }
+}
+
+/// A database connection as an adapter receives it: vault references already resolved.
+#[derive(Clone, Default)]
+pub struct DatabaseConnection {
+    /// The URI without a password; environment variables are already replaced.
+    pub uri: String,
+    pub password: Option<String>,
+    /// Certificate authorities trusted besides the system's, in PEM.
+    pub ca_pem: Option<String>,
+    /// The client certificate and its key, in PEM, for TLS client authentication (X.509).
+    pub cert_pem: Option<String>,
+    pub key_pem: Option<String>,
+    /// Vault secrets of the connection that may only reach some hosts, by name.
+    pub secret_hosts: Vec<(String, AllowedHosts)>,
+}
+impl std::fmt::Debug for DatabaseConnection {
+    /// Never shows the password or the key, should a connection end up in a log.
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("DatabaseConnection")
+            .field("uri", &self.uri)
+            .field("password", &self.password.as_ref().map(|_| "[redacted]"))
+            .field("key_pem", &self.key_pem.as_ref().map(|_| "[redacted]"))
+            .finish_non_exhaustive()
+    }
+}
+
+/// A server of a connection and whether Nexo may reach it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseHost {
+    /// `host:port`.
+    pub address: String,
+    /// `primary`, `secondary`, `arbiter`, `passive`, `mongos` or `seed` (not contacted).
+    pub role: String,
+    pub allowed: bool,
+    /// Why it is not allowed (egress policy or a secret's allowed domains).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+/// What "Test connection" found.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionReport {
+    pub server_version: String,
+    /// `standalone`, `replicaSet`, `sharded` or `loadBalanced`.
+    pub topology: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replica_set: Option<String>,
+    /// A compatible server that is not MongoDB, such as FerretDB or Amazon DocumentDB.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub flavor: Option<String>,
+    pub hosts: Vec<DatabaseHost>,
+    /// Round trip of a `ping`, in milliseconds.
+    pub ping_ms: u64,
+    /// Nexo connected only to the first server: under a restrictive egress policy, when a
+    /// server the replica set announces may not be reached.
+    pub direct: bool,
+    pub tls: bool,
+    /// The authentication mechanism used, or none.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth_mechanism: Option<String>,
+}
+
+/// A document database (MongoDB and compatible servers).
+#[async_trait]
+pub trait DocumentDatabase: Send + Sync {
+    /// Connects, checks every server against the egress policy and the secrets' allowed
+    /// domains, pings and describes the deployment.
+    async fn test(&self, connection: DatabaseConnection) -> Result<ConnectionReport>;
 }
 #[async_trait]
 pub trait VersionControl: Send + Sync {

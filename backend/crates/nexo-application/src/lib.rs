@@ -9,7 +9,10 @@ use nexo_domain::{
     Workspace, WorkspaceId, hosts::AllowedHosts,
 };
 use operations::{GitOperation, Operation};
-use ports::{ExecutionGateway, SecretVault, VersionControl, WorkspaceRepository};
+use ports::{
+    DatabaseConnection, DocumentDatabase, ExecutionGateway, SecretVault, VersionControl,
+    WorkspaceRepository,
+};
 use serde_json::{Map, Value};
 use std::sync::Arc;
 
@@ -32,6 +35,68 @@ pub const HISTORY_LIMIT: usize = 200;
 /// Vault entries of OAuth 2.0 tokens that requests reference: their access and ID tokens.
 fn is_oauth2_token(name: &str) -> bool {
     name.starts_with("nexo-oauth2:") || name.starts_with("nexo-oauth2-id:")
+}
+
+/// Replaces `{{vault:name}}` references in `text` with their values. In a URI the values are
+/// percent-encoded, so a user name such as `ana@corp` cannot change where it connects.
+fn replace_vault(text: &str, values: &[(String, String)], in_uri: bool) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut rest = text;
+    while let Some(start) = rest.find("{{") {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 2..];
+        let Some(end) = after.find("}}") else {
+            rest = &rest[start..];
+            break;
+        };
+        let inner = after[..end].trim();
+        let value = inner
+            .strip_prefix("vault:")
+            .map(str::trim)
+            .and_then(|name| values.iter().find(|(n, _)| n == name));
+        match value {
+            Some((_, value)) if in_uri => out.push_str(&uri_encode(value)),
+            Some((_, value)) => out.push_str(value),
+            None => out.push_str(&rest[start..start + 2 + end + 2]),
+        }
+        rest = &after[end + 2..];
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Percent-encodes what would change the meaning of a connection URI.
+fn uri_encode(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        if byte.is_ascii_alphanumeric() || b"-._~!$&'()*+;=".contains(&byte) {
+            out.push(byte as char);
+        } else {
+            out.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    out
+}
+
+/// Removes secret values (also percent-encoded) from an error before it leaves.
+fn redact_error(error: Error, values: &[(String, String)]) -> Error {
+    let redact = |mut message: String| {
+        for (_, value) in values {
+            // Very short values would turn ordinary words into noise.
+            if value.chars().count() >= 3 {
+                message = message
+                    .replace(value.as_str(), "[redacted]")
+                    .replace(&uri_encode(value), "[redacted]");
+            }
+        }
+        message
+    };
+    match error {
+        Error::Validation(message) => Error::Validation(redact(message)),
+        Error::Unavailable(message) => Error::Unavailable(redact(message)),
+        Error::Infrastructure(message) => Error::Infrastructure(redact(message)),
+        other => other,
+    }
 }
 
 pub fn vault_references(value: &Value) -> Vec<String> {
@@ -73,6 +138,7 @@ pub struct Application {
     executor: Arc<dyn ExecutionGateway>,
     secrets: Arc<dyn SecretVault>,
     git: Arc<dyn VersionControl>,
+    database: Arc<dyn DocumentDatabase>,
 }
 impl Application {
     pub fn new(
@@ -80,12 +146,14 @@ impl Application {
         executor: Arc<dyn ExecutionGateway>,
         secrets: Arc<dyn SecretVault>,
         git: Arc<dyn VersionControl>,
+        database: Arc<dyn DocumentDatabase>,
     ) -> Self {
         Self {
             workspaces,
             executor,
             secrets,
             git,
+            database,
         }
     }
 
@@ -261,6 +329,9 @@ impl Application {
                 "Choose a workspace for this operation".into(),
             ));
         }
+        if operation.is_database() {
+            return self.database(operation, Value::Object(payload)).await;
+        }
         if matches!(
             operation,
             Operation::Request
@@ -299,6 +370,54 @@ impl Application {
             .await
     }
 
+    /// Runs a document database operation. The connection's vault references are resolved
+    /// here, the allowed domains of those secrets go along to be checked against every
+    /// server, and their values never come back in an error.
+    async fn database(&self, operation: Operation, payload: Value) -> Result<Value> {
+        let payload: payloads::MongoTestPayload = serde_json::from_value(payload)
+            .map_err(|error| Error::Validation(error.to_string()))?;
+        let connection = payload.connection;
+        let names = vault_references(
+            &serde_json::to_value(&connection)
+                .map_err(|error| Error::Infrastructure(error.to_string()))?,
+        );
+        let mut values = Vec::new();
+        for name in &names {
+            values.push((name.clone(), self.secrets.resolve(name).await?));
+        }
+        let secret_hosts = if names.is_empty() {
+            Vec::new()
+        } else {
+            self.secrets
+                .secrets()
+                .await?
+                .into_iter()
+                .filter(|secret| names.contains(&secret.name) && !secret.allowed_hosts.is_empty())
+                .map(|secret| {
+                    let hosts = AllowedHosts::stored(&secret.allowed_hosts);
+                    (secret.name, hosts)
+                })
+                .collect()
+        };
+        let field = |text: Option<String>| text.map(|text| replace_vault(&text, &values, false));
+        let resolved = DatabaseConnection {
+            uri: replace_vault(&connection.uri, &values, true),
+            password: field(connection.password),
+            ca_pem: field(connection.ca_pem),
+            cert_pem: field(connection.cert_pem),
+            key_pem: field(connection.key_pem),
+            secret_hosts,
+        };
+        let result = match operation {
+            Operation::MongoTest => self.database.test(resolved).await.and_then(|report| {
+                serde_json::to_value(report)
+                    .map_err(|error| Error::Infrastructure(error.to_string()))
+            }),
+            _ => Err(Error::Validation("Unknown database operation".into())),
+        };
+        result.map_err(|error| redact_error(error, &values))
+    }
+
     pub async fn git(&self, operation: GitOperation, payload: Value) -> Result<Value> {
         let payload = match payload {
             Value::Null => Value::Object(Map::new()),
@@ -322,6 +441,7 @@ mod tests {
         executed: Mutex<Vec<(String, Value)>>,
         pruned: Mutex<Vec<usize>>,
         workspaces: Mutex<Vec<Workspace>>,
+        connections: Mutex<Vec<DatabaseConnection>>,
     }
     fn workspace(id: &str) -> Workspace {
         Workspace {
@@ -416,11 +536,43 @@ mod tests {
             Ok(Value::Null)
         }
     }
+    #[async_trait]
+    impl DocumentDatabase for Fake {
+        async fn test(&self, connection: DatabaseConnection) -> Result<ports::ConnectionReport> {
+            let failing = connection.uri.contains("fail");
+            let password = connection.password.clone().unwrap_or_default();
+            self.connections.lock().unwrap().push(connection);
+            if failing {
+                // As a driver could: the credentials in its message.
+                return Err(Error::Validation(format!(
+                    "Authentication failed for password {password} ({})",
+                    uri_encode(&password)
+                )));
+            }
+            Ok(ports::ConnectionReport {
+                server_version: "8.0.4".into(),
+                topology: "standalone".into(),
+                replica_set: None,
+                flavor: None,
+                hosts: vec![],
+                ping_ms: 1,
+                direct: false,
+                tls: false,
+                auth_mechanism: None,
+            })
+        }
+    }
     fn application() -> (Application, Arc<Fake>) {
         let fake = Arc::new(Fake::default());
         fake.workspaces.lock().unwrap().push(workspace("local"));
         (
-            Application::new(fake.clone(), fake.clone(), fake.clone(), fake.clone()),
+            Application::new(
+                fake.clone(),
+                fake.clone(),
+                fake.clone(),
+                fake.clone(),
+                fake.clone(),
+            ),
             fake,
         )
     }
@@ -514,6 +666,72 @@ mod tests {
             .await
             .unwrap_err();
         assert!(error.to_string().contains("Secret not found"));
+    }
+
+    #[tokio::test]
+    async fn database_connections_get_their_secrets_but_never_return_them() {
+        let (application, fake) = application();
+        let missing = application
+            .execute(
+                Operation::MongoTest,
+                json!({"connection": {"uri": "mongodb://db.test", "password": "{{vault:deleted}}"}}),
+            )
+            .await;
+        assert!(
+            missing
+                .unwrap_err()
+                .to_string()
+                .contains("Secret not found")
+        );
+        let report = application
+            .execute(
+                Operation::MongoTest,
+                json!({"connection": {
+                    "uri": "mongodb://{{vault:user}}@db.test/?authSource=admin",
+                    "password": "{{vault:pass}}",
+                    "keyPem": "{{ vault:key }}",
+                }}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(report["serverVersion"], "8.0.4");
+        assert!(report.get("replicaSet").is_none());
+        let connection = fake.connections.lock().unwrap()[0].clone();
+        // The fake vault answers `secret-of-<name>`.
+        assert_eq!(
+            connection.uri,
+            "mongodb://secret-of-user@db.test/?authSource=admin"
+        );
+        assert_eq!(connection.password.as_deref(), Some("secret-of-pass"));
+        assert_eq!(connection.key_pem.as_deref(), Some("secret-of-key"));
+        assert!(!format!("{connection:?}").contains("secret-of-pass"));
+        assert!(!format!("{connection:?}").contains("secret-of-key"));
+
+        let error = application
+            .execute(
+                Operation::MongoTest,
+                json!({"connection": {"uri": "mongodb://fail@db.test", "password": "{{vault:p@ss}}"}}),
+            )
+            .await
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            error,
+            "Authentication failed for password [redacted] ([redacted])"
+        );
+    }
+
+    #[test]
+    fn vault_values_are_encoded_inside_uris() {
+        let values = vec![("u".to_string(), "ana@corp:1/x".to_string())];
+        assert_eq!(
+            replace_vault("mongodb://{{vault:u}}@h/{{db}}", &values, true),
+            "mongodb://ana%40corp%3A1%2Fx@h/{{db}}"
+        );
+        assert_eq!(
+            replace_vault("{{vault:u}} {{x", &values, false),
+            "ana@corp:1/x {{x"
+        );
     }
 
     #[tokio::test]

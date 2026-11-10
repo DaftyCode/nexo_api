@@ -692,6 +692,9 @@ impl nexo_application::ports::NetworkPolicy for Engine {
             .await
             .map(|_| ())
     }
+    fn restrictive(&self) -> bool {
+        matches!(self.egress, Policy::DenyPrivate { .. })
+    }
 }
 
 #[async_trait]
@@ -770,6 +773,10 @@ impl ExecutionGateway for Engine {
             }
             Operation::Performance => self.performance.start(&payload),
             Operation::PerformanceCancel => self.performance.cancel(id(&payload)),
+            // The application sends these to the document database adapter, never here.
+            Operation::MongoTest => Err(Error::Validation(format!(
+                "{operation} is not an operation of the execution engine"
+            ))),
         }
     }
 }

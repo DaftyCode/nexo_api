@@ -88,6 +88,7 @@ export class Workspace {
     { id: 'realtime', icon: '⇄', label: 'Protocols' },
     { id: 'mocks', icon: '◇', label: 'Mocks' },
     { id: 'datasets', icon: '▦', label: 'Datasets' },
+    { id: 'mongo', icon: '⬮', label: 'MongoDB' },
     { id: 'git', icon: '⑂', label: 'Git' },
     { id: 'mcp', icon: '⌘', label: 'MCP' },
     { id: 'settings', icon: '⚙', label: 'Settings' },

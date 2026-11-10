@@ -7,6 +7,7 @@ pub use nexo_http::{Mode, Sessions};
 use nexo_infrastructure::{
     git::GitAdapter, infrastructure as err, sqlite::SqliteStore, vault::desktop_master_key,
 };
+use nexo_mongo::MongoAdapter;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -89,6 +90,7 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
             config.data.join("projects"),
             engine.clone(),
         )),
+        Arc::new(MongoAdapter::new(&config.data, engine.clone())),
     );
     Ok((Arc::new(application), engine))
 }
