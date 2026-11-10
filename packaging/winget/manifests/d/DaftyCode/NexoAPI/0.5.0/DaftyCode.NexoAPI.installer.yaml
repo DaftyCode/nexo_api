@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
+
+PackageIdentifier: DaftyCode.NexoAPI
+PackageVersion: 0.5.0
+InstallerType: wix
+InstallModes:
+  - interactive
+  - silent
+  - silentWithProgress
+UpgradeBehavior: install
+Installers:
+  - Architecture: x64
+    InstallerUrl: https://github.com/DaftyCode/nexo_api/releases/download/v0.5.0/Nexo.API_0.5.0_x64_en-US.msi
+    InstallerSha256: 49EA61AE740BCB436578F359D714B9E59D09BB7108909797EB554EBD1585DD52
+ManifestType: installer
+ManifestVersion: 1.12.0
