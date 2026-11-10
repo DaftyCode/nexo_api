@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Starts MongoDB servers for the MongoDB contract tests:
-#   27117 standalone without authentication
+#   27117 standalone without authentication, with the data of tools/mongo-fixture-seed.js
 #   27118 SCRAM (user nexo) and X.509, with TLS allowed (a CA made here)
 #   27119 a one-member replica set (rs0)
 #   27120 FerretDB (user nexo), a compatible server on PostgreSQL
@@ -20,6 +20,7 @@ if [[ "${1:-start}" == "stop" ]]; then
   exit 0
 fi
 
+tools="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$directory"
 mkdir -p "$directory/certs"
 cd "$directory/certs"
@@ -64,6 +65,8 @@ docker exec nexo-mongo-rs mongosh --quiet --port 27119 --eval \
 subject=$(openssl x509 -in certs/client.crt -noout -subject -nameopt RFC2253 | sed 's/^subject=//')
 docker exec nexo-mongo-auth mongosh --quiet -u nexo -p nexo-secret --eval \
   "db.getSiblingDB('\$external').runCommand({createUser: '$subject', roles: [{role: 'readAnyDatabase', db: 'admin'}]})" >/dev/null
+# The data the explorer tests query (100 000 documents, every BSON type, a view…).
+docker exec -i nexo-mongo-plain mongosh --quiet nexo < "$tools/mongo-fixture-seed.js" >/dev/null
 for _ in $(seq 1 60); do
   if docker exec nexo-mongo-rs mongosh --quiet --port 27119 --eval 'db.hello().isWritablePrimary' 2>/dev/null | grep -q true; then break; fi
   sleep 1

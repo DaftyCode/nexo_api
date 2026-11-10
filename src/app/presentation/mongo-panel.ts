@@ -4,6 +4,7 @@ import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { CodeEditor } from './code-editor';
+import { MongoExplorer } from './mongo-explorer';
 import { MONGO } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
 import {
@@ -59,7 +60,7 @@ function emptyModel(): PanelModel {
  * a URI or field by field, and tested against the egress policy before anything is sent.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor],
+  imports: [TranslocoPipe, FormField, CodeEditor, MongoExplorer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-panel',
   styleUrl: './mongo-panel.scss',
@@ -79,6 +80,8 @@ export class MongoPanel {
   /** The connection being edited, or none for a new one. */
   protected readonly selectedId = signal('');
   protected readonly report = signal<ConnectionReport | undefined>(undefined);
+  /** The saved connection being browsed, or none while connections are edited. */
+  protected readonly exploring = signal<WorkspaceDocument | undefined>(undefined);
   /** What the last action did, as a message key with its values. */
   protected readonly notice = signal<{ key: string; params?: Record<string, unknown> }>({
     key: '',

@@ -137,12 +137,138 @@ pub struct ConnectionReport {
     pub auth_mechanism: Option<String>,
 }
 
-/// A document database (MongoDB and compatible servers).
+/// A database of a deployment.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DatabaseSummary {
+    pub name: String,
+    /// Bytes on disk, when the server says.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size_on_disk: Option<i64>,
+    pub empty: bool,
+}
+
+/// A collection, view or time series collection of a database.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionSummary {
+    pub name: String,
+    /// `collection`, `view` or `timeseries`.
+    pub kind: String,
+    /// The GridFS bucket it belongs to (`fs` for `fs.files` and `fs.chunks`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub gridfs: Option<String>,
+    /// A view's source collection.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_on: Option<String>,
+    pub capped: bool,
+}
+
+/// An index of a collection.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexSummary {
+    pub name: String,
+    /// The index keys, in canonical Extended JSON.
+    pub keys: Value,
+    pub unique: bool,
+}
+
+/// Size and indexes of a collection.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CollectionStats {
+    pub count: i64,
+    /// Bytes of the documents, uncompressed.
+    pub size: i64,
+    pub storage_size: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub average_document_size: Option<i64>,
+    pub total_index_size: i64,
+    pub indexes: Vec<IndexSummary>,
+    pub capped: bool,
+}
+
+/// A `find` on a collection. Filter, projection, sort, collation and hint are Extended JSON
+/// (canonical or relaxed); the interface converts the shell syntax before sending it.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct FindRequest {
+    /// Chosen by the client, to cancel the query while it runs.
+    pub id: String,
+    pub database: String,
+    pub collection: String,
+    pub filter: Option<Value>,
+    pub projection: Option<Value>,
+    pub sort: Option<Value>,
+    pub collation: Option<Value>,
+    /// An index name or its keys.
+    pub hint: Option<Value>,
+    pub skip: Option<u64>,
+    /// Documents in total, as the query's `limit`; none for all of them.
+    pub limit: Option<u64>,
+    /// Documents in each page.
+    pub page_size: u64,
+}
+
+/// A page of documents.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DocumentPage {
+    /// Each document in canonical Extended JSON, so its BSON types are kept.
+    pub documents: Vec<Value>,
+    /// Reads the next page while the server keeps the cursor open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+    /// The page stopped early because it reached the size the interface receives at once.
+    pub truncated: bool,
+    pub elapsed_ms: u64,
+}
+
+/// A `countDocuments` with a query's filter.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct CountRequest {
+    pub id: String,
+    pub database: String,
+    pub collection: String,
+    pub filter: Option<Value>,
+    pub collation: Option<Value>,
+    pub hint: Option<Value>,
+    pub skip: Option<u64>,
+    pub limit: Option<u64>,
+}
+
+/// A document database (MongoDB and compatible servers). Connections are opened once and
+/// kept for a while; every server is checked against the egress policy when one opens.
 #[async_trait]
 pub trait DocumentDatabase: Send + Sync {
     /// Connects, checks every server against the egress policy and the secrets' allowed
     /// domains, pings and describes the deployment.
     async fn test(&self, connection: DatabaseConnection) -> Result<ConnectionReport>;
+    async fn databases(&self, connection: DatabaseConnection) -> Result<Vec<DatabaseSummary>>;
+    async fn collections(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+    ) -> Result<Vec<CollectionSummary>>;
+    async fn stats(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: &str,
+    ) -> Result<CollectionStats>;
+    /// The first page of a query.
+    async fn find(
+        &self,
+        connection: DatabaseConnection,
+        request: FindRequest,
+    ) -> Result<DocumentPage>;
+    /// The next page of an open cursor. `id` cancels it while it runs.
+    async fn more(&self, cursor: &str, id: &str, page_size: u64) -> Result<DocumentPage>;
+    async fn count(&self, connection: DatabaseConnection, request: CountRequest) -> Result<u64>;
+    /// Stops a running query and whatever it started on the server. Whether one was running.
+    async fn cancel(&self, id: &str) -> Result<bool>;
+    /// Closes a cursor the interface no longer reads.
+    async fn close(&self, cursor: &str) -> Result<()>;
 }
 #[async_trait]
 pub trait VersionControl: Send + Sync {

@@ -76,19 +76,21 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - name: Start a Kafka broker (Redpanda) for the Kafka contract tests
         run: bash tools/kafka-fixture.sh start
-      - name: Start MongoDB servers and FerretDB for the MongoDB contract tests
+      - name: Start MongoDB servers and FerretDB for the MongoDB contract and E2E tests
         run: bash tools/mongo-fixture.sh start
       - run: npm run engine:test
-      - name: Stop the Kafka broker and the MongoDB servers
+      - name: Stop the Kafka broker
         if: always()
-        run: |
-          bash tools/kafka-fixture.sh stop
-          bash tools/mongo-fixture.sh stop
+        run: bash tools/kafka-fixture.sh stop
       - run: npm run backend:build
       - run: npm run test:server
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      # The MongoDB explorer E2E test queries the servers' data.
       - run: npm run e2e
+      - name: Stop the MongoDB servers
+        if: always()
+        run: bash tools/mongo-fixture.sh stop
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:

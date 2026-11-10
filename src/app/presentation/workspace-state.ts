@@ -220,6 +220,14 @@ export class WorkspaceState {
   openWorkspace(id: string) {
     return this.session.open(id);
   }
+  /** Shows documents a panel saved, without reloading the workspace. */
+  applySaved(saved: WorkspaceDocument[]) {
+    this.store.applySaved(saved);
+  }
+  /** Stops showing a document a panel deleted. */
+  forget(document: WorkspaceDocument) {
+    this.store.forget(document);
+  }
   async refresh() {
     await this.store.refresh();
     this.variableStore.validate();

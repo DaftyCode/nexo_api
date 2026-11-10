@@ -30,6 +30,10 @@ const INTERNAL_FIELDS: [&str; 6] = [
 const SCRIPT_FIELDS: [&str; 5] = ["event", "prerequest", "tests", "script", "exec"];
 /// History entries kept per workspace; older ones are deleted when a new one is saved.
 pub const HISTORY_LIMIT: usize = 200;
+/// MongoDB queries kept in a workspace's query history.
+pub const QUERY_HISTORY_LIMIT: usize = 100;
+/// Documents in a page of MongoDB results when the client does not say.
+const DATABASE_PAGE: u64 = 50;
 
 /// Collects `{{vault:name}}` references outside script fields.
 /// Vault entries of OAuth 2.0 tokens that requests reference: their access and ID tokens.
@@ -214,13 +218,13 @@ impl Application {
         self.require_workspace(workspace).await?;
         self.workspaces.documents(workspace, kind).await
     }
-    /// Every document of a workspace, with history and runs listed without their values:
-    /// those grow with use and are loaded one at a time when opened.
+    /// Every document of a workspace, with request history and runs listed without their
+    /// values: those grow with use and are loaded one at a time when opened.
     pub async fn listing(&self, workspace: &WorkspaceId) -> Result<Vec<Document>> {
         self.require_workspace(workspace).await?;
         let mut documents = Vec::new();
         for kind in DocumentKind::ALL {
-            if kind.keeps_revisions() {
+            if kind.listed_whole() {
                 documents.extend(self.workspaces.documents(workspace, Some(kind)).await?);
             } else {
                 documents.extend(
@@ -253,6 +257,11 @@ impl Application {
         if kind == DocumentKind::History {
             self.workspaces
                 .prune(&workspace, DocumentKind::History, HISTORY_LIMIT)
+                .await?;
+        }
+        if kind == DocumentKind::QueryHistory {
+            self.workspaces
+                .prune(&workspace, DocumentKind::QueryHistory, QUERY_HISTORY_LIMIT)
                 .await?;
         }
         Ok(saved)
@@ -374,14 +383,124 @@ impl Application {
     /// here, the allowed domains of those secrets go along to be checked against every
     /// server, and their values never come back in an error.
     async fn database(&self, operation: Operation, payload: Value) -> Result<Value> {
-        let payload: payloads::MongoTestPayload = serde_json::from_value(payload)
-            .map_err(|error| Error::Validation(error.to_string()))?;
-        let connection = payload.connection;
+        let mut values = Vec::new();
+        let result = self.run_database(operation, payload, &mut values).await;
+        result.map_err(|error| redact_error(error, &values))
+    }
+
+    async fn run_database(
+        &self,
+        operation: Operation,
+        payload: Value,
+        values: &mut Vec<(String, String)>,
+    ) -> Result<Value> {
+        fn read<T: serde::de::DeserializeOwned>(payload: Value) -> Result<T> {
+            serde_json::from_value(payload).map_err(|error| Error::Validation(error.to_string()))
+        }
+        fn object(value: Option<Map<String, Value>>) -> Option<Value> {
+            value.map(Value::Object)
+        }
+        fn answer<T: serde::Serialize>(value: T) -> Result<Value> {
+            serde_json::to_value(value).map_err(|error| Error::Infrastructure(error.to_string()))
+        }
+        let database = &self.database;
+        match operation {
+            Operation::MongoTest => {
+                let payload: payloads::MongoConnectionPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                answer(database.test(connection).await?)
+            }
+            Operation::MongoDatabases => {
+                let payload: payloads::MongoConnectionPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                Ok(
+                    serde_json::json!({ "databases": answer(database.databases(connection).await?)? }),
+                )
+            }
+            Operation::MongoCollections => {
+                let payload: payloads::MongoDatabasePayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let collections = database.collections(connection, &payload.database).await?;
+                Ok(serde_json::json!({ "collections": answer(collections)? }))
+            }
+            Operation::MongoStats => {
+                let payload: payloads::MongoCollectionPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                answer(
+                    database
+                        .stats(connection, &payload.database, &payload.collection)
+                        .await?,
+                )
+            }
+            Operation::MongoFind => {
+                let payload: payloads::MongoFindPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let request = ports::FindRequest {
+                    id: payload.id,
+                    database: payload.database,
+                    collection: payload.collection,
+                    filter: object(payload.filter),
+                    projection: object(payload.projection),
+                    sort: object(payload.sort),
+                    collation: object(payload.collation),
+                    hint: payload.hint,
+                    skip: payload.skip,
+                    limit: payload.limit.filter(|limit| *limit > 0),
+                    page_size: payload.page_size.unwrap_or(DATABASE_PAGE),
+                };
+                answer(database.find(connection, request).await?)
+            }
+            Operation::MongoMore => {
+                let payload: payloads::MongoMorePayload = read(payload)?;
+                answer(
+                    database
+                        .more(
+                            &payload.cursor,
+                            &payload.id,
+                            payload.page_size.unwrap_or(DATABASE_PAGE),
+                        )
+                        .await?,
+                )
+            }
+            Operation::MongoCount => {
+                let payload: payloads::MongoCountPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let request = ports::CountRequest {
+                    id: payload.id,
+                    database: payload.database,
+                    collection: payload.collection,
+                    filter: object(payload.filter),
+                    collation: object(payload.collation),
+                    hint: payload.hint,
+                    skip: payload.skip,
+                    limit: payload.limit.filter(|limit| *limit > 0),
+                };
+                Ok(serde_json::json!({ "count": database.count(connection, request).await? }))
+            }
+            Operation::MongoCancel => {
+                let payload: payloads::IdPayload = read(payload)?;
+                Ok(serde_json::json!({ "cancelled": database.cancel(&payload.id).await? }))
+            }
+            Operation::MongoClose => {
+                let payload: payloads::MongoClosePayload = read(payload)?;
+                database.close(&payload.cursor).await?;
+                Ok(serde_json::json!({ "closed": true }))
+            }
+            _ => Err(Error::Validation("Unknown database operation".into())),
+        }
+    }
+
+    /// A connection with its vault references resolved. The values go to `values`, so they
+    /// never leave in an error.
+    async fn resolve_connection(
+        &self,
+        connection: payloads::MongoConnection,
+        values: &mut Vec<(String, String)>,
+    ) -> Result<DatabaseConnection> {
         let names = vault_references(
             &serde_json::to_value(&connection)
                 .map_err(|error| Error::Infrastructure(error.to_string()))?,
         );
-        let mut values = Vec::new();
         for name in &names {
             values.push((name.clone(), self.secrets.resolve(name).await?));
         }
@@ -399,23 +518,15 @@ impl Application {
                 })
                 .collect()
         };
-        let field = |text: Option<String>| text.map(|text| replace_vault(&text, &values, false));
-        let resolved = DatabaseConnection {
-            uri: replace_vault(&connection.uri, &values, true),
+        let field = |text: Option<String>| text.map(|text| replace_vault(&text, values, false));
+        Ok(DatabaseConnection {
+            uri: replace_vault(&connection.uri, values, true),
             password: field(connection.password),
             ca_pem: field(connection.ca_pem),
             cert_pem: field(connection.cert_pem),
             key_pem: field(connection.key_pem),
             secret_hosts,
-        };
-        let result = match operation {
-            Operation::MongoTest => self.database.test(resolved).await.and_then(|report| {
-                serde_json::to_value(report)
-                    .map_err(|error| Error::Infrastructure(error.to_string()))
-            }),
-            _ => Err(Error::Validation("Unknown database operation".into())),
-        };
-        result.map_err(|error| redact_error(error, &values))
+        })
     }
 
     pub async fn git(&self, operation: GitOperation, payload: Value) -> Result<Value> {
@@ -442,6 +553,7 @@ mod tests {
         pruned: Mutex<Vec<usize>>,
         workspaces: Mutex<Vec<Workspace>>,
         connections: Mutex<Vec<DatabaseConnection>>,
+        finds: Mutex<Vec<ports::FindRequest>>,
     }
     fn workspace(id: &str) -> Workspace {
         Workspace {
@@ -560,6 +672,67 @@ mod tests {
                 tls: false,
                 auth_mechanism: None,
             })
+        }
+        async fn databases(
+            &self,
+            connection: DatabaseConnection,
+        ) -> Result<Vec<ports::DatabaseSummary>> {
+            self.connections.lock().unwrap().push(connection);
+            Ok(vec![ports::DatabaseSummary {
+                name: "shop".into(),
+                size_on_disk: Some(4096),
+                empty: false,
+            }])
+        }
+        async fn collections(
+            &self,
+            _: DatabaseConnection,
+            database: &str,
+        ) -> Result<Vec<ports::CollectionSummary>> {
+            Ok(vec![ports::CollectionSummary {
+                name: format!("{database}-orders"),
+                kind: "collection".into(),
+                gridfs: None,
+                view_on: None,
+                capped: false,
+            }])
+        }
+        async fn stats(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            _: &str,
+        ) -> Result<ports::CollectionStats> {
+            Err(Error::NotFound)
+        }
+        async fn find(
+            &self,
+            connection: DatabaseConnection,
+            request: ports::FindRequest,
+        ) -> Result<ports::DocumentPage> {
+            let password = connection.password.clone().unwrap_or_default();
+            self.finds.lock().unwrap().push(request);
+            if connection.uri.contains("fail") {
+                return Err(Error::Validation(format!("Query failed for {password}")));
+            }
+            Ok(ports::DocumentPage {
+                documents: vec![json!({"_id": {"$oid": "65a1b2c3d4e5f6a7b8c9d0e1"}})],
+                cursor: Some("c1".into()),
+                truncated: false,
+                elapsed_ms: 2,
+            })
+        }
+        async fn more(&self, cursor: &str, _: &str, _: u64) -> Result<ports::DocumentPage> {
+            Err(Error::Validation(format!("Cursor {cursor} closed")))
+        }
+        async fn count(&self, _: DatabaseConnection, request: ports::CountRequest) -> Result<u64> {
+            Ok(request.limit.unwrap_or(7))
+        }
+        async fn cancel(&self, id: &str) -> Result<bool> {
+            Ok(id == "running")
+        }
+        async fn close(&self, _: &str) -> Result<()> {
+            Ok(())
         }
     }
     fn application() -> (Application, Arc<Fake>) {
@@ -719,6 +892,77 @@ mod tests {
             error,
             "Authentication failed for password [redacted] ([redacted])"
         );
+    }
+
+    #[tokio::test]
+    async fn queries_reach_the_database_with_their_documents_and_defaults() {
+        let (application, fake) = application();
+        let connection = json!({"uri": "mongodb://ana@db.test", "password": "{{vault:pass}}"});
+        let databases = application
+            .execute(
+                Operation::MongoDatabases,
+                json!({"connection": connection.clone()}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            databases,
+            json!({"databases": [{"name": "shop", "sizeOnDisk": 4096, "empty": false}]})
+        );
+        let collections = application
+            .execute(
+                Operation::MongoCollections,
+                json!({"connection": connection.clone(), "database": "shop"}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(collections["collections"][0]["name"], "shop-orders");
+        let page = application
+            .execute(
+                Operation::MongoFind,
+                json!({"connection": connection.clone(), "id": "q1", "database": "shop",
+                    "collection": "orders", "filter": {"status": "A"}, "limit": 0}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(page["cursor"], "c1");
+        assert_eq!(
+            page["documents"][0]["_id"]["$oid"],
+            "65a1b2c3d4e5f6a7b8c9d0e1"
+        );
+        let request = fake.finds.lock().unwrap()[0].clone();
+        assert_eq!(request.filter, Some(json!({"status": "A"})));
+        assert_eq!(request.limit, None, "a limit of 0 means every document");
+        assert_eq!(request.page_size, DATABASE_PAGE);
+        let count = application
+            .execute(
+                Operation::MongoCount,
+                json!({"connection": connection.clone(), "id": "q2", "database": "shop",
+                    "collection": "orders", "limit": 3}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(count, json!({"count": 3}));
+        let cancelled = application
+            .execute(Operation::MongoCancel, json!({"id": "running"}))
+            .await
+            .unwrap();
+        assert_eq!(cancelled, json!({"cancelled": true}));
+        let error = application
+            .execute(Operation::MongoMore, json!({"cursor": "gone", "id": "q3"}))
+            .await
+            .unwrap_err();
+        assert_eq!(error.to_string(), "Cursor gone closed");
+        // The vault values of the connection never come back in an error.
+        let error = application
+            .execute(
+                Operation::MongoFind,
+                json!({"connection": {"uri": "mongodb://fail@db.test", "password": "{{vault:pass}}"},
+                    "id": "q4", "database": "shop", "collection": "orders"}),
+            )
+            .await
+            .unwrap_err();
+        assert_eq!(error.to_string(), "Query failed for [redacted]");
     }
 
     #[test]

@@ -172,8 +172,9 @@ mod tests {
     use crate::{
         operations::GitOperation,
         ports::{
-            ConnectionReport, DatabaseConnection, DocumentDatabase, ExecutionGateway, SecretVault,
-            VersionControl, WorkspaceRepository,
+            CollectionStats, CollectionSummary, ConnectionReport, CountRequest, DatabaseConnection,
+            DatabaseSummary, DocumentDatabase, DocumentPage, ExecutionGateway, FindRequest,
+            SecretVault, VersionControl, WorkspaceRepository,
         },
     };
     use async_trait::async_trait;
@@ -313,6 +314,34 @@ mod tests {
     #[async_trait]
     impl DocumentDatabase for Store {
         async fn test(&self, _: DatabaseConnection) -> Result<ConnectionReport> {
+            Err(Error::NotFound)
+        }
+        async fn databases(&self, _: DatabaseConnection) -> Result<Vec<DatabaseSummary>> {
+            Err(Error::NotFound)
+        }
+        async fn collections(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+        ) -> Result<Vec<CollectionSummary>> {
+            Err(Error::NotFound)
+        }
+        async fn stats(&self, _: DatabaseConnection, _: &str, _: &str) -> Result<CollectionStats> {
+            Err(Error::NotFound)
+        }
+        async fn find(&self, _: DatabaseConnection, _: FindRequest) -> Result<DocumentPage> {
+            Err(Error::NotFound)
+        }
+        async fn more(&self, _: &str, _: &str, _: u64) -> Result<DocumentPage> {
+            Err(Error::NotFound)
+        }
+        async fn count(&self, _: DatabaseConnection, _: CountRequest) -> Result<u64> {
+            Err(Error::NotFound)
+        }
+        async fn cancel(&self, _: &str) -> Result<bool> {
+            Err(Error::NotFound)
+        }
+        async fn close(&self, _: &str) -> Result<()> {
             Err(Error::NotFound)
         }
     }

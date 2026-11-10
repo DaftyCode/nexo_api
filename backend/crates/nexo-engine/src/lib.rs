@@ -774,7 +774,15 @@ impl ExecutionGateway for Engine {
             Operation::Performance => self.performance.start(&payload),
             Operation::PerformanceCancel => self.performance.cancel(id(&payload)),
             // The application sends these to the document database adapter, never here.
-            Operation::MongoTest => Err(Error::Validation(format!(
+            Operation::MongoTest
+            | Operation::MongoDatabases
+            | Operation::MongoCollections
+            | Operation::MongoStats
+            | Operation::MongoFind
+            | Operation::MongoMore
+            | Operation::MongoCount
+            | Operation::MongoCancel
+            | Operation::MongoClose => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

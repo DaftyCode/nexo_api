@@ -17,6 +17,11 @@ function fakeApi() {
       revision: (document as WorkspaceDocument).revision + 1,
     })),
     remove: record('remove'),
+    document: record('document', (id) => ({
+      id,
+      kind: 'query-history',
+      value: { database: 'shop', collection: 'orders', filter: '{a: 1}' },
+    })),
     putSecret: record('putSecret'),
     removeSecret: record('removeSecret'),
   };
@@ -152,5 +157,111 @@ describe('MongoUseCases', () => {
     await expect(
       mongo.importCompass('local', '{"type":"Compass Connections","connections":[]}'),
     ).rejects.toThrow('The file has no connections');
+  });
+
+  it('queries a saved connection with its variables replaced and its vault references kept', async () => {
+    const { api, calls } = fakeApi();
+    const mongo = new MongoUseCases(api, () => 'q1');
+    const connection = {
+      id: 'c1',
+      workspace_id: 'local',
+      kind: 'connection',
+      name: 'Local',
+      revision: 1,
+      updated_at: 0,
+      value: { uri: 'mongodb://{{host}}', password: '{{vault:mongo-password:c1}}' },
+    } as WorkspaceDocument;
+    const target = { database: 'shop', collection: 'orders' };
+    await mongo.find(
+      'local',
+      connection,
+      scopes({ host: 'db.test' }),
+      target,
+      { filter: { a: 1 } },
+      'r1',
+      50,
+    );
+    await mongo.count(
+      'local',
+      connection,
+      scopes({ host: 'db.test' }),
+      target,
+      { filter: { a: 1 }, projection: { a: 1 }, sort: { a: 1 }, limit: 5 },
+      'r2',
+    );
+    const executed = calls.filter((c) => c.method === 'execute').map((c) => c.args);
+    const sent = { uri: 'mongodb://db.test', password: '{{vault:mongo-password:c1}}' };
+    expect(executed).toEqual([
+      [
+        'mongo.find',
+        {
+          workspace: 'local',
+          connection: sent,
+          ...target,
+          filter: { a: 1 },
+          id: 'r1',
+          pageSize: 50,
+        },
+      ],
+      // A count takes no projection nor sort.
+      [
+        'mongo.count',
+        { workspace: 'local', connection: sent, ...target, filter: { a: 1 }, limit: 5, id: 'r2' },
+      ],
+    ]);
+    const failing = {
+      execute: async () => {
+        throw new Error('gone');
+      },
+    };
+    await expect(
+      new MongoUseCases(failing as never, () => 'x').close('local', 'c'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('saves queries without empty fields and keeps the history without results', async () => {
+    const { api } = fakeApi();
+    let id = 0;
+    const mongo = new MongoUseCases(api, () => `q${++id}`);
+    const value = {
+      connection: 'c1',
+      database: 'shop',
+      collection: 'orders',
+      filter: "{status: 'A'}",
+      projection: '',
+      sort: ' ',
+      collation: '',
+      hint: '',
+      skip: '',
+      limit: '10',
+    };
+    const saved = await mongo.saveQuery('local', ' ', value);
+    expect(saved).toMatchObject({
+      id: 'q1',
+      kind: 'query',
+      name: "shop.orders {status: 'A'}",
+      value: {
+        connection: 'c1',
+        database: 'shop',
+        collection: 'orders',
+        filter: "{status: 'A'}",
+        limit: '10',
+      },
+    });
+    expect(Object.keys(saved.value as object)).not.toContain('sort');
+    const history = await mongo.recordHistory('local', value);
+    expect(history).toMatchObject({
+      id: 'q2',
+      kind: 'query-history',
+      name: "shop.orders {status: 'A'}",
+    });
+    expect(await mongo.historyQuery(history)).toMatchObject({
+      filter: "{status: 'A'}",
+      limit: '10',
+    });
+    // Listed without a value, it is read from the workspace.
+    expect(await mongo.historyQuery({ ...history, value: null })).toMatchObject({
+      filter: '{a: 1}',
+    });
   });
 });

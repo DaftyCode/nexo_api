@@ -538,9 +538,100 @@ payload! {
 }
 
 payload! {
-    /// `mongo.test`: connects, pings and describes the deployment.
-    closed MongoTestPayload {
+    /// `mongo.test`: connects, pings and describes the deployment. `mongo.databases`: the
+    /// databases the user may read.
+    closed MongoConnectionPayload {
         required { connection "connection": MongoConnection => "MongoConnection" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.collections`: the collections, views and time series of a database.
+    closed MongoDatabasePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            database "database": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.stats`: the size and indexes of a collection.
+    closed MongoCollectionPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            database "database": String => "string",
+            collection "collection": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.find`: the first page of a query. Filter, projection, sort and collation are
+    /// Extended JSON objects; `hint` is an index name or its keys. `id`, chosen by the client,
+    /// cancels it with `mongo.cancel`.
+    closed MongoFindPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            id "id": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            filter "filter": Map<String, Value> => "object",
+            projection "projection": Map<String, Value> => "object",
+            sort "sort": Map<String, Value> => "object",
+            collation "collation": Map<String, Value> => "object",
+            hint "hint": Value => "string | object",
+            skip "skip": u64 => "number",
+            limit "limit": u64 => "number",
+            page_size "pageSize": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.more`: the next page of the `cursor` a `mongo.find` returned.
+    closed MongoMorePayload {
+        required {
+            cursor "cursor": String => "string",
+            id "id": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            page_size "pageSize": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.count`: how many documents match a filter (`countDocuments`).
+    closed MongoCountPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            id "id": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            filter "filter": Map<String, Value> => "object",
+            collation "collation": Map<String, Value> => "object",
+            hint "hint": Value => "string | object",
+            skip "skip": u64 => "number",
+            limit "limit": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.close`: closes a cursor the interface no longer reads.
+    closed MongoClosePayload {
+        required { cursor "cursor": String => "string" }
         optional { workspace "workspace": String => "string" }
     }
 }
@@ -700,7 +791,15 @@ operation_payloads! {
     CookiesDelete => CookieDeletePayload,
     Performance => PerformancePayload,
     PerformanceCancel => IdPayload,
-    MongoTest => MongoTestPayload,
+    MongoTest => MongoConnectionPayload,
+    MongoDatabases => MongoConnectionPayload,
+    MongoCollections => MongoDatabasePayload,
+    MongoStats => MongoCollectionPayload,
+    MongoFind => MongoFindPayload,
+    MongoMore => MongoMorePayload,
+    MongoCount => MongoCountPayload,
+    MongoCancel => IdPayload,
+    MongoClose => MongoClosePayload,
 }
 
 /// Checks the payload of a Git operation.
@@ -822,6 +921,14 @@ mod tests {
                     | Operation::CookiesDelete
                     | Operation::PerformanceCancel
                     | Operation::MongoTest
+                    | Operation::MongoDatabases
+                    | Operation::MongoCollections
+                    | Operation::MongoStats
+                    | Operation::MongoFind
+                    | Operation::MongoMore
+                    | Operation::MongoCount
+                    | Operation::MongoCancel
+                    | Operation::MongoClose
             );
             assert_eq!(result.is_err(), required, "{operation}");
             assert!(
@@ -902,6 +1009,29 @@ mod tests {
         );
         let error = validate(Operation::MongoTest, json!({"connection": {}})).unwrap_err();
         assert!(error.to_string().contains("missing field `uri`"), "{error}");
+        let find = json!({
+            "connection": {"uri": "mongodb://h"}, "id": "q1", "database": "shop",
+            "collection": "orders", "filter": {"_id": {"$oid": "65a1b2c3d4e5f6a7b8c9d0e1"}},
+            "sort": {"at": -1}, "hint": "at_1", "skip": 20, "limit": 0, "pageSize": 50,
+        });
+        assert_eq!(validate(Operation::MongoFind, find.clone()).unwrap(), find);
+        // A filter is a document, never a script.
+        let error = validate(
+            Operation::MongoFind,
+            json!({"connection": {"uri": "mongodb://h"}, "id": "q", "database": "d",
+                "collection": "c", "filter": "this.a > 1"}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("filter"), "{error}");
+        let error = validate(
+            Operation::MongoCount,
+            json!({"connection": {"uri": "mongodb://h"}, "id": "q", "database": "d",
+                "collection": "c", "projection": {}}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("projection"), "{error}");
+        let more = json!({"cursor": "c1", "id": "q2", "pageSize": 20});
+        assert_eq!(validate(Operation::MongoMore, more.clone()).unwrap(), more);
     }
 
     #[test]

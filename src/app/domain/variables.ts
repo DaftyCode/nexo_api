@@ -228,3 +228,17 @@ export function requestAncestors(
 export function inheritedCollectionVariables(ancestors: readonly RequestAncestor[]): VariableRow[] {
   return ancestors.flatMap((ancestor) => toVariableRows(ancestor.variable));
 }
+
+/**
+ * Replaces environment, collection and global variables; vault references
+ * and dynamic variables stay for the backend.
+ */
+export function resolveVariables(text: string, scopes: VariableScopes, depth = 0): string {
+  if (depth > 5) return text;
+  const result = text.replace(/\{\{([^{}]+)\}\}/g, (match, raw: string) => {
+    const variable = resolveVariable(raw.trim(), scopes);
+    if (variable.scope === 'vault' || variable.scope === 'dynamic') return match;
+    return variable.defined && variable.value !== undefined ? variable.value : match;
+  });
+  return result === text ? result : resolveVariables(result, scopes, depth + 1);
+}

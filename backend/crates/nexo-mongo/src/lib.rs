@@ -3,8 +3,10 @@
 //!
 //! The design (dependencies, egress policy, certificates, limits, redaction) is written in
 //! `docs/ARCHITECTURE.md`, section "MongoDB".
+mod browse;
 mod connection;
 mod errors;
+mod query;
 mod tls;
 
 use async_trait::async_trait;
@@ -14,15 +16,17 @@ use mongodb::{
     options::{ClientOptions, ServerAddress},
 };
 use nexo_application::ports::{
-    ConnectionReport, DatabaseConnection, DatabaseHost, DocumentDatabase, NetworkPolicy,
+    CollectionStats, CollectionSummary, ConnectionReport, CountRequest, DatabaseConnection,
+    DatabaseHost, DatabaseSummary, DocumentDatabase, DocumentPage, FindRequest, NetworkPolicy,
 };
 use nexo_domain::{Error, Result};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{Arc, Mutex},
     time::Instant,
 };
+use tls::TlsFiles;
 
 /// Limits of every connection, so the interface and the engine stay responsive.
 pub mod limits {
@@ -39,6 +43,21 @@ pub mod limits {
     pub const RESPONSE_BYTES: usize = 16 * 1024 * 1024;
     /// Connections per server: one person, a few panels.
     pub const POOL: u32 = 4;
+    /// How long an unused connection, or the cursor of a page nobody reads, stays open.
+    pub const IDLE: Duration = Duration::from_secs(10 * 60);
+    /// Connections kept open at once.
+    pub const CLIENTS: usize = 8;
+    /// Cursors kept open at once; the oldest is closed first.
+    pub const CURSORS: usize = 32;
+}
+
+/// A connection kept open for the explorer, with the certificates it was opened with.
+struct Open {
+    client: Client,
+    /// The database named in the URI, listed when the user may not list them all.
+    default_database: Option<String>,
+    used: Instant,
+    _files: TlsFiles,
 }
 
 /// The MongoDB adapter. Certificates of a connection are written under `tls_directory` while
@@ -46,6 +65,10 @@ pub mod limits {
 pub struct MongoAdapter {
     tls_directory: PathBuf,
     policy: Arc<dyn NetworkPolicy>,
+    /// Open connections, by everything that identifies them (secrets included, in memory).
+    clients: tokio::sync::Mutex<HashMap<String, Open>>,
+    cursors: Mutex<HashMap<String, query::Stored>>,
+    running: Mutex<HashMap<String, query::Running>>,
 }
 
 impl MongoAdapter {
@@ -56,7 +79,50 @@ impl MongoAdapter {
         Self {
             tls_directory,
             policy,
+            clients: Default::default(),
+            cursors: Default::default(),
+            running: Default::default(),
         }
+    }
+
+    /// An open connection for this one, opened (and every server checked) when there is
+    /// none. Connections unused for a while are closed.
+    async fn client(&self, connection: &DatabaseConnection) -> Result<(Client, Option<String>)> {
+        let key = format!(
+            "{}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}",
+            connection.uri,
+            connection.password,
+            connection.ca_pem,
+            connection.cert_pem,
+            connection.key_pem,
+            connection.secret_hosts,
+        );
+        {
+            let mut clients = self.clients.lock().await;
+            clients.retain(|_, open| open.used.elapsed() < limits::IDLE);
+            if let Some(open) = clients.get_mut(&key) {
+                open.used = Instant::now();
+                return Ok((open.client.clone(), open.default_database.clone()));
+            }
+        }
+        let opened = self.connect(connection).await?;
+        let mut clients = self.clients.lock().await;
+        if clients.len() >= limits::CLIENTS
+            && let Some(oldest) = clients
+                .iter()
+                .min_by_key(|(_, open)| open.used)
+                .map(|(key, _)| key.clone())
+        {
+            clients.remove(&oldest);
+        }
+        // Another request may have opened it meanwhile: that one stays.
+        let open = clients.entry(key).or_insert(Open {
+            client: opened.client,
+            default_database: opened.options.default_database.clone(),
+            used: Instant::now(),
+            _files: opened.files,
+        });
+        Ok((open.client.clone(), open.default_database.clone()))
     }
 
     /// Why Nexo may not reach a server, if it may not: a secret of the connection that is
@@ -82,11 +148,35 @@ impl MongoAdapter {
     }
 
     async fn run_test(&self, connection: DatabaseConnection) -> Result<ConnectionReport> {
-        let (options, _files) = connection::options(&connection, &self.tls_directory).await?;
+        let Opened {
+            client,
+            options,
+            files: _files,
+            seeds,
+            direct,
+            mut refusals,
+        } = self.connect(&connection).await?;
+        let result = describe(
+            self,
+            &client,
+            (&options, &connection),
+            &seeds,
+            direct,
+            &mut refusals,
+        )
+        .await;
+        client.shutdown().await;
+        result
+    }
+
+    /// Checks every server of a connection against the egress policy and the secrets'
+    /// allowed domains, and opens it.
+    async fn connect(&self, connection: &DatabaseConnection) -> Result<Opened> {
+        let (options, files) = connection::options(connection, &self.tls_directory).await?;
         let seeds: Vec<(String, u16)> = options.hosts.iter().map(address).collect::<Result<_>>()?;
         let mut refusals: HashMap<String, Option<String>> = HashMap::new();
         for (host, port) in &seeds {
-            if let Some(reason) = self.refusal(host, *port, &connection).await {
+            if let Some(reason) = self.refusal(host, *port, connection).await {
                 return Err(Error::Validation(format!(
                     "Nexo may not connect to {host}:{port}: {reason}"
                 )));
@@ -117,7 +207,7 @@ impl MongoAdapter {
                 if refusals.contains_key(&key) {
                     continue;
                 }
-                let reason = self.refusal(&host, port, &connection).await;
+                let reason = self.refusal(&host, port, connection).await;
                 refused |= reason.is_some();
                 refusals.insert(key, reason);
             }
@@ -133,32 +223,100 @@ impl MongoAdapter {
         } else {
             client(options.clone())?
         };
-
-        let result = describe(
-            self,
-            &client,
-            (&options, &connection),
-            &seeds,
+        Ok(Opened {
+            client,
+            options,
+            files,
+            seeds,
             direct,
-            &mut refusals,
-        )
-        .await;
-        client.shutdown().await;
-        result
+            refusals,
+        })
     }
+}
+
+/// A connection just opened, with what was checked to open it.
+struct Opened {
+    client: Client,
+    options: ClientOptions,
+    files: TlsFiles,
+    seeds: Vec<(String, u16)>,
+    direct: bool,
+    refusals: HashMap<String, Option<String>>,
+}
+
+/// Waits for an operation for at most the operation limit (and a little more, so the
+/// server's `maxTimeMS` answers first).
+async fn within<T>(work: impl std::future::Future<Output = Result<T>>) -> Result<T> {
+    tokio::time::timeout(limits::OPERATION + std::time::Duration::from_secs(5), work)
+        .await
+        .map_err(|_| {
+            Error::Validation(format!(
+                "The server did not answer within {} seconds",
+                limits::OPERATION.as_secs()
+            ))
+        })?
 }
 
 #[async_trait]
 impl DocumentDatabase for MongoAdapter {
     async fn test(&self, connection: DatabaseConnection) -> Result<ConnectionReport> {
-        tokio::time::timeout(limits::OPERATION, self.run_test(connection))
-            .await
-            .map_err(|_| {
-                Error::Validation(format!(
-                    "The server did not answer within {} seconds",
-                    limits::OPERATION.as_secs()
-                ))
-            })?
+        within(self.run_test(connection)).await
+    }
+    async fn databases(&self, connection: DatabaseConnection) -> Result<Vec<DatabaseSummary>> {
+        within(async {
+            let (client, default_database) = self.client(&connection).await?;
+            browse::databases(&client, default_database).await
+        })
+        .await
+    }
+    async fn collections(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+    ) -> Result<Vec<CollectionSummary>> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            browse::collections(&client, database).await
+        })
+        .await
+    }
+    async fn stats(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: &str,
+    ) -> Result<CollectionStats> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            browse::stats(&client, database, collection).await
+        })
+        .await
+    }
+    async fn find(
+        &self,
+        connection: DatabaseConnection,
+        request: FindRequest,
+    ) -> Result<DocumentPage> {
+        let (client, _) = within(self.client(&connection)).await?;
+        query::find(self, client, request).await
+    }
+    async fn more(&self, cursor: &str, id: &str, page_size: u64) -> Result<DocumentPage> {
+        query::more(self, cursor, id, page_size).await
+    }
+    async fn count(&self, connection: DatabaseConnection, request: CountRequest) -> Result<u64> {
+        let (client, _) = within(self.client(&connection)).await?;
+        query::count(self, client, request).await
+    }
+    async fn cancel(&self, id: &str) -> Result<bool> {
+        Ok(query::cancel(self, id).await)
+    }
+    async fn close(&self, cursor: &str) -> Result<()> {
+        // Dropping a cursor tells the server to close it.
+        self.cursors
+            .lock()
+            .map_err(|_| Error::Infrastructure("cursor list unavailable".into()))?
+            .remove(cursor);
+        Ok(())
     }
 }
 

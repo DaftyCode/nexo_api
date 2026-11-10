@@ -1,5 +1,16 @@
 import { DocumentRepositoryPort, ExecutionPort, SecretVaultPort } from './ports';
+import type { MongoConnection } from './payloads';
 import { WorkspaceDocument } from '../domain/models';
+import {
+  BuiltQuery,
+  CollectionStats,
+  CollectionSummary,
+  DatabaseSummary,
+  DocumentPage,
+  MongoQueryValue,
+  queryValue,
+  querySummary,
+} from '../domain/mongo-query';
 import {
   ConnectionReport,
   ImportedConnection,
@@ -8,10 +19,12 @@ import {
   isVaultReference,
   parseCompassExport,
 } from '../domain/mongo';
-import { VariableScopes, resolveVariable } from '../domain/variables';
+import { VariableScopes, resolveVariables } from '../domain/variables';
+
+export { resolveVariables };
 
 type MongoPorts = ExecutionPort &
-  Pick<DocumentRepositoryPort, 'save' | 'remove'> &
+  Pick<DocumentRepositoryPort, 'save' | 'remove' | 'document'> &
   Pick<SecretVaultPort, 'putSecret' | 'removeSecret'>;
 
 /** Secrets typed in the form, not saved yet. Blank keeps what is stored. */
@@ -24,15 +37,33 @@ export interface TypedSecrets {
 export const passwordSecret = (id: string) => `mongo-password:${id}`;
 export const keySecret = (id: string) => `mongo-key:${id}`;
 
-/** Replaces environment, collection and global variables; vault references stay for the backend. */
-export function resolveVariables(text: string, scopes: VariableScopes, depth = 0): string {
-  if (depth > 5) return text;
-  const result = text.replace(/\{\{([^{}]+)\}\}/g, (match, raw: string) => {
-    const variable = resolveVariable(raw.trim(), scopes);
-    if (variable.scope === 'vault' || variable.scope === 'dynamic') return match;
-    return variable.defined && variable.value !== undefined ? variable.value : match;
-  });
-  return result === text ? result : resolveVariables(result, scopes, depth + 1);
+/** Where a query runs. */
+export interface QueryTarget {
+  database: string;
+  collection: string;
+}
+
+/**
+ * A connection as the backend receives it: variables of the active environment replaced,
+ * vault references kept for the backend, and secrets typed but not saved yet used as typed.
+ */
+export function connectionPayload(
+  value: MongoConnectionValue,
+  scopes: VariableScopes,
+  typed: TypedSecrets = {},
+): MongoConnection {
+  const resolve = (text: string | undefined) =>
+    text?.trim() ? resolveVariables(text, scopes) : undefined;
+  const connection: MongoConnection = {
+    uri: resolve(value.uri) ?? '',
+    password: typed.password || value.password,
+    caPem: resolve(value.caPem),
+    certPem: resolve(value.certPem),
+    keyPem: typed.keyPem?.trim() || value.keyPem,
+  };
+  for (const key of Object.keys(connection) as (keyof MongoConnection)[])
+    if (connection[key] === undefined) delete connection[key];
+  return connection;
 }
 
 /** MongoDB connections: kept as workspace documents, their secrets in the vault. */
@@ -107,18 +138,159 @@ export class MongoUseCases {
     typed: TypedSecrets,
     scopes: VariableScopes,
   ): Promise<ConnectionReport> {
-    const resolve = (text: string | undefined) =>
-      text?.trim() ? resolveVariables(text, scopes) : undefined;
-    const connection = {
-      uri: resolve(value.uri) ?? '',
-      password: typed.password || value.password,
-      caPem: resolve(value.caPem),
-      certPem: resolve(value.certPem),
-      keyPem: typed.keyPem?.trim() || value.keyPem,
-    };
-    for (const key of Object.keys(connection) as (keyof typeof connection)[])
-      if (connection[key] === undefined) delete connection[key];
+    const connection = connectionPayload(value, scopes, typed);
     return this.api.execute<ConnectionReport>('mongo.test', { workspace, connection });
+  }
+
+  /** The databases of a saved connection the user may read. */
+  async databases(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+  ): Promise<DatabaseSummary[]> {
+    const answer = await this.api.execute<{ databases: DatabaseSummary[] }>('mongo.databases', {
+      workspace,
+      connection: this.payload(connection, scopes),
+    });
+    return answer.databases;
+  }
+
+  async collections(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    database: string,
+  ): Promise<CollectionSummary[]> {
+    const answer = await this.api.execute<{ collections: CollectionSummary[] }>(
+      'mongo.collections',
+      { workspace, connection: this.payload(connection, scopes), database },
+    );
+    return answer.collections;
+  }
+
+  stats(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+  ): Promise<CollectionStats> {
+    return this.api.execute<CollectionStats>('mongo.stats', {
+      workspace,
+      connection: this.payload(connection, scopes),
+      database: target.database,
+      collection: target.collection,
+    });
+  }
+
+  /** The first page of a query; `id` cancels it while it runs. */
+  find(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+    query: BuiltQuery,
+    id: string,
+    pageSize: number,
+  ): Promise<DocumentPage> {
+    return this.api.execute<DocumentPage>('mongo.find', {
+      workspace,
+      connection: this.payload(connection, scopes),
+      database: target.database,
+      collection: target.collection,
+      ...query,
+      id,
+      pageSize,
+    });
+  }
+
+  /** The next page of a query's open cursor. */
+  more(workspace: string, cursor: string, id: string, pageSize: number): Promise<DocumentPage> {
+    return this.api.execute<DocumentPage>('mongo.more', { workspace, cursor, id, pageSize });
+  }
+
+  /** How many documents the query matches: a separate step, as it reads the whole collection. */
+  async count(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+    query: BuiltQuery,
+    id: string,
+  ): Promise<number> {
+    const { filter, collation, hint, skip, limit } = query;
+    const answer = await this.api.execute<{ count: number }>('mongo.count', {
+      workspace,
+      connection: this.payload(connection, scopes),
+      database: target.database,
+      collection: target.collection,
+      ...(filter ? { filter } : {}),
+      ...(collation ? { collation } : {}),
+      ...(hint ? { hint } : {}),
+      ...(skip ? { skip } : {}),
+      ...(limit ? { limit } : {}),
+      id,
+    });
+    return answer.count;
+  }
+
+  async cancel(workspace: string, id: string): Promise<boolean> {
+    const answer = await this.api.execute<{ cancelled: boolean }>('mongo.cancel', {
+      workspace,
+      id,
+    });
+    return answer.cancelled;
+  }
+
+  /** Closes the cursor of results nobody reads any more. Failures do not matter. */
+  async close(workspace: string, cursor: string): Promise<void> {
+    await this.api.execute('mongo.close', { workspace, cursor }).catch(() => undefined);
+  }
+
+  /** Saves a query in the workspace, as requests are saved in a collection. */
+  saveQuery(
+    workspace: string,
+    name: string,
+    value: MongoQueryValue,
+    existing?: WorkspaceDocument,
+  ): Promise<WorkspaceDocument> {
+    const stored: Partial<MongoQueryValue> = { ...value };
+    for (const key of Object.keys(stored) as (keyof MongoQueryValue)[])
+      if (!stored[key]?.trim() && key !== 'database' && key !== 'collection') delete stored[key];
+    return this.api.save({
+      id: existing?.id ?? this.id(),
+      workspace_id: workspace,
+      kind: 'query',
+      name: name.trim() || querySummary(value),
+      revision: existing?.revision ?? 0,
+      updated_at: existing?.updated_at ?? 0,
+      value: stored,
+    });
+  }
+
+  removeQuery(document: WorkspaceDocument): Promise<void> {
+    return this.api.remove(document);
+  }
+
+  /** Adds a query that ran to the history: only the query, never its results. */
+  recordHistory(workspace: string, value: MongoQueryValue): Promise<WorkspaceDocument> {
+    return this.api.save({
+      id: this.id(),
+      workspace_id: workspace,
+      kind: 'query-history',
+      name: querySummary(value),
+      revision: 0,
+      updated_at: 0,
+      value,
+    });
+  }
+
+  /** A history entry's query: the listing has only its name. */
+  async historyQuery(document: WorkspaceDocument): Promise<MongoQueryValue> {
+    return queryValue(document.value ?? (await this.api.document(document.id)).value);
+  }
+
+  private payload(connection: WorkspaceDocument, scopes: VariableScopes): MongoConnection {
+    return connectionPayload(connectionValue(connection.value), scopes);
   }
 
   /** Connections of a MongoDB Compass export, saved with their passwords in the vault. */

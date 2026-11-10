@@ -70,12 +70,31 @@ operations!(
         Performance => "performance",
         PerformanceCancel => "performance.cancel",
         MongoTest => "mongo.test",
+        MongoDatabases => "mongo.databases",
+        MongoCollections => "mongo.collections",
+        MongoStats => "mongo.stats",
+        MongoFind => "mongo.find",
+        MongoMore => "mongo.more",
+        MongoCount => "mongo.count",
+        MongoCancel => "mongo.cancel",
+        MongoClose => "mongo.close",
     }
 );
 impl Operation {
     /// Operations of the document database adapter (MongoDB), not of the engine.
     pub fn is_database(self) -> bool {
-        matches!(self, Self::MongoTest)
+        matches!(
+            self,
+            Self::MongoTest
+                | Self::MongoDatabases
+                | Self::MongoCollections
+                | Self::MongoStats
+                | Self::MongoFind
+                | Self::MongoMore
+                | Self::MongoCount
+                | Self::MongoCancel
+                | Self::MongoClose
+        )
     }
     /// Operations whose data belongs to a workspace and need one.
     pub fn needs_workspace(self) -> bool {

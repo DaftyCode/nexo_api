@@ -1,0 +1,180 @@
+<div class="row mongo-selection" role="toolbar" [attr.aria-label]="'Copy' | transloco">
+  @if (choice(); as choice) {
+    <span class="grow mongo-selected">
+      @if (choice.path.length) {
+        <code>{{ choice.label }}</code>
+        <span class="bson-type">{{ choice.type }}</span>
+      } @else {
+        {{ 'Document' | transloco }} {{ offset() + choice.row + 1 }}
+      }
+    </span>
+  } @else {
+    <span class="grow muted">{{ 'Choose a document or a value to copy it.' | transloco }}</span>
+  }
+  <button type="button" class="button small" [disabled]="!choice()" (click)="copyDocument()">
+    {{ 'Copy document' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small"
+    [disabled]="!choice()?.path?.length"
+    (click)="copyValue()"
+  >
+    {{ 'Copy value' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small"
+    [disabled]="!choice()?.created"
+    (click)="copyCreated()"
+  >
+    {{ 'Copy ObjectId date' | transloco }}
+  </button>
+</div>
+
+@switch (view()) {
+  @case ('table') {
+    @if (steps().length) {
+      <nav class="mongo-steps" [attr.aria-label]="'Arrays entered' | transloco">
+        <button type="button" class="text-button" (click)="leave(0)">
+          {{ 'Documents' | transloco }}
+        </button>
+        @for (step of steps(); track $index) {
+          <span aria-hidden="true">›</span>
+          <button
+            type="button"
+            class="text-button"
+            [disabled]="$last"
+            [attr.aria-current]="$last ? 'location' : null"
+            (click)="leave($index + 1)"
+          >
+            {{ step.label }} ({{ step.row + 1 }})
+          </button>
+        }
+      </nav>
+    }
+    <div
+      class="mongo-table-wrap"
+      tabindex="0"
+      role="group"
+      [attr.aria-label]="'Results' | transloco"
+    >
+      <table class="mongo-table">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            @for (column of columns(); track column.label; let at = $index) {
+              <th scope="col">
+                <span class="mongo-column">
+                  @if (openedAt(at); as parent) {
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [attr.aria-label]="'mongo.closeColumn' | transloco: { v0: parent }"
+                      (click)="toggle(parent)"
+                    >
+                      ⊟
+                    </button>
+                  }
+                  {{ column.label || ('Value' | transloco) }}
+                  @if (column.expandable) {
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [attr.aria-label]="'mongo.openColumn' | transloco: { v0: column.label }"
+                      (click)="toggle(column.label)"
+                    >
+                      ⊞
+                    </button>
+                  }
+                </span>
+              </th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of shownRows(); track $index; let index = $index) {
+            <tr [class.selected]="selected()?.row === index && !selected()?.path?.length">
+              <th scope="row">
+                <button
+                  type="button"
+                  class="mongo-row-number"
+                  [attr.aria-label]="
+                    (steps().length ? 'mongo.chooseElement' : 'mongo.chooseDocument')
+                      | transloco: { v0: rowNumber(index) }
+                  "
+                  (click)="selectRow(index)"
+                >
+                  {{ rowNumber(index) }}
+                </button>
+              </th>
+              @for (column of columns(); track column.label) {
+                @let value = cell(row, column);
+                <td [class]="typeClass(value.type)">
+                  @if (!value.missing) {
+                    <button
+                      type="button"
+                      class="mongo-cell"
+                      [title]="value.type"
+                      [class.selected]="
+                        selected()?.row === index &&
+                        selected()?.path?.join('.') === column.path.join('.')
+                      "
+                      (click)="open(index, column, value.type)"
+                    >
+                      {{ value.text }}
+                    </button>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (rows().length > shownRows().length) {
+      <button type="button" class="button small" (click)="paintMore()">
+        {{ 'mongo.showMore' | transloco: { v0: rows().length - shownRows().length } }}
+      </button>
+    }
+  }
+  @case ('tree') {
+    <ul class="mongo-tree" [attr.aria-label]="'Results' | transloco">
+      @for (row of shownTree(); track row.id) {
+        <li [style.padding-left.px]="row.depth * 18">
+          <button
+            type="button"
+            class="mongo-tree-row"
+            [class.selected]="
+              selected()?.row === row.document && selected()?.path?.join('.') === row.path.join('.')
+            "
+            [attr.aria-expanded]="row.expandable ? row.expanded : null"
+            (click)="selectTree(row)"
+          >
+            <span class="mongo-twisty" aria-hidden="true">{{
+              row.expandable ? (row.expanded ? '▾' : '▸') : ''
+            }}</span>
+            <span class="mongo-key">{{ row.key }}</span>
+            <span class="grow" [class]="typeClass(row.type)">{{ row.text }}</span>
+            <span class="bson-type">{{ row.type }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+    @if (tree().length > shownTree().length) {
+      <button type="button" class="button small" (click)="paintMore()">
+        {{ 'mongo.showMore' | transloco: { v0: tree().length - shownTree().length } }}
+      </button>
+    }
+  }
+  @case ('json') {
+    <app-code-editor
+      class="mongo-json"
+      size="large"
+      [value]="json()"
+      [language]="language()"
+      [readonly]="true"
+      [label]="'Results' | transloco"
+    />
+  }
+}

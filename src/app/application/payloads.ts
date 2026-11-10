@@ -294,8 +294,62 @@ export interface PerformancePayload {
   followRedirects?: boolean;
 }
 
-export interface MongoTestPayload {
+export interface MongoConnectionPayload {
   connection: MongoConnection;
+  workspace?: string;
+}
+
+export interface MongoDatabasePayload {
+  connection: MongoConnection;
+  database: string;
+  workspace?: string;
+}
+
+export interface MongoCollectionPayload {
+  connection: MongoConnection;
+  database: string;
+  collection: string;
+  workspace?: string;
+}
+
+export interface MongoFindPayload {
+  connection: MongoConnection;
+  id: string;
+  database: string;
+  collection: string;
+  workspace?: string;
+  filter?: object;
+  projection?: object;
+  sort?: object;
+  collation?: object;
+  hint?: string | object;
+  skip?: number;
+  limit?: number;
+  pageSize?: number;
+}
+
+export interface MongoMorePayload {
+  cursor: string;
+  id: string;
+  workspace?: string;
+  pageSize?: number;
+}
+
+export interface MongoCountPayload {
+  connection: MongoConnection;
+  id: string;
+  database: string;
+  collection: string;
+  workspace?: string;
+  filter?: object;
+  collation?: object;
+  hint?: string | object;
+  skip?: number;
+  limit?: number;
+}
+
+export interface MongoClosePayload {
+  cursor: string;
   workspace?: string;
 }
 
@@ -346,7 +400,15 @@ export interface OperationPayloads {
   'cookies.delete': CookieDeletePayload;
   performance: PerformancePayload;
   'performance.cancel': IdPayload;
-  'mongo.test': MongoTestPayload;
+  'mongo.test': MongoConnectionPayload;
+  'mongo.databases': MongoConnectionPayload;
+  'mongo.collections': MongoDatabasePayload;
+  'mongo.stats': MongoCollectionPayload;
+  'mongo.find': MongoFindPayload;
+  'mongo.more': MongoMorePayload;
+  'mongo.count': MongoCountPayload;
+  'mongo.cancel': IdPayload;
+  'mongo.close': MongoClosePayload;
 }
 
 /** The payload of an operation. */

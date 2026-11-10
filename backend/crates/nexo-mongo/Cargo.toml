@@ -30,6 +30,11 @@ mongodb = { version = "3.10.0", default-features = false, features = [
 # only through the engine's features (one rustls for the whole workspace, no new crate).
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum"] }
 
+# The BSON library of the driver (same version, no new crate), with its Extended JSON
+# conversions to and from serde_json, which Nexo already uses everywhere.
+bson = { version = "3.1.0", features = ["serde_json-1"] }
+serde_json.workspace = true
+
 async-trait.workspace = true
 tokio.workspace = true
 base64.workspace = true

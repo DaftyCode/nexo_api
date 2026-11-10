@@ -21,10 +21,16 @@ pub fn driver(error: DriverError) -> Error {
             let reason = message.split(" from ").next().unwrap_or(message);
             format!("Invalid TLS certificate or key: {reason}")
         }
-        ErrorKind::Command(command) => format!(
-            "The server refused the command: {} ({})",
-            command.message, command.code_name
-        ),
+        ErrorKind::Command(command) => match command.code {
+            50 => "The query ran longer than the limit of 60 seconds: add a filter an index can use, or a smaller limit".into(),
+            11601 => "The query was cancelled".into(),
+            43 => "These results are no longer open: run the query again".into(),
+            13 => format!("The user may not do this: {}", command.message),
+            _ => format!(
+                "The server refused the command: {} ({})",
+                command.message, command.code_name
+            ),
+        },
         _ => error.to_string(),
     };
     Error::Validation(message)

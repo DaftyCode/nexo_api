@@ -1346,3 +1346,66 @@ test('MongoDB: a pasted URI keeps its password in the vault, and a test explains
   await editor.getByRole('button', { name: 'Delete connection' }).click();
   await expect(list).toContainText('No connections yet.');
 });
+
+test('MongoDB: browse 100 000 documents, filter an embedded field, sort, page, count and cancel', async ({
+  page,
+  nexo,
+}) => {
+  // The data of tools/mongo-fixture.sh (CI starts it before the E2E tests).
+  test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'MongoDB' })
+    .click();
+  const editor = page.getByRole('region', { name: 'Connection', exact: true });
+  await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
+  await editor.getByRole('button', { name: 'Use URI' }).click();
+  await editor.getByLabel('Connection name').fill('Fixture');
+  await editor.getByRole('button', { name: 'Save connection' }).click();
+  await editor.getByRole('button', { name: 'Browse data' }).click();
+
+  const tree = page.getByRole('navigation', { name: 'Databases' });
+  await tree.getByRole('button', { name: /^nexo / }).click();
+  await expect(tree.getByRole('button', { name: /^madrid View/ })).toBeVisible();
+  await expect(tree.getByRole('button', { name: /^metrics Time series/ })).toBeVisible();
+  await expect(tree.getByRole('button', { name: /^fs\.files GridFS/ })).toBeVisible();
+  await tree.getByRole('button', { name: /^big$/ }).click();
+  const query = page.getByRole('region', { name: 'Query', exact: true });
+  const range = query.getByTestId('mongo-range');
+  await expect(range).toContainText('Documents 1 to 50');
+  await expect(query.getByRole('definition').first()).toHaveText('100000');
+
+  await query
+    .locator('.cm-content[aria-label="Filter"]')
+    .fill("{'customer.address.city': 'Madrid'}");
+  await query.getByLabel('Sort').fill('{n: -1}');
+  await query.getByRole('button', { name: 'Find', exact: true }).click();
+  const results = query.getByRole('group', { name: 'Results' });
+  await expect(results.locator('tbody tr').first()).toContainText('99999');
+  await query.getByRole('button', { name: 'Next page' }).click();
+  await expect(range).toContainText('Documents 51 to 100');
+  await expect(results.locator('tbody tr').first()).toContainText('99899');
+  await query.getByRole('button', { name: 'Previous page' }).click();
+  await expect(range).toContainText('Documents 1 to 50');
+  await query.getByRole('button', { name: 'Count documents' }).click();
+  await expect(range).toContainText('of 50000');
+
+  // An embedded document opens into columns; an array is entered as its own table.
+  await results.getByRole('button', { name: '{ 2 fields }' }).first().click();
+  await expect(results.getByRole('columnheader', { name: 'customer.name' })).toBeVisible();
+  await results.getByRole('button', { name: '[ 2 elements ]' }).first().click();
+  await expect(query.getByRole('navigation', { name: 'Arrays entered' })).toContainText('items');
+  await expect(results.getByRole('columnheader', { name: 'sku' })).toBeVisible();
+  expect(await violations(page)).toEqual([]);
+
+  // A query the server takes long to answer (server-side JavaScript sleeps on each
+  // document) is cancelled there; the interface never waits for it.
+  await query.locator('.cm-content[aria-label="Filter"]').fill("{$where: 'sleep(100) || true'}");
+  await query.getByRole('button', { name: 'Find', exact: true }).click();
+  await query.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByRole('alert').filter({ hasText: 'The query was cancelled' })).toBeVisible({
+    timeout: 5000,
+  });
+  await expect(query.getByRole('button', { name: 'Find', exact: true })).toBeEnabled();
+});

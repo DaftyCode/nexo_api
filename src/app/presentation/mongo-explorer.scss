@@ -1,0 +1,172 @@
+.mongo-explorer {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+.mongo-sidebar {
+  width: 270px;
+  flex-shrink: 0;
+  max-height: calc(100vh - 160px);
+  overflow: auto;
+}
+.mongo-sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mongo-sidebar ul ul {
+  padding-left: 14px;
+}
+.mongo-connection-name {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 14px;
+  margin: 8px 0;
+}
+.mongo-color {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+}
+.mongo-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 6px;
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 12px;
+  text-align: left;
+  overflow: hidden;
+}
+.mongo-tree-item:hover,
+.mongo-tree-item.selected {
+  background: var(--hover, rgb(255 255 255 / 6%));
+}
+.mongo-tree-item .grow,
+.mongo-history {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mongo-history {
+  display: block;
+  font-family: var(--mono, monospace);
+}
+.mongo-badge {
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+.mongo-section {
+  margin: 18px 0 6px;
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.mongo-folder {
+  margin: 8px 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.mongo-saved {
+  gap: 4px;
+  align-items: center;
+}
+.mongo-empty {
+  padding: 4px 6px;
+  font-size: 12px;
+}
+.mongo-query {
+  flex: 1;
+  min-width: 0;
+}
+.mongo-target {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.mongo-target h2 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+  font-size: 15px;
+}
+.mongo-stats {
+  display: flex;
+  gap: 18px;
+  margin: 0;
+  font-size: 12px;
+}
+.mongo-stats dt {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.mongo-stats dd {
+  margin: 0;
+}
+.mongo-bar {
+  margin: 12px 0;
+}
+.mongo-filter {
+  margin-bottom: 8px;
+}
+.mongo-inline {
+  gap: 10px;
+  align-items: flex-end;
+}
+.mongo-inline input,
+.mongo-save-name input {
+  font-family: var(--mono, monospace);
+}
+.mongo-number {
+  width: 90px;
+}
+.mongo-problem {
+  color: var(--red);
+  font-size: 12px;
+}
+.mongo-actions,
+.mongo-results-bar {
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.mongo-results-bar {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.mongo-results-bar .field,
+.mongo-actions .field {
+  margin-bottom: 0;
+}
+.mongo-views {
+  display: flex;
+  gap: 4px;
+}
+/* Labels beside their control, so the bars stay one line high. */
+.mongo-format,
+.mongo-page-size,
+.mongo-save-name {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.mongo-format select,
+.mongo-page-size select {
+  width: auto;
+}
+.mongo-save-name input {
+  width: 180px;
+}

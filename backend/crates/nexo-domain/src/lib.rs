@@ -111,9 +111,14 @@ pub enum DocumentKind {
     /// A database connection (MongoDB): its URI without the password, which stays in the
     /// vault.
     Connection,
+    /// A saved database query (MongoDB `find`), with its connection, database and collection.
+    Query,
+    /// A database query that was run: only the query, never its results.
+    #[serde(rename = "query-history")]
+    QueryHistory,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 12] = [
+    pub const ALL: [DocumentKind; 14] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -126,6 +131,8 @@ impl DocumentKind {
         Self::Comment,
         Self::Settings,
         Self::Connection,
+        Self::Query,
+        Self::QueryHistory,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -141,6 +148,8 @@ impl DocumentKind {
             Self::Comment => "comment",
             Self::Settings => "settings",
             Self::Connection => "connection",
+            Self::Query => "query",
+            Self::QueryHistory => "query-history",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -149,8 +158,14 @@ impl DocumentKind {
             .find(|kind| kind.as_str() == value)
             .ok_or_else(|| Error::Validation("Unknown resource kind".into()))
     }
-    /// History entries and run reports never change after they are written.
+    /// History entries (of requests and of queries) and run reports never change after they
+    /// are written.
     pub fn keeps_revisions(self) -> bool {
+        !matches!(self, Self::History | Self::Run | Self::QueryHistory)
+    }
+    /// Request history and run reports grow with use, so a workspace lists them without
+    /// their values; a query of the history is small and listed whole.
+    pub fn listed_whole(self) -> bool {
         !matches!(self, Self::History | Self::Run)
     }
 }
@@ -193,6 +208,19 @@ impl Document {
                 return Err(Error::Validation(
                     "Keep the password out of the connection URI: Nexo keeps it in the vault"
                         .into(),
+                ));
+            }
+        }
+        if matches!(self.kind, DocumentKind::Query | DocumentKind::QueryHistory) {
+            let named = |field: &str| {
+                self.value
+                    .get(field)
+                    .and_then(Value::as_str)
+                    .is_some_and(|text| !text.trim().is_empty())
+            };
+            if !named("database") || !named("collection") {
+                return Err(Error::Validation(
+                    "A query needs its database and collection".into(),
                 ));
             }
         }
@@ -278,6 +306,19 @@ mod tests {
         assert!(DocumentKind::parse("executable").is_err());
         assert!(serde_json::from_str::<DocumentKind>("\"executable\"").is_err());
         assert!(!DocumentKind::History.keeps_revisions());
+        assert!(!DocumentKind::QueryHistory.keeps_revisions());
+        assert!(DocumentKind::Query.keeps_revisions());
+        assert!(DocumentKind::QueryHistory.listed_whole());
+        assert!(!DocumentKind::History.listed_whole());
+    }
+    #[test]
+    fn queries_name_their_database_and_collection() {
+        for kind in [DocumentKind::Query, DocumentKind::QueryHistory] {
+            let query = |value| document(kind, value).validate();
+            assert!(query(serde_json::json!({"database": "shop"})).is_err());
+            assert!(query(serde_json::json!({"database": " ", "collection": "orders"})).is_err());
+            assert!(query(serde_json::json!({"database": "shop", "collection": "orders"})).is_ok());
+        }
     }
     #[test]
     fn collections_need_items() {

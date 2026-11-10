@@ -193,6 +193,14 @@ describe('MongoPanel', () => {
     await click('Copy URI');
     expect(copied).toEqual(['mongodb://ana@localhost:27117/?authSource=admin']);
 
+    // A saved connection is browsed in the explorer, and "Connections" comes back.
+    api.responses['mongo.databases'] = { databases: [{ name: 'shop', empty: false }] };
+    await click('Browse data');
+    expect(text()).toContain('shop');
+    expect(api.calls.at(-1)?.operation).toBe('mongo.databases');
+    await click('Connections');
+    expect(valueOf(root(), 'Connection name')).toBe('Local');
+
     state.confirm = () => false;
     await click('Delete connection');
     expect(api.documentsStore).toHaveLength(1);

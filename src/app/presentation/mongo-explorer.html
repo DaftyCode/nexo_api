@@ -1,0 +1,372 @@
+@if (error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ error() | transloco }}</span
+    ><button
+      class="icon-button"
+      (click)="error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="mongo-explorer">
+  <nav class="feature-card mongo-sidebar" [attr.aria-label]="'Databases' | transloco">
+    <div class="row between">
+      <button type="button" class="text-button" (click)="closed.emit()">
+        ← {{ 'Connections' | transloco }}
+      </button>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Reload databases' | transloco"
+        [disabled]="loadingDatabases()"
+        (click)="loadDatabases()"
+      >
+        ⟳
+      </button>
+    </div>
+    <h2 class="mongo-connection-name">
+      <span
+        class="mongo-color"
+        aria-hidden="true"
+        [style.background]="color() || 'transparent'"
+      ></span>
+      {{ connection().name }}
+    </h2>
+    @if (loadingDatabases()) {
+      <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+    }
+    <ul class="mongo-databases">
+      @for (database of databases(); track database.name) {
+        <li>
+          <button
+            type="button"
+            class="mongo-tree-item"
+            [attr.aria-expanded]="!!collections()[database.name]"
+            (click)="toggleDatabase(database.name)"
+          >
+            <span aria-hidden="true">{{ collections()[database.name] ? '▾' : '▸' }}</span>
+            <span class="grow">{{ database.name }}</span>
+            <span class="muted">{{ bytes(database.sizeOnDisk) }}</span>
+          </button>
+          @if (collections()[database.name] === 'loading') {
+            <div
+              class="spinner small"
+              role="status"
+              [attr.aria-label]="'Loading' | transloco"
+            ></div>
+          }
+          @if (collections()[database.name]) {
+            <ul>
+              @for (collection of listed(database.name); track collection.name) {
+                <li>
+                  <button
+                    type="button"
+                    class="mongo-tree-item mongo-collection"
+                    [class.selected]="
+                      target()?.database === database.name &&
+                      target()?.collection === collection.name
+                    "
+                    [attr.aria-current]="
+                      target()?.database === database.name &&
+                      target()?.collection === collection.name
+                        ? 'true'
+                        : null
+                    "
+                    (click)="choose(database.name, collection)"
+                  >
+                    <span class="grow">{{ collection.name }}</span>
+                    @if (kindLabel(collection); as kind) {
+                      <span class="mongo-badge">{{ kind | transloco }}</span>
+                    }
+                  </button>
+                </li>
+              } @empty {
+                <li class="muted mongo-empty">{{ 'No collections' | transloco }}</li>
+              }
+            </ul>
+          }
+        </li>
+      } @empty {
+        @if (!loadingDatabases()) {
+          <li class="muted">{{ 'No databases you may read.' | transloco }}</li>
+        }
+      }
+    </ul>
+
+    <h3 class="mongo-section">{{ 'Saved queries' | transloco }}</h3>
+    @for (group of savedQueries(); track group.folder) {
+      @if (group.folder) {
+        <h4 class="mongo-folder">{{ group.folder }}</h4>
+      }
+      <ul>
+        @for (query of group.connections; track query.id) {
+          <li class="row mongo-saved">
+            <button
+              type="button"
+              class="mongo-tree-item grow"
+              [class.selected]="query.id === savedId()"
+              (click)="openQuery(query, true)"
+            >
+              {{ query.name }}
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              [attr.aria-label]="'mongo.deleteQuery' | transloco: { v0: query.name }"
+              (click)="removeSaved(query)"
+            >
+              ×
+            </button>
+          </li>
+        }
+      </ul>
+    } @empty {
+      <p class="muted">{{ 'Save a query to find it here.' | transloco }}</p>
+    }
+
+    <h3 class="mongo-section">{{ 'Query history' | transloco }}</h3>
+    <ul>
+      @for (entry of history(); track entry.id) {
+        <li>
+          <button
+            type="button"
+            class="mongo-tree-item mongo-history"
+            (click)="openQuery(entry, false)"
+          >
+            {{ entry.name }}
+          </button>
+        </li>
+      } @empty {
+        <li class="muted">
+          {{ 'Queries you run appear here, without their results.' | transloco }}
+        </li>
+      }
+    </ul>
+  </nav>
+
+  <section class="feature-card mongo-query" [attr.aria-label]="'Query' | transloco">
+    @if (target(); as target) {
+      <div class="row between mongo-target">
+        <h2>
+          {{ target.database }}.{{ target.collection }}
+          @if (target.kind !== 'collection') {
+            <span class="mongo-badge">{{
+              (target.kind === 'view' ? 'View' : 'Time series') | transloco
+            }}</span>
+          }
+        </h2>
+        @if (stats(); as stats) {
+          <dl class="mongo-stats">
+            <div>
+              <dt>{{ 'Documents' | transloco }}</dt>
+              <dd>{{ stats.count }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Size' | transloco }}</dt>
+              <dd>{{ bytes(stats.size) }}</dd>
+            </div>
+            <div>
+              <dt>{{ 'Average' | transloco }}</dt>
+              <dd>{{ bytes(stats.averageDocumentSize) }}</dd>
+            </div>
+            <div [title]="indexNames(stats)">
+              <dt>{{ 'Indexes' | transloco }}</dt>
+              <dd>{{ stats.indexes.length }} · {{ bytes(stats.totalIndexSize) }}</dd>
+            </div>
+          </dl>
+        }
+      </div>
+
+      <form class="mongo-bar" (submit)="$event.preventDefault(); find()">
+        <app-code-editor
+          class="mongo-filter"
+          size="small"
+          language="javascript"
+          [formField]="fields.filter"
+          [label]="'Filter' | transloco"
+          placeholder="{ status: 'A', _id: ObjectId('…') }"
+        />
+        <div class="row mongo-inline">
+          <label class="field grow"
+            >{{ 'Projection' | transloco
+            }}<input [formField]="fields.projection" placeholder="{ name: 1 }" spellcheck="false"
+          /></label>
+          <label class="field grow"
+            >{{ 'Sort' | transloco
+            }}<input [formField]="fields.sort" placeholder="{ _id: -1 }" spellcheck="false"
+          /></label>
+          <button
+            type="button"
+            class="text-button"
+            [attr.aria-expanded]="moreOptions()"
+            (click)="moreOptions.set(!moreOptions())"
+          >
+            {{ 'More options' | transloco }}
+          </button>
+        </div>
+        @if (moreOptions()) {
+          <div class="row mongo-inline">
+            <label class="field grow"
+              >{{ 'Collation' | transloco
+              }}<input
+                [formField]="fields.collation"
+                placeholder="{ locale: 'es' }"
+                spellcheck="false"
+            /></label>
+            <label class="field grow"
+              >{{ 'Index hint' | transloco
+              }}<input [formField]="fields.hint" placeholder="status_1" spellcheck="false"
+            /></label>
+            <label class="field mongo-number"
+              >{{ 'Skip' | transloco }}<input [formField]="fields.skip" inputmode="numeric"
+            /></label>
+            <label class="field mongo-number"
+              >{{ 'Limit' | transloco }}<input [formField]="fields.limit" inputmode="numeric"
+            /></label>
+          </div>
+        }
+        @if (problem(); as problem) {
+          <p class="mongo-problem" role="alert">
+            {{ fieldLabels[problem.field] | transloco }}:
+            @if (problem.key === 'mongo.syntax') {
+              {{ $any(problem.params['v0']) | transloco }}
+              @if (problem.params['v3']) {
+                ({{ problem.params['v3'] }})
+              }
+              —
+              {{
+                'mongo.position' | transloco: { v0: problem.params['v1'], v1: problem.params['v2'] }
+              }}
+            } @else {
+              {{ problem.key | transloco: problem.params }}
+            }
+          </p>
+        }
+        <div class="row mongo-actions">
+          @if (running()) {
+            <button type="button" class="button danger" (click)="cancel()">
+              {{ 'Cancel' | transloco }}
+            </button>
+            <div
+              class="spinner small"
+              role="status"
+              [attr.aria-label]="'Running' | transloco"
+            ></div>
+          } @else {
+            <button type="submit" class="button primary">{{ 'Find' | transloco }}</button>
+          }
+          <button type="button" class="button" [disabled]="!!running()" (click)="count()">
+            {{ 'Count documents' | transloco }}
+          </button>
+          <button type="button" class="text-button" (click)="newQuery()">
+            {{ 'Clear' | transloco }}
+          </button>
+          <span class="grow"></span>
+          <label class="field mongo-save-name"
+            >{{ 'Query name' | transloco }}<input [formField]="fields.name"
+          /></label>
+          <label class="field mongo-save-name"
+            >{{ 'Folder' | transloco
+            }}<input [formField]="fields.folder" list="mongo-query-folders" autocomplete="off"
+          /></label>
+          <datalist id="mongo-query-folders">
+            @for (folder of queryFolders(); track folder) {
+              <option [value]="folder"></option>
+            }
+          </datalist>
+          <button type="button" class="button" (click)="save()">
+            {{ (savedId() ? 'Save' : 'Save query') | transloco }}
+          </button>
+        </div>
+        @if (notice()) {
+          <p class="muted" role="status">{{ notice() | transloco }}</p>
+        }
+      </form>
+
+      <div class="row mongo-results-bar">
+        <div class="mongo-views" role="group" [attr.aria-label]="'View' | transloco">
+          @for (option of ['table', 'tree', 'json']; track option) {
+            <button
+              type="button"
+              class="button small"
+              [class.primary]="view() === option"
+              [attr.aria-pressed]="view() === option"
+              (click)="setView($any(option))"
+            >
+              {{ (option === 'table' ? 'Table' : option === 'tree' ? 'Tree' : 'JSON') | transloco }}
+            </button>
+          }
+        </div>
+        <label class="field mongo-format"
+          >{{ 'Format' | transloco }}
+          <select [value]="format()" (change)="setFormat($event)">
+            <option value="shell">{{ 'Shell' | transloco }}</option>
+            <option value="relaxed">{{ 'Relaxed Extended JSON' | transloco }}</option>
+            <option value="canonical">{{ 'Canonical Extended JSON' | transloco }}</option>
+          </select>
+        </label>
+        <span class="grow"></span>
+        @if (current(); as page) {
+          <span class="muted" role="status" data-testid="mongo-range">
+            @if (page.documents.length) {
+              {{
+                'mongo.range'
+                  | transloco: { v0: page.offset + 1, v1: page.offset + page.documents.length }
+              }}
+            } @else {
+              {{ 'No documents' | transloco }}
+            }
+            @if (total() !== undefined) {
+              {{ 'mongo.of' | transloco: { v0: total() } }}
+            }
+            · {{ page.elapsedMs }} ms
+          </span>
+        }
+        <label class="field mongo-page-size"
+          >{{ 'Page' | transloco }}
+          <select [formField]="fields.pageSize">
+            @for (size of pageSizes; track size) {
+              <option [value]="size">{{ size }}</option>
+            }
+          </select>
+        </label>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'Previous page' | transloco"
+          [disabled]="!hasPrevious() || !!running()"
+          (click)="previous()"
+        >
+          ‹
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'Next page' | transloco"
+          [disabled]="!hasNext() || !!running()"
+          (click)="next()"
+        >
+          ›
+        </button>
+      </div>
+      @if (current()?.truncated) {
+        <p class="muted" role="status">
+          {{ 'This page stopped at 16 MiB of documents: the next page continues it.' | transloco }}
+        </p>
+      }
+      @if (current(); as page) {
+        <app-mongo-results
+          [documents]="page.documents"
+          [offset]="page.offset"
+          [view]="view()"
+          [format]="format()"
+          (copied)="notice.set($event)"
+        />
+      }
+    } @else {
+      <p class="muted">{{ 'Choose a collection to query it.' | transloco }}</p>
+    }
+  </section>
+</div>
