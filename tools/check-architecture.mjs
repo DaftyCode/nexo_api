@@ -45,17 +45,20 @@ for (const [crate, forbidden] of [
       'tauri',
       'reqwest',
       'tokio',
+      'mongodb',
     ],
   ],
   [
     'nexo-application',
-    ['nexo-infrastructure', 'nexo-http', 'axum', 'rusqlite', 'tauri', 'reqwest'],
+    ['nexo-infrastructure', 'nexo-http', 'axum', 'rusqlite', 'tauri', 'reqwest', 'mongodb'],
   ],
-  ['nexo-http', ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest']],
+  ['nexo-http', ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest', 'mongodb']],
   // The engine is an adapter: it implements application ports and never reaches the
   // HTTP layer, the other adapters or the desktop shell.
-  ['nexo-engine', ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri']],
-  ['nexo-infrastructure', ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri']],
+  ['nexo-engine', ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri', 'mongodb']],
+  ['nexo-infrastructure', ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri', 'mongodb']],
+  // MongoDB is one more adapter: only it uses the driver, and nexo-server composes it.
+  ['nexo-mongo', ['nexo-infrastructure', 'nexo-http', 'nexo-engine', 'nexo-server', 'tauri']],
 ]) {
   const manifest = await readFile(`backend/crates/${crate}/Cargo.toml`, 'utf8');
   const dependencies = manifest.split(/^\[dev-dependencies\]/m)[0];

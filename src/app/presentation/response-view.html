@@ -41,147 +41,162 @@
       </div>
     }
   </div>
-  @if (running()) {
-    <div class="empty-response" role="status" aria-live="polite">
-      <div class="spinner"></div>
-      <h3>{{ 'Sending your request' | transloco }}</h3>
-      <p>{{ 'Waiting for a response…' | transloco }}</p>
-    </div>
-  } @else if (response(); as r) {
-    @if (r.error) {
-      <div class="alert error">
-        @if (blocked(r.error); as b) {
-          {{ 'error.secretHost' | transloco: { v0: b.name, v1: b.host } }}
-        } @else {
-          {{ r.error }}
+  <!-- Everything below the tabs scrolls, however long the body, headers or tests are. -->
+  <!-- Focusable, so its content also scrolls with the keyboard. -->
+  <div
+    class="response-content"
+    tabindex="0"
+    role="group"
+    [attr.aria-label]="'Response content' | transloco"
+  >
+    @if (running()) {
+      <div class="empty-response" role="status" aria-live="polite">
+        <div class="spinner"></div>
+        <h3>{{ 'Sending your request' | transloco }}</h3>
+        <p>{{ 'Waiting for a response…' | transloco }}</p>
+      </div>
+    } @else if (response(); as r) {
+      @if (r.error) {
+        <div class="alert error">
+          @if (blocked(r.error); as b) {
+            {{ 'error.secretHost' | transloco: { v0: b.name, v1: b.host } }}
+          } @else {
+            {{ r.error }}
+          }
+        </div>
+      }
+      @switch (tab()) {
+        @case ('body') {
+          <!-- A request that got no answer has no body to format or download, as in Postman. -->
+          @if (!r.error || r.body) {
+            <div class="response-actions">
+              <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">
+                {{ 'Pretty' | transloco }}</button
+              ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
+                {{ 'Raw' | transloco }}</button
+              ><button class="pill" (click)="download()">{{ 'Download' | transloco }}</button
+              ><span class="muted">{{
+                r.truncated
+                  ? ('Preview limited to 8 MB' | transloco)
+                  : large()
+                    ? ('Large body shown without formatting' | transloco)
+                    : ''
+              }}</span>
+            </div>
+            @for (warning of r.warnings ?? []; track warning) {
+              <div class="alert">{{ warning }}</div>
+            }
+            @if (binary()) {
+              @if (imageUrl()) {
+                <img
+                  class="response-image"
+                  [src]="imageUrl()"
+                  [alt]="'Response image' | transloco"
+                />
+              } @else {
+                <div class="empty-response">
+                  <h3>{{ 'Binary response' | transloco }}</h3>
+                  <p>{{ contentType() }}</p>
+                  <button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+                </div>
+              }
+            } @else {
+              <!-- Focusable, so the keyboard can scroll a long body. -->
+              <pre
+                class="response-code"
+                tabindex="0"
+                [attr.aria-label]="'Response body' | transloco"
+                >{{ text() }}</pre>
+              @if (truncated()) {
+                <div class="row">
+                  <span class="muted">{{
+                    'Only the beginning of this response is shown.' | transloco
+                  }}</span
+                  ><button class="button" (click)="showAll()">
+                    {{ 'Show full response' | transloco }}</button
+                  ><button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
+                </div>
+              }
+            }
+          }
         }
+        @case ('headers') {
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>{{ 'Header' | transloco }}</th>
+                <th>{{ 'Value' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (h of r.headers; track $index) {
+                <tr>
+                  <td>{{ h.key }}</td>
+                  <td>{{ h.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('cookies') {
+          <pre
+            class="response-code"
+            tabindex="0"
+            [attr.aria-label]="'Response cookies' | transloco"
+            >{{ r.cookies | json }}</pre>
+        }
+        @case ('tests') {
+          @if (!r.assertions.length) {
+            <div class="empty-inline">
+              {{ 'Add post-response scripts to test this request.' | transloco }}
+            </div>
+          }
+          @for (test of r.assertions; track $index) {
+            <div class="assertion">
+              <span class="status-pill" [class.failed]="!test.passed">{{
+                test.skipped
+                  ? ('SKIP' | transloco)
+                  : test.passed
+                    ? ('PASS' | transloco)
+                    : ('FAIL' | transloco)
+              }}</span>
+              <div>
+                {{ test.name }}
+                @if (test.error) {
+                  <p class="danger">{{ test.error }}</p>
+                }
+              </div>
+            </div>
+          }
+        }
+        @case ('console') {
+          @for (log of r.logs; track $index) {
+            <pre class="console-line" [class.danger]="log.level === 'error'">
+[{{ log.level }}] {{ log.values.join(' ') }}</pre>
+          }
+          @if (!r.logs.length) {
+            <div class="empty-inline">
+              {{ 'No console messages for this request.' | transloco }}
+            </div>
+          }
+        }
+      }
+    } @else {
+      <div class="empty-response response-placeholder">
+        <img
+          class="response-art"
+          src="/templates/aurora/response.svg"
+          width="90"
+          height="88"
+          alt=""
+        />
+
+        <h3>{{ 'Your response will appear here' | transloco }}</h3>
+        <p>{{ 'Enter a URL and send your first request.' | transloco }}</p>
+        <span class="keyboard-tip"
+          ><kbd>Ctrl</kbd> + <kbd>Enter</kbd> {{ 'to send' | transloco }}</span
+        >
       </div>
     }
-    @switch (tab()) {
-      @case ('body') {
-        <!-- A request that got no answer has no body to format or download, as in Postman. -->
-        @if (!r.error || r.body) {
-          <div class="response-actions">
-            <button class="pill" [class.selected]="pretty()" (click)="pretty.set(true)">
-              {{ 'Pretty' | transloco }}</button
-            ><button class="pill" [class.selected]="!pretty()" (click)="pretty.set(false)">
-              {{ 'Raw' | transloco }}</button
-            ><button class="pill" (click)="download()">{{ 'Download' | transloco }}</button
-            ><span class="muted">{{
-              r.truncated
-                ? ('Preview limited to 8 MB' | transloco)
-                : large()
-                  ? ('Large body shown without formatting' | transloco)
-                  : ''
-            }}</span>
-          </div>
-          @for (warning of r.warnings ?? []; track warning) {
-            <div class="alert">{{ warning }}</div>
-          }
-          @if (binary()) {
-            @if (imageUrl()) {
-              <img class="response-image" [src]="imageUrl()" [alt]="'Response image' | transloco" />
-            } @else {
-              <div class="empty-response">
-                <h3>{{ 'Binary response' | transloco }}</h3>
-                <p>{{ contentType() }}</p>
-                <button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
-              </div>
-            }
-          } @else {
-            <!-- Focusable, so the keyboard can scroll a long body. -->
-            <pre
-              class="response-code"
-              tabindex="0"
-              [attr.aria-label]="'Response body' | transloco"
-              >{{ text() }}</pre>
-            @if (truncated()) {
-              <div class="row">
-                <span class="muted">{{
-                  'Only the beginning of this response is shown.' | transloco
-                }}</span
-                ><button class="button" (click)="showAll()">
-                  {{ 'Show full response' | transloco }}</button
-                ><button class="button" (click)="download()">{{ 'Download' | transloco }}</button>
-              </div>
-            }
-          }
-        }
-      }
-      @case ('headers') {
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>{{ 'Header' | transloco }}</th>
-              <th>{{ 'Value' | transloco }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (h of r.headers; track $index) {
-              <tr>
-                <td>{{ h.key }}</td>
-                <td>{{ h.value }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      }
-      @case ('cookies') {
-        <pre
-          class="response-code"
-          tabindex="0"
-          [attr.aria-label]="'Response cookies' | transloco"
-          >{{ r.cookies | json }}</pre>
-      }
-      @case ('tests') {
-        @if (!r.assertions.length) {
-          <div class="empty-inline">
-            {{ 'Add post-response scripts to test this request.' | transloco }}
-          </div>
-        }
-        @for (test of r.assertions; track $index) {
-          <div class="assertion">
-            <span class="status-pill" [class.failed]="!test.passed">{{
-              test.skipped
-                ? ('SKIP' | transloco)
-                : test.passed
-                  ? ('PASS' | transloco)
-                  : ('FAIL' | transloco)
-            }}</span>
-            <div>
-              {{ test.name }}
-              @if (test.error) {
-                <p class="danger">{{ test.error }}</p>
-              }
-            </div>
-          </div>
-        }
-      }
-      @case ('console') {
-        @for (log of r.logs; track $index) {
-          <pre class="console-line" [class.danger]="log.level === 'error'">
-[{{ log.level }}] {{ log.values.join(' ') }}</pre>
-        }
-        @if (!r.logs.length) {
-          <div class="empty-inline">{{ 'No console messages for this request.' | transloco }}</div>
-        }
-      }
-    }
-  } @else {
-    <div class="empty-response response-placeholder">
-      <img
-        class="response-art"
-        src="/templates/aurora/response.svg"
-        width="90"
-        height="88"
-        alt=""
-      />
-
-      <h3>{{ 'Your response will appear here' | transloco }}</h3>
-      <p>{{ 'Enter a URL and send your first request.' | transloco }}</p>
-      <span class="keyboard-tip"
-        ><kbd>Ctrl</kbd> + <kbd>Enter</kbd> {{ 'to send' | transloco }}</span
-      >
-    </div>
-  }
+  </div>
 </section>

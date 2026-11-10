@@ -198,6 +198,11 @@ export const test = base.extend({
           response.writeHead(302, { location: back.toString() });
           return response.end();
         }
+        // A long body: 500 items, to scroll through.
+        if (request.url === '/long')
+          return response.end(
+            JSON.stringify(Array.from({ length: 500 }, (_, index) => ({ item: index }))),
+          );
         // A session cookie, for the cookie manager.
         if (request.url === '/set-cookie')
           response.setHeader('set-cookie', 'e2e_session=abc; Path=/');

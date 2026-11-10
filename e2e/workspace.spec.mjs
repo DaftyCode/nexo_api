@@ -1276,3 +1276,26 @@ test('each request tab shows its own response', async ({ page, nexo }) => {
   await tabs.nth(1).getByRole('button', { name: 'Close request' }).click();
   await expect(response).toContainText('/first');
 });
+
+test('a long response scrolls to its end, with its actions in sight', async ({ page, nexo }) => {
+  await page.setViewportSize({ width: 1400, height: 800 });
+  await nexo.signIn(page);
+  await page.getByLabel('Request URL').fill(`${nexo.echo}/long`);
+  await page.getByRole('button', { name: 'Send' }).first().click();
+  const area = page.locator('.response-content');
+  await expect(page.locator('.response-code')).toContainText('"item": 0');
+  const sizes = await area.evaluate((element) => ({
+    scroll: element.scrollHeight,
+    client: element.clientHeight,
+  }));
+  expect(sizes.scroll).toBeGreaterThan(sizes.client * 3);
+  // The last item can be reached, and Pretty / Raw stay at the top while scrolling.
+  await area.evaluate((element) => element.scrollTo(0, element.scrollHeight));
+  await expect(page.getByText('"item": 499')).toBeInViewport();
+  await expect(page.getByRole('button', { name: 'Raw' })).toBeInViewport();
+  // Also by keyboard: the body takes the focus and scrolls.
+  await area.evaluate((element) => element.scrollTo(0, 0));
+  await page.locator('.response-code').focus();
+  await page.keyboard.press('End');
+  await expect(page.getByText('"item": 499')).toBeInViewport();
+});

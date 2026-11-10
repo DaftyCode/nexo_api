@@ -1,0 +1,34 @@
+[package]
+name = "nexo-mongo"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "MongoDB adapter of Nexo: implements the application's document database port"
+
+[dependencies]
+nexo-domain = { path = "../nexo-domain" }
+nexo-application = { path = "../nexo-application" }
+# The official driver, with rustls on aws-lc-rs (Nexo's only TLS provider: the default
+# `rustls-tls` would bring ring), hickory for `mongodb+srv://` (Atlas), errors that never
+# show credentials, and snappy and zlib compression (no new crates: snap and flate2 come
+# with Kafka). Left out: aws-auth (AWS SDK), in-use-encryption (libmongocrypt, C),
+# gssapi-auth (system Kerberos), openssl-tls, zstd-compression (C), socks5-proxy (for
+# B-01) and cert-key-password, which needs a pkcs8 that is not released yet. Measured in
+# docs/ARCHITECTURE.md, section MongoDB.
+mongodb = { version = "3.10.0", default-features = false, features = [
+    "rustls-tls-aws-lc",
+    "dns-resolver",
+    "compat-3-3-0",
+    "bson-3",
+    "redact-errors",
+    "snappy-compression",
+    "zlib-compression",
+] }
+# The same rustls the driver uses, asked for post-quantum key exchange here too rather than
+# only through the engine's features (one rustls for the whole workspace, no new crate).
+rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum"] }
+
+[dev-dependencies]
+tokio.workspace = true
