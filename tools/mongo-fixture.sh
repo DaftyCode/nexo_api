@@ -42,23 +42,37 @@ chmod 644 ./*
 cd "$directory"
 
 docker rm -f "${names[@]}" >/dev/null 2>&1 || true
-docker run -d --name nexo-mongo-plain -p 27117:27017 "$image" --quiet >/dev/null
-docker run -d --name nexo-mongo-auth -p 27118:27017 \
+# The image sets GLIBC_TUNABLES=glibc.pthread.rseq=0, and MongoDB 8.0 refuses to start that
+# way on Linux 6.19 and newer (GitHub's ubuntu-24.04 runners have 7.0). With rseq on, its
+# TCMalloc works on every kernel (SERVER-121912).
+rseq=(-e GLIBC_TUNABLES=glibc.pthread.rseq=1)
+docker run -d --name nexo-mongo-plain "${rseq[@]}" -p 27117:27017 "$image" --quiet >/dev/null
+docker run -d --name nexo-mongo-auth "${rseq[@]}" -p 27118:27017 \
   -e MONGO_INITDB_ROOT_USERNAME=nexo -e MONGO_INITDB_ROOT_PASSWORD=nexo-secret \
   -v "$directory/certs:/certs:ro" "$image" --quiet \
   --tlsMode allowTLS --tlsCertificateKeyFile /certs/server.pem --tlsCAFile /certs/ca.crt \
   --tlsAllowConnectionsWithoutCertificates >/dev/null
-docker run -d --name nexo-mongo-rs -p 27119:27119 "$image" --quiet \
+docker run -d --name nexo-mongo-rs "${rseq[@]}" -p 27119:27119 "$image" --quiet \
   --replSet rs0 --port 27119 --bind_ip_all >/dev/null
 docker run -d --name nexo-mongo-ferretdb -p 27120:27017 \
   -e POSTGRES_USER=nexo -e POSTGRES_PASSWORD=nexo-secret "$ferretdb" >/dev/null
 
 ready() { docker exec "$1" mongosh --quiet --port "$2" "${@:3}" --eval 'db.runCommand({ping: 1}).ok' >/dev/null 2>&1; }
+started=false
 for _ in $(seq 1 60); do
   if ready nexo-mongo-plain 27017 && ready nexo-mongo-rs 27119 \
-    && ready nexo-mongo-auth 27017 -u nexo -p nexo-secret; then break; fi
+    && ready nexo-mongo-auth 27017 -u nexo -p nexo-secret; then started=true; break; fi
   sleep 2
 done
+# Say which server did not start, and why, instead of failing later on a stopped container.
+if [[ "$started" != true ]]; then
+  for name in nexo-mongo-plain nexo-mongo-auth nexo-mongo-rs; do
+    echo "== $name: $(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' "$name")" >&2
+    docker logs --tail 30 "$name" 2>&1 | tail -30 >&2 || true
+  done
+  echo "The MongoDB servers did not start" >&2
+  exit 1
+fi
 # The replica set announces 127.0.0.1:27119, which tests reach through the published port.
 docker exec nexo-mongo-rs mongosh --quiet --port 27119 --eval \
   "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '127.0.0.1:27119'}]})" >/dev/null
