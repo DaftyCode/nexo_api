@@ -344,6 +344,21 @@ mod tests {
         async fn close(&self, _: &str) -> Result<()> {
             Err(Error::NotFound)
         }
+        async fn write(
+            &self,
+            _: DatabaseConnection,
+            _: crate::ports::WriteTarget,
+            _: crate::ports::DocumentWrite,
+        ) -> Result<crate::ports::WriteResult> {
+            Err(Error::NotFound)
+        }
+        async fn change(
+            &self,
+            _: DatabaseConnection,
+            _: crate::ports::CollectionChange,
+        ) -> Result<()> {
+            Err(Error::NotFound)
+        }
     }
 
     fn document(

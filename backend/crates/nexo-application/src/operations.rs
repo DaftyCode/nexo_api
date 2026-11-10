@@ -78,6 +78,15 @@ operations!(
         MongoCount => "mongo.count",
         MongoCancel => "mongo.cancel",
         MongoClose => "mongo.close",
+        MongoInsert => "mongo.insert",
+        MongoUpdate => "mongo.update",
+        MongoReplace => "mongo.replace",
+        MongoDelete => "mongo.delete",
+        MongoUndo => "mongo.undo",
+        MongoCollectionCreate => "mongo.collection.create",
+        MongoCollectionRename => "mongo.collection.rename",
+        MongoCollectionDrop => "mongo.collection.drop",
+        MongoDatabaseDrop => "mongo.database.drop",
     }
 );
 impl Operation {
@@ -94,6 +103,31 @@ impl Operation {
                 | Self::MongoCount
                 | Self::MongoCancel
                 | Self::MongoClose
+                | Self::MongoInsert
+                | Self::MongoUpdate
+                | Self::MongoReplace
+                | Self::MongoDelete
+                | Self::MongoUndo
+                | Self::MongoCollectionCreate
+                | Self::MongoCollectionRename
+                | Self::MongoCollectionDrop
+                | Self::MongoDatabaseDrop
+        )
+    }
+    /// Database operations that change data: refused on a read-only connection, and recorded
+    /// so they can be undone.
+    pub fn is_database_write(self) -> bool {
+        matches!(
+            self,
+            Self::MongoInsert
+                | Self::MongoUpdate
+                | Self::MongoReplace
+                | Self::MongoDelete
+                | Self::MongoUndo
+                | Self::MongoCollectionCreate
+                | Self::MongoCollectionRename
+                | Self::MongoCollectionDrop
+                | Self::MongoDatabaseDrop
         )
     }
     /// Operations whose data belongs to a workspace and need one.
@@ -108,6 +142,15 @@ impl Operation {
                 | Self::CookiesClear
                 | Self::CookiesSet
                 | Self::CookiesDelete
+                | Self::MongoInsert
+                | Self::MongoUpdate
+                | Self::MongoReplace
+                | Self::MongoDelete
+                | Self::MongoUndo
+                | Self::MongoCollectionCreate
+                | Self::MongoCollectionRename
+                | Self::MongoCollectionDrop
+                | Self::MongoDatabaseDrop
         )
     }
 }

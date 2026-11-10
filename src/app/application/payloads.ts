@@ -353,6 +353,95 @@ export interface MongoClosePayload {
   workspace?: string;
 }
 
+export interface MongoInsertPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  documents: readonly object[];
+  workspace?: string;
+  writeConcern?: object;
+}
+
+export interface MongoUpdatePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  filter: object;
+  update: object | readonly object[];
+  workspace?: string;
+  many?: boolean;
+  expected?: number;
+  writeConcern?: object;
+}
+
+export interface MongoReplacePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  filter: object;
+  replacement: object;
+  workspace?: string;
+  writeConcern?: object;
+}
+
+export interface MongoDeletePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  filter: object;
+  workspace?: string;
+  many?: boolean;
+  expected?: number;
+  confirm?: string;
+  writeConcern?: object;
+}
+
+export interface MongoUndoPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  change: string;
+  workspace?: string;
+}
+
+export interface MongoCollectionCreatePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  workspace?: string;
+  options?: object;
+}
+
+export interface MongoCollectionRenamePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  to: string;
+  workspace?: string;
+}
+
+export interface MongoCollectionDropPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  confirm: string;
+  workspace?: string;
+}
+
+export interface MongoDatabaseDropPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  confirm: string;
+  workspace?: string;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -409,6 +498,15 @@ export interface OperationPayloads {
   'mongo.count': MongoCountPayload;
   'mongo.cancel': IdPayload;
   'mongo.close': MongoClosePayload;
+  'mongo.insert': MongoInsertPayload;
+  'mongo.update': MongoUpdatePayload;
+  'mongo.replace': MongoReplacePayload;
+  'mongo.delete': MongoDeletePayload;
+  'mongo.undo': MongoUndoPayload;
+  'mongo.collection.create': MongoCollectionCreatePayload;
+  'mongo.collection.rename': MongoCollectionRenamePayload;
+  'mongo.collection.drop': MongoCollectionDropPayload;
+  'mongo.database.drop': MongoDatabaseDropPayload;
 }
 
 /** The payload of an operation. */

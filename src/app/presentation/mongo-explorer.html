@@ -33,6 +33,9 @@
         [style.background]="color() || 'transparent'"
       ></span>
       {{ connection().name }}
+      @if (!writable()) {
+        <span class="mongo-badge">{{ 'Read-only' | transloco }}</span>
+      }
     </h2>
     @if (loadingDatabases()) {
       <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
@@ -85,6 +88,17 @@
               } @empty {
                 <li class="muted mongo-empty">{{ 'No collections' | transloco }}</li>
               }
+              @if (writable()) {
+                <li>
+                  <button
+                    type="button"
+                    class="mongo-tree-item muted"
+                    (click)="writes.newCollection(database.name)"
+                  >
+                    {{ '＋ New collection' | transloco }}
+                  </button>
+                </li>
+              }
             </ul>
           }
         </li>
@@ -94,6 +108,12 @@
         }
       }
     </ul>
+
+    @if (writable()) {
+      <button type="button" class="text-button" (click)="writes.newCollection()">
+        {{ '＋ New database' | transloco }}
+      </button>
+    }
 
     <h3 class="mongo-section">{{ 'Saved queries' | transloco }}</h3>
     @for (group of savedQueries(); track group.folder) {
@@ -144,6 +164,27 @@
         </li>
       }
     </ul>
+
+    <h3 class="mongo-section">{{ 'Changes' | transloco }}</h3>
+    <ul>
+      @for (change of changes(); track change.id) {
+        <li class="row mongo-saved">
+          <span class="grow mongo-history" [title]="change.name">{{ change.name }}</span>
+          @if (undoable(change) && writable()) {
+            <button
+              type="button"
+              class="text-button"
+              [attr.aria-label]="'mongo.undoChange' | transloco: { v0: change.name }"
+              (click)="writes.undo(change)"
+            >
+              {{ 'Undo' | transloco }}
+            </button>
+          }
+        </li>
+      } @empty {
+        <li class="muted">{{ 'Writes appear here, to undo them.' | transloco }}</li>
+      }
+    </ul>
   </nav>
 
   <section class="feature-card mongo-query" [attr.aria-label]="'Query' | transloco">
@@ -178,6 +219,54 @@
           </dl>
         }
       </div>
+
+      @if (writable()) {
+        <div class="row mongo-write-bar" role="toolbar" [attr.aria-label]="'Write' | transloco">
+          <button type="button" class="button small" (click)="writes.insert()">
+            {{ 'Insert documents' | transloco }}
+          </button>
+          <button type="button" class="button small" (click)="writes.updateMany()">
+            {{ 'Update many…' | transloco }}
+          </button>
+          <button type="button" class="button small" (click)="writes.deleteMany()">
+            {{ 'Delete many…' | transloco }}
+          </button>
+          <span class="grow"></span>
+          <label class="field mongo-format"
+            >{{ 'Write concern' | transloco }}
+            <select [value]="writes.concern()" (change)="setConcern($event)">
+              @for (concern of writeConcerns; track concern) {
+                <option [value]="concern">
+                  {{
+                    (concern === '' ? 'Connection default' : concern === '1' ? 'w: 1' : 'majority')
+                      | transloco
+                  }}
+                </option>
+              }
+            </select>
+          </label>
+          <details class="mongo-more">
+            <summary>{{ 'Collection' | transloco }}</summary>
+            <div class="mongo-menu">
+              <button type="button" class="text-button" (click)="writes.rename()">
+                {{ 'Rename collection' | transloco }}
+              </button>
+              <button type="button" class="text-button" (click)="writes.deleteMany(true)">
+                {{ 'Empty collection' | transloco }}
+              </button>
+              <button type="button" class="text-button danger" (click)="writes.dropCollection()">
+                {{ 'Drop collection' | transloco }}
+              </button>
+              <button type="button" class="text-button danger" (click)="writes.dropDatabase()">
+                {{ 'Drop database' | transloco }}
+              </button>
+            </div>
+          </details>
+        </div>
+      }
+      @if (writes.notice(); as done) {
+        <p class="muted" role="status">{{ done.key | transloco: done.params }}</p>
+      }
 
       <form class="mongo-bar" (submit)="$event.preventDefault(); find()">
         <app-code-editor
@@ -362,7 +451,9 @@
           [offset]="page.offset"
           [view]="view()"
           [format]="format()"
+          [writable]="writable()"
           (copied)="notice.set($event)"
+          (edit)="writes.edit($event)"
         />
       }
     } @else {
@@ -370,3 +461,12 @@
     }
   </section>
 </div>
+@if (writes.dialog(); as request) {
+  <app-mongo-dialog
+    [request]="request"
+    [problem]="writes.problem()"
+    [busy]="writes.busy()"
+    (confirmed)="writes.answer($event)"
+    (cancelled)="writes.cancel()"
+  />
+}

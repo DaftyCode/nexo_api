@@ -37,6 +37,20 @@ export interface TypedSecrets {
 export const passwordSecret = (id: string) => `mongo-password:${id}`;
 export const keySecret = (id: string) => `mongo-key:${id}`;
 
+/** What a write did; `change` names the record that undoes it. */
+export interface WriteAnswer {
+  matched: number;
+  modified: number;
+  deleted: number;
+  inserted: unknown[];
+  change: string;
+}
+
+/** Where a write goes, and its write concern when it is not the connection's. */
+export interface WriteWhere extends QueryTarget {
+  writeConcern?: Record<string, unknown>;
+}
+
 /** Where a query runs. */
 export interface QueryTarget {
   database: string;
@@ -287,6 +301,158 @@ export class MongoUseCases {
   /** A history entry's query: the listing has only its name. */
   async historyQuery(document: WorkspaceDocument): Promise<MongoQueryValue> {
     return queryValue(document.value ?? (await this.api.document(document.id)).value);
+  }
+
+  /** The saved connection a write names: the backend refuses it when it is read-only. */
+  private writer(workspace: string, connection: WorkspaceDocument, scopes: VariableScopes) {
+    return {
+      workspace,
+      connection: this.payload(connection, scopes),
+      connectionId: connection.id,
+    };
+  }
+  private where({ database, collection, writeConcern }: WriteWhere) {
+    return { database, collection, ...(writeConcern ? { writeConcern } : {}) };
+  }
+
+  insert(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    where: WriteWhere,
+    documents: Record<string, unknown>[],
+  ): Promise<WriteAnswer> {
+    return this.api.execute<WriteAnswer>('mongo.insert', {
+      ...this.writer(workspace, connection, scopes),
+      ...this.where(where),
+      documents,
+    });
+  }
+
+  /** Updates one document, or with `expected` (the count the person confirmed) many. */
+  update(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    where: WriteWhere,
+    filter: Record<string, unknown>,
+    update: Record<string, unknown> | Record<string, unknown>[],
+    expected?: number,
+  ): Promise<WriteAnswer> {
+    return this.api.execute<WriteAnswer>('mongo.update', {
+      ...this.writer(workspace, connection, scopes),
+      ...this.where(where),
+      filter,
+      update,
+      ...(expected === undefined ? {} : { many: true, expected }),
+    });
+  }
+
+  replace(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    where: WriteWhere,
+    filter: Record<string, unknown>,
+    replacement: Record<string, unknown>,
+  ): Promise<WriteAnswer> {
+    return this.api.execute<WriteAnswer>('mongo.replace', {
+      ...this.writer(workspace, connection, scopes),
+      ...this.where(where),
+      filter,
+      replacement,
+    });
+  }
+
+  /** Deletes one document, or with `expected` many; every document also needs `confirm`. */
+  deleteDocuments(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    where: WriteWhere,
+    filter: Record<string, unknown>,
+    many?: { expected: number; confirm?: string },
+  ): Promise<WriteAnswer> {
+    return this.api.execute<WriteAnswer>('mongo.delete', {
+      ...this.writer(workspace, connection, scopes),
+      ...this.where(where),
+      filter,
+      ...(many ? { many: true, ...many } : {}),
+    });
+  }
+
+  undo(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    change: string,
+  ): Promise<WriteAnswer> {
+    return this.api.execute<WriteAnswer>('mongo.undo', {
+      ...this.writer(workspace, connection, scopes),
+      change,
+    });
+  }
+
+  /** Creates a collection, and its database when it is new. */
+  async createCollection(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+    options: Record<string, unknown>,
+  ): Promise<void> {
+    await this.api.execute('mongo.collection.create', {
+      ...this.writer(workspace, connection, scopes),
+      ...target,
+      ...(Object.keys(options).length ? { options } : {}),
+    });
+  }
+
+  async renameCollection(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+    to: string,
+  ): Promise<void> {
+    await this.api.execute('mongo.collection.rename', {
+      ...this.writer(workspace, connection, scopes),
+      ...target,
+      to,
+    });
+  }
+
+  async dropCollection(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    target: QueryTarget,
+    confirm: string,
+  ): Promise<void> {
+    await this.api.execute('mongo.collection.drop', {
+      ...this.writer(workspace, connection, scopes),
+      ...target,
+      confirm,
+    });
+  }
+
+  async dropDatabase(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    database: string,
+    confirm: string,
+  ): Promise<void> {
+    await this.api.execute('mongo.database.drop', {
+      ...this.writer(workspace, connection, scopes),
+      database,
+      confirm,
+    });
+  }
+
+  /** The record of a write, which the backend saved in the workspace. */
+  change(id: string): Promise<WorkspaceDocument> {
+    return this.api.document(id);
   }
 
   private payload(connection: WorkspaceDocument, scopes: VariableScopes): MongoConnection {

@@ -1,4 +1,5 @@
 //! Use cases depend only on domain types and outbound ports.
+mod database_writes;
 pub mod mcp;
 mod mcp_content;
 pub mod operations;
@@ -259,6 +260,15 @@ impl Application {
                 .prune(&workspace, DocumentKind::History, HISTORY_LIMIT)
                 .await?;
         }
+        if kind == DocumentKind::DatabaseChange {
+            self.workspaces
+                .prune(
+                    &workspace,
+                    DocumentKind::DatabaseChange,
+                    database_writes::CHANGE_LIMIT,
+                )
+                .await?;
+        }
         if kind == DocumentKind::QueryHistory {
             self.workspaces
                 .prune(&workspace, DocumentKind::QueryHistory, QUERY_HISTORY_LIMIT)
@@ -402,6 +412,9 @@ impl Application {
         }
         fn answer<T: serde::Serialize>(value: T) -> Result<Value> {
             serde_json::to_value(value).map_err(|error| Error::Infrastructure(error.to_string()))
+        }
+        if operation.is_database_write() {
+            return self.database_write(operation, payload, values).await;
         }
         let database = &self.database;
         match operation {
@@ -554,6 +567,8 @@ mod tests {
         workspaces: Mutex<Vec<Workspace>>,
         connections: Mutex<Vec<DatabaseConnection>>,
         finds: Mutex<Vec<ports::FindRequest>>,
+        documents: Mutex<Vec<Document>>,
+        writes: Mutex<Vec<(ports::WriteTarget, ports::DocumentWrite)>>,
     }
     fn workspace(id: &str) -> Workspace {
         Workspace {
@@ -595,10 +610,19 @@ mod tests {
         ) -> Result<Vec<Document>> {
             Ok(vec![])
         }
-        async fn document(&self, _: &DocumentId) -> Result<Document> {
-            Err(Error::NotFound)
+        async fn document(&self, id: &DocumentId) -> Result<Document> {
+            self.documents
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|document| &document.id == id)
+                .cloned()
+                .ok_or(Error::NotFound)
         }
         async fn save(&self, document: Document) -> Result<Document> {
+            let mut documents = self.documents.lock().unwrap();
+            documents.retain(|stored| stored.id != document.id);
+            documents.push(document.clone());
             Ok(document)
         }
         async fn delete(&self, _: &DocumentId, _: i64) -> Result<()> {
@@ -732,6 +756,41 @@ mod tests {
             Ok(id == "running")
         }
         async fn close(&self, _: &str) -> Result<()> {
+            Ok(())
+        }
+        async fn write(
+            &self,
+            connection: DatabaseConnection,
+            target: ports::WriteTarget,
+            write: ports::DocumentWrite,
+        ) -> Result<ports::WriteResult> {
+            self.connections.lock().unwrap().push(connection);
+            self.writes.lock().unwrap().push((target, write.clone()));
+            let before = json!({"_id": 1, "n": {"$numberInt": "1"}});
+            let after = json!({"_id": 1, "n": {"$numberInt": "2"}});
+            Ok(match write {
+                ports::DocumentWrite::Restore { changes } => ports::WriteResult {
+                    matched: changes.len() as u64,
+                    modified: changes.len() as u64,
+                    ..Default::default()
+                },
+                _ => ports::WriteResult {
+                    matched: 1,
+                    modified: 1,
+                    changes: vec![ports::DocumentChange {
+                        before: Some(before),
+                        after: Some(after),
+                    }],
+                    ..Default::default()
+                },
+            })
+        }
+        async fn change(
+            &self,
+            connection: DatabaseConnection,
+            _: ports::CollectionChange,
+        ) -> Result<()> {
+            self.connections.lock().unwrap().push(connection);
             Ok(())
         }
     }
@@ -963,6 +1022,184 @@ mod tests {
             .await
             .unwrap_err();
         assert_eq!(error.to_string(), "Query failed for [redacted]");
+    }
+
+    #[tokio::test]
+    async fn writes_are_refused_on_read_only_and_other_connections_and_recorded() {
+        let (application, fake) = application();
+        let saved = |id: &str, value: Value| {
+            fake.documents.lock().unwrap().push(Document {
+                id: DocumentId::parse(id).unwrap(),
+                workspace_id: WorkspaceId::parse("local").unwrap(),
+                kind: DocumentKind::Connection,
+                name: id.into(),
+                revision: 1,
+                updated_at: 0,
+                value,
+            })
+        };
+        saved("ro", json!({"uri": "mongodb://{{host}}", "readOnly": true}));
+        saved(
+            "rw",
+            json!({"uri": "mongodb://{{host}}", "password": "{{vault:p}}"}),
+        );
+        let write = |operation: Operation, extra: Value| {
+            let mut payload = json!({
+                "workspace": "local", "connectionId": "rw", "database": "shop",
+                "collection": "orders",
+                "connection": {"uri": "mongodb://db.test", "password": "{{vault:p}}"},
+            });
+            for (key, value) in extra.as_object().unwrap() {
+                if value.is_null() {
+                    payload.as_object_mut().unwrap().remove(key);
+                } else {
+                    payload[key] = value.clone();
+                }
+            }
+            application.execute(operation, payload)
+        };
+        let error = |result: Result<Value>| result.unwrap_err().to_string();
+        assert_eq!(
+            error(
+                write(
+                    Operation::MongoInsert,
+                    json!({"connectionId": "ro", "connection": {"uri": "mongodb://db.test"},
+                        "documents": [{}]})
+                )
+                .await
+            ),
+            "The connection ro is read-only: Nexo refuses its writes"
+        );
+        for (refused, extra) in [
+            (Operation::MongoCollectionCreate, json!({})),
+            (Operation::MongoCollectionRename, json!({"to": "x"})),
+            (Operation::MongoCollectionDrop, json!({"confirm": "orders"})),
+        ] {
+            let mut payload =
+                json!({"connectionId": "ro", "connection": {"uri": "mongodb://db.test"}});
+            payload
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            let result = write(refused, payload).await;
+            assert!(error(result).contains("read-only"), "{refused}");
+        }
+        assert!(
+            error(
+                write(
+                    Operation::MongoInsert,
+                    json!({"connection": {"uri": "mongodb+srv://db.test",
+                        "password": "{{vault:p}}"}, "documents": [{}]})
+                )
+                .await
+            )
+            .contains("not the saved one")
+        );
+        assert!(
+            error(
+                write(
+                    Operation::MongoUpdate,
+                    json!({"filter": {}, "update": {"$set": {"a": 1}}, "many": true})
+                )
+                .await
+            )
+            .starts_with("Count the documents first")
+        );
+        assert_eq!(
+            error(
+                write(
+                    Operation::MongoDelete,
+                    json!({"filter": {}, "many": true, "expected": 3})
+                )
+                .await
+            ),
+            "Type the name of the collection to confirm: orders"
+        );
+        assert!(
+            error(
+                write(
+                    Operation::MongoDatabaseDrop,
+                    json!({"confirm": "orders", "collection": null})
+                )
+                .await
+            )
+            .contains("database to confirm: shop")
+        );
+        assert!(
+            application
+                .execute(
+                    Operation::MongoInsert,
+                    json!({"connectionId": "rw", "database": "d", "collection": "c",
+                        "connection": {"uri": "mongodb://db.test"}, "documents": []}),
+                )
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("Choose a workspace")
+        );
+        assert!(
+            fake.writes.lock().unwrap().is_empty(),
+            "nothing refused was written"
+        );
+
+        // A write is recorded with its documents, and undone from the record.
+        let done = write(
+            Operation::MongoUpdate,
+            json!({"filter": {"_id": 1}, "update": {"$set": {"n": 2}}}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            (done["matched"].clone(), done["modified"].clone()),
+            (json!(1), json!(1))
+        );
+        let change = done["change"].as_str().unwrap().to_string();
+        let recorded = fake
+            .documents
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|d| d.id.as_str() == change)
+            .cloned()
+            .unwrap();
+        assert_eq!(recorded.kind, DocumentKind::DatabaseChange);
+        assert_eq!(recorded.value["operation"], "mongo.update");
+        assert_eq!(
+            recorded.value["changes"][0]["before"]["n"]["$numberInt"],
+            "1"
+        );
+        assert!(!recorded.value.to_string().contains("secret-of-p"));
+        assert_eq!(
+            fake.connections
+                .lock()
+                .unwrap()
+                .last()
+                .unwrap()
+                .password
+                .as_deref(),
+            Some("secret-of-p")
+        );
+        let undone = write(
+            Operation::MongoUndo,
+            json!({"change": change, "database": null, "collection": null}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(undone["matched"], 1);
+        let (_, last) = fake.writes.lock().unwrap().last().cloned().unwrap();
+        assert!(
+            matches!(last, ports::DocumentWrite::Restore { ref changes } if changes.len() == 1)
+        );
+        assert!(
+            error(
+                write(
+                    Operation::MongoUndo,
+                    json!({"change": "rw", "database": null, "collection": null})
+                )
+                .await
+            )
+            .contains("not one of this connection")
+        );
     }
 
     #[test]

@@ -116,9 +116,12 @@ pub enum DocumentKind {
     /// A database query that was run: only the query, never its results.
     #[serde(rename = "query-history")]
     QueryHistory,
+    /// A write on a database, with the documents before and after it to undo it.
+    #[serde(rename = "database-change")]
+    DatabaseChange,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 14] = [
+    pub const ALL: [DocumentKind; 15] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -133,6 +136,7 @@ impl DocumentKind {
         Self::Connection,
         Self::Query,
         Self::QueryHistory,
+        Self::DatabaseChange,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -150,6 +154,7 @@ impl DocumentKind {
             Self::Connection => "connection",
             Self::Query => "query",
             Self::QueryHistory => "query-history",
+            Self::DatabaseChange => "database-change",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -161,10 +166,14 @@ impl DocumentKind {
     /// History entries (of requests and of queries) and run reports never change after they
     /// are written.
     pub fn keeps_revisions(self) -> bool {
-        !matches!(self, Self::History | Self::Run | Self::QueryHistory)
+        !matches!(
+            self,
+            Self::History | Self::Run | Self::QueryHistory | Self::DatabaseChange
+        )
     }
     /// Request history and run reports grow with use, so a workspace lists them without
-    /// their values; a query of the history is small and listed whole.
+    /// their values; a query of the history and a database change (whose documents are kept
+    /// only while they are small) are listed whole.
     pub fn listed_whole(self) -> bool {
         !matches!(self, Self::History | Self::Run)
     }
@@ -211,7 +220,10 @@ impl Document {
                 ));
             }
         }
-        if matches!(self.kind, DocumentKind::Query | DocumentKind::QueryHistory) {
+        if matches!(
+            self.kind,
+            DocumentKind::Query | DocumentKind::QueryHistory | DocumentKind::DatabaseChange
+        ) {
             let named = |field: &str| {
                 self.value
                     .get(field)

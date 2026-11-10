@@ -629,6 +629,155 @@ payload! {
 }
 
 payload! {
+    /// `mongo.insert`: inserts documents (Extended JSON). Writes name the saved connection
+    /// (`connectionId`): a read-only one is refused.
+    closed MongoInsertPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            documents "documents": Vec<Map<String, Value>> => "readonly object[]",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            write_concern "writeConcern": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.update`: `update` is an update document or a pipeline. With `many`, `expected`
+    /// is the count the person confirmed; a filter that matches another number writes nothing.
+    closed MongoUpdatePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            filter "filter": Map<String, Value> => "object",
+            update "update": Value => "object | readonly object[]",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            many "many": bool => "boolean",
+            expected "expected": u64 => "number",
+            write_concern "writeConcern": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.replace`: replaces the document the filter matches.
+    closed MongoReplacePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            filter "filter": Map<String, Value> => "object",
+            replacement "replacement": Map<String, Value> => "object",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            write_concern "writeConcern": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.delete`: with `many`, `expected` as in `mongo.update`; an empty filter (every
+    /// document) also needs `confirm` with the collection's name.
+    closed MongoDeletePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            filter "filter": Map<String, Value> => "object",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            many "many": bool => "boolean",
+            expected "expected": u64 => "number",
+            confirm "confirm": String => "string",
+            write_concern "writeConcern": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.undo`: undoes a recorded change (a `mongo-change` document).
+    closed MongoUndoPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            change "change": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.collection.create`: also creates its database. Options: `capped`, `size`,
+    /// `max`, `timeseries`, `validator`, `validationLevel`, `validationAction`, `collation`,
+    /// `expireAfterSeconds`.
+    closed MongoCollectionCreatePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            options "options": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.collection.rename`: within its database.
+    closed MongoCollectionRenamePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            to "to": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.collection.drop`: `confirm` repeats the collection's name.
+    closed MongoCollectionDropPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            confirm "confirm": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.database.drop`: `confirm` repeats the database's name.
+    closed MongoDatabaseDropPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            confirm "confirm": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
     /// `mongo.close`: closes a cursor the interface no longer reads.
     closed MongoClosePayload {
         required { cursor "cursor": String => "string" }
@@ -800,6 +949,15 @@ operation_payloads! {
     MongoCount => MongoCountPayload,
     MongoCancel => IdPayload,
     MongoClose => MongoClosePayload,
+    MongoInsert => MongoInsertPayload,
+    MongoUpdate => MongoUpdatePayload,
+    MongoReplace => MongoReplacePayload,
+    MongoDelete => MongoDeletePayload,
+    MongoUndo => MongoUndoPayload,
+    MongoCollectionCreate => MongoCollectionCreatePayload,
+    MongoCollectionRename => MongoCollectionRenamePayload,
+    MongoCollectionDrop => MongoCollectionDropPayload,
+    MongoDatabaseDrop => MongoDatabaseDropPayload,
 }
 
 /// Checks the payload of a Git operation.
@@ -929,6 +1087,15 @@ mod tests {
                     | Operation::MongoCount
                     | Operation::MongoCancel
                     | Operation::MongoClose
+                    | Operation::MongoInsert
+                    | Operation::MongoUpdate
+                    | Operation::MongoReplace
+                    | Operation::MongoDelete
+                    | Operation::MongoUndo
+                    | Operation::MongoCollectionCreate
+                    | Operation::MongoCollectionRename
+                    | Operation::MongoCollectionDrop
+                    | Operation::MongoDatabaseDrop
             );
             assert_eq!(result.is_err(), required, "{operation}");
             assert!(

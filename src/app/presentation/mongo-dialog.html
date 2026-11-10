@@ -1,0 +1,111 @@
+<div class="mongo-backdrop">
+  <form
+    class="feature-card mongo-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mongo-dialog-title"
+    (submit)="$event.preventDefault(); submit()"
+  >
+    <h2 id="mongo-dialog-title">{{ request().title | transloco }}</h2>
+    @if (request().message; as message) {
+      <p [class.mongo-warning]="request().danger">
+        {{ message.key | transloco: message.params }}
+      </p>
+    }
+    @if (request().first; as first) {
+      <label class="field">{{ first.label | transloco }}<input [formField]="fields.first" /></label>
+    }
+    @if (request().second; as second) {
+      <label class="field"
+        >{{ second.label | transloco }}<input [formField]="fields.second"
+      /></label>
+    }
+    @if (request().editor; as editor) {
+      <app-code-editor
+        size="large"
+        language="javascript"
+        [formField]="fields.text"
+        [label]="editor.label | transloco"
+      />
+    }
+    @if (request().collectionOptions) {
+      <fieldset class="mongo-options">
+        <legend>{{ 'Options' | transloco }}</legend>
+        <label class="check"
+          ><input type="checkbox" [formField]="fields.capped" />{{ 'Capped' | transloco }}</label
+        >
+        @if (model().capped) {
+          <div class="row">
+            <label class="field grow"
+              >{{ 'Size in bytes' | transloco
+              }}<input [formField]="fields.size" inputmode="numeric"
+            /></label>
+            <label class="field grow"
+              >{{ 'Maximum documents' | transloco
+              }}<input [formField]="fields.max" inputmode="numeric"
+            /></label>
+          </div>
+        }
+        <div class="row">
+          <label class="field grow"
+            >{{ 'Time field (time series)' | transloco }}<input [formField]="fields.timeField"
+          /></label>
+          <label class="field grow"
+            >{{ 'Meta field' | transloco }}<input [formField]="fields.metaField"
+          /></label>
+          <label class="field"
+            >{{ 'Granularity' | transloco }}
+            <select [formField]="fields.granularity">
+              @for (granularity of granularities; track granularity) {
+                <option [value]="granularity">
+                  {{ granularity || ('Default' | transloco) }}
+                </option>
+              }
+            </select>
+          </label>
+        </div>
+        <app-code-editor
+          size="small"
+          language="javascript"
+          [formField]="fields.validator"
+          [label]="'Validator' | transloco"
+          placeholder="{ $jsonSchema: { required: ['name'] } }"
+        />
+      </fieldset>
+    }
+    @if (request().confirmName; as name) {
+      <label class="field"
+        >{{ 'mongo.typeName' | transloco: { v0: name }
+        }}<input [formField]="fields.typed" autocomplete="off" spellcheck="false"
+      /></label>
+    }
+    @if (problem(); as problem) {
+      <p class="mongo-problem" role="alert">
+        @if (problem.key === 'mongo.syntax' && problem.params) {
+          {{ $any(problem.params['v0']) | transloco }}
+          @if (problem.params['v3']) {
+            ({{ problem.params['v3'] }})
+          }
+          —
+          {{ 'mongo.position' | transloco: { v0: problem.params['v1'], v1: problem.params['v2'] } }}
+        } @else {
+          {{ problem.key | transloco: problem.params }}
+        }
+      </p>
+    }
+    <div class="row mongo-dialog-actions">
+      <button type="button" class="button" (click)="cancelled.emit()">
+        {{ 'Cancel' | transloco }}
+      </button>
+      <button
+        type="submit"
+        class="button"
+        [class.primary]="!request().danger"
+        [class.danger]="request().danger"
+        [disabled]="!ready() || busy()"
+      >
+        {{ request().confirm | transloco }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -27,6 +27,16 @@ export type ResultsView = 'table' | 'tree' | 'json';
 export type JsonFormat = 'shell' | 'relaxed' | 'canonical';
 type Path = readonly (string | number)[];
 
+/** A write the person asked for on what is selected. */
+export interface ResultsEdit {
+  action: 'edit' | 'unset' | 'duplicate' | 'delete';
+  /** The document of the results the selection belongs to. */
+  document: Record<string, unknown>;
+  /** The selected value's path in that document; empty for the document itself. */
+  path: Path;
+  value: unknown;
+}
+
 /** Where the table is: the page, or an array inside one of its documents. */
 interface Step {
   row: number;
@@ -61,8 +71,11 @@ export class MongoResults {
   readonly offset = input(0);
   readonly view = input<ResultsView>('table');
   readonly format = input<JsonFormat>('shell');
+  /** Whether the connection may write: the write actions are shown. */
+  readonly writable = input(false);
   /** What the last copy did, as a message key. */
   readonly copied = output<string>();
+  readonly edit = output<ResultsEdit>();
 
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   protected readonly steps = signal<readonly Step[]>([]);
@@ -205,6 +218,26 @@ export class MongoResults {
   }
   protected paintMore() {
     this.painted.update((count) => count + PAINTED);
+  }
+
+  /**
+   * The selection in its document of the results: inside arrays that were entered, the path
+   * goes through each of them.
+   */
+  protected readonly target = computed(() => {
+    const choice = this.choice();
+    if (!choice) return undefined;
+    const steps = this.steps();
+    if (!steps.length)
+      return { document: this.documents()[choice.row], path: choice.path, value: choice.value };
+    const path: (string | number)[] = [...steps[0].path];
+    for (const step of steps.slice(1)) path.push(step.row, ...step.path);
+    path.push(choice.row, ...choice.path);
+    return { document: this.documents()[steps[0].row], path, value: choice.value };
+  });
+  protected request(action: ResultsEdit['action']) {
+    const target = this.target();
+    if (target) this.edit.emit({ action, ...target });
   }
 
   protected async copyDocument() {

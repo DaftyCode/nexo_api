@@ -44,6 +44,15 @@ export const EXECUTION_OPERATIONS = [
   'mongo.count',
   'mongo.cancel',
   'mongo.close',
+  'mongo.insert',
+  'mongo.update',
+  'mongo.replace',
+  'mongo.delete',
+  'mongo.undo',
+  'mongo.collection.create',
+  'mongo.collection.rename',
+  'mongo.collection.drop',
+  'mongo.database.drop',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

@@ -281,6 +281,11 @@ pub fn extended_json(raw: &RawDocument) -> Result<Value> {
     Ok(Bson::Document(document).into_canonical_extjson())
 }
 
+/// A document in canonical Extended JSON.
+pub fn extended_json_document(document: Document) -> Result<Value> {
+    Ok(Bson::Document(document).into_canonical_extjson())
+}
+
 fn page_size(page: u64) -> Result<u64> {
     if (1..=limits::PAGE_DOCUMENTS).contains(&page) {
         Ok(page)

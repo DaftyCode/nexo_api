@@ -1409,3 +1409,81 @@ test('MongoDB: browse 100 000 documents, filter an embedded field, sort, page, c
   });
   await expect(query.getByRole('button', { name: 'Find', exact: true })).toBeEnabled();
 });
+
+test('MongoDB: a database is created, written, edited keeping types, undone and dropped', async ({
+  page,
+  nexo,
+}) => {
+  test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'MongoDB' })
+    .click();
+  const editor = page.getByRole('region', { name: 'Connection', exact: true });
+  await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
+  await editor.getByRole('button', { name: 'Use URI' }).click();
+  await editor.getByLabel('Connection name').fill('Writer');
+  await editor.getByRole('button', { name: 'Save connection' }).click();
+  await editor.getByRole('button', { name: 'Browse data' }).click();
+
+  const tree = page.getByRole('navigation', { name: 'Databases' });
+  const dialog = page.getByRole('dialog');
+  const name = `e2e_${Date.now()}`;
+  await tree.getByRole('button', { name: '＋ New database' }).click();
+  await dialog.getByLabel('Database name').fill(name);
+  await dialog.getByLabel('Collection name').fill('items');
+  expect(await violations(page)).toEqual([]);
+  await dialog.getByRole('button', { name: 'Create' }).click();
+  const query = page.getByRole('region', { name: 'Query', exact: true });
+  await expect(query.getByRole('heading', { name: `${name}.items` })).toBeVisible();
+
+  await query.getByRole('button', { name: 'Insert documents' }).click();
+  await dialog
+    .locator('.cm-content[aria-label="Documents"]')
+    .fill(
+      "[{_id: 1, at: ISODate('2024-01-02T03:04:05Z'), price: NumberDecimal('1.10')}, {_id: 2}, {_id: 3}]",
+    );
+  await dialog.getByRole('button', { name: 'Insert' }).click();
+  const results = query.getByRole('group', { name: 'Results' });
+  await expect(results.locator('tbody tr')).toHaveCount(3);
+
+  // A date edited in the table stays a date.
+  await results.getByRole('button', { name: '2024-01-02T03:04:05.000Z' }).click();
+  await query.getByRole('button', { name: 'Edit value' }).click();
+  await dialog.locator('.cm-content[aria-label="Value"]').fill("ISODate('2025-05-05T00:00:00Z')");
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(results.getByRole('button', { name: '2025-05-05T00:00:00.000Z' })).toBeVisible();
+  await query.getByRole('button', { name: 'JSON', exact: true }).click();
+  await query.getByLabel('Format').selectOption('canonical');
+  await expect(query.locator('.cm-content[aria-label="Results"]')).toContainText('"$date"');
+  await expect(query.locator('.cm-content[aria-label="Results"]')).toContainText(
+    '"$numberDecimal": "1.10"',
+  );
+  await query.getByRole('button', { name: 'Table', exact: true }).click();
+
+  // Many documents: counted first, then written.
+  await query.getByRole('button', { name: 'Update many…' }).click();
+  await expect(dialog).toContainText('3 documents match the filter');
+  await dialog.locator('.cm-content[aria-label="Update"]').fill('{$set: {flag: true}}');
+  await dialog.getByRole('button', { name: 'Update documents' }).click();
+  await expect(results.locator('thead')).toContainText('flag');
+
+  // A write to many documents is listed but cannot be undone; the edit of one can.
+  const undo = tree.getByRole('button', { name: /^Undo mongo\.update/ });
+  await expect(undo).toHaveCount(1);
+  await undo.click();
+  await dialog.getByRole('button', { name: 'Undo' }).click();
+  // The document changed after the edit (the flag), so it is not put back.
+  await expect(dialog).toContainText('A document changed after this change');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+  await query.getByText('Collection', { exact: true }).click();
+  await query.getByRole('button', { name: 'Drop database' }).click();
+  await expect(dialog.getByRole('button', { name: 'Drop database' })).toBeDisabled();
+  await dialog.getByLabel(`Type ${name} to confirm`).fill(name);
+  expect(await violations(page)).toEqual([]);
+  await dialog.getByRole('button', { name: 'Drop database' }).click();
+  await expect(query).toContainText('Choose a collection to query it.');
+  await expect(tree.getByRole('button', { name: new RegExp(`^${name} \\d`) })).toHaveCount(0);
+});

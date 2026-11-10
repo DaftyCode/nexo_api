@@ -782,7 +782,16 @@ impl ExecutionGateway for Engine {
             | Operation::MongoMore
             | Operation::MongoCount
             | Operation::MongoCancel
-            | Operation::MongoClose => Err(Error::Validation(format!(
+            | Operation::MongoClose
+            | Operation::MongoInsert
+            | Operation::MongoUpdate
+            | Operation::MongoReplace
+            | Operation::MongoDelete
+            | Operation::MongoUndo
+            | Operation::MongoCollectionCreate
+            | Operation::MongoCollectionRename
+            | Operation::MongoCollectionDrop
+            | Operation::MongoDatabaseDrop => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

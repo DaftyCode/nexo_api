@@ -237,6 +237,94 @@ pub struct CountRequest {
     pub limit: Option<u64>,
 }
 
+/// Where a write goes, and the write concern of this operation when it is not the
+/// connection's (`{w, j, wtimeout}`).
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct WriteTarget {
+    pub database: String,
+    pub collection: String,
+    pub write_concern: Option<Value>,
+}
+
+/// A write on the documents of a collection. Documents and filters are Extended JSON.
+#[derive(Debug, Clone, PartialEq)]
+pub enum DocumentWrite {
+    Insert {
+        documents: Vec<Value>,
+    },
+    /// `update` is an update document or an aggregation pipeline.
+    Update {
+        filter: Value,
+        update: Value,
+        many: bool,
+        /// With `many`, how many documents the person was told would change: if the filter
+        /// now matches another number, nothing is written.
+        expected: Option<u64>,
+    },
+    Replace {
+        filter: Value,
+        replacement: Value,
+    },
+    Delete {
+        filter: Value,
+        many: bool,
+        expected: Option<u64>,
+    },
+    /// Undoes recorded changes: each document goes back to `before`, if it is still as
+    /// `after` left it.
+    Restore {
+        changes: Vec<DocumentChange>,
+    },
+}
+
+/// A document before and after a write; `None` where it did not exist.
+#[derive(Debug, Clone, PartialEq, Serialize, serde::Deserialize)]
+pub struct DocumentChange {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub before: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub after: Option<Value>,
+}
+
+/// What a write did.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WriteResult {
+    pub matched: u64,
+    pub modified: u64,
+    pub deleted: u64,
+    /// `_id` of each inserted (or upserted) document, in Extended JSON.
+    pub inserted: Vec<Value>,
+    /// Each document the write changed, to undo it. Writes of many documents do not list
+    /// them.
+    #[serde(skip)]
+    pub changes: Vec<DocumentChange>,
+}
+
+/// Changes to databases and collections.
+#[derive(Debug, Clone, PartialEq)]
+pub enum CollectionChange {
+    /// `options`: capped (`size`, `max`), `timeseries`, `validator` and its level and action,
+    /// `collation`, `expireAfterSeconds`.
+    Create {
+        database: String,
+        collection: String,
+        options: Option<Value>,
+    },
+    Rename {
+        database: String,
+        collection: String,
+        to: String,
+    },
+    Drop {
+        database: String,
+        collection: String,
+    },
+    DropDatabase {
+        database: String,
+    },
+}
+
 /// A document database (MongoDB and compatible servers). Connections are opened once and
 /// kept for a while; every server is checked against the egress policy when one opens.
 #[async_trait]
@@ -269,6 +357,15 @@ pub trait DocumentDatabase: Send + Sync {
     async fn cancel(&self, id: &str) -> Result<bool>;
     /// Closes a cursor the interface no longer reads.
     async fn close(&self, cursor: &str) -> Result<()>;
+    /// Writes documents. The application has already checked that the connection may write.
+    async fn write(
+        &self,
+        connection: DatabaseConnection,
+        target: WriteTarget,
+        write: DocumentWrite,
+    ) -> Result<WriteResult>;
+    /// Creates, renames or drops a collection, or drops a database.
+    async fn change(&self, connection: DatabaseConnection, change: CollectionChange) -> Result<()>;
 }
 #[async_trait]
 pub trait VersionControl: Send + Sync {

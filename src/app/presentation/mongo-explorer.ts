@@ -15,6 +15,9 @@ import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { CodeEditor } from './code-editor';
 import { JsonFormat, MongoResults, ResultsView } from './mongo-results';
+import { MongoDialog } from './mongo-dialog';
+import { MongoWrites } from './mongo-writes';
+import { WRITE_CONCERNS, WriteConcernChoice, changeValue } from '../domain/mongo-write';
 import { MONGO } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
 import { resolveVariables } from '../domain/variables';
@@ -52,6 +55,8 @@ interface Page {
 const KEPT_PAGES = 5;
 /** History entries shown for a connection. */
 const HISTORY_SHOWN = 20;
+/** Recorded writes shown for a connection. */
+const CHANGES_SHOWN = 10;
 export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
 
 /**
@@ -59,7 +64,7 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
  * them with their pages, count, cancellation, saved queries and history.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, MongoResults],
+  imports: [TranslocoPipe, FormField, CodeEditor, MongoResults, MongoDialog],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
   styleUrl: './mongo-explorer.scss',
@@ -117,6 +122,38 @@ export class MongoExplorer {
   protected readonly savedId = signal('');
 
   protected readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
+  /** A read-only connection shows no write: the backend refuses them anyway. */
+  protected readonly writable = computed(() => !connectionValue(this.connection().value).readOnly);
+  protected readonly writeConcerns = WRITE_CONCERNS;
+  protected readonly writes = new MongoWrites({
+    state: this.state,
+    cases: () => this.mongo(),
+    connection: () => this.connection(),
+    target: () => {
+      const target = this.target();
+      return target && { database: target.database, collection: target.collection };
+    },
+    filter: () => {
+      const query = this.query();
+      return query && (query.filter ?? {});
+    },
+    refresh: () => this.find(this.current()?.offset),
+    reloadCollections: (database) => this.loadCollections(database),
+    reloadDatabases: () => this.loadDatabases(),
+    choose: (database, collection) => this.select(database, collection),
+    fail: (error) => this.fail(error),
+  });
+  /** The latest writes of this connection, to undo them. */
+  protected readonly changes = computed(() =>
+    this.state
+      .documents()
+      .filter(
+        (d) =>
+          d.kind === 'database-change' && changeValue(d.value).connection === this.connection().id,
+      )
+      .sort((a, b) => b.updated_at - a.updated_at)
+      .slice(0, CHANGES_SHOWN),
+  );
   protected readonly current = computed<Page | undefined>(() => this.pages()[this.page()]);
   protected readonly hasNext = computed(() => {
     const pages = this.pages();
@@ -169,12 +206,16 @@ export class MongoExplorer {
     this.error.set('');
     this.loadingDatabases.set(true);
     try {
-      this.databases.set(
-        await this.use((cases) =>
-          cases.databases(this.state.workspaceId(), this.connection(), this.state.scopes()),
-        ),
+      const databases = await this.use((cases) =>
+        cases.databases(this.state.workspaceId(), this.connection(), this.state.scopes()),
+      );
+      this.databases.set(databases);
+      // Databases that were open stay open, with their collections listed again.
+      const open = Object.keys(this.collections()).filter((name) =>
+        databases.some((database) => database.name === name),
       );
       this.collections.set({});
+      await Promise.all(open.map((name) => this.loadCollections(name)));
     } catch (error) {
       this.fail(error);
     } finally {
@@ -190,6 +231,27 @@ export class MongoExplorer {
       return;
     }
     await this.loadCollections(name);
+  }
+  /** Chooses a collection by its name, or none (after it was dropped). */
+  private async select(database: string, name?: string) {
+    if (!name) {
+      this.reset();
+      this.target.set(undefined);
+      this.stats.set(undefined);
+      return;
+    }
+    const found = this.listed(database).find((c) => c.name === name) ?? {
+      name,
+      kind: 'collection' as const,
+      capped: false,
+    };
+    this.choose(database, found);
+  }
+  protected undoable(change: WorkspaceDocument) {
+    return changeValue(change.value).changes.length > 0;
+  }
+  protected setConcern(event: Event) {
+    this.writes.concern.set((event.target as HTMLSelectElement).value as WriteConcernChoice);
   }
   private async loadCollections(name: string) {
     this.collections.update((all) => ({ ...all, [name]: 'loading' }));

@@ -57,7 +57,7 @@
 .mongo-table thead th {
   position: sticky;
   top: 0;
-  background: var(--surface, var(--background));
+  background: var(--panel);
   padding: 6px 8px;
   font-weight: 600;
   z-index: 1;

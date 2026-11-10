@@ -1,0 +1,39 @@
+.mongo-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 45%);
+}
+.mongo-dialog {
+  width: min(720px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+}
+.mongo-dialog h2 {
+  margin-top: 0;
+  font-size: 16px;
+}
+.mongo-warning {
+  color: var(--red);
+}
+.mongo-options {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin: 10px 0;
+  padding: 8px 12px;
+}
+.mongo-options .row {
+  gap: 10px;
+}
+.mongo-problem {
+  color: var(--red);
+  font-size: 12px;
+}
+.mongo-dialog-actions {
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}

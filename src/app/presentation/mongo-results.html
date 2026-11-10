@@ -31,6 +31,43 @@
     {{ 'Copy ObjectId date' | transloco }}
   </button>
 </div>
+@if (writable()) {
+  <div class="row mongo-selection" role="toolbar" [attr.aria-label]="'Edit' | transloco">
+    <span class="grow"></span>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!target() || target()?.path?.[0] === '_id'"
+      (click)="request('edit')"
+    >
+      {{ (target()?.path?.length ? 'Edit value' : 'Edit document') | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!target()?.path?.length || target()?.path?.[0] === '_id'"
+      (click)="request('unset')"
+    >
+      {{ 'Remove field' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!target()"
+      (click)="request('duplicate')"
+    >
+      {{ 'Duplicate document' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small danger"
+      [disabled]="!target()"
+      (click)="request('delete')"
+    >
+      {{ 'Delete document' | transloco }}
+    </button>
+  </div>
+}
 
 @switch (view()) {
   @case ('table') {

@@ -8,6 +8,7 @@ mod connection;
 mod errors;
 mod query;
 mod tls;
+mod write;
 
 use async_trait::async_trait;
 use mongodb::{
@@ -16,8 +17,9 @@ use mongodb::{
     options::{ClientOptions, ServerAddress},
 };
 use nexo_application::ports::{
-    CollectionStats, CollectionSummary, ConnectionReport, CountRequest, DatabaseConnection,
-    DatabaseHost, DatabaseSummary, DocumentDatabase, DocumentPage, FindRequest, NetworkPolicy,
+    CollectionChange, CollectionStats, CollectionSummary, ConnectionReport, CountRequest,
+    DatabaseConnection, DatabaseHost, DatabaseSummary, DocumentDatabase, DocumentPage,
+    DocumentWrite, FindRequest, NetworkPolicy, WriteResult, WriteTarget,
 };
 use nexo_domain::{Error, Result};
 use std::{
@@ -309,6 +311,25 @@ impl DocumentDatabase for MongoAdapter {
     }
     async fn cancel(&self, id: &str) -> Result<bool> {
         Ok(query::cancel(self, id).await)
+    }
+    async fn write(
+        &self,
+        connection: DatabaseConnection,
+        target: WriteTarget,
+        write: DocumentWrite,
+    ) -> Result<WriteResult> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            write::write(&client, target, write).await
+        })
+        .await
+    }
+    async fn change(&self, connection: DatabaseConnection, change: CollectionChange) -> Result<()> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            write::change(&client, change).await
+        })
+        .await
     }
     async fn close(&self, cursor: &str) -> Result<()> {
         // Dropping a cursor tells the server to close it.
