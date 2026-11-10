@@ -1,4 +1,4 @@
-import { signal } from '@angular/core';
+import { computed, signal } from '@angular/core';
 import { historyRequest, historyResponse } from '../../domain/sanitize';
 import { ExecutionResponse, RequestDraft, Run, WorkspaceDocument } from '../../domain/models';
 import { CollectionsStore } from './collections-store';
@@ -15,10 +15,15 @@ const realtimeProtocols = [
   'kafka',
 ];
 
-/** Sending the active request, its history and saving collection run results. */
+/**
+ * Sending requests, their history and saving collection run results. Each tab sends on its
+ * own: while one waits, another can be sent, and its response goes to its tab.
+ */
 export class RequestsStore {
-  readonly running = signal(false);
-  private execution = '';
+  /** The execution of each tab being sent, by tab. */
+  private readonly executions = signal<Readonly<Record<string, string>>>({});
+  /** Whether the active tab is being sent. */
+  readonly running = computed(() => !!this.executions()[this.context.tabs.activeId()]);
 
   constructor(
     private readonly context: StateContext,
@@ -30,10 +35,10 @@ export class RequestsStore {
   async send() {
     const { tabs, cases, status, section } = this.context;
     const tab = tabs.active();
-    if (!tab || this.running()) return;
-    this.running.set(true);
+    if (!tab || this.executions()[tab.id]) return;
+    const execution = cases.files.id();
+    this.executions.update((all) => ({ ...all, [tab.id]: execution }));
     status.error.set('');
-    this.execution = cases.files.id();
     try {
       if (realtimeProtocols.includes(tab.request.protocol)) {
         section.set('realtime');
@@ -49,9 +54,10 @@ export class RequestsStore {
           globals: this.variables.globalRows(),
           ancestors: this.collections.activeAncestors(),
         },
-        this.execution,
+        execution,
       );
-      tabs.response.set(response);
+      // To the tab that sent it, even if another one is shown now.
+      tabs.setResponse(tab.id, response);
       const saved = await this.variables.persist(response.variables, environment, collection);
       const history = await cases.createDocument(
         this.context.workspaceId(),
@@ -64,21 +70,30 @@ export class RequestsStore {
     } catch (error) {
       status.error.set(status.describe(error));
     } finally {
-      this.running.set(false);
+      this.finish(tab.id);
     }
   }
+  private finish(tab: string) {
+    this.executions.update((all) => {
+      const { [tab]: _done, ...others } = all;
+      return others;
+    });
+  }
+  /** Cancels the sending of the active tab. */
   async cancel() {
-    if (!this.execution) return;
-    await this.context.cases.execute(this.context.workspaceId(), 'cancel', { id: this.execution });
-    this.running.set(false);
+    const tab = this.context.tabs.activeId();
+    const execution = this.executions()[tab];
+    if (!execution) return;
+    await this.context.cases.execute(this.context.workspaceId(), 'cancel', { id: execution });
+    this.finish(tab);
   }
   /** Opens a history entry in a new tab with its response. */
   async openHistory(document: WorkspaceDocument) {
     const entry = await this.context.cases.loaded(document);
     const value = entry.value as { request: RequestDraft; response: ExecutionResponse };
-    this.context.tabs.open(value.request);
+    const tab = this.context.tabs.open(value.request);
     this.context.section.set('collections');
-    this.context.tabs.response.set(value.response);
+    this.context.tabs.setResponse(tab, value.response);
   }
   /** Saves the variables a finished run changed and keeps the run as a document. */
   async recordRun(run: Run, collectionId: string) {

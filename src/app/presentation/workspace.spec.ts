@@ -1,6 +1,6 @@
 import { TEST_API, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { buttons, clickButton } from '../testing/controls';
+import { buttons, clickButton, fill } from '../testing/controls';
 import { asCollection } from '../domain/models';
 import { Workspace } from './workspace';
 import { WorkspaceState } from './workspace-state';
@@ -44,7 +44,7 @@ describe('Workspace', () => {
       url: 'https://example.test/do-not-translate',
       body: '{"message":"Send"}',
     });
-    state.response.set({
+    state.tabsStore.setResponse(state.activeTabId(), {
       status: 200,
       statusText: 'OK',
       time: 1,
@@ -235,6 +235,99 @@ describe('Workspace', () => {
       expect(items().map((item) => item.name)).toEqual(['Orders']);
     });
 
+    it('moves items by dragging them before, after or inside others', async () => {
+      const api = TestBed.inject(TEST_API);
+      const collection = (id: string, name: string, item: unknown[]) => ({
+        id,
+        workspace_id: 'local',
+        kind: 'collection',
+        name,
+        revision: 1,
+        updated_at: 0,
+        value: { info: { name, schema: 'x' }, item },
+      });
+      const request = (id: string, name: string) => ({
+        id,
+        name,
+        request: { method: 'GET', url: `http://x/${id}` },
+      });
+      api.documentsStore.push(
+        collection('shop', 'Shop', [
+          request('a', 'A'),
+          { id: 'o', name: 'Orders', item: [request('b', 'B')] },
+          { id: 'r', name: 'Archive', item: [] },
+        ]),
+        collection('other', 'Other', [request('z', 'Z')]),
+      );
+      await state.refresh();
+      await settle();
+      const shop = () => asCollection(state.collections().find((c) => c.id === 'shop')!.value);
+      const shape = (items = shop().item): unknown[] =>
+        items.map((item) => (item.item ? { [item.name]: shape(item.item) } : item.name));
+      const row = (name: string) =>
+        [...root().querySelectorAll<HTMLElement>('.tree-row')].find((element) =>
+          element.querySelector('.request-leaf, .folder-name')?.textContent?.trim().endsWith(name),
+        )!;
+      /** A drag event; with no layout, `clientY` is the fraction of the row's height. */
+      const fire = (target: Element, type: string, clientY = 0) => {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.assign(event, {
+          clientY,
+          dataTransfer: { setData: () => undefined, effectAllowed: '', dropEffect: '' },
+        });
+        target.dispatchEvent(event);
+        return event;
+      };
+      const move = async (from: string, to: Element, clientY: number) => {
+        fire(row(from), 'dragstart');
+        fire(to, 'dragover', clientY);
+        await fixture.whenStable();
+        const classes = [...to.classList].filter((c) => c.startsWith('drop-'));
+        fire(to, 'drop', clientY);
+        await settle();
+        return classes;
+      };
+
+      // Into a folder, by dropping on its middle.
+      expect(await move('A', row('Archive'), 0.5)).toEqual(['drop-inside']);
+      expect(shape()).toEqual([{ Orders: ['B'] }, { Archive: ['A'] }]);
+      expect(state.notice()).toBe('Item moved');
+
+      // A folder into one of its own items: nothing changes and the reason is given.
+      expect(await move('Orders', row('B'), 0.1)).toEqual(['drop-before', 'drop-invalid']);
+      expect(shape()).toEqual([{ Orders: ['B'] }, { Archive: ['A'] }]);
+      expect(state.notice()).toBe('A folder cannot be moved into itself');
+
+      // After a folder, by dropping on its bottom edge: out to the collection.
+      expect(await move('B', row('Orders'), 0.9)).toEqual(['drop-after']);
+      expect(shape()).toEqual([{ Orders: [] }, 'B', { Archive: ['A'] }]);
+
+      // Before a request, then onto the collection itself: to its end.
+      expect(await move('Archive', row('Orders'), 0.1)).toEqual(['drop-before']);
+      expect(shape()).toEqual([{ Archive: ['A'] }, { Orders: [] }, 'B']);
+      const title = root().querySelector<HTMLElement>('.collection-title')!;
+      expect(await move('A', title, 0)).toEqual(['drop-inside']);
+      expect(shape()).toEqual([{ Archive: [] }, { Orders: [] }, 'B', 'A']);
+
+      // Dropped where it already is: nothing is saved.
+      const saves = api.documentsStore.find((d) => d.id === 'shop')!.revision;
+      await move('B', row('B'), 0.9);
+      expect(api.documentsStore.find((d) => d.id === 'shop')!.revision).toBe(saves);
+
+      // Not into another collection, and nothing without a drag.
+      fire(row('A'), 'dragstart');
+      expect(fire(row('Z'), 'dragover', 0.1).defaultPrevented).toBe(false);
+      fire(row('A'), 'dragend');
+      expect(fire(row('B'), 'dragover', 0.1).defaultPrevented).toBe(false);
+      expect(fire(row('B'), 'drop', 0.1).defaultPrevented).toBe(false);
+      fire(row('A'), 'dragstart');
+      fire(row('B'), 'dragover', 0.1);
+      await fixture.whenStable();
+      fire(row('B'), 'dragleave');
+      await fixture.whenStable();
+      expect(root().querySelector('[class*="drop-"]')).toBeNull();
+    });
+
     it('exports, duplicates, runs and deletes a collection', async () => {
       const api = TestBed.inject(TEST_API);
       await state.createCollection('Shop');
@@ -310,10 +403,7 @@ describe('Workspace', () => {
         value: { info: { name: String(content) }, item: [] },
       });
       await clickButton(fixture, 'Import');
-      const content = dialog()!.querySelector('textarea')!;
-      content.value = 'Pasted';
-      content.dispatchEvent(new Event('input'));
-      await fixture.whenStable();
+      await fill(fixture, 'Import content', 'Pasted', dialog()!);
       await clickButton(fixture, /^\s*Import\s*$/, dialog()!.querySelector('.modal-actions')!);
       await settle();
       expect(state.error()).toBe('');
@@ -382,7 +472,7 @@ describe('Workspace', () => {
 
       await clickButton(fixture, '▣ Console');
       expect(root().textContent).toContain('Logs from your request scripts appear here.');
-      state.response.set({
+      state.tabsStore.setResponse(state.activeTabId(), {
         status: 200,
         statusText: 'OK',
         time: 1,

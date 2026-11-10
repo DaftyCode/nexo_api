@@ -1,5 +1,6 @@
 //! Use cases depend only on domain types and outbound ports.
 pub mod mcp;
+mod mcp_content;
 pub mod operations;
 pub mod payloads;
 pub mod ports;

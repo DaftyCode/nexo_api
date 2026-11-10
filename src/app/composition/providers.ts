@@ -9,17 +9,22 @@ import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
+import { ReportUseCases } from '../application/report-use-cases';
+import { BrowserPrinter } from '../infrastructure/browser-printer';
 export const WORKSPACE = new InjectionToken<WorkspaceUseCases>('Nexo workspace use cases');
 export const APPEARANCE = new InjectionToken<AppearanceUseCases>('Nexo appearance use cases');
 export const INTEGRATION = new InjectionToken<IntegrationUseCases>('Nexo integration use cases');
 export const DATA = new InjectionToken<DataUseCases>('Nexo dataset and mock use cases');
 export const PROTOCOLS = new InjectionToken<ProtocolUseCases>('Nexo protocol use cases');
+export const REPORTS = new InjectionToken<ReportUseCases>('Nexo printable reports');
 export const workspaceProviders = [
   HttpApi,
   BrowserFiles,
   BrowserPreferences,
   BrowserAppearance,
   DesktopSignInWindow,
+  BrowserPrinter,
+  { provide: REPORTS, useFactory: () => new ReportUseCases(inject(BrowserPrinter)) },
   { provide: APPEARANCE, useFactory: () => new AppearanceUseCases(inject(BrowserAppearance)) },
   { provide: INTEGRATION, useFactory: () => new IntegrationUseCases(inject(HttpApi)) },
   {

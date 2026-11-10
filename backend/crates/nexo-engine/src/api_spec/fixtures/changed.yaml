@@ -1,0 +1,96 @@
+openapi: 3.1.0
+info:
+  title: Orders
+  version: 2.0.0
+security:
+  - apiKey: []
+paths:
+  /orders:
+    get:
+      operationId: listOrders
+      summary: List orders
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: integer
+        - name: customer
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The orders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+    post:
+      operationId: createOrder
+      summary: Create an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      description: One order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+    put:
+      operationId: replaceOrder
+      summary: Replace an order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Replaced
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  schemas:
+    Order:
+      type: object
+      required:
+        - id
+        - total
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum:
+            - open
+        total:
+          type: number

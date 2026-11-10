@@ -1,0 +1,286 @@
+<section class="api-definitions" [attr.aria-label]="'API definitions' | transloco">
+  <h2>{{ 'API definitions' | transloco }}</h2>
+  @if (task.error()) {
+    <div class="global-alert panel-alert" role="alert">
+      <span>{{ task.error() | transloco }}</span
+      ><button
+        class="icon-button"
+        (click)="task.error.set('')"
+        [attr.aria-label]="'Dismiss error' | transloco"
+      >
+        ×
+      </button>
+    </div>
+  }
+  <div class="row api-header">
+    <label class="field"
+      >{{ 'Definition' | transloco
+      }}<select (change)="select($event)">
+        <option value="" [selected]="!selected()">{{ 'New definition' | transloco }}</option>
+        @for (definition of definitions(); track definition.id) {
+          <option [value]="definition.id" [selected]="definition.id === selected()">
+            {{ definition.name }}
+          </option>
+        }
+      </select></label
+    >
+    <label class="field grow">{{ 'Name' | transloco }}<input [formField]="fields.name" /></label>
+  </div>
+  <div class="field">
+    <span>{{ 'OpenAPI definition' | transloco }}</span>
+    @defer (on immediate) {
+      <app-code-editor
+        #editor
+        [formField]="fields.source"
+        [language]="sourceLanguage()"
+        size="large"
+        [label]="'OpenAPI definition' | transloco"
+        [marks]="marks()"
+      />
+    } @placeholder {
+      <div class="code-editor" aria-hidden="true"></div>
+    }
+  </div>
+  <div class="row">
+    <button class="button primary" (click)="save()">{{ 'Save definition' | transloco }}</button
+    ><button class="button" (click)="check()">{{ 'Check definition' | transloco }}</button
+    ><button class="button" (click)="generate()">{{ 'Generate collection' | transloco }}</button>
+  </div>
+
+  <nav class="editor-tabs" [attr.aria-label]="'API definition views' | transloco">
+    <button [class.active]="tab() === 'problems'" (click)="tab.set('problems')">
+      {{ 'Problems' | transloco }}
+      @if (inspection()) {
+        <span class="count">{{ counts().errors + counts().warnings + counts().infos }}</span>
+      }</button
+    ><button [class.active]="tab() === 'explorer'" (click)="tab.set('explorer')">
+      {{ 'Explorer' | transloco }}</button
+    ><button [class.active]="tab() === 'changes'" (click)="tab.set('changes')">
+      {{ 'Changes' | transloco }}
+    </button>
+  </nav>
+  @if (stale() && tab() !== 'changes') {
+    <p class="muted" role="status">
+      {{ 'The definition changed since it was checked. Check it again.' | transloco }}
+    </p>
+  }
+
+  @switch (tab()) {
+    @case ('problems') {
+      @if (inspection(); as result) {
+        <p class="muted">
+          @if (result.version) {
+            {{ result.version === '2.0' ? 'Swagger' : 'OpenAPI' }} {{ result.version }} ·
+          }
+          {{
+            'api.counts'
+              | transloco: { v0: counts().errors, v1: counts().warnings, v2: counts().infos }
+          }}
+        </p>
+        <ul class="api-findings">
+          @for (finding of result.findings; track $index) {
+            <li [class]="finding.severity">
+              <span class="severity">{{ 'severity.' + finding.severity | transloco }}</span>
+              <span class="message">{{
+                'lint.' + finding.rule | transloco: messageParams(finding.params)
+              }}</span>
+              @if (finding.line) {
+                <button type="button" class="text-button" (click)="goTo(finding.line)">
+                  {{ 'api.line' | transloco: { v0: finding.line } }}
+                </button>
+              }
+            </li>
+          } @empty {
+            <li class="muted">{{ 'No problems found.' | transloco }}</li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">{{ 'Check the definition to see its problems.' | transloco }}</p>
+      }
+    }
+    @case ('explorer') {
+      @if (inspection()?.outline; as outline) {
+        <input
+          type="search"
+          class="api-search"
+          [value]="query()"
+          (input)="setQuery($event)"
+          [placeholder]="'Search paths, operations and schemas' | transloco"
+          [attr.aria-label]="'Search the definition' | transloco"
+        />
+        <ul class="api-tree">
+          @for (path of paths(); track path.pointer) {
+            <li>
+              <button type="button" class="tree-label path" (click)="goTo(path.line)">
+                {{ path.path }}
+              </button>
+              <ul>
+                @for (operation of path.operations; track operation.pointer) {
+                  <li>
+                    <details>
+                      <summary>
+                        <span class="method-tag">{{ operation.method.toUpperCase() }}</span>
+                        <span [class.deprecated]="operation.deprecated">{{
+                          operation.summary || operation.operationId || path.path
+                        }}</span>
+                        @if (operation.operationId) {
+                          <code class="muted">{{ operation.operationId }}</code>
+                        }
+                      </summary>
+                      <button type="button" class="text-button" (click)="goTo(operation.line)">
+                        {{ 'Go to definition' | transloco }}
+                      </button>
+                      @if (operation.parameters.length) {
+                        <h4>{{ 'Parameters' | transloco }}</h4>
+                        @for (parameter of operation.parameters; track parameter.pointer) {
+                          <button type="button" class="tree-label" (click)="goTo(parameter.line)">
+                            <code>{{ parameter.name }}{{ parameter.required ? ' *' : '' }}</code>
+                            <span class="muted">{{ parameter.in }} · {{ parameter.type }}</span>
+                          </button>
+                        }
+                      }
+                      @if (operation.requestBody; as body) {
+                        <h4>{{ 'Body' | transloco }}</h4>
+                        <button type="button" class="tree-label" (click)="goTo(body.line)">
+                          <code>{{ body.schema || '—' }}{{ body.required ? ' *' : '' }}</code>
+                          <span class="muted">{{ body.media.join(', ') }}</span>
+                        </button>
+                      }
+                      <h4>{{ 'Responses' | transloco }}</h4>
+                      @for (response of operation.responses; track response.pointer) {
+                        <button type="button" class="tree-label" (click)="goTo(response.line)">
+                          <code>{{ response.status }}</code>
+                          <span>{{ response.schema }}</span>
+                          <span class="muted">{{ response.description }}</span>
+                        </button>
+                      }
+                    </details>
+                  </li>
+                }
+              </ul>
+            </li>
+          } @empty {
+            <li class="muted">{{ 'No paths match.' | transloco }}</li>
+          }
+        </ul>
+        @if (schemas().length) {
+          <h3>{{ 'Schemas' | transloco }}</h3>
+          @for (schema of schemas(); track schema.pointer) {
+            <button type="button" class="tree-label" (click)="goTo(schema.line)">
+              <code>{{ schema.name }}</code
+              ><span class="muted">{{ schema.type }}</span>
+            </button>
+          }
+        }
+      } @else {
+        <p class="muted">{{ 'Check the definition to explore it.' | transloco }}</p>
+      }
+    }
+    @case ('changes') {
+      <div class="row api-compare">
+        <label class="field"
+          >{{ 'Earlier version' | transloco
+          }}<select (change)="setBase($event)">
+            <option value="saved" [selected]="base() === 'saved'">
+              {{ 'Saved version' | transloco }}
+            </option>
+            @for (revision of revisions(); track revision.revision) {
+              <option
+                [value]="'r:' + revision.revision"
+                [selected]="base() === 'r:' + revision.revision"
+              >
+                {{ 'document.revision' | transloco: { v0: revision.revision } }} ·
+                {{ revision.changed_at | date: 'short' }}
+              </option>
+            }
+          </select></label
+        >
+        <label class="field"
+          >{{ 'Later version' | transloco
+          }}<select (change)="setTarget($event)">
+            <option value="editing" [selected]="target() === 'editing'">
+              {{ 'What you are editing' | transloco }}
+            </option>
+            <option value="saved" [selected]="target() === 'saved'">
+              {{ 'Saved version' | transloco }}
+            </option>
+            @for (revision of revisions(); track revision.revision) {
+              <option
+                [value]="'r:' + revision.revision"
+                [selected]="target() === 'r:' + revision.revision"
+              >
+                {{ 'document.revision' | transloco: { v0: revision.revision } }} ·
+                {{ revision.changed_at | date: 'short' }}
+              </option>
+            }
+          </select></label
+        >
+        <button class="button primary" (click)="compare()">{{ 'Compare' | transloco }}</button>
+      </div>
+      @if (diff(); as result) {
+        <p class="api-breaking" [class.danger]="result.breaking > 0" role="status">
+          {{
+            result.breaking
+              ? ('api.breaking' | transloco: { v0: result.breaking })
+              : ('No breaking changes.' | transloco)
+          }}
+        </p>
+        @if (!result.added.length && !result.removed.length && !result.changed.length) {
+          <p class="muted">{{ 'The endpoints did not change.' | transloco }}</p>
+        }
+        <ul class="api-changes">
+          @for (endpoint of result.removed; track endpoint.pointer) {
+            <li class="breaking">
+              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <code>{{ endpoint.path }}</code>
+              <span>{{ 'Endpoint removed' | transloco }}</span>
+              <span class="badge">{{ 'Breaking' | transloco }}</span>
+            </li>
+          }
+          @for (endpoint of result.added; track endpoint.pointer) {
+            <li>
+              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <code>{{ endpoint.path }}</code>
+              <span>{{ 'Endpoint added' | transloco }}</span>
+              @if (diffInEditor() && endpoint.line) {
+                <button type="button" class="text-button" (click)="goTo(endpoint.line)">
+                  {{ 'api.line' | transloco: { v0: endpoint.line } }}
+                </button>
+              }
+            </li>
+          }
+          @for (endpoint of result.changed; track endpoint.pointer) {
+            <li>
+              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <code>{{ endpoint.path }}</code>
+              <ul>
+                @for (change of endpoint.changes; track $index) {
+                  <li [class.breaking]="change.breaking">
+                    <span>{{
+                      'diff.' + change.rule | transloco: messageParams(change.params)
+                    }}</span>
+                    @if (change.breaking) {
+                      <span class="badge">{{ 'Breaking' | transloco }}</span>
+                    }
+                    @if (diffInEditor() && change.side === 'source' && change.line) {
+                      <button type="button" class="text-button" (click)="goTo(change.line)">
+                        {{ 'api.line' | transloco: { v0: change.line } }}
+                      </button>
+                    }
+                  </li>
+                }
+              </ul>
+            </li>
+          }
+        </ul>
+      } @else {
+        <p class="muted">
+          {{
+            'Compare two versions of the definition, or a saved one with what you are editing.'
+              | transloco
+          }}
+        </p>
+      }
+    }
+  }
+</section>

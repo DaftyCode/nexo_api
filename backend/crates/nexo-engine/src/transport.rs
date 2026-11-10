@@ -297,6 +297,26 @@ impl Transport {
         })
     }
 
+    /// Posts a JSON `body` and returns the response as it arrives, for streams such as
+    /// server-sent events. Its egress, TLS and proxy settings are this transport's.
+    pub async fn stream(
+        &self,
+        url: &Url,
+        headers: &[(String, String)],
+        body: String,
+    ) -> Result<reqwest::Response> {
+        let mut request = self
+            .client
+            .post(url.clone())
+            .header(reqwest::header::CONTENT_TYPE, "application/json")
+            .header(reqwest::header::ACCEPT, "text/event-stream")
+            .body(body);
+        for (key, value) in headers {
+            request = request.header(key.as_str(), value.as_str());
+        }
+        request.send().await.map_err(request_error)
+    }
+
     /// Sends a collection-format request (`url`, `method`, `header`, `auth`, `body`).
     /// `secrets` are the restricted vault secrets it carries: no hop, redirects included,
     /// takes one to a host it does not allow.

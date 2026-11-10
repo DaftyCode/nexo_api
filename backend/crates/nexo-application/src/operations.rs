@@ -41,6 +41,8 @@ operations!(
         RunResume => "run.resume",
         Cancel => "cancel",
         Import => "import",
+        ApiInspect => "api.inspect",
+        ApiDiff => "api.diff",
         Codegen => "codegen",
         RealtimeConnect => "realtime.connect",
         RealtimeSend => "realtime.send",

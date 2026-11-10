@@ -16,7 +16,7 @@ import { RequestEditor } from './request-editor';
 import { ResponseView } from './response-view';
 import { ToolsPanel } from './tools-panel';
 import { WorkspaceDocument, CollectionItem, asCollection } from '../domain/models';
-import { folders } from '../domain/collection-tree';
+import { DropPosition, dropPlace, folders, isWithin } from '../domain/collection-tree';
 import { withOAuth2Token } from '../domain/auth';
 import { AppearanceState } from './appearance-state';
 import { AppearanceSelector } from './appearance-selector';
@@ -29,6 +29,9 @@ import { VariableQuickLook } from './variable-quick-look';
 import { OAuth2SignInDialog } from './oauth2-sign-in';
 import { OAuth2TokensDialog } from './oauth2-tokens';
 import { CookiesDialog } from './cookies-dialog';
+import { ReportPreview } from './report-preview';
+import { ToastMessage } from './toast-message';
+import { CodeEditor } from './code-editor';
 
 @Component({
   imports: [
@@ -47,6 +50,9 @@ import { CookiesDialog } from './cookies-dialog';
     OAuth2SignInDialog,
     OAuth2TokensDialog,
     CookiesDialog,
+    ReportPreview,
+    ToastMessage,
+    CodeEditor,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-workspace',
@@ -151,6 +157,73 @@ export class Workspace {
           ),
     );
   }
+  /** The item being dragged in the tree. */
+  private readonly dragging = signal<{ collection: string; path: number[] } | undefined>(undefined);
+  /** Where the dragged item would land, to draw it; `invalid` for a folder into itself. */
+  protected readonly dropHint = signal<
+    { collection: string; key: string; position: DropPosition; invalid: boolean } | undefined
+  >(undefined);
+  protected dragStart(
+    event: DragEvent,
+    collection: WorkspaceDocument,
+    path: number[],
+    name: string,
+  ) {
+    this.dragging.set({ collection: collection.id, path });
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      // Firefox only starts a drag with some data.
+      event.dataTransfer.setData('text/plain', name);
+    }
+  }
+  /** Before or after a request; before, inside or after a folder, by where the pointer is. */
+  private position(event: DragEvent, folder: boolean): DropPosition {
+    const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const ratio = (event.clientY - box.top) / Math.max(box.height, 1);
+    if (!folder) return ratio < 0.5 ? 'before' : 'after';
+    return ratio < 0.25 ? 'before' : ratio > 0.75 ? 'after' : 'inside';
+  }
+  /** Only within the collection the item comes from. `path` `[]` is the collection itself. */
+  protected dragOver(
+    event: DragEvent,
+    collection: WorkspaceDocument,
+    path: number[],
+    folder: boolean,
+  ) {
+    const dragged = this.dragging();
+    if (!dragged || dragged.collection !== collection.id) return;
+    event.preventDefault();
+    const position = path.length ? this.position(event, folder) : 'inside';
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+    this.dropHint.set({
+      collection: collection.id,
+      key: path.join('.'),
+      position,
+      invalid: isWithin(dropPlace(path, position).folder, dragged.path),
+    });
+  }
+  /** The hint of a row: where the item would land next to it, if anywhere. */
+  protected hint(collection: string, path: number[]) {
+    const hint = this.dropHint();
+    return hint?.collection === collection && hint.key === path.join('.') ? hint : undefined;
+  }
+  protected drop(event: DragEvent, collection: WorkspaceDocument, path: number[], folder: boolean) {
+    const dragged = this.dragging();
+    this.dragEnd();
+    if (!dragged || dragged.collection !== collection.id) return;
+    event.preventDefault();
+    const position = path.length ? this.position(event, folder) : 'inside';
+    // A folder that receives an item opens, so the item stays in sight.
+    if (position === 'inside' && path.length)
+      this.collapsed.update((list) =>
+        list.filter((key) => key !== this.folderKey(collection.id, path)),
+      );
+    void this.state.dropItem(collection, dragged.path, path, position);
+  }
+  protected dragEnd() {
+    this.dragging.set(undefined);
+    this.dropHint.set(undefined);
+  }
   protected toggle(id: string) {
     this.collapsed.update((list) =>
       list.includes(id) ? list.filter((x) => x !== id) : [...list, id],
@@ -160,14 +233,17 @@ export class Workspace {
   protected async requestToken(refresh: boolean) {
     const tab = this.state.active();
     if (!tab) return;
-    const token = await this.state.oauth2Token(
+    // The token is selected in the request and saved in its collection right away.
+    await this.state.oauth2Token(
       tab.request.auth,
       this.state.activeAncestors(),
       refresh,
+      async (token) => {
+        const current = this.state.tabs().find((t) => t.id === tab.id);
+        if (!current) return 'vault';
+        return this.state.keepRequestAuth(current.id, withOAuth2Token(current.request.auth, token));
+      },
     );
-    const current = this.state.active();
-    if (token && current?.id === tab.id)
-      this.state.edit({ ...current.request, auth: withOAuth2Token(current.request.auth, token) });
   }
   protected method(item: CollectionItem) {
     return typeof item.request === 'object' ? String(item.request['method'] ?? 'GET') : 'GET';

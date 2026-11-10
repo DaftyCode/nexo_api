@@ -232,7 +232,13 @@
     return response;
   }
   const test = (name, callback) => {
-    const assertion = { name, passed: true, skipped: false, iteration: state.iteration };
+    const assertion = {
+      name,
+      passed: true,
+      skipped: false,
+      iteration: state.iteration,
+      request: state.requestName,
+    };
     state.assertions.push(assertion);
     try {
       const result = callback();
@@ -247,7 +253,13 @@
     }
   };
   test.skip = (name) =>
-    state.assertions.push({ name, passed: true, skipped: true, iteration: state.iteration });
+    state.assertions.push({
+      name,
+      passed: true,
+      skipped: true,
+      iteration: state.iteration,
+      request: state.requestName,
+    });
   state.request.header ??= [];
   if (!Array.isArray(state.request.header))
     state.request.header = Object.entries(state.request.header).map(([key, value]) => ({

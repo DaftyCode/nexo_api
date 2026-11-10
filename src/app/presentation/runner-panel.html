@@ -32,11 +32,22 @@
       >{{ 'Iterations' | transloco }}<input type="number" [formField]="fields.iterations" /></label
     ><label class="field"
       >{{ 'Delay between requests (ms)' | transloco
-      }}<input type="number" [formField]="fields.delay" /></label
-    ><label class="field"
-      >{{ 'Iteration data (JSON array)' | transloco
-      }}<textarea class="code-editor small" [formField]="fields.data"></textarea></label
-    ><label class="file-label"
+      }}<input type="number" [formField]="fields.delay"
+    /></label>
+    <div class="field">
+      <span>{{ 'Iteration data (JSON array)' | transloco }}</span>
+      @defer (on immediate) {
+        <app-code-editor
+          [formField]="fields.data"
+          language="json"
+          size="small"
+          [label]="'Iteration data (JSON array)' | transloco"
+        />
+      } @placeholder {
+        <div class="code-editor small" aria-hidden="true"></div>
+      }
+    </div>
+    <label class="file-label"
       >{{ 'Import JSON / CSV' | transloco
       }}<input type="file" accept=".json,.csv" (change)="file($event)"
     /></label>
@@ -91,9 +102,16 @@
                   : (run.state | transloco)
           }}
         </h2>
-        <span class="status-pill" [class.failed]="run.state === 'failed'">{{
-          run.state | transloco
-        }}</span>
+        <div class="row">
+          @if (run.state !== 'running' && run.state !== 'paused') {
+            <button type="button" class="button" (click)="exportPdf()">
+              {{ 'Export PDF' | transloco }}
+            </button>
+          }
+          <span class="status-pill" [class.failed]="run.state === 'failed'">{{
+            run.state | transloco
+          }}</span>
+        </div>
       </div>
       <div class="metric-grid">
         <div>

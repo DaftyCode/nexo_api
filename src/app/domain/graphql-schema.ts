@@ -69,6 +69,8 @@ export interface GraphQLSchema {
   subscriptionType?: string;
   /** Without the introspection types (`__Schema`, `__Type`…). */
   types: SchemaType[];
+  /** The introspection answer as it came (`{__schema}`), for the query editor. */
+  introspection?: unknown;
 }
 
 /** A type reference of an introspection answer. */
@@ -164,6 +166,52 @@ export function readSchema(body: string): GraphQLSchema {
     mutationType: root('mutationType'),
     subscriptionType: root('subscriptionType'),
     types,
+    introspection: { __schema: schema },
+  };
+}
+
+/**
+ * The introspection with the parts some servers leave out filled in empty (interfaces,
+ * possible types, directives, descriptions, standard scalars…), so an editor can build a
+ * schema from it.
+ * Anything that is not an introspection is returned as it is.
+ */
+export function completeIntrospection(introspection: unknown): unknown {
+  const schema = (introspection as Raw | null)?.['__schema'] as Raw | undefined;
+  if (!schema || !Array.isArray(schema['types'])) return introspection;
+  const argument = (raw: Raw) => ({ description: null, defaultValue: null, ...raw });
+  const field = (raw: Raw) => ({
+    description: null,
+    isDeprecated: false,
+    deprecationReason: null,
+    ...raw,
+    args: list(raw['args']).map(argument),
+  });
+  const types = list(schema['types']).map((type) => {
+    const kind = text(type['kind']);
+    const filled: Raw = { description: null, ...type };
+    if (kind === 'OBJECT' || kind === 'INTERFACE') {
+      filled['fields'] = list(type['fields']).map(field);
+      filled['interfaces'] = list(type['interfaces']);
+    }
+    if (kind === 'INTERFACE' || kind === 'UNION')
+      filled['possibleTypes'] = list(type['possibleTypes']);
+    if (kind === 'ENUM')
+      filled['enumValues'] = list(type['enumValues']).map((value) => ({
+        description: null,
+        isDeprecated: false,
+        deprecationReason: null,
+        ...value,
+      }));
+    if (kind === 'INPUT_OBJECT') filled['inputFields'] = list(type['inputFields']).map(argument);
+    return filled;
+  });
+  // The standard scalars, which some servers use without listing.
+  for (const name of ['String', 'Boolean', 'Int', 'Float', 'ID'])
+    if (!types.some((type) => type['name'] === name))
+      types.push({ kind: 'SCALAR', name, description: null });
+  return {
+    __schema: { mutationType: null, subscriptionType: null, directives: [], ...schema, types },
   };
 }
 

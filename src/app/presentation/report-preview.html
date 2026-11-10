@@ -1,0 +1,295 @@
+@if (state.report(); as report) {
+  <div class="modal-backdrop">
+    <section
+      class="modal report-modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'Print preview' | transloco"
+    >
+      <div class="modal-heading">
+        <h2>{{ 'Print preview' | transloco }}</h2>
+        <button
+          class="icon-button"
+          (click)="close()"
+          [attr.aria-label]="'Close dialog' | transloco"
+        >
+          ×
+        </button>
+      </div>
+      <p class="muted">
+        {{
+          'Choose "Save as PDF" as the printer to keep a PDF. Credentials are hidden, as on screen.'
+            | transloco
+        }}
+      </p>
+      <div class="report-scroll">
+        <article #sheet class="report-paper" [attr.aria-label]="report.title">
+          <header class="report-header">
+            <span class="report-brand">Nexo API</span>
+            <h1>{{ report.title }}</h1>
+            <p>
+              {{
+                (report.kind === 'run'
+                  ? 'Collection run report'
+                  : report.kind === 'request'
+                    ? 'Request and response'
+                    : 'Collection documentation'
+                ) | transloco
+              }}
+              · {{ report.generatedAt | date: 'medium' }}
+            </p>
+          </header>
+
+          @switch (report.kind) {
+            @case ('run') {
+              @if (report.kind === 'run') {
+                @let run = report.run;
+                <dl class="report-facts">
+                  <dt>{{ 'State' | transloco }}</dt>
+                  <dd>{{ run.state | transloco }}</dd>
+                  <dt>{{ 'Requests' | transloco }}</dt>
+                  <dd>
+                    {{ run.totals.requests }} ({{
+                      'report.failed' | transloco: { v0: run.totals.failedRequests }
+                    }})
+                  </dd>
+                  <dt>{{ 'Tests' | transloco }}</dt>
+                  <dd>
+                    {{
+                      'report.tests'
+                        | transloco
+                          : { v0: run.totals.passed, v1: run.totals.failed, v2: run.totals.skipped }
+                    }}
+                  </dd>
+                  <dt>{{ 'Total time' | transloco }}</dt>
+                  <dd>{{ 'units.duration' | transloco: { v0: run.duration } }}</dd>
+                </dl>
+                @if (run.error) {
+                  <p class="report-failed">{{ run.error }}</p>
+                }
+                @for (request of run.requests; track $index) {
+                  <section class="report-block" [class.failed]="request.failed">
+                    <h2>
+                      <span class="report-status">{{ request.status || 'ERR' }}</span>
+                      {{ request.name }}
+                      @if (request.iteration) {
+                        <small
+                          >·
+                          {{ 'report.iteration' | transloco: { v0: request.iteration + 1 } }}</small
+                        >
+                      }
+                    </h2>
+                    <p class="report-url">
+                      <strong>{{ request.method }}</strong> {{ request.url }}
+                    </p>
+                    <p class="report-meta">
+                      {{ request.statusText }} ·
+                      {{ 'units.duration' | transloco: { v0: request.time } }}
+                    </p>
+                    @if (request.error) {
+                      <p class="report-failed">{{ request.error }}</p>
+                    }
+                    @for (assertion of request.assertions; track $index) {
+                      <p class="report-test" [class.failed]="!assertion.passed">
+                        {{
+                          (assertion.skipped ? 'SKIP' : assertion.passed ? 'PASS' : 'FAIL')
+                            | transloco
+                        }}
+                        · {{ assertion.name }}
+                        @if (assertion.error) {
+                          <span>— {{ assertion.error }}</span>
+                        }
+                      </p>
+                    }
+                  </section>
+                }
+                @if (run.other.length) {
+                  <section class="report-block">
+                    <h2>{{ 'Other tests' | transloco }}</h2>
+                    @for (assertion of run.other; track $index) {
+                      <p class="report-test" [class.failed]="!assertion.passed">
+                        {{ (assertion.passed ? 'PASS' : 'FAIL') | transloco }} ·
+                        {{ assertion.name }}
+                        @if (assertion.error) {
+                          <span>— {{ assertion.error }}</span>
+                        }
+                      </p>
+                    }
+                  </section>
+                }
+              }
+            }
+            @case ('request') {
+              @if (report.kind === 'request') {
+                @let request = report.request.request;
+                @let response = report.request.response;
+                <section class="report-block">
+                  <h2>{{ 'Request' | transloco }}</h2>
+                  <p class="report-url">
+                    <strong>{{ request.method }}</strong> {{ request.url }}
+                  </p>
+                  @if (request.auth) {
+                    <p class="report-meta">{{ 'Authorization' | transloco }}: {{ request.auth }}</p>
+                  }
+                  @if (request.headers.length) {
+                    <h3>{{ 'Headers' | transloco }}</h3>
+                    <table class="report-table">
+                      @for (header of request.headers; track $index) {
+                        <tr>
+                          <th>{{ header.key }}</th>
+                          <td>{{ header.value }}</td>
+                        </tr>
+                      }
+                    </table>
+                  }
+                  @if (request.body.text) {
+                    <h3>
+                      {{ 'Body' | transloco }} <small>{{ request.bodyMode }}</small>
+                    </h3>
+                    <pre>{{ request.body.text }}</pre>
+                  }
+                </section>
+                <section
+                  class="report-block"
+                  [class.failed]="response.status >= 400 || !!response.error"
+                >
+                  <h2>
+                    {{ 'Response' | transloco }}
+                    <span class="report-status">{{ response.status || 'ERR' }}</span>
+                    {{ response.statusText }}
+                  </h2>
+                  <p class="report-meta">
+                    {{ 'units.duration' | transloco: { v0: response.time } }} ·
+                    {{ 'units.size' | transloco: { v0: (response.size / 1024).toFixed(2) } }}
+                  </p>
+                  @if (response.error) {
+                    <p class="report-failed">{{ response.error }}</p>
+                  }
+                  @if (response.headers.length) {
+                    <h3>{{ 'Headers' | transloco }}</h3>
+                    <table class="report-table">
+                      @for (header of response.headers; track $index) {
+                        <tr>
+                          <th>{{ header.key }}</th>
+                          <td>{{ header.value }}</td>
+                        </tr>
+                      }
+                    </table>
+                  }
+                  @if (response.assertions.length) {
+                    <h3>{{ 'Test results' | transloco }}</h3>
+                    @for (assertion of response.assertions; track $index) {
+                      <p class="report-test" [class.failed]="!assertion.passed">
+                        {{ (assertion.passed ? 'PASS' : 'FAIL') | transloco }} ·
+                        {{ assertion.name }}
+                        @if (assertion.error) {
+                          <span>— {{ assertion.error }}</span>
+                        }
+                      </p>
+                    }
+                  }
+                  <h3>{{ 'Body' | transloco }}</h3>
+                  @if (response.binary) {
+                    <p class="report-meta">{{ 'Binary response' | transloco }}</p>
+                  } @else {
+                    <pre>{{ response.body.text }}</pre>
+                    @if (response.body.cut) {
+                      <p class="report-meta">{{ 'The body is cut in this report.' | transloco }}</p>
+                    }
+                  }
+                </section>
+              }
+            }
+            @case ('collection') {
+              @if (report.kind === 'collection') {
+                @let docs = report.docs;
+                @if (docs.description) {
+                  <p class="report-description">{{ docs.description }}</p>
+                }
+                <dl class="report-facts">
+                  <dt>{{ 'Requests' | transloco }}</dt>
+                  <dd>{{ docs.requests }}</dd>
+                  @if (docs.auth) {
+                    <dt>{{ 'Authorization' | transloco }}</dt>
+                    <dd>{{ docs.auth }}</dd>
+                  }
+                </dl>
+                @if (docs.variables.length) {
+                  <h2>{{ 'Variables' | transloco }}</h2>
+                  <table class="report-table">
+                    @for (variable of docs.variables; track $index) {
+                      <tr>
+                        <th>{{ variable.key }}</th>
+                        <td>{{ variable.value }}</td>
+                      </tr>
+                    }
+                  </table>
+                }
+                @for (entry of docs.entries; track $index) {
+                  @if (entry.kind === 'folder') {
+                    <h2 class="report-folder" [style.margin-left]="indent(entry.depth)">
+                      📁 {{ entry.name }}
+                    </h2>
+                    @if (entry.description) {
+                      <p class="report-description" [style.margin-left]="indent(entry.depth)">
+                        {{ entry.description }}
+                      </p>
+                    }
+                  } @else if (entry.request; as request) {
+                    <section class="report-block" [style.margin-left]="indent(entry.depth)">
+                      <h3>{{ entry.name }}</h3>
+                      <p class="report-url">
+                        <strong>{{ request.method }}</strong> {{ request.url }}
+                      </p>
+                      @if (entry.description) {
+                        <p class="report-description">{{ entry.description }}</p>
+                      }
+                      @if (request.auth) {
+                        <p class="report-meta">
+                          {{ 'Authorization' | transloco }}: {{ request.auth }}
+                        </p>
+                      }
+                      @if (request.query.length || request.headers.length) {
+                        <table class="report-table">
+                          @for (row of request.query; track $index) {
+                            <tr>
+                              <th>?{{ row.key }}</th>
+                              <td>{{ row.value }}</td>
+                            </tr>
+                          }
+                          @for (row of request.headers; track $index) {
+                            <tr>
+                              <th>{{ row.key }}</th>
+                              <td>{{ row.value }}</td>
+                            </tr>
+                          }
+                        </table>
+                      }
+                      @if (request.body.text) {
+                        <pre>{{ request.body.text }}</pre>
+                      }
+                      @for (example of entry.examples; track $index) {
+                        <h4>
+                          {{ 'Example' | transloco }}: {{ example.name }} {{ example.status }}
+                        </h4>
+                        @if (example.body.text) {
+                          <pre>{{ example.body.text }}</pre>
+                        }
+                      }
+                    </section>
+                  }
+                }
+              }
+            }
+          }
+        </article>
+      </div>
+      <div class="modal-actions">
+        <button class="button" (click)="close()">{{ 'Close' | transloco }}</button>
+        <button class="button primary" (click)="print()">
+          {{ 'Print or save as PDF' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

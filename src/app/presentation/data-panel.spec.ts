@@ -1,6 +1,6 @@
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { clickButton } from '../testing/controls';
+import { clickButton, fill } from '../testing/controls';
 import { DataPanel } from './data-panel';
 import { WorkspaceState } from './workspace-state';
 
@@ -13,13 +13,8 @@ describe('DataPanel', () => {
   const settle = async () => {
     for (let i = 0; i < 4; i++) await fixture.whenStable();
   };
-  const type = async (label: string, value: string) => {
-    const control = root().querySelector<HTMLInputElement>(`[aria-label="${label}"]`)!;
-    control.value = value;
-    control.dispatchEvent(new Event('input'));
-    control.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-  };
+  // Inputs and code editors alike, by their accessible name or label.
+  const type = (label: string, value: string) => fill(fixture, label, value);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

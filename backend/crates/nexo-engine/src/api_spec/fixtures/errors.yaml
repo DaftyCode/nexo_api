@@ -1,0 +1,48 @@
+openapi: 3.0.3
+info:
+  title: Broken
+paths:
+  /users/{userId}:
+    get:
+      operationId: getUser
+      summary: One user
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Missing'
+  /users:
+    get:
+      operationId: getUser
+      responses: {}
+    post:
+      operationId: create_user
+      security:
+        - oauth: [write]
+      parameters:
+        - name: trace
+          in: body2
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json: {}
+  orders:
+    get:
+      operationId: listOrders
+      summary: Orders
+      responses:
+        '200':
+          description: Orders
+          content:
+            application/json:
+              schema:
+                type: array
+components: {}

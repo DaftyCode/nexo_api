@@ -1,0 +1,123 @@
+@let v = view();
+<p>
+  HTTP {{ v.status }}
+  @if (v.session) {
+    · {{ 'Session' | transloco }} <code>{{ v.session }}</code>
+  }
+</p>
+@if (v.error) {
+  <p class="danger" role="alert">{{ v.error }}</p>
+}
+
+@if (v.tools.length) {
+  <h3>{{ 'Tools' | transloco }}</h3>
+  @for (tool of v.tools; track tool.name) {
+    <div class="run-result">
+      <strong>{{ tool.name }}</strong
+      ><span class="muted">{{ tool.description }}</span>
+      <button
+        type="button"
+        class="text-button"
+        (click)="useTool(tool.name)"
+        [attr.aria-label]="'mcp.useTool' | transloco: { v0: tool.name }"
+      >
+        {{ 'Use' | transloco }}
+      </button>
+    </div>
+  }
+}
+
+@if (v.resources.length) {
+  <h3>{{ 'Resources' | transloco }}</h3>
+  @for (resource of v.resources; track resource.uri) {
+    <div class="mcp-item">
+      <div>
+        <strong>{{ resource.name || resource.uri }}</strong>
+        <code class="mcp-uri">{{ resource.uri }}</code>
+        @if (resource.description) {
+          <span class="muted">{{ resource.description }}</span>
+        }
+      </div>
+      @if (resource.template) {
+        <button
+          type="button"
+          class="text-button"
+          (click)="useTemplate(resource.uri)"
+          [attr.aria-label]="'mcp.useTemplate' | transloco: { v0: resource.name || resource.uri }"
+        >
+          {{ 'Use template' | transloco }}
+        </button>
+      } @else {
+        <button
+          type="button"
+          class="text-button"
+          (click)="read(resource.uri)"
+          [attr.aria-label]="'mcp.read' | transloco: { v0: resource.name || resource.uri }"
+        >
+          {{ 'Read' | transloco }}
+        </button>
+      }
+    </div>
+  }
+}
+
+@if (v.prompts.length) {
+  <h3>{{ 'Prompts' | transloco }}</h3>
+  @for (prompt of v.prompts; track prompt.name) {
+    <section class="mcp-item mcp-prompt" [attr.aria-label]="prompt.name">
+      <div>
+        <strong>{{ prompt.name }}</strong>
+        @if (prompt.description) {
+          <span class="muted">{{ prompt.description }}</span>
+        }
+      </div>
+      @for (argument of prompt.arguments; track argument.name) {
+        <label class="field"
+          >{{ argument.name }}{{ argument.required ? ' *' : ''
+          }}<input
+            [value]="typed(prompt.name, argument.name)"
+            (input)="setArgument(prompt.name, argument.name, $event)"
+            [placeholder]="argument.description"
+        /></label>
+      }
+      <button
+        type="button"
+        class="button"
+        [disabled]="!ready(prompt)"
+        (click)="getPrompt(prompt)"
+        [attr.aria-label]="'mcp.getPrompt' | transloco: { v0: prompt.name }"
+      >
+        {{ 'Get prompt' | transloco }}
+      </button>
+    </section>
+  }
+}
+
+@for (content of v.contents; track $index) {
+  <h3>
+    <code>{{ content.uri }}</code>
+    @if (content.mimeType) {
+      <span class="muted">{{ content.mimeType }}</span>
+    }
+  </h3>
+  <pre class="tool-output" tabindex="0" [attr.aria-label]="content.uri">{{ content.text }}</pre>
+}
+
+@if (v.messages.length) {
+  <h3>{{ 'Prompt messages' | transloco }}</h3>
+  @for (message of v.messages; track $index) {
+    <p class="muted">
+      {{ message.role }}
+      @if (message.uri) {
+        · <code>{{ message.uri }}</code>
+      }
+    </p>
+    <pre class="tool-output" tabindex="0" [attr.aria-label]="message.role">{{ message.text }}</pre>
+  }
+}
+
+@for (text of v.texts; track $index) {
+  <pre class="tool-output" tabindex="0" [attr.aria-label]="'Tool result' | transloco">{{
+    text
+  }}</pre>
+}

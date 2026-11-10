@@ -33,6 +33,11 @@
           >{{ r.status || ('Error' | transloco) }} {{ r.statusText }}</span
         ><span>{{ 'units.duration' | transloco: { v0: r.time } }}</span
         ><span>{{ 'units.size' | transloco: { v0: (r.size / 1024).toFixed(2) } }}</span>
+        @if (!running()) {
+          <button type="button" class="text-button" (click)="exportPdf.emit()">
+            {{ 'Export PDF' | transloco }}
+          </button>
+        }
       </div>
     }
   </div>

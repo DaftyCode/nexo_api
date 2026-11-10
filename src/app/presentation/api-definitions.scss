@@ -1,0 +1,107 @@
+:host {
+  display: block;
+}
+.api-header {
+  align-items: flex-end;
+}
+.api-editor {
+  min-height: 280px;
+}
+.api-findings,
+.api-tree,
+.api-tree ul,
+.api-changes,
+.api-changes ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.api-findings li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border);
+}
+.api-findings .message {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.severity {
+  min-width: 64px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.error .severity,
+.breaking > .badge,
+.breaking .badge {
+  color: var(--red);
+}
+.warning .severity {
+  color: #d29922;
+}
+.api-search {
+  width: 100%;
+  margin: 8px 0;
+}
+.api-tree ul {
+  padding-left: 14px;
+}
+.api-tree details {
+  padding: 2px 0;
+}
+.api-tree summary {
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.api-tree h4 {
+  font-size: 11px;
+  margin: 6px 0 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.tree-label {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  background: none;
+  border: 0;
+  color: inherit;
+  padding: 2px 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.tree-label.path {
+  font-weight: 600;
+}
+.deprecated {
+  text-decoration: line-through;
+}
+.api-compare {
+  align-items: flex-end;
+}
+.api-breaking {
+  font-weight: 600;
+}
+.api-changes li {
+  padding: 3px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+}
+.api-changes ul {
+  width: 100%;
+  padding-left: 18px;
+}
+.badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 0 4px;
+}

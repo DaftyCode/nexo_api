@@ -7,6 +7,8 @@ export const EXECUTION_OPERATIONS = [
   'run.resume',
   'cancel',
   'import',
+  'api.inspect',
+  'api.diff',
   'codegen',
   'realtime.connect',
   'realtime.send',

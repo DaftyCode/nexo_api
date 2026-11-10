@@ -612,6 +612,41 @@ small {
   min-height: 31px;
   gap: 7px;
 }
+/* Where a dragged item will land: a line before or after a row, or a highlighted folder. */
+.tree-row,
+.collection-title {
+  position: relative;
+}
+.tree-row.drop-before::before,
+.tree-row.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background: var(--accent);
+  pointer-events: none;
+}
+.tree-row.drop-before::before {
+  top: 0;
+}
+.tree-row.drop-after::after {
+  bottom: 0;
+}
+.tree-row.drop-inside,
+.collection-title.drop-inside {
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.tree-row.drop-invalid {
+  outline: 1px dashed var(--red);
+  background: color-mix(in srgb, var(--red) 10%, transparent);
+}
+.tree-row.drop-invalid::before,
+.tree-row.drop-invalid::after {
+  background: var(--red);
+}
 .tree-row:hover {
   background: #ffffff04;
   border-radius: 4px;
@@ -2001,4 +2036,26 @@ small {
   border: 1px solid #773d45;
   border-radius: 6px;
   margin-bottom: 12px;
+}
+
+/* Printing a report: only its copy (`.print-sheet`, added by BrowserPrinter) is printed. */
+.print-sheet {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  html,
+  body.printing {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body.printing > :not(.print-sheet) {
+    display: none !important;
+  }
+  body.printing > .print-sheet {
+    display: block;
+  }
 }

@@ -75,7 +75,7 @@ export class SessionStore {
       return;
     workspaceId.set(id);
     tabs.tabs.set([]);
-    tabs.response.set(undefined);
+    tabs.clearResponses();
     this.variables.environmentId.set('');
     await this.context.status.guard(() => this.documents.refresh());
     this.variables.restore();

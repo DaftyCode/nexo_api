@@ -153,25 +153,34 @@
         @if (request().protocol === 'graphql') {
           <div class="graphql-body">
             <div class="graphql-editors">
-              <label class="field"
-                >{{ 'Query' | transloco
-                }}<textarea
-                  #query
-                  class="code-editor"
-                  [formField]="fields.body"
-                  [attr.aria-label]="'GraphQL query' | transloco"
-                  [placeholder]="'query { … }'"
-                  spellcheck="false"
-                ></textarea></label
-              ><label class="field"
-                >{{ 'GraphQL variables' | transloco
-                }}<textarea
-                  class="code-editor small"
-                  [formField]="fields.graphqlVariables"
-                  [attr.aria-label]="'GraphQL variables' | transloco"
-                  spellcheck="false"
-                ></textarea>
-              </label>
+              <div class="field">
+                <span>{{ 'Query' | transloco }}</span>
+                <!-- CodeMirror and graphql load only when a GraphQL request is shown. -->
+                @defer (on immediate) {
+                  <app-graphql-query-editor
+                    #query
+                    [formField]="fields.body"
+                    [schema]="schema()"
+                    [label]="'GraphQL query' | transloco"
+                    placeholder="query { … }"
+                  />
+                } @placeholder {
+                  <div class="code-editor" aria-hidden="true"></div>
+                }
+              </div>
+              <div class="field">
+                <span>{{ 'GraphQL variables' | transloco }}</span>
+                @defer (on immediate) {
+                  <app-code-editor
+                    [formField]="fields.graphqlVariables"
+                    language="json"
+                    size="small"
+                    [label]="'GraphQL variables' | transloco"
+                  />
+                } @placeholder {
+                  <div class="code-editor small" aria-hidden="true"></div>
+                }
+              </div>
             </div>
             <app-graphql-explorer
               [schema]="schema()"
@@ -213,13 +222,16 @@
             }
           </div>
         } @else if (request().bodyMode === 'raw') {
-          <textarea
-            class="code-editor"
-            [formField]="fields.body"
-            [attr.aria-label]="'Request body' | transloco"
-            [placeholder]="'Enter your request body' | transloco"
-            spellcheck="false"
-          ></textarea>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.body"
+              [language]="rawLanguage()"
+              [label]="'Request body' | transloco"
+              [placeholder]="'Enter your request body' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor" aria-hidden="true"></div>
+          }
         } @else {
           <app-key-value-editor
             [rows]="request().form"
@@ -258,21 +270,27 @@
           </button>
         </div>
         @if (scriptTab() === 'tests') {
-          <textarea
-            class="code-editor"
-            [formField]="fields.tests"
-            [attr.aria-label]="'Test scripts' | transloco"
-            spellcheck="false"
-            placeholder="nx.test('Status is 200', () => nx.response.to.have.status(200));"
-          ></textarea>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.tests"
+              language="javascript"
+              [label]="'Test scripts' | transloco"
+              placeholder="nx.test('Status is 200', () => nx.response.to.have.status(200));"
+            />
+          } @placeholder {
+            <div class="code-editor" aria-hidden="true"></div>
+          }
         } @else {
-          <textarea
-            class="code-editor"
-            [formField]="fields.prerequest"
-            [attr.aria-label]="'Pre-request scripts' | transloco"
-            spellcheck="false"
-            placeholder="nx.environment.set('timestamp', Date.now());"
-          ></textarea>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.prerequest"
+              language="javascript"
+              [label]="'Pre-request scripts' | transloco"
+              placeholder="nx.environment.set('timestamp', Date.now());"
+            />
+          } @placeholder {
+            <div class="code-editor" aria-hidden="true"></div>
+          }
         }
         <p class="editor-hint">
           {{ 'Use' | transloco }} <code>nx.test</code>, <code>nx.expect</code>,
@@ -305,15 +323,20 @@
             </select></label
           >
         </div>
-        <label class="field"
-          >{{ 'Proxy and client TLS (JSON)' | transloco
-          }}<textarea
-            class="code-editor small"
-            [formField]="fields.transport"
-            [attr.aria-label]="'Transport configuration' | transloco"
-            [placeholder]="'Optional proxy, caPem and clientTls settings' | transloco"
-          ></textarea>
-        </label>
+        <div class="field">
+          <span>{{ 'Proxy and client TLS (JSON)' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.transport"
+              language="json"
+              size="small"
+              [label]="'Transport configuration' | transloco"
+              [placeholder]="'Optional proxy, caPem and clientTls settings' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
         <p class="editor-hint">
           {{
             'Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates are supplied in memory; server file paths are never read.'

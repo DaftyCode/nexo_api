@@ -1,0 +1,42 @@
+swagger: '2.0'
+info:
+  title: Legacy
+  version: '1'
+paths:
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      summary: One pet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          type: string
+      security:
+        - basicAuth: []
+      responses:
+        '200':
+          description: The pet
+          schema:
+            $ref: '#/definitions/Pet'
+  /pets:
+    post:
+      operationId: addPet
+      summary: Add a pet
+      consumes:
+        - application/json
+      parameters:
+        - name: pet
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Pet'
+      responses:
+        '200':
+          description: Added
+definitions:
+  Pet:
+    type: object
+    properties:
+      name:
+        type: string

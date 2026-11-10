@@ -22,6 +22,7 @@ import {
   collectionEvents,
   readCollectionSettings,
 } from '../domain/collection-settings';
+import { CodeEditor } from './code-editor';
 
 /** The collection, and the folder of it when one is being edited. */
 interface Target {
@@ -37,7 +38,7 @@ interface Target {
  * above them, as in Postman.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, VariableEditor, AuthEditor],
+  imports: [TranslocoPipe, FormField, VariableEditor, AuthEditor, CodeEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-collection-settings-panel',
   styleUrl: './collection-settings-panel.scss',
@@ -113,14 +114,14 @@ export class CollectionSettingsPanel {
     const target = this.target();
     if (!target) return;
     const ancestors = requestAncestors(target.collection, [...target.path, 0]);
-    const token = await this.state.oauth2Token(this.model().auth, ancestors, refresh);
-    if (!token) return;
-    this.editAuth(withOAuth2Token(this.model().auth, token));
-    this.state.notice.set(
-      target.folder
-        ? 'Access token obtained. Save the folder to keep it.'
-        : 'Access token obtained. Save the collection to keep it.',
-    );
+    // The token is selected and saved in this folder or collection right away; other
+    // unsaved changes here stay unsaved.
+    await this.state.oauth2Token(this.model().auth, ancestors, refresh, async (token) => {
+      const auth = withOAuth2Token(this.model().auth, token);
+      this.model.update((m) => ({ ...m, auth }));
+      await this.state.keepAuth(target.id, target.path, auth);
+      return 'saved';
+    });
   }
   protected async save() {
     const target = this.target();

@@ -1,8 +1,10 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
-import { WORKSPACE } from '../composition/providers';
+import { REPORTS, WORKSPACE } from '../composition/providers';
+import { Report } from '../application/report-use-cases';
 import { CollectionItem, RequestDraft, Run, WorkspaceDocument } from '../domain/models';
 import { GraphQLSchema } from '../domain/graphql-schema';
+import { DropPosition, dropPlace, isWithin, staysInPlace } from '../domain/collection-tree';
 import { CookieChange, CookieKey, StoredCookie, cookieKey, sameCookie } from '../domain/cookies';
 import {
   RequestAncestor,
@@ -29,6 +31,22 @@ import {
   WorkspaceExecuteArgs,
 } from '../application/workspace-use-cases';
 import { TabsStore } from './tabs-store';
+
+/** How long a toast stays before it closes by itself. */
+export const TOAST_DURATION = 20_000;
+/** A short message over the workspace: what went well or wrong. */
+export interface Toast {
+  kind: 'success' | 'error' | 'info';
+  /** Translation keys. */
+  title: string;
+  message?: string;
+  params?: Record<string, string>;
+  /** Text as it came, such as a server's error. */
+  detail?: string;
+}
+/** Where an obtained token was kept: in the stored authorization, only in the tab, or only
+ * in the vault. */
+export type KeptToken = 'saved' | 'unsaved' | 'vault';
 
 export type SettingsTab = 'variables' | 'authorization' | 'scripts';
 import { CollectionsStore } from './state/collections-store';
@@ -267,6 +285,30 @@ export class WorkspaceState {
       ),
     );
   }
+  /**
+   * Moves an item dropped before, after or inside another one. A folder dropped into itself
+   * stays and the reason is announced; so is the move.
+   */
+  async dropItem(
+    document: WorkspaceDocument,
+    path: number[],
+    over: number[],
+    position: DropPosition,
+  ) {
+    const { folder, index } = dropPlace(over, position);
+    if (isWithin(folder, path)) {
+      this.notice.set('A folder cannot be moved into itself');
+      return;
+    }
+    if (staysInPlace(path, folder, index)) return;
+    this.error.set('');
+    await this.guard(() =>
+      this.collectionStore.change(document, (tree, collection) =>
+        tree.moveTo(collection, path, folder, index),
+      ),
+    );
+    if (!this.error()) this.notice.set('Item moved');
+  }
   saveActive(targetDocumentId?: string) {
     return this.guard(() => this.collectionStore.saveActive(targetDocumentId));
   }
@@ -284,14 +326,59 @@ export class WorkspaceState {
     const path = this.activeInheritance()?.source?.path ?? [];
     this.openCollectionSettings(document.id, path, 'authorization');
   }
+  /** A message that closes by itself after 20 seconds, or with its button. */
+  readonly toast = signal<Toast | undefined>(undefined);
+  private toastTimer: ReturnType<typeof setTimeout> | undefined;
+  showToast(toast: Toast) {
+    clearTimeout(this.toastTimer);
+    this.toast.set(toast);
+    this.toastTimer = setTimeout(() => this.toast.set(undefined), TOAST_DURATION);
+  }
+  closeToast() {
+    clearTimeout(this.toastTimer);
+    this.toast.set(undefined);
+  }
+  /**
+   * Stores an authorization where it is defined (a request, a folder or the collection, `[]`)
+   * and nothing else of that collection, such as a token just obtained.
+   */
+  async keepAuth(documentId: string, path: number[], auth: AuthDraft) {
+    const document = this.collections().find((d) => d.id === documentId);
+    if (!document) throw new Error('Collection not found');
+    await this.collectionStore.change(document, (tree, collection) =>
+      tree.withStoredAuth(collection, path, auth),
+    );
+  }
+  /**
+   * Shows the new authorization of a request in its tab and stores it in its collection; the
+   * rest of the tab's unsaved changes stay unsaved. A request outside a collection can only
+   * be saved by the person.
+   */
+  async keepRequestAuth(tabId: string, auth: AuthDraft): Promise<KeptToken> {
+    const tab = this.tabs().find((t) => t.id === tabId);
+    if (!tab) return 'vault';
+    const document = this.collections().find((d) => d.id === tab.documentId);
+    const stored = !!document && tab.path.length > 0;
+    this.tabsStore.tabs.update((tabs) =>
+      tabs.map((t) =>
+        t.id === tabId ? { ...t, request: { ...t.request, auth }, dirty: t.dirty || !stored } : t,
+      ),
+    );
+    if (!stored) return 'unsaved';
+    await this.keepAuth(document.id, tab.path, auth);
+    return 'saved';
+  }
   /**
    * Obtains (or with `refresh`, renews) an OAuth 2.0 token for an authorization edited in a
-   * request, folder or collection, resolving variables in the scopes of `ancestors`.
+   * request, folder or collection, resolving variables in the scopes of `ancestors`. `keep`
+   * stores it in that authorization. A toast says how it went: obtained and saved, failed, or
+   * cancelled.
    */
   async oauth2Token(
     auth: AuthDraft,
     ancestors: readonly RequestAncestor[],
     refresh: boolean,
+    keep?: (token: OAuth2Token) => Promise<KeptToken>,
   ): Promise<OAuth2Token | undefined> {
     let token: OAuth2Token | undefined;
     await this.guard(async () => {
@@ -313,6 +400,51 @@ export class WorkspaceState {
         this.notice.set(refresh ? 'Access token refreshed' : 'Access token obtained');
         this.oauth2Tokens.set(await this.cases.oauth2Tokens(this.workspaceId()));
       }
+    });
+    if (!token) {
+      const failure = this.error();
+      if (failure) {
+        // Said in the toast, not twice.
+        this.error.set('');
+        this.showToast({
+          kind: 'error',
+          title: refresh
+            ? 'The access token could not be refreshed'
+            : 'The access token could not be obtained',
+          detail: failure,
+        });
+      } else {
+        this.showToast({
+          kind: 'info',
+          title: 'Sign-in cancelled',
+          message: 'No access token was obtained.',
+        });
+      }
+      return undefined;
+    }
+    let kept: KeptToken = 'vault';
+    if (keep) {
+      try {
+        kept = await keep(token);
+      } catch (error) {
+        this.showToast({
+          kind: 'error',
+          title: refresh ? 'Access token refreshed' : 'Access token obtained',
+          message: 'It is in your vault, but the authorization could not be saved.',
+          detail: this.describe(error),
+        });
+        return token;
+      }
+    }
+    this.showToast({
+      kind: 'success',
+      title: refresh ? 'Access token refreshed' : 'Access token obtained',
+      message: {
+        saved: 'oauth2.keptSaved',
+        unsaved: 'oauth2.keptUnsaved',
+        vault: 'oauth2.keptVault',
+      }[kept],
+      params: { v0: token.name },
     });
     return token;
   }
@@ -336,6 +468,29 @@ export class WorkspaceState {
       this.oauth2Tokens.update((tokens) => tokens.filter((token) => token.id !== id));
       this.notice.set('Token deleted');
     });
+  }
+  /** Printable reports, and the one shown before printing it or saving it as PDF. */
+  readonly reports = inject(REPORTS);
+  readonly report = signal<Report | undefined>(undefined);
+  /** The request of the active tab with its response. */
+  reportRequest() {
+    const tab = this.active();
+    const response = this.response();
+    if (tab && response) this.report.set(this.reports.requestReport(tab.request, response));
+  }
+  /** The documentation of a collection. */
+  reportCollection(id: string) {
+    const document = this.collections().find((d) => d.id === id);
+    if (!document) return;
+    try {
+      this.report.set(this.reports.collectionDocs(document));
+    } catch (error) {
+      this.error.set(this.describe(error));
+    }
+  }
+  closeReport() {
+    this.report.set(undefined);
+    this.reports.release();
   }
   /** The cookies of the workspace jar, for Postman's "Manage Cookies". */
   readonly cookies = signal<StoredCookie[]>([]);

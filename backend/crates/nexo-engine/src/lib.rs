@@ -11,12 +11,14 @@ use nexo_domain::{Error, Result, SecretSummary, hosts::AllowedHosts};
 use serde_json::{Map, Value, json};
 use std::{path::Path, sync::Arc, time::Duration};
 
+pub mod api_spec;
 pub mod auth;
 pub mod collection;
 pub mod cookies;
 pub mod datasets;
 pub mod egress;
 pub mod files;
+pub mod graphql_sse;
 pub mod graphql_ws;
 pub mod grpc;
 pub mod grpc_reflection;
@@ -713,6 +715,8 @@ impl ExecutionGateway for Engine {
             Operation::RunPause => self.runs.pause(id(&payload)),
             Operation::RunResume => self.runs.resume(id(&payload)),
             Operation::Import => interchange::import(&payload),
+            Operation::ApiInspect => api_spec::inspect(&payload),
+            Operation::ApiDiff => api_spec::compare(&payload),
             Operation::Codegen => interchange::generate(&payload),
             Operation::RealtimeConnect => self.realtime.connect(&payload).await,
             Operation::RealtimeSend => self.realtime.send(&payload),

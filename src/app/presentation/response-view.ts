@@ -1,5 +1,13 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, input, signal, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  input,
+  output,
+  signal,
+  computed,
+  inject,
+} from '@angular/core';
 import { JsonPipe } from '@angular/common';
 import { ExecutionResponse, formatJson } from '../domain/models';
 import { blockedSecret } from '../domain/secrets';
@@ -21,6 +29,8 @@ const DISPLAY_LIMIT = 512 * 1024;
 export class ResponseView {
   readonly response = input<ExecutionResponse>();
   readonly running = input(false);
+  /** Asks for a printable report of the request and this response. */
+  readonly exportPdf = output<void>();
   protected readonly tab = signal('body');
   protected readonly blocked = blockedSecret;
   protected readonly pretty = signal(true);

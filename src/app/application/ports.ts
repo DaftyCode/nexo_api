@@ -102,6 +102,12 @@ export interface FilePort {
   readBase64(file: File): Promise<string>;
   id(): string;
 }
+/** Prints a report shown on screen, where the system lets the person save it as PDF. */
+export interface PrintPort {
+  print(sheet: HTMLElement): Promise<void>;
+  /** Removes what was prepared for printing. */
+  release(): void;
+}
 /** Small device-local preferences, such as the active environment of each workspace. */
 export interface PreferencePort {
   read(key: string): string | undefined;

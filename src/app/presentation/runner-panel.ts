@@ -6,9 +6,10 @@ import { WorkspaceState } from './workspace-state';
 import { DATA } from '../composition/providers';
 import { RunnerStore } from './runner-store';
 import { blockedSecret } from '../domain/secrets';
+import { CodeEditor } from './code-editor';
 
 @Component({
-  imports: [TranslocoPipe, FormField],
+  imports: [TranslocoPipe, FormField, CodeEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-runner-panel',
   styleUrl: './runner-panel.scss',
@@ -28,6 +29,11 @@ export class RunnerPanel {
     min(p.delay, 0);
     max(p.delay, 60000);
   });
+  /** A printable report of the run shown. */
+  protected exportPdf() {
+    const run = this.runner.run();
+    if (run) this.state.report.set(this.state.reports.runReport(run, this.runner.collectionName()));
+  }
   protected start() {
     void this.task.run(async () => {
       const m = this.model();

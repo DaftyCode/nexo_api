@@ -72,7 +72,7 @@ impl Operation {
             connection_params: object(&payload["connectionParams"], "Connection parameters")?,
         })
     }
-    fn payload(&self) -> Value {
+    pub(crate) fn payload(&self) -> Value {
         let mut payload = json!({"query": self.query, "variables": self.variables});
         if let Some(name) = &self.operation_name {
             payload["operationName"] = json!(name);

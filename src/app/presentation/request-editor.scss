@@ -55,8 +55,10 @@
   display: flex;
   flex-direction: column;
 }
-.request-content.fill > .code-editor:not(.small) {
+.request-content.fill > .code-editor:not(.small),
+.request-content.fill > app-code-editor:not(.small) {
   flex: 1 0 auto;
+  height: auto;
   min-height: clamp(175px, 26vh, 380px);
   resize: none;
 }

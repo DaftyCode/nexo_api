@@ -1,6 +1,6 @@
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { clickButton } from '../testing/controls';
+import { clickButton, fill, valueOf } from '../testing/controls';
 import { RunnerPanel } from './runner-panel';
 import { WorkspaceState } from './workspace-state';
 
@@ -13,17 +13,9 @@ describe('RunnerPanel', () => {
   const settle = async () => {
     for (let i = 0; i < 4; i++) await fixture.whenStable();
   };
-  const field = (label: string) =>
-    [...root().querySelectorAll('label')]
-      .find((element) => element.textContent?.trim().startsWith(label))!
-      .querySelector('input, select, textarea') as HTMLInputElement;
-  const type = async (label: string, value: string) => {
-    const control = field(label);
-    control.value = value;
-    control.dispatchEvent(new Event('input'));
-    control.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-  };
+  // Inputs, selects and code editors alike.
+  const field = (label: string) => ({ value: valueOf(root(), label) });
+  const type = (label: string, value: string) => fill(fixture, label, value);
   const waitPoll = () => new Promise((resolve) => setTimeout(resolve, 450));
   const result = (name: string, status: number) => ({
     name,
@@ -121,6 +113,11 @@ describe('RunnerPanel', () => {
     expect(root().textContent).toContain('Expected 201');
     expect(root().textContent).toContain('evil.test');
     expect(state.documents().some((d) => d.kind === 'run')).toBe(true);
+
+    await clickButton(fixture, 'Export PDF');
+    const report = state.report();
+    expect(report?.kind).toBe('run');
+    expect(report?.title).toBe('Shop');
   });
 
   it('stops a running collection and reports polling errors', async () => {

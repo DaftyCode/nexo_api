@@ -1,0 +1,141 @@
+.report-modal {
+  width: 920px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+}
+.report-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #e9ebee;
+  border-radius: 8px;
+  padding: 16px;
+}
+/* The paper: the same on screen and when printed, dark text on white. */
+.report-paper {
+  background: #fff;
+  color: #1d2026;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 28px 32px;
+  font:
+    12px/1.45 system-ui,
+    sans-serif;
+  box-shadow: 0 2px 12px #0002;
+}
+.report-header {
+  border-bottom: 2px solid #1d2026;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+}
+.report-brand {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b6270;
+}
+.report-header h1 {
+  font-size: 20px;
+  margin: 2px 0;
+}
+.report-header p {
+  margin: 0;
+  color: #5b6270;
+}
+.report-paper h2 {
+  font-size: 14px;
+  margin: 16px 0 6px;
+  break-after: avoid;
+}
+.report-paper h3,
+.report-paper h4 {
+  font-size: 12px;
+  margin: 10px 0 4px;
+  break-after: avoid;
+}
+.report-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px 14px;
+  margin: 0 0 10px;
+}
+.report-facts dt {
+  font-weight: 600;
+}
+.report-facts dd {
+  margin: 0;
+}
+.report-block {
+  border: 1px solid #d5d9e0;
+  border-left: 4px solid #2f9e5b;
+  border-radius: 4px;
+  padding: 6px 10px;
+  margin: 10px 0;
+  break-inside: avoid;
+}
+.report-block.failed {
+  border-left-color: #c9383a;
+}
+.report-status {
+  display: inline-block;
+  min-width: 34px;
+  font-family: ui-monospace, monospace;
+}
+.report-url {
+  margin: 2px 0;
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+.report-meta,
+.report-description {
+  color: #5b6270;
+  margin: 2px 0;
+  white-space: pre-wrap;
+}
+.report-test {
+  margin: 2px 0;
+  color: #1f7a45;
+}
+.report-test.failed,
+.report-failed {
+  color: #b42325;
+}
+.report-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 4px 0;
+}
+.report-table th,
+.report-table td {
+  border-bottom: 1px solid #e3e6eb;
+  padding: 2px 6px;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.report-table th {
+  width: 30%;
+  font-weight: 600;
+}
+.report-paper pre {
+  background: #f4f5f7;
+  border: 1px solid #e3e6eb;
+  padding: 6px 8px;
+  margin: 4px 0;
+  font:
+    11px/1.4 ui-monospace,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.report-folder {
+  border-bottom: 1px solid #d5d9e0;
+}
+@media print {
+  .report-paper {
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+  }
+}

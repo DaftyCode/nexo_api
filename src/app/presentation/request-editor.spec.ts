@@ -1,12 +1,15 @@
 import { testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { buttons, clickButton, exerciseControls } from '../testing/controls';
+import { buttons, clickButton, exerciseControls, fill } from '../testing/controls';
 import { newRequest } from '../domain/models';
 import { readAuth } from '../domain/auth';
 import { RequestEditor } from './request-editor';
 import { WorkspaceState } from './workspace-state';
 import { TEST_API } from '../testing/providers';
 import { introspection } from '../testing/graphql';
+import { By } from '@angular/platform-browser';
+import { vi } from 'vitest';
+import { GraphqlQueryEditor } from './graphql-query-editor';
 
 describe('RequestEditor', () => {
   let component: RequestEditor;
@@ -103,10 +106,7 @@ describe('RequestEditor', () => {
     const [pre] = buttons(root(), 'Pre-request');
     pre.click();
     await fixture.whenStable();
-    const editor = root().querySelector<HTMLTextAreaElement>('[aria-label="Pre-request scripts"]')!;
-    editor.value = 'pm.environment.set("a", 1);';
-    editor.dispatchEvent(new Event('input'));
-    await fixture.whenStable();
+    await fill(fixture, 'Pre-request scripts', 'pm.environment.set("a", 1);');
     expect(component.request().prerequest).toBe('pm.environment.set("a", 1);');
   });
 
@@ -294,11 +294,17 @@ describe('RequestEditor', () => {
     expect(state.graphqlSchemas()['https://api.test/graphql']?.queryType).toBe('Query');
     expect(root().textContent).toContain('user(id: ID!): User');
 
-    const query = root().querySelector<HTMLTextAreaElement>('[aria-label="GraphQL query"]')!;
-    query.value = 'query {\n  \n}';
-    query.dispatchEvent(new Event('input'));
+    // The query editor loads apart (@defer) and takes the schema loaded.
+    await vi.waitFor(() =>
+      expect(root().querySelector('[aria-label="GraphQL query"]')).not.toBeNull(),
+    );
+    const editor = fixture.debugElement.query(By.directive(GraphqlQueryEditor))
+      .componentInstance as GraphqlQueryEditor;
+    const view = editor.editor()!;
+    view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: 'query {\n  \n}' } });
     await fixture.whenStable();
-    query.setSelectionRange(10, 10);
+    expect(component.request().body).toBe('query {\n  \n}');
+    view.dispatch({ selection: { anchor: 10 } });
     buttons(root(), 'Insert')[0].click();
     await fixture.whenStable();
     expect(component.request().body).toBe('query {\n  user(id: $id) {\n  \n}\n}');

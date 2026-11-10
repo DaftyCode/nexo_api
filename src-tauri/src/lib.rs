@@ -15,6 +15,13 @@ struct Backend {
     info: Result<DesktopInfo, String>,
     running: Mutex<Option<Running>>,
 }
+/// Opens the system print dialog for the page, where "Save as PDF" is one of the printers.
+/// `window.print()` does nothing in some system webviews (WKWebView on macOS).
+#[tauri::command]
+fn print_page(webview: tauri::Webview) -> Result<(), String> {
+    webview.print().map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 fn desktop_info(state: tauri::State<'_, Backend>) -> Result<DesktopInfo, String> {
     state.info.clone()
@@ -100,6 +107,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             desktop_info,
+            print_page,
             sign_in::oauth2_sign_in_window,
             sign_in::oauth2_sign_in_window_close
         ])

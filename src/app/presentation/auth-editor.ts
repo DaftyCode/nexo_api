@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, model, output } fr
 import { FormField, form } from '@angular/forms/signals';
 import { AuthDraft, Inheritance, authDetails, emptyAuth, withAuthValue } from '../domain/auth';
 import { OAuth2Editor } from './oauth2-editor';
+import { CodeEditor } from './code-editor';
 
 /** Names Bruno and Insomnia give to Postman's keys; shown here and saved under Postman's. */
 const aliases: Record<string, Record<string, readonly string[]>> = {
@@ -52,7 +53,7 @@ const labels: Record<string, string> = {
  * the folder or collection above them, which is then shown with a link to edit it there.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, OAuth2Editor],
+  imports: [TranslocoPipe, FormField, OAuth2Editor, CodeEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-auth-editor',
   styleUrl: './auth-editor.scss',
@@ -202,7 +203,10 @@ export class AuthEditor {
     return value === 'true';
   }
   protected text(key: string, event: Event) {
-    const value = (event.target as HTMLInputElement | HTMLSelectElement).value;
+    this.setText(key, (event.target as HTMLInputElement | HTMLSelectElement).value);
+  }
+  /** Sets a value, and drops the names other clients give it so only one is kept. */
+  protected setText(key: string, value: string) {
     this.auth.update((auth) =>
       (aliases[auth.type]?.[key] ?? []).reduce(
         (next, alias) => withAuthValue(next, alias, undefined),

@@ -1,8 +1,13 @@
 import {
   addFolder,
+  dropPlace,
   folders,
+  isWithin,
   itemAt,
   moveInto,
+  moveTo,
+  staysInPlace,
+  withStoredAuth,
   pathOf,
   removeItem,
   renameItem,
@@ -10,6 +15,7 @@ import {
   withIds,
 } from './collection-tree';
 import { Collection } from './models';
+import { emptyAuth } from './auth';
 
 function collection(): Collection {
   return {
@@ -61,6 +67,74 @@ describe('collection tree operations', () => {
     expect(() => moveInto(collection(), [1], [1, 1])).toThrowError(
       'A folder cannot be moved into itself',
     );
+  });
+  it('moves items to a position: before, after or inside, as a drop does', () => {
+    const names = (c: Collection) => c.item.map((i) => i.name);
+    // Reordering among siblings, counting positions before the move.
+    expect(names(moveTo(collection(), [0], [], 3))).toEqual(['Folder', 'C', 'A']);
+    expect(names(moveTo(collection(), [2], [], 0))).toEqual(['C', 'A', 'Folder']);
+    expect(names(moveTo(collection(), [0], [], 1))).toEqual(['A', 'Folder', 'C']);
+    expect(names(moveTo(collection(), [0], [], -4))).toEqual(['A', 'Folder', 'C']);
+    // Into a folder at a position, out of a folder, and a whole folder with its items.
+    expect(pathOf(moveTo(collection(), [2], [1], 1), 'b')).toEqual([1, 0]);
+    expect(itemAt(moveTo(collection(), [2], [1], 1), [1, 1])?.name).toBe('C');
+    expect(names(moveTo(collection(), [1, 0], [], 0))).toEqual(['B', 'A', 'Folder', 'C']);
+    const folder = moveTo(collection(), [1], [], 0);
+    expect(names(folder)).toEqual(['Folder', 'A', 'C']);
+    expect(pathOf(folder, 'g')).toEqual([0, 1]);
+    // A folder moved inside a later sibling folder, whose path shifts when it leaves.
+    const nested = addFolder(collection(), [], 'Last', 'l');
+    expect(pathOf(moveTo(nested, [1], [3], 0), 'b')).toEqual([2, 0, 0]);
+    // Never into itself or one of its folders, and never to a request or a missing place.
+    for (const folderPath of [[1], [1, 1], [1, 1, 0]])
+      expect(() => moveTo(collection(), [1], folderPath, 0)).toThrowError(
+        'A folder cannot be moved into itself',
+      );
+    expect(() => moveTo(collection(), [2], [0], 0)).toThrowError('Item not found');
+    expect(() => moveTo(collection(), [9], [], 0)).toThrowError('Item not found');
+    const original = collection();
+    moveTo(original, [0], [1], 0);
+    expect(names(original)).toEqual(['A', 'Folder', 'C']);
+  });
+  it('turns a drop into a place, and tells when nothing would change', () => {
+    expect(dropPlace([1, 2], 'before')).toEqual({ folder: [1], index: 2 });
+    expect(dropPlace([1, 2], 'after')).toEqual({ folder: [1], index: 3 });
+    expect(dropPlace([1], 'inside')).toEqual({ folder: [1], index: Number.POSITIVE_INFINITY });
+    expect(dropPlace([], 'inside').folder).toEqual([]);
+    expect(staysInPlace([1, 2], [1], 2)).toBe(true);
+    expect(staysInPlace([1, 2], [1], 3)).toBe(true);
+    expect(staysInPlace([1, 2], [1], 4)).toBe(false);
+    expect(staysInPlace([1, 2], [], 2)).toBe(false);
+    expect(staysInPlace([0], [], 1)).toBe(true);
+    expect(isWithin([1, 0], [1])).toBe(true);
+    expect(isWithin([1], [1])).toBe(true);
+    expect(isWithin([2], [1])).toBe(false);
+    expect(isWithin([], [1])).toBe(false);
+  });
+  it('stores an authorization on the collection, a folder or a request, and nothing else', () => {
+    const bearer = { ...emptyAuth('bearer'), token: '{{token}}' };
+    const original = collection();
+    const root = withStoredAuth(original, [], bearer);
+    expect(root['auth']).toMatchObject({ type: 'bearer' });
+    expect(root.item).toEqual(original.item);
+    expect(itemAt(withStoredAuth(original, [1], bearer), [1])?.['auth']).toMatchObject({
+      type: 'bearer',
+    });
+    const request = itemAt(withStoredAuth(original, [1, 0], bearer), [1, 0])?.request as Record<
+      string,
+      unknown
+    >;
+    expect(request).toMatchObject({ method: 'GET', url: 'http://b', auth: { type: 'bearer' } });
+    // An inherited authorization removes the stored one.
+    expect(withStoredAuth(root, [], emptyAuth('inherit'))).not.toHaveProperty('auth');
+    // A request saved as a bare URL becomes an object.
+    const bare = { ...original, item: [{ id: 'u', name: 'U', request: 'http://u' }] };
+    expect(itemAt(withStoredAuth(bare, [0], bearer), [0])?.request).toMatchObject({
+      url: 'http://u',
+      auth: { type: 'bearer' },
+    });
+    expect(() => withStoredAuth(original, [9], bearer)).toThrowError('Item not found');
+    expect(original).toEqual(collection());
   });
   it('assigns identifiers and lists folders for move choices', () => {
     let next = 0;

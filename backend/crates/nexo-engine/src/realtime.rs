@@ -185,7 +185,10 @@ impl Realtime {
         };
         if protocol == "graphql-subscription" {
             // Checked before connecting, so a mistake is answered at once.
-            crate::graphql_ws::Protocol::from_name(payload["graphqlProtocol"].as_str())?;
+            let name = payload["graphqlProtocol"].as_str();
+            if !crate::graphql_sse::is_sse(name) {
+                crate::graphql_ws::Protocol::from_name(name)?;
+            }
             crate::graphql_ws::Operation::from_payload(payload)?;
         }
         let text = payload["url"].as_str().unwrap_or("");
@@ -973,6 +976,12 @@ impl Task {
     /// `graphql-ws`. Each result is a `next` event; closing ends the subscription first.
     async fn graphql(mut self) {
         use crate::graphql_ws::{self, Incoming};
+        if crate::graphql_sse::is_sse(self.payload["graphqlProtocol"].as_str()) {
+            return match graphql_ws::Operation::from_payload(&self.payload) {
+                Ok(operation) => self.graphql_sse(operation).await,
+                Err(error) => self.fail(error.to_string()),
+            };
+        }
         let (protocol, operation) = match (
             graphql_ws::Protocol::from_name(self.payload["graphqlProtocol"].as_str()),
             graphql_ws::Operation::from_payload(&self.payload),
@@ -1061,6 +1070,102 @@ impl Task {
                         self.events.set("closed");
                         return;
                     }
+                },
+            }
+        }
+    }
+
+    /// A GraphQL subscription over server-sent events (`graphql-sse`, distinct connections):
+    /// one POST whose response streams the results. Closing drops the connection, which ends
+    /// the subscription. A server that answers with one JSON result instead gives just it.
+    async fn graphql_sse(mut self, operation: crate::graphql_ws::Operation) {
+        use crate::graphql_sse::{self, Incoming, Parser};
+        let mut url = self.url.clone();
+        match url.scheme() {
+            "ws" => {
+                let _ = url.set_scheme("http");
+            }
+            "wss" => {
+                let _ = url.set_scheme("https");
+            }
+            _ => {}
+        }
+        let options = crate::transport::Options {
+            strict_ssl: self.payload["strictSSL"] != false,
+            follow_redirects: false,
+            // A subscription stays open as long as it is wanted.
+            timeout: Duration::from_secs(24 * 3600),
+            trust_redirect_credentials: false,
+            transport: json!({"caPem": self.payload["caPem"]}),
+            egress: self.egress.clone(),
+            loopback_ports: self.loopback_ports.clone(),
+        };
+        let transport = match crate::transport::Transport::new(options, Arc::default()) {
+            Ok(transport) => transport,
+            Err(error) => return self.fail(error.to_string()),
+        };
+        let headers = header_rows(&self.payload["headers"]);
+        let mut response = tokio::select! {
+            _ = self.stop.cancelled() => return,
+            sent = transport.stream(&url, &headers, graphql_sse::body(&operation)) => match sent {
+                Ok(response) => response,
+                Err(error) => return self.fail(error.to_string()),
+            },
+        };
+        let status = response.status();
+        if !status.is_success() {
+            let text = crate::transport::read_limited(response, 4096)
+                .await
+                .unwrap_or_default();
+            return self.fail(format!("HTTP {}: {}", status.as_u16(), text.trim()));
+        }
+        let streamed = response
+            .headers()
+            .get(reqwest::header::CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.starts_with("text/event-stream"));
+        self.events.set("connected");
+        self.events.emit("open", json!("Subscribed"));
+        if !streamed {
+            match crate::transport::read_limited(response, 4 * 1024 * 1024).await {
+                Ok(text) => {
+                    let result = serde_json::from_str(&text).unwrap_or(Value::String(text));
+                    self.events.emit("next", result);
+                    self.events
+                        .emit("complete", json!("The server ended the subscription"));
+                    self.events.set("closed");
+                }
+                Err(error) => self.fail(error.to_string()),
+            }
+            return;
+        }
+        let mut parser = Parser::default();
+        loop {
+            tokio::select! {
+                // Dropping the response closes the connection, which ends the subscription.
+                _ = self.stop.cancelled() => return,
+                // Nothing is sent from the panel: the subscription only receives.
+                _ = self.commands.recv() => {}
+                chunk = response.chunk() => match chunk {
+                    Ok(Some(bytes)) => {
+                        for event in parser.push(&bytes) {
+                            match graphql_sse::interpret(event) {
+                                Incoming::Next(result) => self.events.emit("next", result),
+                                Incoming::Complete => {
+                                    self.events.emit("complete", json!("The server ended the subscription"));
+                                    self.events.set("closed");
+                                    return;
+                                }
+                                Incoming::Other(message) => self.events.emit("message", message),
+                            }
+                        }
+                    }
+                    Ok(None) => {
+                        self.events.emit("close", json!({"code": 1000, "reason": "The server closed the stream"}));
+                        self.events.set("closed");
+                        return;
+                    }
+                    Err(error) => return self.fail(error.to_string()),
                 },
             }
         }

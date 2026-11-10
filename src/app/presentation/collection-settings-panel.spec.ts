@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
-import { buttons, clickButton } from '../testing/controls';
+import { buttons, clickButton, fill } from '../testing/controls';
 import { asCollection } from '../domain/models';
 import { CollectionSettingsPanel } from './collection-settings-panel';
 import { WorkspaceState } from './workspace-state';
@@ -51,6 +51,26 @@ describe('CollectionSettingsPanel', () => {
     expect(root().textContent).toContain('Collection settings');
   });
 
+  it('exports the documentation of the collection', async () => {
+    await state.createCollection('Shop');
+    state.openCollectionSettings(state.collections()[0].id);
+    await settle();
+    await clickButton(fixture, 'Export documentation (PDF)');
+    expect(state.report()).toMatchObject({ kind: 'collection', title: 'Shop' });
+    state.closeReport();
+    expect(api.released).toBe(1);
+
+    // A collection that cannot be read says so instead.
+    state.documents.update((documents) =>
+      documents.map((d) => (d.kind === 'collection' ? { ...d, value: 'broken' } : d)),
+    );
+    state.reportCollection(state.collections()[0].id);
+    expect(state.report()).toBeUndefined();
+    expect(state.error()).not.toBe('');
+    state.reportCollection('missing');
+    expect(state.report()).toBeUndefined();
+  });
+
   it('saves the variables, authorization and scripts of a collection', async () => {
     await state.createCollection('Shop');
     state.openCollectionSettings(state.collections()[0].id);
@@ -65,12 +85,8 @@ describe('CollectionSettingsPanel', () => {
     await tab('Authorization');
     await authType('bearer');
     await tab('Scripts');
-    const [pre, tests] = root().querySelectorAll<HTMLTextAreaElement>('textarea');
-    pre.value = 'console.log(1)';
-    pre.dispatchEvent(new Event('input', { bubbles: true }));
-    tests.value = 'pm.test("ok", () => {})';
-    tests.dispatchEvent(new Event('input', { bubbles: true }));
-    await fixture.whenStable();
+    await fill(fixture, 'Pre-request script', 'console.log(1)');
+    await fill(fixture, 'Tests', 'pm.test("ok", () => {})');
     await clickButton(fixture, 'Save collection');
     await settle();
     expect(root().textContent).not.toContain('Unsaved changes');
@@ -98,14 +114,12 @@ describe('CollectionSettingsPanel', () => {
     state.openCollectionSettings(shop.id, [0], 'authorization');
     await settle();
     api.responses['oauth2.token'] = {
-      token: {
-        id: 'tok',
-        name: 'Token',
-        hasRefreshToken: false,
-        hasIdToken: false,
-        reference: 'oauth2:tok',
-        idReference: 'oauth2:tok:id',
-      },
+      id: 'tok',
+      name: 'Token',
+      hasRefreshToken: false,
+      hasIdToken: false,
+      reference: 'oauth2:tok',
+      idReference: 'oauth2:tok:id',
     };
     await authType('oauth2');
     const grant = [...root().querySelectorAll('select')].find((element) =>
@@ -116,7 +130,20 @@ describe('CollectionSettingsPanel', () => {
     await fixture.whenStable();
     await clickButton(fixture, 'Get new access token');
     await settle();
-    expect(state.notice()).toBe('Access token obtained. Save the folder to keep it.');
+    // Saved in the folder at once, and said in a toast.
+    const stored = collection().item[0]['auth'] as {
+      type: string;
+      oauth2: { key: string; value: unknown }[];
+    };
+    expect(stored.type).toBe('oauth2');
+    expect(stored.oauth2).toEqual(
+      expect.arrayContaining([{ key: 'oauth2TokenId', value: 'tok', type: 'string' }]),
+    );
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Access token obtained',
+      message: 'oauth2.keptSaved',
+    });
     await clickButton(fixture, 'Save folder');
     await settle();
     expect(collection().item[0]['auth']).toMatchObject({ type: 'oauth2' });

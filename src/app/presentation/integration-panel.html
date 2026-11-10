@@ -84,12 +84,27 @@
             <option value="tools/list">{{ 'tools/list' | transloco }}</option>
             <option value="tools/call">{{ 'tools/call' | transloco }}</option>
             <option value="resources/list">{{ 'resources/list' | transloco }}</option>
+            <option value="resources/templates/list">resources/templates/list</option>
+            <option value="resources/read">resources/read</option>
             <option value="prompts/list">{{ 'prompts/list' | transloco }}</option>
+            <option value="prompts/get">prompts/get</option>
+            <option value="ping">ping</option>
           </select></label
-        ><label class="field"
-          >{{ 'Parameters (JSON)' | transloco
-          }}<textarea class="code-editor small" [formField]="fields.params"></textarea></label
-        ><app-key-value-editor [(rows)]="headers" /><button class="button primary" (click)="mcp()">
+        >
+        <div class="field">
+          <span>{{ 'Parameters (JSON)' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.params"
+              language="json"
+              size="small"
+              [label]="'Parameters (JSON)' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
+        <app-key-value-editor [(rows)]="headers" /><button class="button primary" (click)="mcp()">
           {{ 'Send JSON-RPC ↗' | transloco }}
         </button>
       }
@@ -301,24 +316,7 @@
             }
           }
           @case ('apis') {
-            <h2>{{ 'API definitions' | transloco }}</h2>
-            <label class="field"
-              >{{ 'Name' | transloco }}<input [formField]="fields.apiName" /></label
-            ><label class="field"
-              >{{ 'OpenAPI definition' | transloco
-              }}<textarea
-                class="code-editor"
-                [formField]="fields.apiSpec"
-                spellcheck="false"
-              ></textarea>
-            </label>
-            <div class="row">
-              <button class="button primary" (click)="apiSpec()">
-                {{ 'Save definition' | transloco }}</button
-              ><button class="button" (click)="importApi()">
-                {{ 'Generate collection' | transloco }}
-              </button>
-            </div>
+            <app-api-definitions />
           }
           @case ('performance') {
             <h2>{{ 'Performance run' | transloco }}</h2>
@@ -407,24 +405,7 @@
       @case ('mcp') {
         @if (view(); as v) {
           @if (v.kind === 'mcp') {
-            <p>
-              HTTP {{ v.view.status }}
-              @if (v.view.session) {
-                · {{ 'Session' | transloco }} <code>{{ v.view.session }}</code>
-              }
-            </p>
-            @if (v.view.error) {
-              <p class="danger" role="alert">{{ v.view.error }}</p>
-            }
-            @for (tool of v.view.tools; track tool.name) {
-              <div class="run-result">
-                <strong>{{ tool.name }}</strong
-                ><span class="muted">{{ tool.description }}</span>
-              </div>
-            }
-            @for (text of v.view.texts; track $index) {
-              <pre class="tool-output">{{ text }}</pre>
-            }
+            <app-mcp-results [view]="v.view" (call)="mcpCall($event)" />
           }
         }
       }

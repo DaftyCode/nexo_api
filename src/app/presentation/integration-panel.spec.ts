@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { buttons, change, clickButton } from '../testing/controls';
+import { buttons, change, clickButton, fill, valueOf } from '../testing/controls';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { newRequest } from '../domain/models';
 import { IntegrationPanel } from './integration-panel';
@@ -10,17 +10,9 @@ describe('IntegrationPanel', () => {
   let api: TestApi;
   let state: WorkspaceState;
   const root = () => fixture.nativeElement as HTMLElement;
-  const field = (label: string) =>
-    [...root().querySelectorAll('label')]
-      .find((element) => element.textContent?.trim().startsWith(label))!
-      .querySelector('input, select, textarea') as HTMLInputElement;
-  const type = async (label: string, value: string) => {
-    const control = field(label);
-    control.value = value;
-    control.dispatchEvent(new Event('input'));
-    control.dispatchEvent(new Event('change'));
-    await fixture.whenStable();
-  };
+  // Inputs, selects and code editors alike.
+  const field = (label: string) => ({ value: valueOf(root(), label) });
+  const type = (label: string, value: string) => fill(fixture, label, value);
   const settle = async () => {
     for (let i = 0; i < 3; i++) await fixture.whenStable();
   };
@@ -126,6 +118,107 @@ describe('IntegrationPanel', () => {
     });
     for (const text of ['session-1', 'echo', 'Echoes text', 'hello', 'Unknown tool'])
       expect(root().textContent).toContain(text);
+  });
+
+  it('browses the resources and prompts of an MCP server in one session', async () => {
+    api.responses['mcp.request'] = ({ method, params, url }: Record<string, unknown>) => {
+      const answer = (result: unknown) => ({
+        status: 200,
+        sessionId: url === 'http://localhost:3000/mcp' ? 'session-1' : undefined,
+        result: { jsonrpc: '2.0', id: 1, result },
+      });
+      const p = params as { uri?: string; name?: string; arguments?: Record<string, string> };
+      switch (method) {
+        case 'resources/list':
+          return answer({
+            resources: [{ uri: 'nexo://shop', name: 'Shop', description: 'Collection' }],
+          });
+        case 'resources/templates/list':
+          return answer({ resourceTemplates: [{ uriTemplate: 'nexo://{id}', name: 'By id' }] });
+        case 'resources/read':
+          return answer({ contents: [{ uri: p.uri, text: `contents of ${p.uri}` }] });
+        case 'prompts/list':
+          return answer({
+            prompts: [
+              {
+                name: 'write_tests',
+                description: 'Tests for a request',
+                arguments: [
+                  { name: 'request', required: true },
+                  { name: 'workspace', required: false },
+                ],
+              },
+            ],
+            tools: [{ name: 'send_request', description: 'Sends' }],
+          });
+        case 'prompts/get':
+          return answer({
+            messages: [
+              {
+                role: 'user',
+                content: { type: 'text', text: `tests for ${p.arguments?.['request']}` },
+              },
+            ],
+          });
+        default:
+          return answer({});
+      }
+    };
+    const sent = () => api.calls.filter((c) => c.operation === 'mcp.request').map((c) => c.payload);
+    fixture.componentRef.setInput('section', 'mcp');
+    await fixture.whenStable();
+    await type('Method', 'resources/list');
+    await clickButton(fixture, 'Send JSON-RPC');
+    await settle();
+    expect(sent()[0]).not.toHaveProperty('sessionId');
+    await clickButton(fixture, 'Read Shop');
+    await settle();
+    expect(sent().at(-1)).toMatchObject({
+      method: 'resources/read',
+      params: { uri: 'nexo://shop' },
+      sessionId: 'session-1',
+    });
+    expect(root().textContent).toContain('contents of nexo://shop');
+
+    await type('Method', 'resources/templates/list');
+    await clickButton(fixture, 'Send JSON-RPC');
+    await settle();
+    const calls = sent().length;
+    await clickButton(fixture, 'Use template By id');
+    expect(sent()).toHaveLength(calls);
+    expect(field('Method').value).toBe('resources/read');
+    expect(JSON.parse(field('Parameters (JSON)').value)).toEqual({ uri: 'nexo://{id}' });
+
+    await type('Method', 'prompts/list');
+    await clickButton(fixture, 'Send JSON-RPC');
+    await settle();
+    const get = buttons(root(), 'Get prompt write_tests')[0];
+    expect(get.disabled).toBe(true);
+    await type('request *', 'List orders');
+    expect(get.disabled).toBe(false);
+    get.click();
+    await settle();
+    expect(sent().at(-1)).toMatchObject({
+      method: 'prompts/get',
+      params: { name: 'write_tests', arguments: { request: 'List orders' } },
+    });
+    expect(root().textContent).toContain('tests for List orders');
+
+    await type('Method', 'prompts/list');
+    await clickButton(fixture, 'Send JSON-RPC');
+    await settle();
+    await clickButton(fixture, 'Use tool send_request');
+    expect(field('Method').value).toBe('tools/call');
+    expect(JSON.parse(field('Parameters (JSON)').value)).toEqual({
+      name: 'send_request',
+      arguments: {},
+    });
+
+    // Another server starts without the first one's session.
+    await type('Server URL', 'http://localhost:4000/mcp');
+    await clickButton(fixture, 'Send JSON-RPC');
+    await settle();
+    expect(sent().at(-1)).not.toHaveProperty('sessionId');
   });
 
   it('generates code for the active request', async () => {
@@ -242,16 +335,9 @@ describe('IntegrationPanel', () => {
     expect(root().textContent).toContain('Revision restored as a new revision.');
   });
 
-  it('saves an API definition and generates a collection from it', async () => {
-    api.responses['import'] = { documents: [] };
+  it('shows the API definitions', async () => {
     await clickButton(fixture, 'apis');
-    await type('Name', 'Pets');
-    await clickButton(fixture, 'Save definition');
-    await settle();
-    expect(api.documentsStore.some((d) => d.kind === 'api' && d.name === 'Pets')).toBe(true);
-    await clickButton(fixture, 'Generate collection');
-    await settle();
-    expect(api.calls.some((call) => call.operation === 'import')).toBe(true);
+    expect(root().querySelector('app-api-definitions')).not.toBeNull();
   });
 
   it('starts, follows and stops a load test', async () => {

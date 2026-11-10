@@ -14,6 +14,8 @@ import { FormField, form, min, max } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { GitRemotes } from './git-remotes';
+import { McpCall, McpResults } from './mcp-results';
+import { ApiDefinitions } from './api-definitions';
 import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, WorkspaceDocument, row } from '../domain/models';
 import { GitOperation } from '../application/operations';
@@ -29,6 +31,7 @@ import {
   tokenView,
 } from '../domain/integration-views';
 import { SecretSummary, formatAllowedDomains } from '../domain/secrets';
+import { CodeEditor } from './code-editor';
 
 /** The local Git operations of the panel; remotes have their own component. */
 type PanelGitOperation = Extract<
@@ -52,7 +55,15 @@ type View =
   | { kind: 'token'; view: ReturnType<typeof tokenView> };
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor, GitRemotes],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    KeyValueEditor,
+    GitRemotes,
+    McpResults,
+    ApiDefinitions,
+    CodeEditor,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',
   styleUrl: './integration-panel.scss',
@@ -79,8 +90,6 @@ export class IntegrationPanel {
     secretValue: '',
     secretDomains: '',
     documentId: '',
-    apiName: 'My API',
-    apiSpec: 'openapi: 3.1.0\ninfo:\n  title: My API\n  version: 1.0.0\npaths: {}',
     tokenUrl: '',
     clientId: '',
     clientSecret: '',
@@ -186,9 +195,12 @@ export class IntegrationPanel {
       throw new Error(`${label} must be valid JSON`);
     }
   }
+  /** The MCP session `initialize` opened, kept for the server that gave it. */
+  private mcpSession = { url: '', id: '' };
   protected mcp() {
     void this.task.run(async () => {
       const m = this.model();
+      const session = this.mcpSession.url === m.url ? this.mcpSession.id : '';
       const result = await this.integration.mcp(this.state.workspaceId(), {
         url: m.url,
         method: m.method,
@@ -198,10 +210,22 @@ export class IntegrationPanel {
             .filter((h) => h.key && h.enabled)
             .map((h) => [h.key, h.value]),
         ),
+        ...(session ? { sessionId: session } : {}),
       });
-      this.view.set({ kind: 'mcp', view: mcpView(result) });
+      const view = mcpView(result);
+      if (view.session) this.mcpSession = { url: m.url, id: view.session };
+      this.view.set({ kind: 'mcp', view });
       this.output.set(JSON.stringify(result, null, 2));
     });
+  }
+  /** A call chosen from the results: written in the form, and sent when asked. */
+  protected mcpCall(call: McpCall) {
+    this.model.update((m) => ({
+      ...m,
+      method: call.method,
+      params: JSON.stringify(call.params, null, 2),
+    }));
+    if (call.send) this.mcp();
   }
   protected code() {
     void this.task.run(async () => {
@@ -267,18 +291,6 @@ export class IntegrationPanel {
       await this.state.refresh();
       this.output.set('Revision restored as a new revision.');
     });
-  }
-  protected apiSpec() {
-    void this.task.run(async () => {
-      await this.state.cases.createDocument(this.state.workspaceId(), 'api', this.model().apiName, {
-        source: this.model().apiSpec,
-      });
-      await this.state.refresh();
-      this.output.set('API specification saved.');
-    });
-  }
-  protected importApi() {
-    void this.state.importContent(this.model().apiSpec);
   }
   protected oauth() {
     void this.task.run(async () => {

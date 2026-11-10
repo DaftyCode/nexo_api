@@ -69,6 +69,17 @@ describe('ResponseView', () => {
       api = TestBed.inject(TEST_API);
     });
 
+    it('asks for a PDF of the response, but not while it is being sent', async () => {
+      const asked: string[] = [];
+      fixture.componentInstance.exportPdf.subscribe(() => asked.push('pdf'));
+      await show({});
+      await clickButton(fixture, 'Export PDF');
+      expect(asked).toEqual(['pdf']);
+      fixture.componentRef.setInput('running', true);
+      await fixture.whenStable();
+      expect(root().textContent).not.toContain('Export PDF');
+    });
+
     it('shows the body pretty or raw and downloads it', async () => {
       await show({});
       expect(root().querySelector('.response-code')?.textContent).toBe('{\n  "a": 1\n}');

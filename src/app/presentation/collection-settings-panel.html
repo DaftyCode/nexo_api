@@ -25,6 +25,11 @@
       </option>
     }
   </select>
+  @if (target(); as current) {
+    <button type="button" class="button" (click)="state.reportCollection(current.id)">
+      {{ 'Export documentation (PDF)' | transloco }}
+    </button>
+  }
 </div>
 @if (target(); as current) {
   @if (current.folder; as folder) {
@@ -76,21 +81,30 @@
           />
         }
         @case ('scripts') {
-          <label class="field"
-            >{{ 'Pre-request script' | transloco
-            }}<textarea
-              class="code-editor"
-              [formField]="fields.prerequest"
-              spellcheck="false"
-            ></textarea></label
-          ><label class="field"
-            >{{ 'Tests' | transloco
-            }}<textarea
-              class="code-editor"
-              [formField]="fields.tests"
-              spellcheck="false"
-            ></textarea>
-          </label>
+          <div class="field">
+            <span>{{ 'Pre-request script' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [formField]="fields.prerequest"
+                language="javascript"
+                [label]="'Pre-request script' | transloco"
+              />
+            } @placeholder {
+              <div class="code-editor" aria-hidden="true"></div>
+            }
+          </div>
+          <div class="field">
+            <span>{{ 'Tests' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [formField]="fields.tests"
+                language="javascript"
+                [label]="'Tests' | transloco"
+              />
+            } @placeholder {
+              <div class="code-editor" aria-hidden="true"></div>
+            }
+          </div>
           <p class="editor-hint">
             {{ 'Collection scripts run before the scripts of folders and requests.' | transloco }}
           </p>

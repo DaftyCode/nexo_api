@@ -1,6 +1,7 @@
 import {
   GraphQLSchema,
   INTROSPECTION_QUERY,
+  completeIntrospection,
   fieldSnippet,
   insertAt,
   readSchema,
@@ -63,6 +64,47 @@ describe('GraphQL schemas', () => {
       },
     ]);
     expect(schemaType(schema, undefined)).toBeUndefined();
+  });
+
+  it('keeps the introspection, and fills the parts some servers leave out', () => {
+    expect(readSchema(JSON.stringify(introspection)).introspection).toEqual(introspection.data);
+    const filled = completeIntrospection({
+      __schema: {
+        queryType: { name: 'Query' },
+        types: [
+          { kind: 'OBJECT', name: 'Query', fields: [{ name: 'a', type: {} }] },
+          { kind: 'INTERFACE', name: 'Node' },
+          { kind: 'UNION', name: 'Any', possibleTypes: [{ kind: 'OBJECT', name: 'Query' }] },
+          { kind: 'ENUM', name: 'Status', enumValues: [{ name: 'OPEN', isDeprecated: true }] },
+          { kind: 'INPUT_OBJECT', name: 'Filter', inputFields: [{ name: 'q', type: {} }] },
+          { kind: 'SCALAR', name: 'ID' },
+        ],
+      },
+    }) as { __schema: Record<string, unknown> & { types: Record<string, unknown>[] } };
+    expect(filled.__schema['directives']).toEqual([]);
+    expect(filled.__schema['mutationType']).toBeNull();
+    const [query, node, any, status, filter, id] = filled.__schema.types;
+    expect(query).toMatchObject({
+      interfaces: [],
+      fields: [{ name: 'a', args: [], isDeprecated: false, description: null }],
+    });
+    expect(node).toMatchObject({ fields: [], interfaces: [], possibleTypes: [] });
+    expect(any['possibleTypes']).toHaveLength(1);
+    expect(status['enumValues']).toEqual([
+      { name: 'OPEN', description: null, isDeprecated: true, deprecationReason: null },
+    ]);
+    expect(filter['inputFields']).toEqual([
+      { name: 'q', type: {}, description: null, defaultValue: null },
+    ]);
+    expect(id).toEqual({ kind: 'SCALAR', name: 'ID', description: null });
+    expect(filled.__schema.types.slice(6).map((type) => type['name'])).toEqual([
+      'String',
+      'Boolean',
+      'Int',
+      'Float',
+    ]);
+    for (const other of [undefined, null, 'x', { __schema: { types: 1 } }])
+      expect(completeIntrospection(other)).toBe(other);
   });
 
   it('explains answers that are not a schema', () => {

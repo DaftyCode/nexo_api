@@ -30,10 +30,22 @@ import { KeyValueEditor } from './key-value-editor';
 import { StudioIcon } from './studio-icon';
 import { WorkspaceState } from './workspace-state';
 import { GraphqlExplorer } from './graphql-explorer';
+import { GraphqlQueryEditor } from './graphql-query-editor';
+import { CodeEditor } from './code-editor';
+import { bodyLanguage } from './code-language';
 import { insertAt } from '../domain/graphql-schema';
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor, StudioIcon, AuthEditor, GraphqlExplorer],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    KeyValueEditor,
+    StudioIcon,
+    AuthEditor,
+    GraphqlExplorer,
+    GraphqlQueryEditor,
+    CodeEditor,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-request-editor',
   styleUrl: './request-editor.scss',
@@ -68,9 +80,11 @@ export class RequestEditor {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly appearance = inject(AppearanceState);
   protected readonly state = inject(WorkspaceState);
-  private readonly query = viewChild<ElementRef<HTMLTextAreaElement>>('query');
+  private readonly query = viewChild<GraphqlQueryEditor>('query');
   /** The schema loaded for this request's endpoint, if any. */
   protected readonly schema = computed(() => this.state.graphqlSchemas()[this.request().url]);
+  /** The colours of the raw body follow the type chosen next to it. */
+  protected readonly rawLanguage = computed(() => bodyLanguage(this.request().bodyLanguage));
   /** The body type shown: GraphQL is a protocol of the request, as Postman lists it. */
   protected readonly bodyType = computed(() =>
     this.request().protocol === 'graphql' ? 'graphql' : this.request().bodyMode,
@@ -151,15 +165,10 @@ export class RequestEditor {
   }
   /** Inserts a field from the schema explorer at the cursor of the query. */
   protected insertField(snippet: string) {
-    const editor = this.query()?.nativeElement;
+    const editor = this.query();
+    if (editor) return editor.insert(snippet);
     const body = this.request().body;
-    const inserted = insertAt(body, editor?.selectionStart ?? body.length, snippet);
-    this.request.update((r) => ({ ...r, body: inserted.value }));
-    if (editor)
-      queueMicrotask(() => {
-        editor.focus();
-        editor.setSelectionRange(inserted.cursor, inserted.cursor);
-      });
+    this.request.update((r) => ({ ...r, body: insertAt(body, body.length, snippet).value }));
   }
   protected format() {
     this.request.update((r) => ({ ...r, body: formatJson(r.body) }));

@@ -1014,6 +1014,7 @@ mod tests {
         assert_eq!(collection_variables["seen"], 3);
         assert!(collection_variables.get("folderOnly").is_none());
         assert_eq!(view["assertions"][0]["passed"], true);
+        assert_eq!(view["assertions"][0]["request"], "login");
         assert!(!view.to_string().contains("secret-value"));
         assert_eq!(runs.jars.list("w1").len(), 1);
         assert!(runs.jars.list("w2").is_empty());

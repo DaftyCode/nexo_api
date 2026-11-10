@@ -88,6 +88,17 @@ export interface ImportPayload {
   workspace?: string;
 }
 
+export interface ApiInspectPayload {
+  source: string;
+  workspace?: string;
+}
+
+export interface ApiDiffPayload {
+  base: string;
+  source: string;
+  workspace?: string;
+}
+
 export interface CodegenPayload {
   workspace?: string;
   request?: object;
@@ -294,6 +305,8 @@ export interface OperationPayloads {
   'run.pause': IdPayload;
   'run.resume': IdPayload;
   import: ImportPayload;
+  'api.inspect': ApiInspectPayload;
+  'api.diff': ApiDiffPayload;
   codegen: CodegenPayload;
   'realtime.connect': RealtimeConnectPayload;
   'realtime.send': RealtimeSendPayload;

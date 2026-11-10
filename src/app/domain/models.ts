@@ -127,6 +127,8 @@ export interface Assertion {
   skipped: boolean;
   error?: string;
   iteration?: number;
+  /** Name of the request whose scripts ran the test. */
+  request?: string;
 }
 export interface ExecutionResponse {
   status: number;

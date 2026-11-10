@@ -9,6 +9,7 @@ import { GitOperation } from './operations';
 import { RequestDraft, WorkspaceDocument, toItem } from '../domain/models';
 import { exportableCollection } from '../domain/sanitize';
 import { GitRemote, RepositoryFile, repositoryImport } from '../domain/repository';
+import { ApiDiff, ApiInspection } from '../domain/api-definitions';
 import { parseAllowedDomains } from '../domain/secrets';
 import { RequestAncestor, toPortableRows } from '../domain/variables';
 
@@ -123,6 +124,14 @@ export class IntegrationUseCases {
     if (!documentId) throw new Error('Choose a resource');
     return this.api.revisions(documentId);
   }
+  /** The linter's findings and the outline of an OpenAPI or Swagger definition. */
+  inspectApi(workspace: string, source: string) {
+    return this.api.execute<ApiInspection>('api.inspect', { workspace, source });
+  }
+  /** What changed from `base` to `source`, with the changes that break clients marked. */
+  diffApi(workspace: string, base: string, source: string) {
+    return this.api.execute<ApiDiff>('api.diff', { workspace, base, source });
+  }
   /** Saves an earlier version as a new revision of the current document. */
   restoreRevision(previous: WorkspaceDocument, current: WorkspaceDocument | undefined) {
     if (!current) throw new Error('Document no longer exists');
@@ -145,7 +154,13 @@ export class IntegrationUseCases {
 
   mcp(
     workspace: string,
-    input: { url: string; method: string; params: unknown; headers: Record<string, string> },
+    input: {
+      url: string;
+      method: string;
+      params: unknown;
+      headers: Record<string, string>;
+      sessionId?: string;
+    },
   ) {
     return this.api.execute<unknown>('mcp.request', { workspace, ...input });
   }

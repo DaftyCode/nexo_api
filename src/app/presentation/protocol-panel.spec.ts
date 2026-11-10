@@ -1,6 +1,6 @@
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { buttons, clickButton, exerciseControls } from '../testing/controls';
+import { buttons, clickButton, codeText, exerciseControls, fill } from '../testing/controls';
 import { newRequest } from '../domain/models';
 import { ProtocolPanel } from './protocol-panel';
 import { WorkspaceState } from './workspace-state';
@@ -114,12 +114,9 @@ describe('ProtocolPanel', () => {
         : { state: 'connected', events: [] };
     await protocol('graphql-subscription');
     expect(root().textContent).toContain('Subscription protocol');
-    expect(root().querySelector('[aria-label="GraphQL subscription"]')).not.toBeNull();
     expect(buttons(root(), 'Send message')).toEqual([]);
-    const query = root().querySelector<HTMLTextAreaElement>('[aria-label="GraphQL subscription"]')!;
-    query.value = 'subscription { ticks }';
-    query.dispatchEvent(new Event('input'));
-    await fixture.whenStable();
+    await fill(fixture, 'GraphQL subscription', 'subscription { ticks }');
+    expect(codeText(root(), 'GraphQL subscription')).toBe('subscription { ticks }');
     await clickButton(fixture, 'Connect');
     await settle();
     expect(api.calls.find((call) => call.operation === 'realtime.connect')?.payload).toMatchObject({
@@ -135,6 +132,23 @@ describe('ProtocolPanel', () => {
     await clickButton(fixture, 'Disconnect');
     await settle();
     expect(api.calls.at(-1)).toMatchObject({ operation: 'realtime.close', payload: { id: 's1' } });
+
+    // Over server-sent events: no connection parameters, the headers authorize it.
+    const kind = [...root().querySelectorAll('label')]
+      .find((label) => label.textContent?.trim().startsWith('Subscription protocol'))!
+      .querySelector('select')!;
+    expect(root().textContent).toContain('Connection parameters (JSON)');
+    kind.value = 'graphql-sse';
+    kind.dispatchEvent(new Event('input'));
+    kind.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    expect(root().textContent).not.toContain('Connection parameters (JSON)');
+    expect(root().textContent).toContain('results stream back as server-sent events');
+    await clickButton(fixture, 'Connect');
+    await settle();
+    expect(
+      api.calls.filter((call) => call.operation === 'realtime.connect').at(-1)?.payload,
+    ).toMatchObject({ graphqlProtocol: 'graphql-sse' });
   });
 
   it('connects to Socket.IO with the transport chosen', async () => {

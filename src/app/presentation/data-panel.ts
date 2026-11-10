@@ -5,9 +5,10 @@ import { WorkspaceState } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { DATA } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
+import { CodeEditor } from './code-editor';
 
 @Component({
-  imports: [TranslocoPipe, FormField],
+  imports: [TranslocoPipe, FormField, CodeEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-data-panel',
   styleUrl: './data-panel.scss',

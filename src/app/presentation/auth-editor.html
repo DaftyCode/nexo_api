@@ -225,16 +225,21 @@
             autocomplete="off"
         /></label>
         @if (rsa) {
-          <label class="field"
-            >{{ 'Private Key' | transloco
-            }}<textarea
-              class="code-editor small"
-              [value]="value('privateKey')"
-              (input)="text('privateKey', $event)"
-              spellcheck="false"
-              placeholder="-----BEGIN PRIVATE KEY-----"
-            ></textarea>
-          </label>
+          <div class="field">
+            <span>{{ 'Private Key' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [value]="value('privateKey')"
+                language="text"
+                size="small"
+                [label]="'Private Key' | transloco"
+                placeholder="-----BEGIN PRIVATE KEY-----"
+                (valueChange)="setText('privateKey', $event)"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
         } @else {
           <label class="field"
             >{{ 'Token Secret' | transloco
@@ -395,27 +400,37 @@
             />{{ 'Secret Base64 encoded' | transloco }}</label
           >
         } @else {
-          <label class="field"
-            >{{ 'Private key' | transloco
-            }}<textarea
-              class="code-editor small"
-              [value]="value('privateKey')"
-              (input)="text('privateKey', $event)"
-              spellcheck="false"
-              placeholder="-----BEGIN PRIVATE KEY-----"
-            ></textarea>
-          </label>
+          <div class="field">
+            <span>{{ 'Private key' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [value]="value('privateKey')"
+                language="text"
+                size="small"
+                [label]="'Private key' | transloco"
+                placeholder="-----BEGIN PRIVATE KEY-----"
+                (valueChange)="setText('privateKey', $event)"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
         }
-        <label class="field"
-          >{{ 'Payload' | transloco
-          }}<textarea
-            class="code-editor small"
-            [value]="value('payload')"
-            (input)="text('payload', $event)"
-            spellcheck="false"
-            [placeholder]="jwtPayloadExample"
-          ></textarea>
-        </label>
+        <div class="field">
+          <span>{{ 'Payload' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [value]="value('payload')"
+              language="json"
+              size="small"
+              [label]="'Payload' | transloco"
+              [placeholder]="jwtPayloadExample"
+              (valueChange)="setText('payload', $event)"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
         <details class="advanced">
           <summary>{{ 'Advanced' | transloco }}</summary>
           <p class="muted">
@@ -442,16 +457,21 @@
                 spellcheck="false"
             /></label>
           }
-          <label class="field"
-            >{{ 'JWT headers' | transloco
-            }}<textarea
-              class="code-editor small"
-              [value]="value('header')"
-              (input)="text('header', $event)"
-              spellcheck="false"
-              [placeholder]="jwtHeaderExample"
-            ></textarea>
-          </label>
+          <div class="field">
+            <span>{{ 'JWT headers' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [value]="value('header')"
+                language="json"
+                size="small"
+                [label]="'JWT headers' | transloco"
+                [placeholder]="jwtHeaderExample"
+                (valueChange)="setText('header', $event)"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
         </details>
       }
       @case ('asap') {
@@ -474,16 +494,21 @@
               spellcheck="false"
           /></label>
         }
-        <label class="field"
-          >{{ 'Private key' | transloco
-          }}<textarea
-            class="code-editor small"
-            [value]="value('privateKey')"
-            (input)="text('privateKey', $event)"
-            spellcheck="false"
-            placeholder="-----BEGIN PRIVATE KEY-----"
-          ></textarea>
-        </label>
+        <div class="field">
+          <span>{{ 'Private key' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [value]="value('privateKey')"
+              language="text"
+              size="small"
+              [label]="'Private key' | transloco"
+              placeholder="-----BEGIN PRIVATE KEY-----"
+              (valueChange)="setText('privateKey', $event)"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
         <details class="advanced">
           <summary>{{ 'Advanced' | transloco }}</summary>
           <p class="muted">
@@ -500,16 +525,21 @@
               placeholder="3600"
               inputmode="numeric"
           /></label>
-          <label class="field"
-            >{{ 'Additional claims' | transloco
-            }}<textarea
-              class="code-editor small"
-              [value]="value('claims')"
-              (input)="text('claims', $event)"
-              spellcheck="false"
-              [placeholder]="asapClaimsExample"
-            ></textarea>
-          </label>
+          <div class="field">
+            <span>{{ 'Additional claims' | transloco }}</span>
+            @defer (on immediate) {
+              <app-code-editor
+                [value]="value('claims')"
+                language="json"
+                size="small"
+                [label]="'Additional claims' | transloco"
+                [placeholder]="asapClaimsExample"
+                (valueChange)="setText('claims', $event)"
+              />
+            } @placeholder {
+              <div class="code-editor small" aria-hidden="true"></div>
+            }
+          </div>
         </details>
       }
       @case ('wsse') {
@@ -685,16 +715,22 @@
           >{{ 'Username' | transloco }}<input [formField]="fields.username" /></label
         ><label class="field"
           >{{ 'Password' | transloco
-          }}<input type="password" [formField]="fields.password" autocomplete="off" /></label
-        ><label class="field"
-          >{{ 'Provider parameters (JSON)' | transloco
-          }}<textarea
-            class="code-editor small"
-            [formField]="fields.parameters"
-            spellcheck="false"
-            [placeholder]="'Additional fields for this authorization type' | transloco"
-          ></textarea>
-        </label>
+          }}<input type="password" [formField]="fields.password" autocomplete="off"
+        /></label>
+        <div class="field">
+          <span>{{ 'Provider parameters (JSON)' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.parameters"
+              language="json"
+              size="small"
+              [label]="'Provider parameters (JSON)' | transloco"
+              [placeholder]="'Additional fields for this authorization type' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
         <p class="muted">
           {{ 'This authorization type is not available yet; its settings are kept.' | transloco }}
         </p>

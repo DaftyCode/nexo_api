@@ -100,6 +100,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
+            "setupFiles": ["src/app/testing/dom-setup.ts"],
             "coverageExclude": ["src/app/testing/**"],
             "coverageThresholds": {
               "statements": 80,

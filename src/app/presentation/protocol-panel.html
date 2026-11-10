@@ -60,10 +60,18 @@
         {{ 'Use server reflection' | transloco }}</label
       >
       @if (!model().reflection) {
-        <label class="field"
-          >{{ 'Proto definition' | transloco
-          }}<textarea class="code-editor" [formField]="fields.proto" spellcheck="false"></textarea>
-        </label>
+        <div class="field">
+          <span>{{ 'Proto definition' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.proto"
+              language="text"
+              [label]="'Proto definition' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor" aria-hidden="true"></div>
+          }
+        </div>
       }
       <div class="row">
         <button class="button" (click)="discover()">{{ 'Discover services' | transloco }}</button>
@@ -227,30 +235,56 @@
           <option value="graphql-ws">
             {{ 'graphql-ws (subscriptions-transport-ws, legacy)' | transloco }}
           </option>
+          <option value="graphql-sse">{{ 'graphql-sse (server-sent events)' | transloco }}</option>
         </select></label
-      ><label class="field"
-        >{{ 'Subscription' | transloco
-        }}<textarea
-          class="code-editor"
-          [formField]="fields.query"
-          [attr.aria-label]="'GraphQL subscription' | transloco"
-          spellcheck="false"
-        ></textarea></label
-      ><label class="field"
-        >{{ 'GraphQL variables' | transloco
-        }}<textarea
-          class="code-editor small"
-          [formField]="fields.variables"
-          spellcheck="false"
-        ></textarea></label
-      ><label class="field"
-        >{{ 'Connection parameters (JSON)' | transloco
-        }}<textarea
-          class="code-editor small"
-          [formField]="fields.connectionParams"
-          spellcheck="false"
-        ></textarea>
-      </label>
+      >
+      <div class="field">
+        <span>{{ 'Subscription' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields.query"
+            language="graphql"
+            [label]="'GraphQL subscription' | transloco"
+          />
+        } @placeholder {
+          <div class="code-editor" aria-hidden="true"></div>
+        }
+      </div>
+      <div class="field">
+        <span>{{ 'GraphQL variables' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields.variables"
+            language="json"
+            size="small"
+            [label]="'GraphQL variables' | transloco"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+      @if (model().graphqlProtocol !== 'graphql-sse') {
+        <div class="field">
+          <span>{{ 'Connection parameters (JSON)' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.connectionParams"
+              language="json"
+              size="small"
+              [label]="'Connection parameters (JSON)' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
+      } @else {
+        <p class="muted">
+          {{
+            'The subscription is POSTed to the URL and its results stream back as server-sent events. Authorize it with the connection headers.'
+              | transloco
+          }}
+        </p>
+      }
     }
     @if (
       model().protocol === 'websocket' ||
@@ -268,33 +302,48 @@
           {{ 'Verify TLS certificates' | transloco }}</label
         >
       }
-      <label class="field"
-        >{{ 'Certificate authority (PEM)' | transloco
-        }}<textarea
-          class="code-editor small"
-          [formField]="fields.caPem"
-          spellcheck="false"
-        ></textarea>
-      </label>
+      <div class="field">
+        <span>{{ 'Certificate authority (PEM)' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields.caPem"
+            language="text"
+            size="small"
+            [label]="'Certificate authority (PEM)' | transloco"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
     </details>
     @if (model().protocol === 'grpc') {
-      <label class="field"
-        >{{ 'Request message (JSON)' | transloco
-        }}<textarea
-          class="code-editor small"
-          [formField]="fields.grpcMessage"
-          spellcheck="false"
-        ></textarea>
-      </label>
+      <div class="field">
+        <span>{{ 'Request message (JSON)' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields.grpcMessage"
+            language="json"
+            size="small"
+            [label]="'Request message (JSON)' | transloco"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
     } @else if (model().protocol !== 'graphql-subscription') {
-      <label class="field"
-        >{{ (model().protocol === 'kafka' ? 'Value' : 'Message') | transloco
-        }}<textarea
-          class="code-editor small"
-          [formField]="fields.message"
-          spellcheck="false"
-        ></textarea>
-      </label>
+      <div class="field">
+        <span>{{ (model().protocol === 'kafka' ? 'Value' : 'Message') | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields.message"
+            [language]="messageLanguage()"
+            size="small"
+            [label]="(model().protocol === 'kafka' ? 'Value' : 'Message') | transloco"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
     }
     @if (model().protocol === 'grpc') {
       <button class="button primary" (click)="invoke()">{{ 'Invoke method ↗' | transloco }}</button

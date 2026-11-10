@@ -1,7 +1,8 @@
 import { signal } from '@angular/core';
 import { WorkspaceUseCases } from '../../application/workspace-use-cases';
 import { ApiFailure } from '../../application/ports';
-import { RequestDraft, WorkspaceDocument, asCollection } from '../../domain/models';
+import { RequestDraft, WorkspaceDocument, asCollection, newRequest } from '../../domain/models';
+import { RequestsStore } from './requests-store';
 import { TabsStore } from '../tabs-store';
 import { CollectionsStore } from './collections-store';
 import { DocumentsStore } from './documents-store';
@@ -132,6 +133,70 @@ describe('workspace stores', () => {
     await expect(
       new VariablesStore(failing, new DocumentsStore(failing)).saveGlobals([]),
     ).rejects.toThrow('disk full');
+  });
+
+  it('send each tab on its own and give each response to the tab that sent it', async () => {
+    const answers: ((value: unknown) => void)[] = [];
+    const sent: string[] = [];
+    const ctx = context({
+      send: (request: RequestDraft) => {
+        sent.push(request.url);
+        return new Promise((resolve) => answers.push(resolve));
+      },
+      persistScriptVariables: async () => [],
+      createDocument: async () => document('h', 'history'),
+      execute: async (_w: string, operation: string, payload: Record<string, unknown>) => {
+        sent.push(`${operation} ${String(payload['id'])}`);
+        return {};
+      },
+    });
+    const documents = new DocumentsStore(ctx);
+    const variables = new VariablesStore(ctx, documents);
+    const requests = new RequestsStore(
+      ctx,
+      documents,
+      variables,
+      new CollectionsStore(ctx, documents),
+    );
+    const response = (body: string) => ({
+      status: 200,
+      statusText: 'OK',
+      body,
+      headers: [],
+      time: 1,
+      size: 1,
+      assertions: [],
+      logs: [],
+    });
+    const first = ctx.tabs.open({ ...newRequest('a'), url: 'http://a' });
+    const sending = requests.send();
+    expect(requests.running()).toBe(true);
+    // While the first waits, the second tab is not busy and sends too.
+    const second = ctx.tabs.open({ ...newRequest('b'), url: 'http://b' });
+    expect(requests.running()).toBe(false);
+    const other = requests.send();
+    expect(sent).toEqual(['http://a', 'http://b']);
+    // Sending the same tab twice does nothing.
+    await requests.send();
+    expect(sent).toHaveLength(2);
+
+    answers[0](response('from a'));
+    await sending;
+    expect(ctx.tabs.response()).toBeUndefined();
+    expect(requests.running()).toBe(true);
+    ctx.tabs.activeId.set(first);
+    expect(ctx.tabs.response()?.body).toBe('from a');
+    expect(requests.running()).toBe(false);
+
+    ctx.tabs.activeId.set(second);
+    await requests.cancel();
+    expect(sent.at(-1)).toMatch(/^cancel id/);
+    expect(requests.running()).toBe(false);
+    answers[1](response('from b'));
+    await other;
+    expect(ctx.tabs.response()?.body).toBe('from b');
+    await requests.cancel();
+    expect(sent.filter((call) => call.startsWith('cancel'))).toHaveLength(1);
   });
 
   it('switch workspaces only after confirming unsaved changes', async () => {

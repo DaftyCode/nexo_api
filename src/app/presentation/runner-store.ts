@@ -41,6 +41,10 @@ export class RunnerStore {
       this.schedule(started.id);
     });
   }
+  /** Name of the collection of the last run started here. */
+  collectionName() {
+    return this.state.collections().find((d) => d.id === this.collectionId)?.name ?? '';
+  }
   /** Pauses between requests: the one being sent finishes, no other starts. */
   async pause() {
     await this.control('run.pause');

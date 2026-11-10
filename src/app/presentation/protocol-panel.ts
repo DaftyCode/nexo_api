@@ -16,9 +16,10 @@ import { KeyValueEditor } from './key-value-editor';
 import { KeyValue, RealtimeSettings, row } from '../domain/models';
 import { GrpcDiscovery, StreamEvent } from '../application/protocol-use-cases';
 import { PROTOCOLS } from '../composition/providers';
+import { CodeEditor } from './code-editor';
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor],
+  imports: [TranslocoPipe, FormField, KeyValueEditor, CodeEditor],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-protocol-panel',
   styleUrl: './protocol-panel.scss',
@@ -75,7 +76,13 @@ export class ProtocolPanel {
     const m = this.model();
     return m.reflection ? `reflection:${m.url.trim()}` : `proto:${m.proto}`;
   }
-  protected readonly discovery = computed(() => this.discoveries()[this.discoveryKey()]);
+  /** A message that looks like JSON is coloured as JSON. */
+  protected readonly messageLanguage = computed(() =>
+    /^\s*[{[]/.test(this.model().message) ? 'json' : 'text',
+  );
+  protected readonly discovery = computed<GrpcDiscovery | undefined>(
+    () => this.discoveries()[this.discoveryKey()],
+  );
   protected readonly methods = computed(
     () => this.discovery()?.methods[this.model().service] ?? [],
   );

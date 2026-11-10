@@ -452,6 +452,27 @@ payload! {
 }
 
 payload! {
+    /// `api.inspect`: the linter's findings and the outline of an OpenAPI or Swagger
+    /// definition.
+    closed ApiInspectPayload {
+        required { source "source": String => "string" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `api.diff`: what changed from the `base` definition to `source`, with the breaking
+    /// changes marked.
+    closed ApiDiffPayload {
+        required {
+            base "base": String => "string",
+            source "source": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
     /// `codegen`: code that sends `request` in `language`.
     closed CodegenPayload {
         required {}
@@ -628,6 +649,8 @@ operation_payloads! {
     RunPause => IdPayload,
     RunResume => IdPayload,
     Import => ImportPayload,
+    ApiInspect => ApiInspectPayload,
+    ApiDiff => ApiDiffPayload,
     Codegen => CodegenPayload,
     RealtimeConnect => RealtimeConnectPayload,
     RealtimeSend => RealtimeSendPayload,
@@ -760,6 +783,8 @@ mod tests {
                     | Operation::RunPause
                     | Operation::RunResume
                     | Operation::Import
+                    | Operation::ApiInspect
+                    | Operation::ApiDiff
                     | Operation::RealtimeSend
                     | Operation::RealtimeClose
                     | Operation::RealtimePoll

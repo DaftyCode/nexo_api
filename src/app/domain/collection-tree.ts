@@ -1,3 +1,4 @@
+import { AuthDraft, writeAuth } from './auth';
 import { Collection, CollectionItem } from './models';
 
 /** Changes to the folder and request tree of a collection. Every function returns a copy. */
@@ -85,22 +86,92 @@ export function reorderItem(collection: Collection, path: readonly number[], off
   [list[from], list[to]] = [list[to], list[from]];
   return next;
 }
+/** Whether `path` is `folder` itself or something inside it. */
+export function isWithin(path: readonly number[], folder: readonly number[]) {
+  return path.length >= folder.length && folder.every((index, i) => path[i] === index);
+}
 /** Moves an item into a folder (`[]` is the collection root), at the end. */
 export function moveInto(
   collection: Collection,
   path: readonly number[],
   folder: readonly number[],
 ) {
-  if (folder.length >= path.length && path.every((index, i) => folder[i] === index))
-    throw new Error('A folder cannot be moved into itself');
+  return moveTo(collection, path, folder, Number.POSITIVE_INFINITY);
+}
+/**
+ * Moves an item to a position of a folder (`[]` is the collection root). `index` counts the
+ * folder's items before the move, so dropping just after the item itself changes nothing.
+ */
+export function moveTo(
+  collection: Collection,
+  path: readonly number[],
+  folder: readonly number[],
+  index: number,
+) {
+  if (isWithin(folder, path)) throw new Error('A folder cannot be moved into itself');
   const next = structuredClone(collection);
   const item = itemAt(next, path);
   const target = folder.length ? itemAt(next, folder) : undefined;
   if (!item || (folder.length && !target?.item)) throw new Error('Item not found');
-  // Insert first: removing first would shift the folder path.
-  (target?.item ?? next.item).push(structuredClone(item));
+  // The lists are found before removing: removing first would shift the folder path.
+  const destination = target?.item ?? next.item;
   const source = siblings(next, path);
-  source.splice(path.at(-1)!, 1);
+  const from = path.at(-1)!;
+  source.splice(from, 1);
+  let at = Math.min(Math.max(index, 0), destination.length + (source === destination ? 1 : 0));
+  if (source === destination && from < at) at -= 1;
+  destination.splice(Math.min(at, destination.length), 0, item);
+  return next;
+}
+/** Where a drop puts an item: before or after another one, or inside a folder at its end. */
+export type DropPosition = 'before' | 'after' | 'inside';
+export function dropPlace(
+  over: readonly number[],
+  position: DropPosition,
+): { folder: number[]; index: number } {
+  if (position === 'inside') return { folder: [...over], index: Number.POSITIVE_INFINITY };
+  const last = over.at(-1) ?? 0;
+  return { folder: over.slice(0, -1), index: position === 'before' ? last : last + 1 };
+}
+/** Whether moving an item there leaves it where it is. */
+export function staysInPlace(path: readonly number[], folder: readonly number[], index: number) {
+  const parent = path.slice(0, -1);
+  const from = path.at(-1)!;
+  return (
+    parent.length === folder.length &&
+    parent.every((value, i) => folder[i] === value) &&
+    (index === from || index === from + 1)
+  );
+}
+/**
+ * Stores an authorization on the collection (`[]`), a folder or a request, and nothing else,
+ * such as a token just obtained. An inherited authorization removes the stored one.
+ */
+export function withStoredAuth(
+  collection: Collection,
+  path: readonly number[],
+  auth: AuthDraft,
+): Collection {
+  const next = structuredClone(collection);
+  const stored = writeAuth(auth);
+  const place = (holder: Record<string, unknown>) => {
+    if (stored) holder['auth'] = stored;
+    else delete holder['auth'];
+  };
+  if (!path.length) {
+    place(next);
+    return next;
+  }
+  const item = itemAt(next, path);
+  if (!item) throw new Error('Item not found');
+  if (item.item) {
+    place(item);
+  } else {
+    const request: Record<string, unknown> =
+      typeof item.request === 'object' && item.request ? item.request : { url: item.request ?? '' };
+    place(request);
+    item.request = request;
+  }
   return next;
 }
 /** Folders of a collection, with their paths, for "move to" choices. */

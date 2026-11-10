@@ -1,8 +1,18 @@
 import { InjectionToken } from '@angular/core';
+import { TRANSLOCO_LOADER } from '@jsverse/transloco';
+import { TestTranslations } from './translations';
 import { provideRouter } from '@angular/router';
 import { LANGUAGE, languageProviders } from '../composition/language-providers';
 import { LanguageUseCases } from '../application/language-use-cases';
-import { APPEARANCE, DATA, INTEGRATION, PROTOCOLS, WORKSPACE } from '../composition/providers';
+import {
+  APPEARANCE,
+  DATA,
+  INTEGRATION,
+  PROTOCOLS,
+  REPORTS,
+  WORKSPACE,
+} from '../composition/providers';
+import { ReportUseCases } from '../application/report-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
@@ -20,6 +30,9 @@ export interface TestApi extends ApiPort {
   readonly calls: { operation: string; payload: Record<string, unknown> }[];
   readonly gitCalls: { operation: string; payload: unknown }[];
   readonly downloads: { name: string; content: string }[];
+  /** The text of each report sent to the printer, and how many were released. */
+  readonly printed: string[];
+  released: number;
   /** Answers by operation, set before or during a test. */
   readonly responses: Record<string, FakeResponse>;
   secretNames: string[];
@@ -42,6 +55,8 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     calls: [],
     gitCalls: [],
     downloads: [],
+    printed: [],
+    released: 0,
     responses: answers,
     secretNames: [],
     async initialize() {},
@@ -121,12 +136,27 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
   return [
     provideRouter([]),
     ...languageProviders(),
+    { provide: TRANSLOCO_LOADER, useClass: TestTranslations },
     { provide: TEST_API, useValue: api },
     { provide: LANGUAGE, useValue: new LanguageUseCases({ load: () => 'en', save() {} }) },
     { provide: WORKSPACE, useValue: new WorkspaceUseCases(api, files) },
     { provide: INTEGRATION, useValue: new IntegrationUseCases(api) },
     { provide: DATA, useValue: new DataUseCases(api, files.id) },
     { provide: PROTOCOLS, useValue: new ProtocolUseCases(api) },
+    {
+      provide: REPORTS,
+      useValue: new ReportUseCases(
+        {
+          async print(sheet) {
+            api.printed.push(sheet.textContent ?? '');
+          },
+          release() {
+            api.released++;
+          },
+        },
+        () => Date.UTC(2026, 10, 9, 10, 30),
+      ),
+    },
     {
       provide: APPEARANCE,
       useValue: new AppearanceUseCases({

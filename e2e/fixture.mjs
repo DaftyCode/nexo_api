@@ -99,7 +99,55 @@ export const test = base.extend({
       // A local API the requests in the tests can reach.
       const echo = http.createServer((request, response) => {
         response.setHeader('content-type', 'application/json');
+        // GraphQL subscriptions over server-sent events (graphql-sse): three ticks.
+        if (request.url === '/graphql/stream') {
+          response.writeHead(200, { 'content-type': 'text/event-stream' });
+          for (const tick of [1, 2, 3])
+            response.write(`event: next\ndata: ${JSON.stringify({ data: { ticks: tick } })}\n\n`);
+          return response.end('event: complete\ndata:\n\n');
+        }
         // GraphQL: the schema by introspection, and an answer to any other query.
+        // A small MCP server: one resource, one template and one prompt.
+        if (request.url === '/mcp') {
+          let body = '';
+          request.on('data', (chunk) => (body += chunk));
+          request.on('end', () => {
+            const { id, method, params } = JSON.parse(body);
+            const results = {
+              initialize: {
+                protocolVersion: '2025-06-18',
+                capabilities: { resources: {}, prompts: {} },
+                serverInfo: { name: 'e2e', version: '1' },
+              },
+              'resources/list': {
+                resources: [{ uri: 'docs://readme', name: 'Readme', mimeType: 'text/plain' }],
+              },
+              'resources/read': {
+                contents: [{ uri: params?.uri, mimeType: 'text/plain', text: 'Read me first' }],
+              },
+              'prompts/list': {
+                prompts: [
+                  {
+                    name: 'greet',
+                    description: 'Greets someone',
+                    arguments: [{ name: 'name', required: true }],
+                  },
+                ],
+              },
+              'prompts/get': {
+                messages: [
+                  {
+                    role: 'user',
+                    content: { type: 'text', text: `Say hello to ${params?.arguments?.name}` },
+                  },
+                ],
+              },
+            };
+            if (method === 'initialize') response.setHeader('mcp-session-id', 'e2e-session');
+            response.end(JSON.stringify({ jsonrpc: '2.0', id, result: results[method] ?? {} }));
+          });
+          return;
+        }
         if (request.url === '/graphql') {
           let body = '';
           request.on('data', (chunk) => (body += chunk));
