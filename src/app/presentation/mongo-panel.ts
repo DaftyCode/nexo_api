@@ -1,7 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named, success } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { CodeEditor } from './code-editor';
 import { MongoExplorer } from './mongo-explorer';
@@ -195,7 +195,8 @@ export class MongoPanel {
   }
 
   protected save() {
-    void this.task.run(async () => {
+    this.notice.set({ key: '' });
+    void this.task.announce('The connection could not be saved', async () => {
       this.check();
       const saved = await (
         await this.mongo()
@@ -209,7 +210,7 @@ export class MongoPanel {
       await this.state.refresh();
       this.selectedId.set(saved.id);
       this.model.update((model) => ({ ...model, name: saved.name, password: '', keyPem: '' }));
-      this.notice.set({ key: 'Connection saved' });
+      return named('Connection saved', saved.name);
     });
   }
 
@@ -230,11 +231,11 @@ export class MongoPanel {
     const document = this.selected();
     if (!document || !this.state.confirm('Delete this connection? Its password leaves the vault.'))
       return;
-    void this.task.run(async () => {
+    void this.task.announce('The connection could not be deleted', async () => {
       await (await this.mongo()).remove(document);
       await this.state.refresh();
       this.newConnection();
-      this.notice.set({ key: 'Connection deleted' });
+      return named('Connection deleted', document.name);
     });
   }
 
@@ -249,12 +250,13 @@ export class MongoPanel {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    void this.task.run(async () => {
+    this.notice.set({ key: '' });
+    void this.task.announce('The connections could not be imported', async () => {
       const text = await this.state.cases.files.read(file);
       const saved = await (await this.mongo()).importCompass(this.state.workspaceId(), text);
       await this.state.refresh();
-      this.notice.set({ key: 'mongo.imported', params: { v0: saved.length } });
       input.value = '';
+      return success('Import completed', 'mongo.imported', { v0: String(saved.length) });
     });
   }
 

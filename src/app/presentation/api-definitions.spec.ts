@@ -170,7 +170,11 @@ describe('ApiDefinitions', () => {
     await type(root().querySelector('input') as HTMLInputElement, ' ');
     await clickButton(fixture, 'Save definition');
     await settle();
-    expect(root().textContent).toContain('A name is required');
+    expect(state.toast()).toMatchObject({
+      kind: 'error',
+      title: 'The definition could not be saved',
+      detail: 'A name is required',
+    });
 
     await type(root().querySelector('input') as HTMLInputElement, 'Shop API');
     await typeSource(source);
@@ -181,6 +185,11 @@ describe('ApiDefinitions', () => {
     ]);
     expect(calls('api.inspect').at(-1)).toEqual({ workspace: 'local', source });
     expect(state.notice()).toBe('Definition saved');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Definition saved',
+      params: { v0: 'Shop API' },
+    });
     for (const text of [
       'OpenAPI 3.0',
       '1 errors, 1 warnings, 1 notes',

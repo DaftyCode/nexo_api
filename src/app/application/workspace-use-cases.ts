@@ -347,11 +347,11 @@ export class WorkspaceUseCases {
     );
     return this.createDocument(workspace, result.kind, result.name, result.value);
   }
+  /** Downloads a collection or environment as JSON; returns the name of the file. */
   export(document: WorkspaceDocument) {
-    this.files.download(
-      `${document.name.replace(/[^\w .-]/g, '_')}.${document.kind === 'environment' ? 'environment' : 'collection'}.json`,
-      JSON.stringify(document.value, null, 2),
-    );
+    const name = `${document.name.replace(/[^\w .-]/g, '_')}.${document.kind === 'environment' ? 'environment' : 'collection'}.json`;
+    this.files.download(name, JSON.stringify(document.value, null, 2));
+    return name;
   }
 
   /** The environment selected last time in a workspace on this device. */

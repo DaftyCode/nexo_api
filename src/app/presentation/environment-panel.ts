@@ -93,19 +93,21 @@ export class EnvironmentPanel {
       )
     ) {
       this.reload();
+      this.state.variablesReloaded();
       return;
     }
-    const saved =
+    const result =
       m.id === GLOBALS
         ? await this.state.saveGlobals(this.rows())
         : await this.state.saveEnvironment(m.id, m.name, this.rows());
-    if (this.state.error()) return;
+    // A failure keeps the edits, and a toast says why.
+    if (!result) return;
     // Saved, or kept as changed elsewhere: the editor shows what is stored now.
-    this.load(m.id === GLOBALS ? GLOBALS : (saved?.id ?? m.id));
+    this.load(m.id === GLOBALS ? GLOBALS : (result.saved?.id ?? m.id));
   }
   protected async duplicate() {
     const m = this.model();
-    const saved = await this.state.saveEnvironment('', `${m.name} copy`, this.rows());
+    const saved = (await this.state.saveEnvironment('', `${m.name} copy`, this.rows()))?.saved;
     if (saved) this.load(saved.id);
   }
   protected activate() {
@@ -114,8 +116,7 @@ export class EnvironmentPanel {
   protected async remove() {
     const document = this.current();
     if (!document) return;
-    await this.state.remove(document);
-    this.load('');
+    if (await this.state.remove(document)) this.load('');
   }
   protected count(value: unknown) {
     return toVariableRows((value as { values?: unknown } | undefined)?.values).filter(

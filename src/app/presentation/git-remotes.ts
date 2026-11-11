@@ -14,7 +14,7 @@ import { INTEGRATION } from '../composition/providers';
 import { GitInput, GitResult } from '../application/integration-use-cases';
 import { GitRemote, RepositoryImport, repositoryName } from '../domain/repository';
 import { PanelTask } from './panel-task';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named, success } from './workspace-state';
 
 type SyncOperation = 'fetch' | 'pull' | 'push';
 
@@ -110,12 +110,30 @@ export class GitRemotes {
       if (operation === 'pull' && rebase) input.rebase = true;
       if (operation === 'push' && forceWithLease) input.forceWithLease = true;
       const result = await this.git(operation, input);
-      if (operation === 'pull' && result.success) {
-        const imported = await this.integration.importRepository(workspace, this.state.documents());
-        await this.state.refresh();
-        this.state.notice.set('Collections updated from the repository');
-        this.result.emit(`${resultText(result)}\n\n${this.summary(imported)}`);
+      if (operation === 'fetch') return;
+      // Git ran but failed, such as a pull without upstream: its own words say why.
+      if (!result.success) {
+        this.state.tell({
+          kind: 'error',
+          title: operation === 'pull' ? 'The pull failed' : 'The push failed',
+          detail: resultText(result),
+        });
+        return;
       }
+      if (operation === 'push') {
+        this.state.tell(success('Changes pushed', 'toast.named', { v0: input.remote ?? '' }));
+        return;
+      }
+      const imported = await this.integration.importRepository(workspace, this.state.documents());
+      await this.state.refresh();
+      this.state.tell(
+        success('Collections updated from the repository', 'toast.pulled', {
+          v0: String(imported.added),
+          v1: String(imported.updated),
+          v2: String(imported.unchanged),
+        }),
+      );
+      this.result.emit(`${resultText(result)}\n\n${this.summary(imported)}`);
     });
   }
   /** Clones into a new workspace and opens it; a clone that fails leaves no workspace. */
@@ -137,7 +155,7 @@ export class GitRemotes {
       }
       this.model.update((m) => ({ ...m, cloneUrl: '', cloneName: '' }));
       await this.state.openWorkspace(created.id);
-      this.state.notice.set('Repository cloned into a new workspace');
+      this.state.tell(named('Repository cloned into a new workspace', created.name));
       this.result.emit(this.summary(imported));
     });
   }

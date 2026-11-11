@@ -42,6 +42,7 @@ export class SessionStore {
     const workspace = await this.context.cases.createWorkspace(name);
     this.workspaces.set(await this.context.cases.workspaces());
     await this.select(workspace.id);
+    return workspace;
   }
   /** Opens a workspace created elsewhere, such as a cloned repository. */
   async open(id: string) {

@@ -320,25 +320,27 @@ export class Workspace {
     };
     return titles[this.dialogs()] ?? '';
   }
+  /** Runs the dialog's action; it closes when the action did not fail, which a toast tells. */
   protected async submitDialog() {
     const m = this.formModel();
-    if (this.dialogs() === 'collection') await this.state.createCollection(m.name);
-    if (this.dialogs() === 'import') await this.state.importContent(m.content);
-    if (this.dialogs() === 'workspace') await this.state.createWorkspace(m.name);
     const target = this.dialogTarget();
-    if (target && this.dialogs() === 'folder')
-      await this.state.addFolder(target.document, m.name, target.path);
-    if (target && this.dialogs() === 'rename')
-      await this.state.renameItem(target.document, target.path, m.name);
-    if (!this.state.error()) this.dialogs.set('');
+    const dialog = this.dialogs();
+    let done = true;
+    if (dialog === 'collection') done = await this.state.createCollection(m.name);
+    if (dialog === 'import') done = await this.state.importContent(m.content);
+    if (dialog === 'workspace') done = await this.state.createWorkspace(m.name);
+    if (target && dialog === 'folder')
+      done = await this.state.addFolder(target.document, m.name, target.path);
+    if (target && dialog === 'rename')
+      done = await this.state.renameItem(target.document, target.path, m.name);
+    if (done) this.dialogs.set('');
   }
   protected async file(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) this.formModel.update((m) => ({ ...m, content: '' }));
     if (file) {
       const content = await this.state.cases.files.read(file);
-      await this.state.importContent(content);
-      if (!this.state.error()) this.dialogs.set('');
+      if (await this.state.importContent(content)) this.dialogs.set('');
     }
   }
   protected async selectWorkspace(event: Event) {

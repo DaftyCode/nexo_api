@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { WorkspaceState } from './workspace-state';
+import { Toast, WorkspaceState } from './workspace-state';
 
 /**
  * Runs a panel action with its own error message, shown in the panel that started it
@@ -19,5 +19,13 @@ export class PanelTask {
     } finally {
       this.state.busy.set(false);
     }
+  }
+  /**
+   * Runs a panel action that stores, deletes or downloads something: a toast says how it
+   * went, a failure included, so the panel's own error is cleared instead of set.
+   */
+  announce(failure: string, action: () => Promise<Toast | undefined>) {
+    this.error.set('');
+    return this.state.announce(failure, action);
   }
 }

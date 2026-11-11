@@ -1,7 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { Component, ChangeDetectionStrategy, computed, inject, signal, input } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named, success } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { DATA } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
@@ -53,7 +53,7 @@ export class DataPanel {
     }
   }
   protected import() {
-    void this.task.run(async () => {
+    void this.task.announce('The dataset could not be imported', async () => {
       const m = this.model();
       const result = await this.data.importDataset(
         this.state.workspaceId(),
@@ -63,6 +63,10 @@ export class DataPanel {
       this.model.update((x) => ({ ...x, id: result.id }));
       this.output.set(`Imported ${result.rows} rows`);
       await this.state.refresh();
+      return success('Dataset imported', 'toast.datasetImported', {
+        v0: m.name,
+        v1: String(result.rows),
+      });
     });
   }
   protected query() {
@@ -74,7 +78,7 @@ export class DataPanel {
     });
   }
   protected removeDataset() {
-    void this.task.run(async () => {
+    void this.task.announce('The dataset could not be deleted', async () => {
       const m = this.model();
       const document = this.state.documents().find((d) => d.kind === 'dataset' && d.id === m.id);
       await this.data.deleteDataset(this.state.workspaceId(), m.id, document);
@@ -82,6 +86,7 @@ export class DataPanel {
       this.model.update((x) => ({ ...x, id: '' }));
       this.table.set({ columns: [], rows: [] });
       this.output.set('Dataset deleted');
+      return named('Dataset deleted', document?.name ?? m.name);
     });
   }
   protected selectDataset(event: Event) {

@@ -41,9 +41,11 @@ export class DocumentsStore {
     this.applySaved([created]);
     return created;
   }
+  /** Imports a collection, environment or definition; returns the document created. */
   async importContent(content: string) {
-    await this.context.cases.import(this.context.workspaceId(), content);
+    const created = await this.context.cases.import(this.context.workspaceId(), content);
     await this.refresh();
+    return created;
   }
   async saveCollectionSettings(
     id: string,

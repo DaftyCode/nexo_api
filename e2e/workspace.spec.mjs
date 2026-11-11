@@ -304,7 +304,9 @@ test('a request shows the authorization it inherits from its folder', async ({ p
   await page.getByLabel('Authorization type').selectOption('bearer');
   await page.getByRole('textbox', { name: 'Token' }).fill('{{token}}');
   await page.getByRole('button', { name: 'Save folder' }).click();
-  await expect(page.getByText('Folder saved')).toBeVisible();
+  // A toast says what was saved, as for every save.
+  await expect(page.locator('.toast')).toContainText('Folder saved');
+  await expect(page.locator('.toast')).toContainText('"Local" in');
 
   // A new request in the folder inherits it, as in Postman, and says where it comes from.
   await page.getByRole('button', { name: 'Collections', exact: true }).click();
@@ -360,7 +362,7 @@ test('OAuth 2.0: a collection gets a token and its requests send it', async ({ p
   await expect(page.locator('.token-status')).toContainText('Expires');
   await expect(page.getByRole('button', { name: 'Refresh', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Save collection' }).click();
-  await expect(page.getByText('Collection saved')).toBeVisible();
+  await expect(page.locator('.toast')).toContainText('Collection saved');
 
   // A new request inherits the authorization and sends the token.
   await page.getByRole('button', { name: 'Collections', exact: true }).click();

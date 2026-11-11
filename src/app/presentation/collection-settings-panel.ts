@@ -128,7 +128,7 @@ export class CollectionSettingsPanel {
     if (!target) return;
     const m = this.model();
     const folder = !!target.folder;
-    await this.state.saveCollectionSettings(
+    const saved = await this.state.saveCollectionSettings(
       target.id,
       {
         variables: this.rows(),
@@ -137,7 +137,7 @@ export class CollectionSettingsPanel {
       },
       target.path,
     );
-    if (!this.state.error()) this.dirty.set(false);
+    if (saved) this.dirty.set(false);
   }
   protected markDirty() {
     this.dirty.set(true);

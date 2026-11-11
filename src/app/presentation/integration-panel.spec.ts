@@ -61,8 +61,20 @@ describe('IntegrationPanel', () => {
       payload: { workspace: 'local', branch: 'feature/x', message: 'Add users' },
     });
     expect(root().textContent).toContain('Git reported an error.');
+    // A commit that Git refuses is said in a toast.
+    expect(state.toast()).toMatchObject({
+      kind: 'error',
+      title: 'The changes could not be committed',
+    });
     await clickButton(fixture, 'Save output');
+    await settle();
     expect(api.downloads[0].name).toBe('nexo-output.txt');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'File downloaded',
+      message: 'toast.downloaded',
+      params: { v0: 'nexo-output.txt' },
+    });
   });
 
   it('shows the output of a remote operation and the status it leaves', async () => {
@@ -260,7 +272,11 @@ describe('IntegrationPanel', () => {
     await type('Secret name', 'api_token');
     await clickButton(fixture, 'Save secret');
     await settle();
-    expect(root().textContent).toContain('Enter the secret value');
+    expect(state.toast()).toMatchObject({
+      kind: 'error',
+      title: 'The secret could not be saved',
+      detail: 'Enter the secret value',
+    });
 
     await type('Value', 's3cret');
     await type('Allowed domains', 'api.example.com');
@@ -268,6 +284,12 @@ describe('IntegrationPanel', () => {
     await settle();
     expect(api.secretNames).toEqual(['api_token']);
     expect(root().textContent).toContain('{{vault:api_token}}');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Secret saved',
+      message: 'toast.secretSaved',
+      params: { v0: '{{vault:api_token}}' },
+    });
 
     await clickButton(fixture, 'Edit');
     expect(field('Secret name').value).toBe('api_token');
@@ -275,10 +297,15 @@ describe('IntegrationPanel', () => {
     remove.click();
     await settle();
     expect(api.secretNames).toEqual([]);
+    expect(state.toast()).toMatchObject({ title: 'Secret removed', params: { v0: 'api_token' } });
     await type('Secret name', '');
     await clickButton(fixture, 'Remove secret');
     await settle();
-    expect(root().textContent).toContain('Enter a secret name');
+    expect(state.toast()).toMatchObject({
+      kind: 'error',
+      title: 'The secret could not be removed',
+      detail: 'Enter a secret name',
+    });
   });
 
   it('exchanges an OAuth token and uses it in the active request', async () => {
@@ -333,6 +360,11 @@ describe('IntegrationPanel', () => {
     await clickButton(fixture, 'Restore as new revision');
     await settle();
     expect(root().textContent).toContain('Revision restored as a new revision.');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Revision restored',
+      params: { v0: 'Orders' },
+    });
   });
 
   it('shows the API definitions', async () => {

@@ -102,7 +102,11 @@ describe('MongoPanel', () => {
       },
     });
     expect(JSON.stringify(saved)).not.toContain('s3cret');
-    expect(text()).toContain('Connection saved');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Connection saved',
+      params: { v0: 'Atlas' },
+    });
     // Listed in its folder, marked read-only; the password field says it is stored.
     expect(text()).toContain('Cloud');
     expect(root().querySelector('.mongo-badge')?.textContent).toContain('Read-only');
@@ -208,6 +212,7 @@ describe('MongoPanel', () => {
     await click('Delete connection');
     expect(api.documentsStore).toHaveLength(0);
     expect(api.secretNames).toEqual([]);
+    expect(state.toast()).toMatchObject({ title: 'Connection deleted', params: { v0: 'Local' } });
 
     const file = new File(
       [
@@ -223,7 +228,12 @@ describe('MongoPanel', () => {
     input.dispatchEvent(new Event('change'));
     await settle();
     await settle();
-    expect(text()).toContain('Imported 1 connections');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Import completed',
+      message: 'mongo.imported',
+      params: { v0: '1' },
+    });
     expect(api.documentsStore.map((d) => d.name)).toEqual(['Connection 1']);
   });
 

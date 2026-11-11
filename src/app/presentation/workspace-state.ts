@@ -8,10 +8,11 @@ import {
   RequestDraft,
   Run,
   WorkspaceDocument,
+  asCollection,
   newRequest,
 } from '../domain/models';
 import { GraphQLSchema, graphqlEndpoint } from '../domain/graphql-schema';
-import { DropPosition, dropPlace, isWithin, staysInPlace } from '../domain/collection-tree';
+import { DropPosition, dropPlace, isWithin, itemAt, staysInPlace } from '../domain/collection-tree';
 import { CookieChange, CookieKey, StoredCookie, cookieKey, sameCookie } from '../domain/cookies';
 import {
   RequestAncestor,
@@ -39,29 +40,30 @@ import {
 } from '../application/workspace-use-cases';
 import { TabsStore } from './tabs-store';
 
-/** How long a toast stays before it closes by itself. */
-export const TOAST_DURATION = 20_000;
-/** A short message over the workspace: what went well or wrong. */
-export interface Toast {
-  kind: 'success' | 'error' | 'info';
-  /** Translation keys. */
-  title: string;
-  message?: string;
-  params?: Record<string, string>;
-  /** Text as it came, such as a server's error. */
-  detail?: string;
-}
+import { CollectionsStore } from './state/collections-store';
+import { DocumentsStore } from './state/documents-store';
+import { RequestsStore } from './state/requests-store';
+import { SessionStore } from './state/session-store';
+import { StateContext, StatusStore, Toast, named, success } from './state/state-context';
+import { VariablesStore } from './state/variables-store';
+
+export { TOAST_DURATION, named, success } from './state/state-context';
+export type { Toast } from './state/state-context';
 /** Where an obtained token was kept: in the stored authorization, only in the tab, or only
  * in the vault. */
 export type KeptToken = 'saved' | 'unsaved' | 'vault';
 
 export type SettingsTab = 'variables' | 'authorization' | 'scripts';
-import { CollectionsStore } from './state/collections-store';
-import { DocumentsStore } from './state/documents-store';
-import { RequestsStore } from './state/requests-store';
-import { SessionStore } from './state/session-store';
-import { StateContext, StatusStore } from './state/state-context';
-import { VariablesStore } from './state/variables-store';
+
+/** Variables not saved because they changed elsewhere and the person kept that version. */
+const variablesReloaded: Toast = {
+  kind: 'info',
+  title: 'Variables not saved',
+  message: 'They changed elsewhere and were reloaded with the latest values.',
+};
+/** What saving variables gave: the document saved, or nothing when the person kept the
+ * version changed elsewhere. `undefined` when it failed. */
+export type VariablesSave = { saved?: WorkspaceDocument } | undefined;
 
 /**
  * The workspace seen by the components. Each concern lives in its own store
@@ -181,6 +183,24 @@ export class WorkspaceState {
   guard(action: () => Promise<unknown>) {
     return this.status.guard(action);
   }
+  /**
+   * Runs an action that stores, deletes or downloads something and says in a toast how it
+   * went: what it did, why it did nothing, or why it failed. Returns whether it did not fail.
+   */
+  announce(failure: string, action: () => Promise<Toast | undefined>) {
+    return this.status.announce(failure, action);
+  }
+  /**
+   * Downloads a file and says so in a toast. The browser saves it in its downloads folder, or
+   * asks where; Nexo cannot know which, nor when it ends. `content` may be prepared on the
+   * way, so a failure to prepare it is told too.
+   */
+  download(name: string, content: string | Blob | (() => Blob), type?: string) {
+    return this.announce('The file could not be downloaded', async () => {
+      this.cases.files.download(name, typeof content === 'function' ? content() : content, type);
+      return success('File downloaded', 'toast.downloaded', { v0: name });
+    });
+  }
   describe(error: unknown) {
     return this.status.describe(error);
   }
@@ -197,21 +217,21 @@ export class WorkspaceState {
     return this.guard(() => this.session.signOut());
   }
   createWorkspace(name: string) {
-    return this.guard(async () => {
-      await this.session.create(name);
-      this.notice.set('Workspace created');
-    });
+    return this.announce('The workspace could not be created', async () =>
+      named('Workspace created', (await this.session.create(name)).name),
+    );
   }
   renameWorkspace(name: string) {
-    return this.guard(async () => {
+    return this.announce('The workspace could not be renamed', async () => {
       await this.session.rename(name);
-      this.notice.set('Workspace renamed');
+      return named('Workspace renamed', name.trim());
     });
   }
   deleteWorkspace() {
-    return this.guard(async () => {
-      if (await this.session.remove()) this.notice.set('Workspace deleted');
-    });
+    const name = this.workspaces().find((w) => w.id === this.workspaceId())?.name ?? '';
+    return this.announce('The workspace could not be deleted', async () =>
+      (await this.session.remove()) ? named('Workspace deleted', name) : undefined,
+    );
   }
   selectWorkspace(id: string) {
     return this.session.select(id);
@@ -256,48 +276,72 @@ export class WorkspaceState {
     return this.collectionStore.rows(document);
   }
   createCollection(name: string) {
-    return this.guard(async () => {
-      await this.store.createCollection(name);
-      this.notice.set('Collection created');
-    });
+    return this.announce('The collection could not be created', async () =>
+      named('Collection created', (await this.store.createCollection(name)).name),
+    );
   }
   addRequest(document: WorkspaceDocument, folderPath: number[] = []) {
-    return this.guard(() => this.collectionStore.addRequest(document, folderPath));
+    return this.announce('The collection could not be saved', async () => {
+      await this.collectionStore.addRequest(document, folderPath);
+      return success('Request added', 'toast.itemIn', { v0: 'New request', v1: document.name });
+    });
+  }
+  /**
+   * Saves a change to the tree of a collection and says which item it changed, by the name it
+   * has after the change.
+   */
+  private changeTree(
+    document: WorkspaceDocument,
+    done: string,
+    name: string,
+    change: Parameters<CollectionsStore['change']>[1],
+  ) {
+    return this.announce('The collection could not be saved', async () => {
+      await this.collectionStore.change(document, change);
+      return success(done, 'toast.itemIn', { v0: name, v1: document.name });
+    });
+  }
+  /** The name of an item of a collection, as it is now. */
+  private itemName(document: WorkspaceDocument, path: readonly number[]) {
+    try {
+      return itemAt(asCollection(document.value), path)?.name ?? '';
+    } catch {
+      return '';
+    }
   }
   addFolder(document: WorkspaceDocument, name: string, parent: number[] = []) {
-    return this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.addFolder(collection, parent, name, this.cases.files.id()),
-      ),
+    return this.changeTree(document, 'Folder added', name.trim(), (tree, collection) =>
+      tree.addFolder(collection, parent, name, this.cases.files.id()),
     );
   }
   renameItem(document: WorkspaceDocument, path: number[], name: string) {
-    return this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.renameItem(collection, path, name),
-      ),
+    return this.changeTree(document, 'Item renamed', name.trim(), (tree, collection) =>
+      tree.renameItem(collection, path, name),
     );
   }
   async removeItem(document: WorkspaceDocument, path: number[]) {
-    if (!this.confirm('Delete this item and everything inside it?')) return;
-    await this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.removeItem(collection, path),
-      ),
+    if (!this.confirm('Delete this item and everything inside it?')) return false;
+    return this.changeTree(
+      document,
+      'Item deleted',
+      this.itemName(document, path),
+      (tree, collection) => tree.removeItem(collection, path),
     );
   }
   reorderItem(document: WorkspaceDocument, path: number[], offset: -1 | 1) {
-    return this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.reorderItem(collection, path, offset),
-      ),
+    return this.changeTree(
+      document,
+      'Item moved',
+      this.itemName(document, path),
+      (tree, collection) => tree.reorderItem(collection, path, offset),
     );
   }
   moveItem(document: WorkspaceDocument, path: number[], folder: number[]) {
-    return this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.moveInto(collection, path, folder),
-      ),
+    return this.changeTree(
+      document,
+      'Item moved',
+      this.itemName(document, path),
+      (tree, collection) => tree.moveInto(collection, path, folder),
     );
   }
   /**
@@ -312,20 +356,22 @@ export class WorkspaceState {
   ) {
     const { folder, index } = dropPlace(over, position);
     if (isWithin(folder, path)) {
-      this.notice.set('A folder cannot be moved into itself');
-      return;
+      this.tell({ kind: 'info', title: 'A folder cannot be moved into itself' });
+      return false;
     }
-    if (staysInPlace(path, folder, index)) return;
-    this.error.set('');
-    await this.guard(() =>
-      this.collectionStore.change(document, (tree, collection) =>
-        tree.moveTo(collection, path, folder, index),
-      ),
+    if (staysInPlace(path, folder, index)) return true;
+    return this.changeTree(
+      document,
+      'Item moved',
+      this.itemName(document, path),
+      (tree, collection) => tree.moveTo(collection, path, folder, index),
     );
-    if (!this.error()) this.notice.set('Item moved');
   }
+  /** Saves the active request (Ctrl+S) and says in a toast whether, and where, it was saved. */
   saveActive(targetDocumentId?: string) {
-    return this.guard(() => this.collectionStore.saveActive(targetDocumentId));
+    return this.announce('The request could not be saved', () =>
+      this.collectionStore.saveActive(targetDocumentId),
+    );
   }
   /** Opens the settings of a collection or, with a path, of one of its folders. */
   openCollectionSettings(id: string, path: number[] = [], tab: SettingsTab = 'variables') {
@@ -342,16 +388,16 @@ export class WorkspaceState {
     this.openCollectionSettings(document.id, path, 'authorization');
   }
   /** A message that closes by itself after 20 seconds, or with its button. */
-  readonly toast = signal<Toast | undefined>(undefined);
-  private toastTimer: ReturnType<typeof setTimeout> | undefined;
+  readonly toast = this.status.toast;
   showToast(toast: Toast) {
-    clearTimeout(this.toastTimer);
-    this.toast.set(toast);
-    this.toastTimer = setTimeout(() => this.toast.set(undefined), TOAST_DURATION);
+    this.status.showToast(toast);
   }
   closeToast() {
-    clearTimeout(this.toastTimer);
-    this.toast.set(undefined);
+    this.status.closeToast();
+  }
+  /** Says something in a toast, and keeps its title in the status bar. */
+  tell(toast: Toast) {
+    this.status.tell(toast);
   }
   /**
    * Stores an authorization where it is defined (a request, a folder or the collection, `[]`)
@@ -478,10 +524,11 @@ export class WorkspaceState {
     return this.cases.oauth2TokenDetails(this.workspaceId(), id);
   }
   deleteOAuth2Token(id: string) {
-    return this.guard(async () => {
+    const name = this.oauth2Tokens().find((token) => token.id === id)?.name ?? '';
+    return this.announce('The token could not be deleted', async () => {
       await this.cases.deleteOAuth2Token(this.workspaceId(), id);
       this.oauth2Tokens.update((tokens) => tokens.filter((token) => token.id !== id));
-      this.notice.set('Token deleted');
+      return named('Token deleted', name);
     });
   }
   /** Printable reports, and the one shown before printing it or saving it as PDF. */
@@ -520,41 +567,38 @@ export class WorkspaceState {
     return this.guard(async () => this.cookies.set(await this.cases.cookies(this.workspaceId())));
   }
   /** Saves a new or edited cookie; returns whether it was saved. */
-  async saveCookie(change: CookieChange, original?: CookieKey) {
-    let saved = false;
-    await this.guard(async () => {
+  saveCookie(change: CookieChange, original?: CookieKey) {
+    return this.announce('The cookie could not be saved', async () => {
       const cookie = await this.cases.setCookie(this.workspaceId(), change, original);
       const replaced = (other: StoredCookie) =>
         sameCookie(cookieKey(other), cookieKey(cookie)) ||
         (!!original && sameCookie(cookieKey(other), original));
       this.cookies.update((cookies) => [...cookies.filter((other) => !replaced(other)), cookie]);
-      this.notice.set('Cookie saved');
-      saved = true;
+      return success('Cookie saved', 'toast.cookie', { v0: cookie.name, v1: cookie.domain });
     });
-    return saved;
   }
   deleteCookie(key: CookieKey) {
-    return this.guard(async () => {
+    return this.announce('The cookie could not be deleted', async () => {
       await this.cases.deleteCookie(this.workspaceId(), key);
       this.cookies.update((cookies) =>
         cookies.filter((cookie) => !sameCookie(cookieKey(cookie), key)),
       );
-      this.notice.set('Cookie deleted');
+      return success('Cookie deleted', 'toast.cookie', { v0: key.name, v1: key.domain });
     });
   }
   /** Deletes every cookie of a domain, or of the whole jar without one. */
   clearCookies(domain?: string) {
-    return this.guard(async () => {
+    return this.announce('The cookies could not be deleted', async () => {
       const workspace = this.workspaceId();
       if (domain === undefined) {
         await this.cases.clearCookies(workspace);
         this.cookies.set([]);
-      } else {
-        for (const cookie of this.cookies().filter((c) => c.domain === domain))
-          await this.cases.deleteCookie(workspace, cookieKey(cookie));
-        this.cookies.update((cookies) => cookies.filter((c) => c.domain !== domain));
+        return success('Cookies deleted');
       }
-      this.notice.set('Cookies deleted');
+      for (const cookie of this.cookies().filter((c) => c.domain === domain))
+        await this.cases.deleteCookie(workspace, cookieKey(cookie));
+      this.cookies.update((cookies) => cookies.filter((c) => c.domain !== domain));
+      return named('Cookies deleted', domain);
     });
   }
   /** The browser sign-in in progress, shown in a dialog until it finishes. */
@@ -650,15 +694,25 @@ export class WorkspaceState {
     this.oauth2SignIn.set(undefined);
     await this.cases.oauth2SignIn(this.workspaceId(), signIn.session, 'cancel').catch(() => {});
   }
+  /** Saves the variables, authorization and scripts of a collection or folder. */
   saveCollectionSettings(
     id: string,
     settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
     folder: number[] = [],
   ) {
-    return this.guard(async () => {
-      await this.store.saveCollectionSettings(id, settings, folder);
-      this.notice.set(folder.length ? 'Folder saved' : 'Collection saved');
-    });
+    const document = this.collections().find((d) => d.id === id);
+    return this.announce(
+      folder.length ? 'The folder could not be saved' : 'The collection could not be saved',
+      async () => {
+        await this.store.saveCollectionSettings(id, settings, folder);
+        return folder.length && document
+          ? success('Folder saved', 'toast.itemIn', {
+              v0: this.itemName(document, folder),
+              v1: document.name,
+            })
+          : named('Collection saved', document?.name ?? '');
+      },
+    );
   }
 
   // Requests and history.
@@ -748,39 +802,50 @@ export class WorkspaceState {
 
   // Documents and variables.
   importContent(content: string) {
-    return this.guard(async () => {
-      await this.store.importContent(content);
+    return this.announce('The import failed', async () => {
+      const created = await this.store.importContent(content);
       this.variableStore.validate();
-      this.notice.set('Import completed');
+      return named('Import completed', created.name);
     });
   }
+  /** Downloads a collection or environment as JSON, and says so. */
   export(document: WorkspaceDocument) {
-    this.cases.export(document);
+    return this.announce('The file could not be downloaded', async () =>
+      success('File downloaded', 'toast.downloaded', { v0: this.cases.export(document) }),
+    );
   }
   remove(document: WorkspaceDocument) {
-    return this.guard(async () => {
+    return this.announce('It could not be deleted', async () => {
       await this.store.remove(document);
       if (this.environmentId() === document.id) this.selectEnvironment('');
-      this.notice.set('Deleted');
+      return named('Deleted', document.name);
     });
   }
   selectEnvironment(id: string) {
     this.variableStore.select(id);
   }
-  async saveEnvironment(id: string, name: string, rows: readonly VariableRow[]) {
-    let saved: WorkspaceDocument | undefined;
-    await this.guard(async () => {
-      saved = await this.variableStore.saveEnvironment(id, name, rows);
-      if (saved) this.notice.set('Environment saved');
-    });
-    return saved;
+  /** Tells that the person kept variables changed elsewhere instead of saving theirs. */
+  variablesReloaded() {
+    this.tell(variablesReloaded);
   }
-  async saveGlobals(rows: readonly VariableRow[]) {
+  async saveEnvironment(
+    id: string,
+    name: string,
+    rows: readonly VariableRow[],
+  ): Promise<VariablesSave> {
     let saved: WorkspaceDocument | undefined;
-    await this.guard(async () => {
-      saved = await this.variableStore.saveGlobals(rows);
-      if (saved) this.notice.set('Global variables saved');
+    const ok = await this.announce('The environment could not be saved', async () => {
+      saved = await this.variableStore.saveEnvironment(id, name, rows);
+      return saved ? named('Environment saved', saved.name) : variablesReloaded;
     });
-    return saved;
+    return ok ? { saved } : undefined;
+  }
+  async saveGlobals(rows: readonly VariableRow[]): Promise<VariablesSave> {
+    let saved: WorkspaceDocument | undefined;
+    const ok = await this.announce('The global variables could not be saved', async () => {
+      saved = await this.variableStore.saveGlobals(rows);
+      return saved ? success('Global variables saved') : variablesReloaded;
+    });
+    return ok ? { saved } : undefined;
   }
 }

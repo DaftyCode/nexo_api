@@ -11,7 +11,7 @@ import {
   computed,
 } from '@angular/core';
 import { FormField, form, min, max } from '@angular/forms/signals';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named, success } from './workspace-state';
 import { PanelTask } from './panel-task';
 import { GitRemotes } from './git-remotes';
 import { McpCall, McpResults } from './mcp-results';
@@ -167,15 +167,21 @@ export class IntegrationPanel {
   }
   protected git(operation: PanelGitOperation) {
     this.view.set(undefined);
-    void this.task.run(async () => {
-      const workspace = this.state.workspaceId();
-      if (operation === 'export') {
+    const workspace = this.state.workspaceId();
+    if (operation === 'export') {
+      void this.task.announce('The collections could not be exported', async () => {
         await this.integration.exportCollections(workspace, this.state.collections());
         this.output.set(
           'Collections exported to the workspace project directory without literal credentials.',
         );
-        return;
-      }
+        return success(
+          'Collections exported',
+          'To the project folder of the workspace, without literal credentials.',
+        );
+      });
+      return;
+    }
+    const run = async () => {
       const result = await this.integration.git(workspace, operation, {
         branch: this.model().branch,
         message: this.model().message,
@@ -186,6 +192,17 @@ export class IntegrationPanel {
         [result.stdout, result.stderr].filter(Boolean).join('\n').trim() ||
           (result.success ? 'Done.' : 'Git reported an error.'),
       );
+      return result;
+    };
+    if (operation !== 'commit') {
+      void this.task.run(run);
+      return;
+    }
+    // A commit stores the changes in the repository: a toast says whether it did.
+    void this.task.announce('The changes could not be committed', async () => {
+      const result = await run();
+      if (!result.success) throw new Error(result.stderr.trim() || 'Git reported an error.');
+      return named('Changes committed', this.model().message);
     });
   }
   private parseJson(text: string, label: string) {
@@ -258,23 +275,33 @@ export class IntegrationPanel {
     }));
   }
   protected secret(remove = false, name = this.model().secretName) {
-    void this.task.run(async () => {
-      if (remove) await this.integration.removeSecret(name);
-      else
-        await this.integration.saveSecret(
-          name,
-          this.model().secretValue,
-          this.model().secretDomains,
-          this.secrets().some((secret) => secret.name === name),
+    void this.task.announce(
+      remove ? 'The secret could not be removed' : 'The secret could not be saved',
+      async () => {
+        if (remove) await this.integration.removeSecret(name);
+        else
+          await this.integration.saveSecret(
+            name,
+            this.model().secretValue,
+            this.model().secretDomains,
+            this.secrets().some((secret) => secret.name === name),
+          );
+        this.model.update((m) => ({ ...m, secretValue: '' }));
+        this.output.set(
+          remove
+            ? 'Secret removed.'
+            : `Secret encrypted and saved. Reference it with {{vault:${name}}}.`,
         );
-      this.model.update((m) => ({ ...m, secretValue: '' }));
-      this.output.set(
-        remove
-          ? 'Secret removed.'
-          : `Secret encrypted and saved. Reference it with {{vault:${name}}}.`,
-      );
-      await this.loadSecrets();
-    });
+        await this.loadSecrets();
+        return remove
+          ? named('Secret removed', name)
+          : success('Secret saved', 'toast.secretSaved', { v0: `{{vault:${name}}}` });
+      },
+    );
+  }
+  /** Downloads what the last action wrote in the output area. */
+  protected saveOutput() {
+    void this.state.download('nexo-output.txt', this.output(), 'text/plain');
   }
   protected renameWorkspace() {
     void this.state.renameWorkspace(this.model().workspaceName);
@@ -285,11 +312,12 @@ export class IntegrationPanel {
     });
   }
   protected restore(value: WorkspaceDocument) {
-    void this.task.run(async () => {
+    void this.task.announce('The revision could not be restored', async () => {
       const current = this.state.documents().find((d) => d.id === value.id);
       await this.integration.restoreRevision(value, current);
       await this.state.refresh();
       this.output.set('Revision restored as a new revision.');
+      return success('Revision restored', 'toast.revisionRestored', { v0: value.name });
     });
   }
   protected oauth() {

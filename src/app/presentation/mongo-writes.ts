@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, success } from './workspace-state';
 import { DialogAnswer, DialogRequest } from './mongo-dialog';
 import { ResultsEdit } from './mongo-results';
 import type { MongoUseCases, QueryTarget, WriteAnswer } from '../application/mongo-use-cases';
@@ -80,7 +80,10 @@ export class MongoWrites {
     this.dialog.set(undefined);
     this.pending = undefined;
   }
-  /** Runs what the dialog asked; on failure it stays open with the reason. */
+  /**
+   * Runs what the dialog asked and says in a toast what it did; on failure the dialog stays
+   * open with the reason, where it can be corrected.
+   */
   async answer(answer: DialogAnswer) {
     const action = this.pending;
     if (!action || this.busy()) return;
@@ -90,6 +93,7 @@ export class MongoWrites {
       const done = await action(answer);
       this.cancel();
       this.notice.set({ key: done });
+      this.context.state.tell(success(done));
     } catch (error) {
       this.problem.set(
         error instanceof WriteTextError

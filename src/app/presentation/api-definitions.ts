@@ -22,7 +22,7 @@ import {
   searchOutline,
 } from '../domain/api-definitions';
 import { PanelTask } from './panel-task';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named } from './workspace-state';
 import { CodeEditor, CodeMark } from './code-editor';
 import { TranslocoService } from '@jsverse/transloco';
 
@@ -139,8 +139,8 @@ export class ApiDefinitions {
   }
 
   /** Saves the definition: a new document, or a new revision of the one chosen. */
-  protected save() {
-    void this.task.run(async () => {
+  protected async save() {
+    const saved = await this.task.announce('The definition could not be saved', async () => {
       const { name, source } = this.model();
       if (!name.trim()) throw new Error('A name is required');
       const document = this.document();
@@ -160,11 +160,12 @@ export class ApiDefinitions {
         this.selected.set(created.id);
       }
       await this.state.refresh();
-      const saved = this.document();
-      if (saved) void this.loadRevisions(saved.id);
-      this.state.notice.set('Definition saved');
-      await this.inspect();
+      const stored = this.document();
+      if (stored) void this.loadRevisions(stored.id);
+      return named('Definition saved', name.trim());
     });
+    // Checked after saving: a problem in the definition does not undo the save.
+    if (saved) await this.task.run(() => this.inspect());
   }
   protected check() {
     void this.task.run(() => this.inspect());

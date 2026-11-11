@@ -181,7 +181,12 @@ describe('CookiesDialog', () => {
     expect(root().textContent).not.toContain('Also for subdomains');
     await type('Name', 'refused');
     await submit();
-    expect(state.error()).toBe('The cookie is not valid');
+    // Said in a toast, and the form stays to correct it.
+    expect(state.toast()).toMatchObject({
+      kind: 'error',
+      title: 'The cookie could not be saved',
+      detail: 'The cookie is not valid',
+    });
     expect(root().querySelector('.cookie-form')).not.toBeNull();
     await clickButton(fixture, /^\s*Cancel\s*$/);
     expect(root().querySelector('.cookie-form')).toBeNull();

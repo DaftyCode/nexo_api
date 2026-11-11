@@ -14,7 +14,7 @@ import {
 import { RequestAncestor, requestAncestors } from '../../domain/variables';
 import { Inheritance, inheritedAuth } from '../../domain/auth';
 import { DocumentsStore } from './documents-store';
-import { StateContext } from './state-context';
+import { StateContext, Toast, success } from './state-context';
 
 /** Collection trees, the requests opened from them and saving requests back. */
 export class CollectionsStore {
@@ -127,11 +127,15 @@ export class CollectionsStore {
       }),
     );
   }
-  /** Saves the active request into its collection, or into a new one. */
-  async saveActive(targetDocumentId?: string) {
-    const { tabs, cases, status } = this.context;
+  /**
+   * Saves the active request into its collection, or into a new one, and says what happened:
+   * saved, or not saved because the collection changed elsewhere and the person kept that
+   * version. Nothing without an open request.
+   */
+  async saveActive(targetDocumentId?: string): Promise<Toast | undefined> {
+    const { tabs, cases } = this.context;
     const tab = tabs.active();
-    if (!tab) return;
+    if (!tab) return undefined;
     let document = this.documents
       .collections()
       .find((d) => d.id === (targetDocumentId ?? tab.documentId));
@@ -151,16 +155,22 @@ export class CollectionsStore {
       if (!latest) throw error;
       const message =
         'This collection changed since you opened it. Save your request over the latest version?';
-      if (!this.context.confirm(message)) {
-        status.notice.set('Collection reloaded');
-        return;
-      }
+      if (!this.context.confirm(message))
+        return {
+          kind: 'info',
+          title: 'Request not saved',
+          message:
+            'The collection changed elsewhere and was reloaded. Your changes are still in the tab.',
+        };
       saved = await cases.saveRequest(latest, path, tab.request);
     }
     this.documents.applySaved([saved]);
     tabs.tabs.update((t) =>
       t.map((x) => (x.id === tab.id ? { ...x, documentId: saved.id, path, dirty: false } : x)),
     );
-    status.notice.set('Request saved');
+    return success('Request saved', 'toast.requestSaved', {
+      v0: tab.request.name,
+      v1: saved.name,
+    });
   }
 }

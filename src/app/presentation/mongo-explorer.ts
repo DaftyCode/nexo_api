@@ -12,7 +12,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { WorkspaceState } from './workspace-state';
+import { WorkspaceState, named } from './workspace-state';
 import { CodeEditor } from './code-editor';
 import { JsonFormat, MongoResults, ResultsView } from './mongo-results';
 import { MongoDialog } from './mongo-dialog';
@@ -484,7 +484,8 @@ export class MongoExplorer {
     const target = this.target();
     if (!target) return;
     this.error.set('');
-    try {
+    this.notice.set('');
+    await this.state.announce('The query could not be saved', async () => {
       const existing = this.state.documents().find((d) => d.id === this.savedId());
       const saved = await this.use((cases) =>
         cases.saveQuery(
@@ -497,21 +498,19 @@ export class MongoExplorer {
       this.state.applySaved([saved]);
       this.savedId.set(saved.id);
       this.model.update((model) => ({ ...model, name: saved.name }));
-      this.notice.set('Query saved');
-    } catch (error) {
-      this.fail(error);
-    }
+      return named('Query saved', saved.name);
+    });
   }
 
   protected async removeSaved(document: WorkspaceDocument) {
     if (!this.state.confirm('Delete this saved query?')) return;
-    try {
+    this.error.set('');
+    await this.state.announce('The query could not be deleted', async () => {
       await this.use((cases) => cases.removeQuery(document));
       this.state.forget(document);
       if (this.savedId() === document.id) this.savedId.set('');
-    } catch (error) {
-      this.fail(error);
-    }
+      return named('Query deleted', document.name);
+    });
   }
 
   /** Opens a saved query or one of the history: its collection is chosen and it runs. */

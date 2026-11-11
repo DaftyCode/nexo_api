@@ -373,11 +373,7 @@
       <h2>
         {{ section() === 'code' ? ('Generated snippet' | transloco) : ('Output' | transloco) }}
       </h2>
-      <button
-        class="button"
-        (click)="state.cases.files.download('nexo-output.txt', output(), 'text/plain')"
-        [disabled]="!output()"
-      >
+      <button class="button" (click)="saveOutput()" [disabled]="!output()">
         {{ 'Save output' | transloco }}
       </button>
     </div>

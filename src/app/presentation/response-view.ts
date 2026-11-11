@@ -12,7 +12,7 @@ import { JsonPipe } from '@angular/common';
 import { ExecutionResponse, formatJson } from '../domain/models';
 import { blockedSecret } from '../domain/secrets';
 import { StudioIcon } from './studio-icon';
-import { WORKSPACE } from '../composition/providers';
+import { WorkspaceState } from './workspace-state';
 
 /** Bodies above this size are shown as received; formatting them would block the interface. */
 const FORMAT_LIMIT = 2 * 1024 * 1024;
@@ -34,7 +34,7 @@ export class ResponseView {
   protected readonly tab = signal('body');
   protected readonly blocked = blockedSecret;
   protected readonly pretty = signal(true);
-  private readonly cases = inject(WORKSPACE);
+  private readonly state = inject(WorkspaceState);
   protected readonly binary = computed(() => this.response()?.bodyEncoding === 'base64');
   protected readonly contentType = computed(
     () =>
@@ -70,10 +70,15 @@ export class ResponseView {
     if (!response) return;
     const type = this.contentType();
     const extension = type.split('/')[1]?.replace(/[^a-z0-9]+/gi, '') || 'bin';
-    const content = this.binary()
-      ? new Blob([Uint8Array.from(atob(response.body), (c) => c.charCodeAt(0))], { type })
-      : new Blob([response.body], { type });
-    this.cases.files.download(`response.${extension}`, content, type);
+    const binary = this.binary();
+    void this.state.download(
+      `response.${extension}`,
+      () =>
+        binary
+          ? new Blob([Uint8Array.from(atob(response.body), (c) => c.charCodeAt(0))], { type })
+          : new Blob([response.body], { type }),
+      type,
+    );
   }
   protected readonly passed = computed(
     () => this.response()?.assertions?.filter((x) => x.passed).length ?? 0,

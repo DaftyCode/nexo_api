@@ -260,7 +260,11 @@ describe('MongoExplorer', () => {
         limit: '10',
       },
     });
-    expect(text()).toContain('Query saved');
+    expect(state.toast()).toMatchObject({
+      kind: 'success',
+      title: 'Query saved',
+      params: { v0: 'Open orders' },
+    });
     expect(root().querySelector('.mongo-folder')?.textContent).toBe('Reports');
     await click(/^Clear$/);
     await click('Open orders');
