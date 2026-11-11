@@ -35,6 +35,8 @@ pub const HISTORY_LIMIT: usize = 200;
 pub const QUERY_HISTORY_LIMIT: usize = 100;
 /// Documents in a page of MongoDB results when the client does not say.
 const DATABASE_PAGE: u64 = 50;
+/// Profiler entries listed at most, the slowest first.
+const PROFILE_ENTRIES: u64 = 100;
 
 /// Collects `{{vault:name}}` references outside script fields.
 /// Vault entries of OAuth 2.0 tokens that requests reference: their access and ID tokens.
@@ -499,6 +501,76 @@ impl Application {
                 database.close(&payload.cursor).await?;
                 Ok(serde_json::json!({ "closed": true }))
             }
+            Operation::MongoIndexes => {
+                let payload: payloads::MongoCollectionPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let indexes = database
+                    .indexes(connection, &payload.database, &payload.collection)
+                    .await?;
+                Ok(serde_json::json!({ "indexes": answer(indexes)? }))
+            }
+            Operation::MongoExplain => {
+                let payload: payloads::MongoExplainPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let explained = match payload.pipeline {
+                    Some(pipeline) => ports::Explained::Aggregate {
+                        pipeline: pipeline.into_iter().map(Value::Object).collect(),
+                        collation: object(payload.collation),
+                        hint: payload.hint,
+                    },
+                    None => ports::Explained::Find(Box::new(ports::FindRequest {
+                        id: payload.id.clone(),
+                        database: payload.database.clone(),
+                        collection: payload.collection.clone(),
+                        filter: object(payload.filter),
+                        projection: object(payload.projection),
+                        sort: object(payload.sort),
+                        collation: object(payload.collation),
+                        hint: payload.hint,
+                        skip: payload.skip,
+                        limit: payload.limit.filter(|limit| *limit > 0),
+                        page_size: DATABASE_PAGE,
+                    })),
+                };
+                let request = ports::ExplainRequest {
+                    id: payload.id,
+                    database: payload.database,
+                    collection: payload.collection,
+                    explained,
+                    execution_stats: payload.verbosity
+                        == Some(payloads::ExplainVerbosity::ExecutionStats),
+                };
+                Ok(serde_json::json!({ "explain": database.explain(connection, request).await? }))
+            }
+            Operation::MongoProfile => {
+                let payload: payloads::MongoProfilePayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                answer(
+                    database
+                        .profile(connection, &payload.database, None)
+                        .await?,
+                )
+            }
+            Operation::MongoProfileEntries => {
+                let payload: payloads::MongoProfileEntriesPayload = read(payload)?;
+                let connection = self.resolve_connection(payload.connection, values).await?;
+                let limit = payload
+                    .limit
+                    .unwrap_or(PROFILE_ENTRIES)
+                    .clamp(1, PROFILE_ENTRIES);
+                let entries = database
+                    .profiled(
+                        connection,
+                        &payload.database,
+                        payload
+                            .collection
+                            .as_deref()
+                            .filter(|name| !name.is_empty()),
+                        limit,
+                    )
+                    .await?;
+                Ok(serde_json::json!({ "entries": answer(entries)? }))
+            }
             _ => Err(Error::Validation("Unknown database operation".into())),
         }
     }
@@ -569,6 +641,8 @@ mod tests {
         finds: Mutex<Vec<ports::FindRequest>>,
         documents: Mutex<Vec<Document>>,
         writes: Mutex<Vec<(ports::WriteTarget, ports::DocumentWrite)>>,
+        indexes: Mutex<Vec<ports::IndexChange>>,
+        explains: Mutex<Vec<ports::ExplainRequest>>,
     }
     fn workspace(id: &str) -> Workspace {
         Workspace {
@@ -792,6 +866,69 @@ mod tests {
         ) -> Result<()> {
             self.connections.lock().unwrap().push(connection);
             Ok(())
+        }
+        async fn indexes(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            collection: &str,
+        ) -> Result<Vec<ports::IndexDetail>> {
+            Ok(vec![ports::IndexDetail {
+                name: format!("{collection}_id_"),
+                spec: json!({"key": {"_id": {"$numberInt": "1"}}}),
+                size: Some(4096),
+                accesses: None,
+                since: None,
+            }])
+        }
+        async fn index(
+            &self,
+            connection: DatabaseConnection,
+            change: ports::IndexChange,
+        ) -> Result<()> {
+            self.connections.lock().unwrap().push(connection);
+            self.indexes.lock().unwrap().push(change);
+            Ok(())
+        }
+        async fn explain(
+            &self,
+            _: DatabaseConnection,
+            request: ports::ExplainRequest,
+        ) -> Result<Value> {
+            self.explains.lock().unwrap().push(request);
+            Ok(json!({"queryPlanner": {"winningPlan": {"stage": "COLLSCAN"}}}))
+        }
+        async fn profile(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            set: Option<(i64, Option<i64>)>,
+        ) -> Result<ports::ProfileStatus> {
+            let (level, slowms) = set.unwrap_or((0, None));
+            Ok(ports::ProfileStatus {
+                level,
+                slowms: slowms.unwrap_or(100),
+                sample_rate: None,
+            })
+        }
+        async fn profiled(
+            &self,
+            _: DatabaseConnection,
+            database: &str,
+            collection: Option<&str>,
+            limit: u64,
+        ) -> Result<Vec<ports::ProfileEntry>> {
+            Ok(vec![ports::ProfileEntry {
+                op: "query".into(),
+                ns: format!("{database}.{}", collection.unwrap_or("orders")),
+                millis: limit as i64,
+                ts: None,
+                plan_summary: Some("COLLSCAN".into()),
+                docs_examined: None,
+                keys_examined: None,
+                returned: None,
+                command: None,
+            }])
         }
     }
     fn application() -> (Application, Arc<Fake>) {
@@ -1200,6 +1337,199 @@ mod tests {
             )
             .contains("not one of this connection")
         );
+    }
+
+    #[tokio::test]
+    async fn indexes_and_the_profiler_change_only_through_a_writable_saved_connection() {
+        let (application, fake) = application();
+        for (id, value) in [
+            ("ro", json!({"uri": "mongodb://db.test", "readOnly": true})),
+            ("rw", json!({"uri": "mongodb://db.test"})),
+        ] {
+            fake.documents.lock().unwrap().push(Document {
+                id: DocumentId::parse(id).unwrap(),
+                workspace_id: WorkspaceId::parse("local").unwrap(),
+                kind: DocumentKind::Connection,
+                name: id.into(),
+                revision: 1,
+                updated_at: 0,
+                value,
+            });
+        }
+        let run = |operation: Operation, connection: &str, extra: Value| {
+            let mut payload = json!({
+                "workspace": "local", "connectionId": connection, "database": "shop",
+                "connection": {"uri": "mongodb://db.test"},
+            });
+            payload
+                .as_object_mut()
+                .unwrap()
+                .extend(extra.as_object().unwrap().clone());
+            application.execute(operation, payload)
+        };
+        for (operation, extra) in [
+            (
+                Operation::MongoIndexCreate,
+                json!({"collection": "orders", "keys": {"at": -1}}),
+            ),
+            (
+                Operation::MongoIndexHide,
+                json!({"collection": "orders", "name": "at_-1", "hidden": true}),
+            ),
+            (
+                Operation::MongoIndexDrop,
+                json!({"collection": "orders", "name": "at_-1", "confirm": "at_-1"}),
+            ),
+            (Operation::MongoProfileSet, json!({"level": 2})),
+        ] {
+            let refused = run(operation, "ro", extra).await.unwrap_err().to_string();
+            assert!(refused.contains("read-only"), "{operation}: {refused}");
+        }
+        let refused = |result: Result<Value>| result.unwrap_err().to_string();
+        assert_eq!(
+            refused(
+                run(
+                    Operation::MongoIndexDrop,
+                    "rw",
+                    json!({"collection": "orders", "name": "at_-1", "confirm": "at_1"})
+                )
+                .await
+            ),
+            "Type the name of the index to confirm: at_-1"
+        );
+        assert!(
+            refused(
+                run(
+                    Operation::MongoIndexCreate,
+                    "rw",
+                    json!({"collection": "orders", "keys": {}})
+                )
+                .await
+            )
+            .contains("at least one field")
+        );
+        assert!(
+            refused(run(Operation::MongoProfileSet, "rw", json!({"level": 3})).await)
+                .contains("0 (off), 1 (slow operations) or 2 (all)")
+        );
+        assert!(
+            fake.indexes.lock().unwrap().is_empty(),
+            "nothing refused ran"
+        );
+
+        run(
+            Operation::MongoIndexCreate,
+            "rw",
+            json!({"collection": "orders", "keys": {"at": -1}, "options": {"unique": true}}),
+        )
+        .await
+        .unwrap();
+        run(
+            Operation::MongoIndexDrop,
+            "rw",
+            json!({"collection": "orders", "name": "at_-1", "confirm": " at_-1 "}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(
+            *fake.indexes.lock().unwrap(),
+            vec![
+                ports::IndexChange::Create {
+                    database: "shop".into(),
+                    collection: "orders".into(),
+                    keys: json!({"at": -1}),
+                    options: Some(json!({"unique": true})),
+                },
+                ports::IndexChange::Drop {
+                    database: "shop".into(),
+                    collection: "orders".into(),
+                    name: "at_-1".into(),
+                },
+            ]
+        );
+        let status = run(
+            Operation::MongoProfileSet,
+            "rw",
+            json!({"level": 1, "slowms": 20}),
+        )
+        .await
+        .unwrap();
+        assert_eq!(status, json!({"level": 1, "slowms": 20}));
+        // Changes of the server are not recorded as changes of documents to undo.
+        assert!(
+            !fake
+                .documents
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|d| d.kind == DocumentKind::DatabaseChange)
+        );
+    }
+
+    #[tokio::test]
+    async fn explains_finds_and_pipelines_and_reads_the_profiler() {
+        let (application, fake) = application();
+        let connection = json!({"uri": "mongodb://db.test"});
+        let explain = application
+            .execute(
+                Operation::MongoExplain,
+                json!({"connection": connection, "id": "e1", "database": "shop",
+                    "collection": "orders", "filter": {"a": 1}, "limit": 0}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            explain["explain"]["queryPlanner"]["winningPlan"]["stage"],
+            "COLLSCAN"
+        );
+        application
+            .execute(
+                Operation::MongoExplain,
+                json!({"connection": connection, "id": "e2", "database": "shop",
+                    "collection": "orders", "verbosity": "executionStats",
+                    "pipeline": [{"$match": {"a": 1}}, {"$group": {"_id": "$b"}}]}),
+            )
+            .await
+            .unwrap();
+        let explains = fake.explains.lock().unwrap().clone();
+        assert!(!explains[0].execution_stats, "queryPlanner by default");
+        assert!(matches!(
+            &explains[0].explained,
+            ports::Explained::Find(find) if find.filter == Some(json!({"a": 1})) && find.limit.is_none()
+        ));
+        assert!(explains[1].execution_stats);
+        assert!(matches!(
+            &explains[1].explained,
+            ports::Explained::Aggregate { pipeline, .. } if pipeline.len() == 2
+        ));
+
+        let profile = application
+            .execute(
+                Operation::MongoProfile,
+                json!({"connection": connection, "database": "shop"}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(profile, json!({"level": 0, "slowms": 100}));
+        let entries = application
+            .execute(
+                Operation::MongoProfileEntries,
+                json!({"connection": connection, "database": "shop", "collection": "",
+                    "limit": 5000}),
+            )
+            .await
+            .unwrap();
+        // At most 100 entries, and an empty collection is the whole database.
+        assert_eq!(entries["entries"][0]["millis"], 100);
+        assert_eq!(entries["entries"][0]["ns"], "shop.orders");
+        let indexes = application
+            .execute(
+                Operation::MongoIndexes,
+                json!({"connection": connection, "database": "shop", "collection": "orders"}),
+            )
+            .await
+            .unwrap();
+        assert_eq!(indexes["indexes"][0]["name"], "orders_id_");
     }
 
     #[test]

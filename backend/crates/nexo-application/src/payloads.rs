@@ -778,6 +778,137 @@ payload! {
 }
 
 payload! {
+    /// `mongo.index.create`: `keys` in Extended JSON (`{a: 1, b: -1}`, `{title: "text"}`,
+    /// `{loc: "2dsphere"}`, `{"$**": 1}`). Options: `name`, `unique`, `sparse`, `hidden`,
+    /// `expireAfterSeconds`, `partialFilterExpression`, `collation`, `weights`,
+    /// `default_language`, `language_override`, `textIndexVersion`, `2dsphereIndexVersion`,
+    /// `bits`, `min`, `max`, `wildcardProjection`.
+    closed MongoIndexCreatePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            keys "keys": Map<String, Value> => "object",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            options "options": Map<String, Value> => "object",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.index.hide`: hides an index from the query planner (`hidden`), or shows it.
+    closed MongoIndexHidePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            name "name": String => "string",
+            hidden "hidden": bool => "boolean",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.index.drop`: `confirm` repeats the index's name.
+    closed MongoIndexDropPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            name "name": String => "string",
+            confirm "confirm": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.explain`: how the server runs a `find` (filter, projection, sort, collation,
+    /// hint, skip and limit as in `mongo.find`) or, with `pipeline`, an aggregation.
+    /// `executionStats` runs the query to measure it; `queryPlanner` (the default) only plans
+    /// it. `id` cancels it with `mongo.cancel`.
+    closed MongoExplainPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            id "id": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            verbosity "verbosity": ExplainVerbosity => "'queryPlanner' | 'executionStats'",
+            filter "filter": Map<String, Value> => "object",
+            projection "projection": Map<String, Value> => "object",
+            sort "sort": Map<String, Value> => "object",
+            collation "collation": Map<String, Value> => "object",
+            hint "hint": Value => "string | object",
+            skip "skip": u64 => "number",
+            limit "limit": u64 => "number",
+            pipeline "pipeline": Vec<Map<String, Value>> => "readonly object[]",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.profile`: the profiler level of a database and its `slowms`.
+    closed MongoProfilePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            database "database": String => "string",
+        }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
+payload! {
+    /// `mongo.profile.set`: changes the profiler of a database on the server: `level` 0 (off),
+    /// 1 (operations slower than `slowms`) or 2 (every operation).
+    closed MongoProfileSetPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            level "level": u8 => "0 | 1 | 2",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            slowms "slowms": u64 => "number",
+        }
+    }
+}
+
+payload! {
+    /// `mongo.profile.entries`: the slowest operations in `system.profile`, of the whole
+    /// database or of one `collection`.
+    closed MongoProfileEntriesPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            database "database": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            collection "collection": String => "string",
+            limit "limit": u64 => "number",
+        }
+    }
+}
+
+/// How much an explain tells: the plan only, or the plan run and measured.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ExplainVerbosity {
+    #[default]
+    QueryPlanner,
+    ExecutionStats,
+}
+
+payload! {
     /// `mongo.close`: closes a cursor the interface no longer reads.
     closed MongoClosePayload {
         required { cursor "cursor": String => "string" }
@@ -958,6 +1089,14 @@ operation_payloads! {
     MongoCollectionRename => MongoCollectionRenamePayload,
     MongoCollectionDrop => MongoCollectionDropPayload,
     MongoDatabaseDrop => MongoDatabaseDropPayload,
+    MongoIndexes => MongoCollectionPayload,
+    MongoIndexCreate => MongoIndexCreatePayload,
+    MongoIndexHide => MongoIndexHidePayload,
+    MongoIndexDrop => MongoIndexDropPayload,
+    MongoExplain => MongoExplainPayload,
+    MongoProfile => MongoProfilePayload,
+    MongoProfileSet => MongoProfileSetPayload,
+    MongoProfileEntries => MongoProfileEntriesPayload,
 }
 
 /// Checks the payload of a Git operation.
@@ -1096,6 +1235,14 @@ mod tests {
                     | Operation::MongoCollectionRename
                     | Operation::MongoCollectionDrop
                     | Operation::MongoDatabaseDrop
+                    | Operation::MongoIndexes
+                    | Operation::MongoIndexCreate
+                    | Operation::MongoIndexHide
+                    | Operation::MongoIndexDrop
+                    | Operation::MongoExplain
+                    | Operation::MongoProfile
+                    | Operation::MongoProfileSet
+                    | Operation::MongoProfileEntries
             );
             assert_eq!(result.is_err(), required, "{operation}");
             assert!(
@@ -1199,6 +1346,57 @@ mod tests {
         assert!(error.to_string().contains("projection"), "{error}");
         let more = json!({"cursor": "c1", "id": "q2", "pageSize": 20});
         assert_eq!(validate(Operation::MongoMore, more.clone()).unwrap(), more);
+    }
+
+    #[test]
+    fn index_explain_and_profiler_payloads_name_their_fields() {
+        let connection = json!({"uri": "mongodb://h"});
+        let explain = json!({
+            "connection": connection, "id": "e1", "database": "shop", "collection": "orders",
+            "verbosity": "executionStats", "filter": {"status": "A"}, "sort": {"at": -1},
+        });
+        assert_eq!(
+            validate(Operation::MongoExplain, explain.clone()).unwrap(),
+            explain
+        );
+        let error = validate(
+            Operation::MongoExplain,
+            json!({"connection": connection, "id": "e1", "database": "d", "collection": "c",
+                "verbosity": "allPlansExecution"}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("at verbosity"), "{error}");
+        // A pipeline is a list of stages, never a script.
+        let error = validate(
+            Operation::MongoExplain,
+            json!({"connection": connection, "id": "e1", "database": "d", "collection": "c",
+                "pipeline": "db.c.aggregate([])"}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("at pipeline"), "{error}");
+        let error = validate(
+            Operation::MongoIndexCreate,
+            json!({"connection": connection, "connectionId": "c1", "database": "d",
+                "collection": "c", "keys": "a_1"}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("at keys"), "{error}");
+        let error = validate(
+            Operation::MongoIndexDrop,
+            json!({"connection": connection, "connectionId": "c1", "database": "d",
+                "collection": "c", "name": "a_1"}),
+        )
+        .unwrap_err();
+        assert!(
+            error.to_string().contains("missing field `confirm`"),
+            "{error}"
+        );
+        let error = validate(
+            Operation::MongoProfileSet,
+            json!({"connection": connection, "connectionId": "c1", "database": "d", "level": -1}),
+        )
+        .unwrap_err();
+        assert!(error.to_string().contains("at level"), "{error}");
     }
 
     #[test]

@@ -1,0 +1,115 @@
+.mongo-explain {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+}
+.explain-flags {
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.explain-flag {
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+}
+.explain-flag.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+.explain-flag.warning {
+  color: var(--orange, #d29922);
+  border-color: var(--orange, #d29922);
+}
+.explain-flag.success {
+  color: var(--green);
+  border-color: var(--green);
+}
+.mongo-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 0;
+}
+.mongo-stats dt,
+.explain-measures dt {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.mongo-stats dd,
+.explain-measures dd {
+  margin: 0;
+}
+.mongo-views {
+  display: flex;
+  gap: 4px;
+}
+.mongo-badge {
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+/* Stages left to right, in the order they run, wrapping on narrow windows. */
+.explain-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.explain-stage {
+  position: relative;
+  min-width: 170px;
+  max-width: 280px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.explain-stage + .explain-stage::before {
+  content: '→';
+  position: absolute;
+  left: -18px;
+  top: 10px;
+  color: var(--muted);
+}
+.explain-stage.danger {
+  border-color: var(--red);
+}
+.explain-stage.warning {
+  border-color: var(--orange, #d29922);
+}
+.explain-stage p {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+.explain-stage code {
+  font-family: var(--mono, monospace);
+}
+.explain-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0 0;
+}
+.explain-warning {
+  color: var(--muted);
+}
+.danger .explain-warning {
+  color: var(--red);
+}
+.explain-json {
+  max-height: 520px;
+  overflow: auto;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+}

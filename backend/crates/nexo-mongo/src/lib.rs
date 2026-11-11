@@ -6,6 +6,9 @@
 mod browse;
 mod connection;
 mod errors;
+mod explain;
+mod indexes;
+mod profiler;
 mod query;
 mod tls;
 mod write;
@@ -19,7 +22,8 @@ use mongodb::{
 use nexo_application::ports::{
     CollectionChange, CollectionStats, CollectionSummary, ConnectionReport, CountRequest,
     DatabaseConnection, DatabaseHost, DatabaseSummary, DocumentDatabase, DocumentPage,
-    DocumentWrite, FindRequest, NetworkPolicy, WriteResult, WriteTarget,
+    DocumentWrite, ExplainRequest, FindRequest, IndexChange, IndexDetail, NetworkPolicy,
+    ProfileEntry, ProfileStatus, WriteResult, WriteTarget,
 };
 use nexo_domain::{Error, Result};
 use std::{
@@ -338,6 +342,58 @@ impl DocumentDatabase for MongoAdapter {
             .map_err(|_| Error::Infrastructure("cursor list unavailable".into()))?
             .remove(cursor);
         Ok(())
+    }
+    async fn indexes(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: &str,
+    ) -> Result<Vec<IndexDetail>> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            indexes::list(&client, database, collection).await
+        })
+        .await
+    }
+    async fn index(&self, connection: DatabaseConnection, change: IndexChange) -> Result<()> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            indexes::change(&client, change).await
+        })
+        .await
+    }
+    async fn explain(
+        &self,
+        connection: DatabaseConnection,
+        request: ExplainRequest,
+    ) -> Result<serde_json::Value> {
+        let (client, _) = within(self.client(&connection)).await?;
+        explain::explain(self, client, request).await
+    }
+    async fn profile(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        set: Option<(i64, Option<i64>)>,
+    ) -> Result<ProfileStatus> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            profiler::profile(&client, database, set).await
+        })
+        .await
+    }
+    async fn profiled(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: Option<&str>,
+        limit: u64,
+    ) -> Result<Vec<ProfileEntry>> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            profiler::entries(&client, database, collection, limit).await
+        })
+        .await
     }
 }
 

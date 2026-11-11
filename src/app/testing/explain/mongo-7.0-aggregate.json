@@ -1,0 +1,218 @@
+{
+  "explainVersion": "1",
+  "stages": [
+    {
+      "$cursor": {
+        "queryPlanner": {
+          "namespace": "nexo_explain.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "status": {
+              "$eq": "B"
+            }
+          },
+          "queryHash": "E4063AD9",
+          "planCacheKey": "31846610",
+          "optimizationTimeMillis": 0,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "winningPlan": {
+            "stage": "PROJECTION_DEFAULT",
+            "transformBy": {
+              "customer.city": 1,
+              "_id": 0
+            },
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "status": 1,
+                  "at": -1
+                },
+                "indexName": "status_1_at_-1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "status": [],
+                  "at": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "status": [
+                    "[\"B\", \"B\"]"
+                  ],
+                  "at": [
+                    "[MaxKey, MinKey]"
+                  ]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        },
+        "executionStats": {
+          "executionSuccess": true,
+          "nReturned": 1500,
+          "executionTimeMillis": 4,
+          "totalKeysExamined": 1500,
+          "totalDocsExamined": 1500,
+          "executionStages": {
+            "stage": "PROJECTION_DEFAULT",
+            "nReturned": 1500,
+            "executionTimeMillisEstimate": 1,
+            "works": 1501,
+            "advanced": 1500,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 2,
+            "restoreState": 2,
+            "isEOF": 1,
+            "transformBy": {
+              "customer.city": 1,
+              "_id": 0
+            },
+            "inputStage": {
+              "stage": "FETCH",
+              "nReturned": 1500,
+              "executionTimeMillisEstimate": 1,
+              "works": 1501,
+              "advanced": 1500,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 2,
+              "restoreState": 2,
+              "isEOF": 1,
+              "docsExamined": 1500,
+              "alreadyHasObj": 0,
+              "inputStage": {
+                "stage": "IXSCAN",
+                "nReturned": 1500,
+                "executionTimeMillisEstimate": 1,
+                "works": 1501,
+                "advanced": 1500,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 2,
+                "restoreState": 2,
+                "isEOF": 1,
+                "keyPattern": {
+                  "status": 1,
+                  "at": -1
+                },
+                "indexName": "status_1_at_-1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "status": [],
+                  "at": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "status": [
+                    "[\"B\", \"B\"]"
+                  ],
+                  "at": [
+                    "[MaxKey, MinKey]"
+                  ]
+                },
+                "keysExamined": 1500,
+                "seeks": 1,
+                "dupsTested": 0,
+                "dupsDropped": 0
+              }
+            }
+          }
+        }
+      },
+      "nReturned": 1500,
+      "executionTimeMillisEstimate": 3
+    },
+    {
+      "$group": {
+        "_id": "$customer.city",
+        "total": {
+          "$sum": {
+            "$const": 1
+          }
+        }
+      },
+      "maxAccumulatorMemoryUsageBytes": {
+        "total": 288
+      },
+      "totalOutputDataSizeBytes": 735,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "numBytesSpilledEstimate": 0,
+      "spilledRecords": 0,
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 4
+    },
+    {
+      "$sort": {
+        "sortKey": {
+          "total": -1
+        }
+      },
+      "totalDataSizeSortedBytesEstimate": 759,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 4
+    }
+  ],
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "7.0.45",
+    "gitVersion": "a52313e13ab55c9bddf7c3ff91dab286fa381796"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "forceClassicEngine"
+  },
+  "command": {
+    "aggregate": "orders",
+    "pipeline": [
+      {
+        "$match": {
+          "status": "B"
+        }
+      },
+      {
+        "$group": {
+          "_id": "$customer.city",
+          "total": {
+            "$sum": 1
+          }
+        }
+      },
+      {
+        "$sort": {
+          "total": -1
+        }
+      }
+    ],
+    "cursor": {},
+    "maxTimeMS": 60000,
+    "comment": "nexo:explain-70-3",
+    "$db": "nexo_explain"
+  },
+  "ok": 1
+}

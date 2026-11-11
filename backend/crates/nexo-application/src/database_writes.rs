@@ -7,7 +7,9 @@ use crate::{
     Application,
     operations::Operation,
     payloads::{self, MongoConnection},
-    ports::{CollectionChange, DocumentChange, DocumentWrite, WriteResult, WriteTarget},
+    ports::{
+        CollectionChange, DocumentChange, DocumentWrite, IndexChange, WriteResult, WriteTarget,
+    },
 };
 use nexo_domain::{Document, DocumentId, DocumentKind, Error, Result, WorkspaceId};
 use serde_json::{Map, Value, json};
@@ -254,6 +256,64 @@ impl Application {
         payload: &Value,
         connection: crate::ports::DatabaseConnection,
     ) -> Result<Value> {
+        // Indexes and the profiler: changes to the server, not to documents, so they are not
+        // recorded to undo them.
+        let index = match operation {
+            Operation::MongoIndexCreate => {
+                let p: payloads::MongoIndexCreatePayload = read(payload)?;
+                if p.keys.is_empty() {
+                    return Err(Error::Validation(
+                        "Add at least one field to the index keys".into(),
+                    ));
+                }
+                Some(IndexChange::Create {
+                    database: p.database,
+                    collection: p.collection,
+                    keys: Value::Object(p.keys),
+                    options: p.options.map(Value::Object),
+                })
+            }
+            Operation::MongoIndexHide => {
+                let p: payloads::MongoIndexHidePayload = read(payload)?;
+                Some(IndexChange::Hide {
+                    database: p.database,
+                    collection: p.collection,
+                    name: p.name,
+                    hidden: p.hidden,
+                })
+            }
+            Operation::MongoIndexDrop => {
+                let p: payloads::MongoIndexDropPayload = read(payload)?;
+                confirmed(Some(&p.confirm), &p.name, "index")?;
+                Some(IndexChange::Drop {
+                    database: p.database,
+                    collection: p.collection,
+                    name: p.name,
+                })
+            }
+            Operation::MongoProfileSet => {
+                let p: payloads::MongoProfileSetPayload = read(payload)?;
+                if p.level > 2 {
+                    return Err(Error::Validation(
+                        "The profiler level is 0 (off), 1 (slow operations) or 2 (all)".into(),
+                    ));
+                }
+                let slowms = p
+                    .slowms
+                    .map(|slowms| i64::try_from(slowms).unwrap_or(i64::MAX));
+                let status = self
+                    .database
+                    .profile(connection, &p.database, Some((i64::from(p.level), slowms)))
+                    .await?;
+                return serde_json::to_value(status)
+                    .map_err(|error| Error::Infrastructure(error.to_string()));
+            }
+            _ => None,
+        };
+        if let Some(index) = index {
+            self.database.index(connection, index).await?;
+            return Ok(json!({ "done": true }));
+        }
         let change = match operation {
             Operation::MongoCollectionCreate => {
                 let p: payloads::MongoCollectionCreatePayload = read(payload)?;

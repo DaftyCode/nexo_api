@@ -17,6 +17,10 @@ import { CodeEditor } from './code-editor';
 import { JsonFormat, MongoResults, ResultsView } from './mongo-results';
 import { MongoDialog } from './mongo-dialog';
 import { MongoWrites } from './mongo-writes';
+import { MongoIndexes } from './mongo-indexes';
+import { MongoExplain } from './mongo-explain';
+import { MongoProfiler } from './mongo-profiler';
+import { Explainable, formatBytes } from '../domain/mongo-indexes';
 import { WRITE_CONCERNS, WriteConcernChoice, changeValue } from '../domain/mongo-write';
 import { MONGO } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
@@ -34,7 +38,18 @@ import {
   emptyQueryForm,
   queryValue,
 } from '../domain/mongo-query';
-import type { QueryTarget } from '../application/mongo-use-cases';
+import type { ExplainedQuery, QueryTarget } from '../application/mongo-use-cases';
+
+/** The views of a collection. */
+export type ExplorerTab = 'documents' | 'indexes' | 'explain' | 'profiler';
+
+/** An explain shown, with what it explained. */
+interface Explained {
+  target: QueryTarget;
+  query: ExplainedQuery;
+  executed: boolean;
+  result: unknown;
+}
 
 interface QueryModel extends QueryForm {
   /** Name and folder to save the query with. */
@@ -64,7 +79,16 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
  * them with their pages, count, cancellation, saved queries and history.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, MongoResults, MongoDialog],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    CodeEditor,
+    MongoResults,
+    MongoDialog,
+    MongoIndexes,
+    MongoExplain,
+    MongoProfiler,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
   styleUrl: './mongo-explorer.scss',
@@ -120,6 +144,19 @@ export class MongoExplorer {
   protected readonly format = signal<JsonFormat>('shell');
   /** The saved query being edited, if one was opened. */
   protected readonly savedId = signal('');
+  protected readonly tab = signal<ExplorerTab>('documents');
+  /** The views a collection has: a view has no indexes of its own. */
+  protected readonly tabs = computed<ExplorerTab[]>(() =>
+    this.target()?.kind === 'view'
+      ? ['documents', 'explain', 'profiler']
+      : ['documents', 'indexes', 'explain', 'profiler'],
+  );
+  /** The last explain, of the query bar or of an operation the profiler recorded. */
+  protected readonly explained = signal<Explained | undefined>(undefined);
+  protected readonly explainedPipeline = computed(() => {
+    const explained = this.explained();
+    return !!explained && 'pipeline' in explained.query;
+  });
 
   protected readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
   /** A read-only connection shows no write: the backend refuses them anyway. */
@@ -282,6 +319,7 @@ export class MongoExplorer {
     const changed =
       this.target()?.database !== database || this.target()?.collection !== collection.name;
     this.target.set({ database, collection: collection.name, kind: collection.kind });
+    if (collection.kind === 'view' && this.tab() === 'indexes') this.tab.set('documents');
     if (changed) {
       this.reset();
       this.stats.set(undefined);
@@ -289,7 +327,7 @@ export class MongoExplorer {
     }
     if (run) void this.find();
   }
-  private async loadStats() {
+  protected async loadStats() {
     const target = this.target();
     if (!target) return;
     try {
@@ -435,6 +473,57 @@ export class MongoExplorer {
     }
   }
 
+  /** How the server runs the query of the bar: run and measured, or only planned. */
+  protected explainQuery(executed = true) {
+    const target = this.target();
+    if (!target) return;
+    const query = this.query();
+    if (!query) {
+      this.tab.set('documents');
+      return;
+    }
+    const { database, collection } = target;
+    void this.runExplain({ database, collection }, { query }, executed);
+  }
+  /** Explains again an operation the profiler recorded. */
+  protected explainEntry({ database, collection, query, pipeline }: Explainable) {
+    void this.runExplain(
+      { database, collection },
+      pipeline ? { pipeline } : { query: query ?? {} },
+      true,
+    );
+  }
+  /** Explains again what is shown, measured or only planned. */
+  protected explainAgain(executed: boolean) {
+    const shown = this.explained();
+    if (shown) void this.runExplain(shown.target, shown.query, executed);
+  }
+  private async runExplain(target: QueryTarget, query: ExplainedQuery, executed: boolean) {
+    if (this.running()) return;
+    const id = crypto.randomUUID();
+    this.running.set(id);
+    this.error.set('');
+    this.tab.set('explain');
+    try {
+      const result = await this.use((cases) =>
+        cases.explain(
+          this.state.workspaceId(),
+          this.connection(),
+          this.state.scopes(),
+          target,
+          query,
+          executed,
+          id,
+        ),
+      );
+      this.explained.set({ target, query, executed, result });
+    } catch (error) {
+      this.fail(error);
+    } finally {
+      this.running.set(undefined);
+    }
+  }
+
   protected async cancel() {
     const id = this.running();
     if (!id) return;
@@ -546,17 +635,7 @@ export class MongoExplorer {
   protected setFormat(event: Event) {
     this.format.set((event.target as HTMLSelectElement).value as JsonFormat);
   }
-  protected bytes(size: number | undefined) {
-    if (size === undefined) return '';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let value = size;
-    let unit = 0;
-    while (value >= 1024 && unit < units.length - 1) {
-      value /= 1024;
-      unit++;
-    }
-    return `${value.toFixed(unit ? 1 : 0)} ${units[unit]}`;
-  }
+  protected readonly bytes = formatBytes;
   protected indexNames(stats: CollectionStats) {
     return stats.indexes.map((index) => index.name).join(', ');
   }

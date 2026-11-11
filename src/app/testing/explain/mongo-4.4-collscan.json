@@ -1,0 +1,84 @@
+{
+  "queryPlanner": {
+    "plannerVersion": 1,
+    "namespace": "nexo_explain.orders",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "status": {
+        "$eq": "A"
+      }
+    },
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": {
+        "at": -1
+      },
+      "memLimit": 104857600,
+      "limitAmount": 10,
+      "type": "simple",
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "status": {
+            "$eq": "A"
+          }
+        },
+        "direction": "forward"
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 10,
+    "executionTimeMillis": 1,
+    "totalKeysExamined": 0,
+    "totalDocsExamined": 2000,
+    "executionStages": {
+      "stage": "SORT",
+      "nReturned": 10,
+      "executionTimeMillisEstimate": 0,
+      "works": 2013,
+      "advanced": 10,
+      "needTime": 2002,
+      "needYield": 0,
+      "saveState": 2,
+      "restoreState": 2,
+      "isEOF": 1,
+      "sortPattern": {
+        "at": -1
+      },
+      "memLimit": 104857600,
+      "limitAmount": 10,
+      "type": "simple",
+      "totalDataSizeSorted": 53500,
+      "usedDisk": false,
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "status": {
+            "$eq": "A"
+          }
+        },
+        "nReturned": 500,
+        "executionTimeMillisEstimate": 0,
+        "works": 2002,
+        "advanced": 500,
+        "needTime": 1501,
+        "needYield": 0,
+        "saveState": 2,
+        "restoreState": 2,
+        "isEOF": 1,
+        "direction": "forward",
+        "docsExamined": 2000
+      }
+    }
+  },
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "4.4.30",
+    "gitVersion": "4d7fa6a6260d25c5caa971dce10561690cb79dea"
+  },
+  "ok": 1
+}

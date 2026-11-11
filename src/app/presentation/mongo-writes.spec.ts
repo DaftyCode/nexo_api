@@ -134,7 +134,9 @@ describe('MongoDB writes in the explorer', () => {
       await confirm(/^Save$/);
       expect(calls('mongo.update')[1].payload['update']).toEqual({ $set: { 'items.0.sku': 'S2' } });
 
-      await click(/^Documents$/);
+      // The way back of the results, not the tab of the same name.
+      await clickButton(fixture, /^Documents$/, root().querySelector('app-mongo-results')!);
+      await settle();
       await click('Choose document 1');
       await click('Edit document');
       expect(codeText(dialog()!, 'Document')).toContain('"price": NumberDecimal("1.10")');

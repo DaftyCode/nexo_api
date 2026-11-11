@@ -1,9 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
-import { clickButton, codeText, exerciseControls, fill, renderDeferred } from '../testing/controls';
+import {
+  buttons,
+  clickButton,
+  codeText,
+  exerciseControls,
+  fill,
+  renderDeferred,
+} from '../testing/controls';
 import { MongoExplorer } from './mongo-explorer';
 import { WorkspaceState } from './workspace-state';
 import { WorkspaceDocument } from '../domain/models';
+import collscan from '../testing/explain/mongo-8.0-collscan.json';
 
 const connection: WorkspaceDocument = {
   id: 'c1',
@@ -27,7 +35,8 @@ const order = (n: number) => ({
   items: [{ sku: 'S1', qty: { $numberInt: '2' } }, { sku: 'T1' }],
 });
 
-describe('MongoExplorer', () => {
+// Each test drives the whole explorer, its tabs and its results.
+describe('MongoExplorer', { timeout: 20_000 }, () => {
   let fixture: ComponentFixture<MongoExplorer>;
   let api: TestApi;
   let state: WorkspaceState;
@@ -73,6 +82,8 @@ describe('MongoExplorer', () => {
         'mongo.more': { documents: [order(3)], truncated: false, elapsedMs: 2 },
         'mongo.count': { count: 42 },
         'mongo.cancel': { cancelled: true },
+        'mongo.explain': { explain: collscan },
+        'mongo.indexes': { indexes: [{ name: '_id_', spec: { key: { _id: 1 } } }] },
       }),
       imports: [MongoExplorer],
     }).compileComponents();
@@ -197,7 +208,9 @@ describe('MongoExplorer', () => {
     await click(/^S1$/);
     await click('Copy value');
     expect(copied).toEqual(['S1']);
-    await click(/^Documents$/);
+    // The way back of the results, not the tab of the same name.
+    await clickButton(fixture, /^Documents$/, root().querySelector('app-mongo-results')!);
+    await settle();
     await click('65a1b2c3d4e5f6a7b8c9d0e1');
     await click('Copy ObjectId date');
     await click('Copy document');
@@ -278,6 +291,41 @@ describe('MongoExplorer', () => {
     state.confirm = () => true;
     await click('Delete the query Open orders');
     expect(api.documentsStore.filter((d) => d.kind === 'query')).toEqual([]);
+  });
+
+  it('explains the query of the bar, with its stages, and offers indexes and the profiler', async () => {
+    await openOrders();
+    await fill(fixture, 'Filter', "{status: 'A'}");
+    await fill(fixture, 'Sort', '{at: -1}');
+    await clickButton(fixture, /^\s*Explain\s*$/, root().querySelector('.mongo-actions')!);
+    await settle();
+    expect(calls('mongo.explain')[0].payload).toMatchObject({
+      workspace: 'local',
+      database: 'shop',
+      collection: 'orders',
+      filter: { status: 'A' },
+      sort: { at: -1 },
+      verbosity: 'executionStats',
+    });
+    // The explain tab shows the plan: a collection scan and a sort in memory, marked.
+    const stages = [...root().querySelectorAll('.explain-stage strong')].map((s) => s.textContent);
+    expect(stages).toEqual(['COLLSCAN', 'SORT']);
+    expect(text()).toContain('Collection scan: no index is used');
+    expect(text()).toContain('Sorted in memory');
+    expect(text()).toContain('Run and measured');
+    expect(root().querySelector('.explain-stage.danger')?.textContent).toContain('2000');
+    await click('Plan only');
+    expect(calls('mongo.explain')[1].payload).toMatchObject({ verbosity: 'queryPlanner' });
+    await click(/^\s*JSON\s*$/);
+    expect(root().querySelector('.explain-json')?.textContent).toContain('"winningPlan"');
+
+    await click(/^\s*Indexes\s*$/);
+    expect(calls('mongo.indexes')).toHaveLength(1);
+    expect(root().querySelector('app-mongo-indexes')?.textContent).toContain('_id_');
+    // A view has no indexes of its own.
+    await click(/^recent/);
+    expect(buttons(root(), /^\s*Indexes\s*$/)).toHaveLength(0);
+    expect(buttons(root(), /^\s*Profiler\s*$/)).toHaveLength(1);
   });
 
   it('every control of the query reaches the model', async () => {

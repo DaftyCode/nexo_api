@@ -87,6 +87,14 @@ operations!(
         MongoCollectionRename => "mongo.collection.rename",
         MongoCollectionDrop => "mongo.collection.drop",
         MongoDatabaseDrop => "mongo.database.drop",
+        MongoIndexes => "mongo.indexes",
+        MongoIndexCreate => "mongo.index.create",
+        MongoIndexHide => "mongo.index.hide",
+        MongoIndexDrop => "mongo.index.drop",
+        MongoExplain => "mongo.explain",
+        MongoProfile => "mongo.profile",
+        MongoProfileSet => "mongo.profile.set",
+        MongoProfileEntries => "mongo.profile.entries",
     }
 );
 impl Operation {
@@ -112,10 +120,18 @@ impl Operation {
                 | Self::MongoCollectionRename
                 | Self::MongoCollectionDrop
                 | Self::MongoDatabaseDrop
+                | Self::MongoIndexes
+                | Self::MongoIndexCreate
+                | Self::MongoIndexHide
+                | Self::MongoIndexDrop
+                | Self::MongoExplain
+                | Self::MongoProfile
+                | Self::MongoProfileSet
+                | Self::MongoProfileEntries
         )
     }
-    /// Database operations that change data: refused on a read-only connection, and recorded
-    /// so they can be undone.
+    /// Database operations that change data or the server's settings: refused on a
+    /// read-only connection. Writes of documents are also recorded so they can be undone.
     pub fn is_database_write(self) -> bool {
         matches!(
             self,
@@ -128,6 +144,10 @@ impl Operation {
                 | Self::MongoCollectionRename
                 | Self::MongoCollectionDrop
                 | Self::MongoDatabaseDrop
+                | Self::MongoIndexCreate
+                | Self::MongoIndexHide
+                | Self::MongoIndexDrop
+                | Self::MongoProfileSet
         )
     }
     /// Operations whose data belongs to a workspace and need one.
@@ -151,6 +171,10 @@ impl Operation {
                 | Self::MongoCollectionRename
                 | Self::MongoCollectionDrop
                 | Self::MongoDatabaseDrop
+                | Self::MongoIndexCreate
+                | Self::MongoIndexHide
+                | Self::MongoIndexDrop
+                | Self::MongoProfileSet
         )
     }
 }

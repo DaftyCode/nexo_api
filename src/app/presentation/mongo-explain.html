@@ -1,0 +1,152 @@
+@let summary = plan();
+<section class="mongo-explain" [attr.aria-label]="'Explain plan' | transloco">
+  <div class="row explain-flags">
+    @if (summary.collscan) {
+      <span class="explain-flag danger">{{ 'Collection scan: no index is used' | transloco }}</span>
+    } @else if (summary.indexes.length) {
+      <span class="explain-flag success">{{
+        'mongo.usesIndexes' | transloco: { v0: summary.indexes.join(', ') }
+      }}</span>
+    }
+    @if (summary.memorySort) {
+      <span class="explain-flag warning">{{ 'Sorted in memory' | transloco }}</span>
+    }
+    @if (summary.engine === 'sbe') {
+      <span class="mongo-badge" [title]="'Slot-based execution engine' | transloco">SBE</span>
+    }
+  </div>
+
+  @if (summary.executed) {
+    <dl class="mongo-stats">
+      <div>
+        <dt>{{ 'Returned' | transloco }}</dt>
+        <dd>{{ summary.returned ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Documents examined' | transloco }}</dt>
+        <dd>{{ summary.docsExamined ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Keys examined' | transloco }}</dt>
+        <dd>{{ summary.keysExamined ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>{{ 'Time' | transloco }}</dt>
+        <dd>{{ summary.ms ?? '—' }} ms</dd>
+      </div>
+      @if (ratio()) {
+        <div [title]="'Examined for each document returned: 1 is ideal' | transloco">
+          <dt>{{ 'Examined per returned' | transloco }}</dt>
+          <dd>{{ ratio() }}</dd>
+        </div>
+      }
+    </dl>
+  } @else {
+    <p class="muted">
+      {{
+        'Planned only: run and measure it to see what each stage returned and examined.' | transloco
+      }}
+    </p>
+  }
+
+  <div class="mongo-views" role="group" [attr.aria-label]="'View' | transloco">
+    <button
+      type="button"
+      class="button small"
+      [class.primary]="view() === 'stages'"
+      [attr.aria-pressed]="view() === 'stages'"
+      (click)="view.set('stages')"
+    >
+      {{ 'Stages' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [class.primary]="view() === 'json'"
+      [attr.aria-pressed]="view() === 'json'"
+      (click)="view.set('json')"
+    >
+      JSON
+    </button>
+  </div>
+
+  @if (view() === 'stages') {
+    <ol class="explain-stages" [attr.aria-label]="'Stages, in the order they run' | transloco">
+      @for (stage of summary.stages; track $index) {
+        <li
+          class="explain-stage"
+          [class.danger]="stage.warning === 'collscan'"
+          [class.warning]="stage.warning === 'memorySort'"
+        >
+          <div class="row between">
+            <strong>{{ stage.name }}</strong>
+            @if (stage.shard) {
+              <span class="mongo-badge">{{ stage.shard }}</span>
+            }
+          </div>
+          @if (stage.index) {
+            <p>
+              <span class="muted">{{ 'Index' | transloco }}</span> <code>{{ stage.index }}</code>
+            </p>
+          }
+          @for (fact of stage.details; track fact.label) {
+            <p>
+              <span class="muted">{{ fact.label | transloco }}</span> <code>{{ fact.value }}</code>
+            </p>
+          }
+          @if (
+            stage.returned !== undefined ||
+            stage.docsExamined !== undefined ||
+            stage.keysExamined !== undefined
+          ) {
+            <dl class="explain-measures">
+              @if (stage.returned !== undefined) {
+                <div>
+                  <dt>{{ 'Returned' | transloco }}</dt>
+                  <dd>{{ stage.returned }}</dd>
+                </div>
+              }
+              @if (stage.docsExamined !== undefined) {
+                <div>
+                  <dt>{{ 'Documents examined' | transloco }}</dt>
+                  <dd>{{ stage.docsExamined }}</dd>
+                </div>
+              }
+              @if (stage.keysExamined !== undefined) {
+                <div>
+                  <dt>{{ 'Keys examined' | transloco }}</dt>
+                  <dd>{{ stage.keysExamined }}</dd>
+                </div>
+              }
+              @if (stage.ms !== undefined) {
+                <div>
+                  <dt>{{ 'Time' | transloco }}</dt>
+                  <dd>{{ stage.ms }} ms</dd>
+                </div>
+              }
+            </dl>
+          }
+          @if (stage.warning === 'collscan') {
+            <p class="explain-warning">
+              {{
+                'Reads every document of the collection: an index on the filter avoids it.'
+                  | transloco
+              }}
+            </p>
+          } @else if (stage.warning === 'memorySort') {
+            <p class="explain-warning">
+              {{ 'Sorts the results in memory: an index in this order avoids it.' | transloco }}
+            </p>
+          }
+        </li>
+      } @empty {
+        <li class="muted">{{ 'The server did not describe any stage.' | transloco }}</li>
+      }
+    </ol>
+    @if (summary.rejectedPlans) {
+      <p class="muted">{{ 'mongo.rejectedPlans' | transloco: { v0: summary.rejectedPlans } }}</p>
+    }
+  } @else {
+    <pre class="explain-json" tabindex="0">{{ json() }}</pre>
+  }
+</section>

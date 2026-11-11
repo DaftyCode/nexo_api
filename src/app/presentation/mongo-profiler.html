@@ -1,0 +1,124 @@
+<section class="mongo-profiler" [attr.aria-label]="'Profiler' | transloco">
+  <div class="row mongo-profiler-bar">
+    <p class="grow">
+      @if (status(); as status) {
+        {{ 'mongo.profilerStatus' | transloco: { v0: database() } }}
+        <strong>{{ levelNames[status.level] ?? status.level | transloco }}</strong>
+        @if (status.level === 1) {
+          · {{ 'mongo.slowerThan' | transloco: { v0: status.slowms } }}
+        }
+      }
+    </p>
+    <button type="button" class="button small" [disabled]="loading()" (click)="load()">
+      {{ 'Refresh' | transloco }}
+    </button>
+    @if (loading()) {
+      <div class="spinner small" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+    }
+  </div>
+
+  @if (writable()) {
+    <form
+      class="row mongo-profiler-form"
+      [attr.aria-label]="'Change the profiler' | transloco"
+      (submit)="$event.preventDefault(); change()"
+    >
+      <label class="field"
+        >{{ 'Level' | transloco }}
+        <select [value]="level()" (change)="setLevel($event)">
+          @for (option of levels; track option) {
+            <option [value]="option">{{ option }} · {{ levelNames[option] | transloco }}</option>
+          }
+        </select>
+      </label>
+      <label class="field mongo-profiler-slowms"
+        >{{ 'Slower than (ms)' | transloco
+        }}<input [value]="slowms()" (input)="setSlowms($event)" inputmode="numeric"
+      /></label>
+      <button type="submit" class="button small" [disabled]="!!slowmsProblem()">
+        {{ 'Apply' | transloco }}
+      </button>
+      @if (slowmsProblem(); as problem) {
+        <span class="mongo-problem" role="alert">{{ problem | transloco }}</span>
+      }
+    </form>
+  }
+
+  @if (error()) {
+    <p class="mongo-problem" role="alert">{{ error() | transloco }}</p>
+  }
+
+  <div class="row mongo-profiler-bar">
+    <h3 class="grow">{{ 'Slowest operations' | transloco }}</h3>
+    @if (collection()) {
+      <label class="check"
+        ><input
+          type="checkbox"
+          [checked]="onlyCollection()"
+          (change)="setOnlyCollection($event)"
+        />{{ 'mongo.onlyCollection' | transloco: { v0: collection() } }}</label
+      >
+    }
+  </div>
+  <table class="mongo-table">
+    <thead>
+      <tr>
+        <th>{{ 'When' | transloco }}</th>
+        <th>{{ 'Operation' | transloco }}</th>
+        <th>{{ 'Namespace' | transloco }}</th>
+        <th>ms</th>
+        <th>{{ 'Documents examined' | transloco }}</th>
+        <th>{{ 'Keys examined' | transloco }}</th>
+        <th>{{ 'Returned' | transloco }}</th>
+        <th>{{ 'Plan' | transloco }}</th>
+        <th>{{ 'Actions' | transloco }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track $index) {
+        <tr>
+          <td>{{ when(row.entry.ts) }}</td>
+          <td>{{ row.entry.op }}</td>
+          <td class="mongo-mono">{{ row.entry.ns }}</td>
+          <td>{{ row.entry.millis }}</td>
+          <td>{{ row.entry.docsExamined ?? '' }}</td>
+          <td>{{ row.entry.keysExamined ?? '' }}</td>
+          <td>{{ row.entry.returned ?? '' }}</td>
+          <td
+            class="mongo-mono"
+            [class.mongo-collscan]="row.entry.planSummary?.startsWith('COLLSCAN')"
+          >
+            {{ row.entry.planSummary ?? '' }}
+          </td>
+          <td>
+            @if (row.explainable; as target) {
+              <button type="button" class="text-button" (click)="explain.emit(target)">
+                {{ 'Explain' | transloco }}
+              </button>
+            }
+          </td>
+        </tr>
+      } @empty {
+        @if (!loading() && !error()) {
+          <tr>
+            <td colspan="9" class="muted">
+              {{
+                'The profiler has not recorded any operation. Turn it on, run the queries, and refresh.'
+                  | transloco
+              }}
+            </td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</section>
+@if (dialog(); as request) {
+  <app-mongo-dialog
+    [request]="request"
+    [problem]="dialogProblem()"
+    [busy]="busy()"
+    (confirmed)="answer()"
+    (cancelled)="cancel()"
+  />
+}

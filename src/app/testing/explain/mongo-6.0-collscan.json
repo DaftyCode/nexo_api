@@ -1,0 +1,113 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "nexo_explain.orders",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "status": {
+        "$eq": "A"
+      }
+    },
+    "queryHash": "50140B39",
+    "planCacheKey": "50140B39",
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "SORT",
+      "sortPattern": {
+        "at": -1
+      },
+      "memLimit": 104857600,
+      "limitAmount": 10,
+      "type": "simple",
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "status": {
+            "$eq": "A"
+          }
+        },
+        "direction": "forward"
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 10,
+    "executionTimeMillis": 1,
+    "totalKeysExamined": 0,
+    "totalDocsExamined": 2000,
+    "executionStages": {
+      "stage": "SORT",
+      "nReturned": 10,
+      "executionTimeMillisEstimate": 1,
+      "works": 2012,
+      "advanced": 10,
+      "needTime": 2001,
+      "needYield": 0,
+      "saveState": 2,
+      "restoreState": 2,
+      "isEOF": 1,
+      "sortPattern": {
+        "at": -1
+      },
+      "memLimit": 104857600,
+      "limitAmount": 10,
+      "type": "simple",
+      "totalDataSizeSorted": 59500,
+      "usedDisk": false,
+      "spills": 0,
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "status": {
+            "$eq": "A"
+          }
+        },
+        "nReturned": 500,
+        "executionTimeMillisEstimate": 1,
+        "works": 2001,
+        "advanced": 500,
+        "needTime": 1500,
+        "needYield": 0,
+        "saveState": 2,
+        "restoreState": 2,
+        "isEOF": 1,
+        "direction": "forward",
+        "docsExamined": 2000
+      }
+    }
+  },
+  "command": {
+    "find": "orders",
+    "filter": {
+      "status": "A"
+    },
+    "sort": {
+      "at": -1
+    },
+    "limit": 10,
+    "maxTimeMS": 60000,
+    "comment": "nexo:explain-60-1",
+    "$db": "nexo_explain"
+  },
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "6.0.28",
+    "gitVersion": "ef888a6df901622004aeb4b7362e007b8c4299da"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600
+  },
+  "ok": 1
+}

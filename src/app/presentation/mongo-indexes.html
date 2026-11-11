@@ -1,0 +1,183 @@
+<section class="mongo-indexes" [attr.aria-label]="'Indexes' | transloco">
+  <div class="row mongo-indexes-bar">
+    <button type="button" class="button small" [disabled]="loading()" (click)="load()">
+      {{ 'Refresh' | transloco }}
+    </button>
+    @if (writable() && !creating()) {
+      <button type="button" class="button small primary" (click)="newIndex()">
+        {{ 'New index' | transloco }}
+      </button>
+    }
+    @if (loading()) {
+      <div class="spinner small" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+    }
+  </div>
+
+  @if (creating()) {
+    <form
+      class="mongo-index-form"
+      [attr.aria-label]="'New index' | transloco"
+      (submit)="$event.preventDefault(); create()"
+    >
+      <app-code-editor
+        size="small"
+        language="javascript"
+        [formField]="fields.keys"
+        [label]="'Keys' | transloco"
+        placeholder="{ status: 1, at: -1 }"
+      />
+      <p class="muted mongo-index-help">
+        {{
+          "Each field takes 1 or -1 (ascending or descending), 'text' (text search), '2dsphere' (geospatial) or 'hashed'; '$**': 1 indexes every field (wildcard)."
+            | transloco
+        }}
+      </p>
+      <div class="row mongo-index-options">
+        <label class="field grow"
+          >{{ 'Name' | transloco
+          }}<input [formField]="fields.name" spellcheck="false" placeholder="status_1_at_-1"
+        /></label>
+        <label class="field mongo-index-ttl"
+          >{{ 'Expire after (seconds)' | transloco
+          }}<input [formField]="fields.ttl" inputmode="numeric" placeholder="3600"
+        /></label>
+      </div>
+      <div class="row mongo-index-checks">
+        <label class="check"
+          ><input type="checkbox" [formField]="fields.unique" />{{ 'Unique' | transloco }}</label
+        >
+        <label class="check"
+          ><input type="checkbox" [formField]="fields.sparse" />{{ 'Sparse' | transloco }}</label
+        >
+        <label class="check"
+          ><input type="checkbox" [formField]="fields.hidden" />{{
+            'Hidden from the query planner' | transloco
+          }}</label
+        >
+      </div>
+      <label class="field"
+        >{{ 'Partial filter' | transloco
+        }}<input
+          [formField]="fields.partial"
+          spellcheck="false"
+          placeholder="{ status: { $exists: true } }"
+      /></label>
+      <label class="field"
+        >{{ 'Other options' | transloco
+        }}<input
+          [formField]="fields.options"
+          spellcheck="false"
+          placeholder="{ collation: { locale: 'es' }, weights: { title: 10 } }"
+      /></label>
+      @if (problem(); as problem) {
+        <p class="mongo-problem" role="alert">
+          @if (problem.key === 'mongo.syntax' && problem.params) {
+            {{ $any(problem.params['v0']) | transloco }} —
+            {{
+              'mongo.position' | transloco: { v0: problem.params['v1'], v1: problem.params['v2'] }
+            }}
+          } @else {
+            {{ problem.key | transloco: problem.params }}
+          }
+        </p>
+      }
+      <div class="row mongo-index-actions">
+        <button type="button" class="button" (click)="creating.set(false)">
+          {{ 'Cancel' | transloco }}
+        </button>
+        <button type="submit" class="button primary" [disabled]="busy()">
+          {{ 'Create index' | transloco }}
+        </button>
+      </div>
+    </form>
+  }
+
+  @if (error()) {
+    <p class="mongo-problem" role="alert">{{ error() | transloco }}</p>
+  }
+
+  <table class="mongo-table">
+    <thead>
+      <tr>
+        <th>{{ 'Name' | transloco }}</th>
+        <th>{{ 'Keys' | transloco }}</th>
+        <th>{{ 'Type' | transloco }}</th>
+        <th>{{ 'Size' | transloco }}</th>
+        <th>{{ 'Usage' | transloco }}</th>
+        @if (writable()) {
+          <th>{{ 'Actions' | transloco }}</th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (index of views(); track index.name) {
+        <tr [class.mongo-hidden-index]="index.hidden">
+          <td class="mongo-mono">{{ index.name }}</td>
+          <td class="mongo-mono">{{ index.keys }}</td>
+          <td>
+            @for (kind of index.kinds; track kind) {
+              <span class="mongo-badge">{{ kind | transloco }}</span>
+            }
+            @if (index.ttl !== undefined) {
+              <span class="muted">{{ 'mongo.ttl' | transloco: { v0: index.ttl } }}</span>
+            }
+            @if (index.partial) {
+              <span class="muted mongo-mono" [title]="'Partial filter' | transloco">{{
+                index.partial
+              }}</span>
+            }
+          </td>
+          <td>{{ bytes(index.detail.size) }}</td>
+          <td>
+            @if (index.detail.accesses !== undefined) {
+              <span [title]="since(index.detail.since)">{{
+                'mongo.usedSince'
+                  | transloco: { v0: index.detail.accesses, v1: since(index.detail.since) }
+              }}</span>
+            }
+          </td>
+          @if (writable()) {
+            <td class="mongo-index-row-actions">
+              @if (!index.id) {
+                <button
+                  type="button"
+                  class="text-button"
+                  [attr.aria-label]="
+                    (index.hidden ? 'mongo.showIndex' : 'mongo.hideIndex')
+                      | transloco: { v0: index.name }
+                  "
+                  (click)="hide(index.detail, !index.hidden)"
+                >
+                  {{ (index.hidden ? 'Show' : 'Hide') | transloco }}
+                </button>
+                <button
+                  type="button"
+                  class="text-button danger"
+                  [attr.aria-label]="'mongo.dropIndex' | transloco: { v0: index.name }"
+                  (click)="drop(index.detail)"
+                >
+                  {{ 'Drop' | transloco }}
+                </button>
+              }
+            </td>
+          }
+        </tr>
+      } @empty {
+        @if (!loading() && !error()) {
+          <tr>
+            <td colspan="6" class="muted">{{ 'This collection has no indexes.' | transloco }}</td>
+          </tr>
+        }
+      }
+    </tbody>
+  </table>
+</section>
+@if (dialog(); as request) {
+  <app-mongo-dialog
+    [request]="request"
+    [problem]="dialogProblem()"
+    [busy]="busy()"
+    (confirmed)="answer()"
+    (cancelled)="cancel()"
+  />
+}

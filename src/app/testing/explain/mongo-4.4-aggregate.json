@@ -1,0 +1,163 @@
+{
+  "stages": [
+    {
+      "$cursor": {
+        "queryPlanner": {
+          "plannerVersion": 1,
+          "namespace": "nexo_explain.orders",
+          "indexFilterSet": false,
+          "parsedQuery": {
+            "status": {
+              "$eq": "B"
+            }
+          },
+          "queryHash": "E62441DC",
+          "planCacheKey": "875181C3",
+          "winningPlan": {
+            "stage": "PROJECTION_DEFAULT",
+            "transformBy": {
+              "customer.city": 1,
+              "_id": 0
+            },
+            "inputStage": {
+              "stage": "FETCH",
+              "inputStage": {
+                "stage": "IXSCAN",
+                "keyPattern": {
+                  "status": 1,
+                  "at": -1
+                },
+                "indexName": "status_1_at_-1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "status": [],
+                  "at": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "status": [
+                    "[\"B\", \"B\"]"
+                  ],
+                  "at": [
+                    "[MaxKey, MinKey]"
+                  ]
+                }
+              }
+            }
+          },
+          "rejectedPlans": []
+        },
+        "executionStats": {
+          "executionSuccess": true,
+          "nReturned": 1500,
+          "executionTimeMillis": 4,
+          "totalKeysExamined": 1500,
+          "totalDocsExamined": 1500,
+          "executionStages": {
+            "stage": "PROJECTION_DEFAULT",
+            "nReturned": 1500,
+            "executionTimeMillisEstimate": 0,
+            "works": 1501,
+            "advanced": 1500,
+            "needTime": 0,
+            "needYield": 0,
+            "saveState": 2,
+            "restoreState": 2,
+            "isEOF": 1,
+            "transformBy": {
+              "customer.city": 1,
+              "_id": 0
+            },
+            "inputStage": {
+              "stage": "FETCH",
+              "nReturned": 1500,
+              "executionTimeMillisEstimate": 0,
+              "works": 1501,
+              "advanced": 1500,
+              "needTime": 0,
+              "needYield": 0,
+              "saveState": 2,
+              "restoreState": 2,
+              "isEOF": 1,
+              "docsExamined": 1500,
+              "alreadyHasObj": 0,
+              "inputStage": {
+                "stage": "IXSCAN",
+                "nReturned": 1500,
+                "executionTimeMillisEstimate": 0,
+                "works": 1501,
+                "advanced": 1500,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 2,
+                "restoreState": 2,
+                "isEOF": 1,
+                "keyPattern": {
+                  "status": 1,
+                  "at": -1
+                },
+                "indexName": "status_1_at_-1",
+                "isMultiKey": false,
+                "multiKeyPaths": {
+                  "status": [],
+                  "at": []
+                },
+                "isUnique": false,
+                "isSparse": false,
+                "isPartial": false,
+                "indexVersion": 2,
+                "direction": "forward",
+                "indexBounds": {
+                  "status": [
+                    "[\"B\", \"B\"]"
+                  ],
+                  "at": [
+                    "[MaxKey, MinKey]"
+                  ]
+                },
+                "keysExamined": 1500,
+                "seeks": 1,
+                "dupsTested": 0,
+                "dupsDropped": 0
+              }
+            }
+          }
+        }
+      },
+      "nReturned": 1500,
+      "executionTimeMillisEstimate": 2
+    },
+    {
+      "$group": {
+        "_id": "$customer.city",
+        "total": {
+          "$sum": {
+            "$const": 1
+          }
+        }
+      },
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 2
+    },
+    {
+      "$sort": {
+        "sortKey": {
+          "total": -1
+        }
+      },
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 2
+    }
+  ],
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "4.4.30",
+    "gitVersion": "4d7fa6a6260d25c5caa971dce10561690cb79dea"
+  },
+  "ok": 1
+}

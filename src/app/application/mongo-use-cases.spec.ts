@@ -264,4 +264,77 @@ describe('MongoUseCases', () => {
       filter: '{a: 1}',
     });
   });
+
+  it('manages indexes and the profiler through the saved connection, and explains queries', async () => {
+    const { api, calls } = fakeApi();
+    const mongo = new MongoUseCases(api, () => 'x');
+    const connection = {
+      id: 'c1',
+      workspace_id: 'local',
+      kind: 'connection',
+      name: 'Local',
+      revision: 1,
+      updated_at: 0,
+      value: { uri: 'mongodb://{{host}}/' },
+    } as WorkspaceDocument;
+    const env = scopes({ host: 'db.test' });
+    const target = { database: 'shop', collection: 'orders' };
+    const sent = () => calls.at(-1)?.args;
+    await mongo.createIndex('local', connection, env, target, { at: -1 }, {});
+    expect(sent()).toEqual([
+      'mongo.index.create',
+      {
+        workspace: 'local',
+        connection: { uri: 'mongodb://db.test/' },
+        connectionId: 'c1',
+        database: 'shop',
+        collection: 'orders',
+        keys: { at: -1 },
+      },
+    ]);
+    await mongo.hideIndex('local', connection, env, target, 'at_-1', true);
+    expect(sent()?.[1]).toMatchObject({ name: 'at_-1', hidden: true, connectionId: 'c1' });
+    await mongo.dropIndex('local', connection, env, target, 'at_-1', 'at_-1');
+    expect(sent()?.[1]).toMatchObject({ name: 'at_-1', confirm: 'at_-1' });
+    await mongo.setProfile('local', connection, env, 'shop', 1, 50);
+    expect(sent()).toEqual([
+      'mongo.profile.set',
+      expect.objectContaining({ connectionId: 'c1', database: 'shop', level: 1, slowms: 50 }),
+    ]);
+    await mongo.explain(
+      'local',
+      connection,
+      env,
+      target,
+      { query: { filter: { a: 1 }, limit: 5 } },
+      true,
+      'e1',
+    );
+    expect(sent()).toEqual([
+      'mongo.explain',
+      {
+        workspace: 'local',
+        connection: { uri: 'mongodb://db.test/' },
+        database: 'shop',
+        collection: 'orders',
+        filter: { a: 1 },
+        limit: 5,
+        verbosity: 'executionStats',
+        id: 'e1',
+      },
+    ]);
+    await mongo.explain(
+      'local',
+      connection,
+      env,
+      target,
+      { pipeline: [{ $match: {} }] },
+      false,
+      'e2',
+    );
+    expect(sent()?.[1]).toMatchObject({ pipeline: [{ $match: {} }], verbosity: 'queryPlanner' });
+    await mongo.profileEntries('local', connection, env, 'shop');
+    expect(sent()?.[1]).not.toHaveProperty('collection');
+    expect(sent()?.[1]).not.toHaveProperty('connectionId');
+  });
 });

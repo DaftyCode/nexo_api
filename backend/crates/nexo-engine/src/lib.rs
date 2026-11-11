@@ -791,7 +791,15 @@ impl ExecutionGateway for Engine {
             | Operation::MongoCollectionCreate
             | Operation::MongoCollectionRename
             | Operation::MongoCollectionDrop
-            | Operation::MongoDatabaseDrop => Err(Error::Validation(format!(
+            | Operation::MongoDatabaseDrop
+            | Operation::MongoIndexes
+            | Operation::MongoIndexCreate
+            | Operation::MongoIndexHide
+            | Operation::MongoIndexDrop
+            | Operation::MongoExplain
+            | Operation::MongoProfile
+            | Operation::MongoProfileSet
+            | Operation::MongoProfileEntries => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

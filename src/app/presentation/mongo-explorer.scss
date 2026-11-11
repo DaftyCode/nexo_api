@@ -204,3 +204,12 @@
 .mongo-menu .danger {
   color: var(--red);
 }
+.mongo-tabs {
+  padding: 0;
+  margin: 10px 0 12px;
+  height: 34px;
+}
+.mongo-explain-bar {
+  margin-bottom: 12px;
+  font-size: 12px;
+}

@@ -1489,3 +1489,80 @@ test('MongoDB: a database is created, written, edited keeping types, undone and 
   await expect(query).toContainText('Choose a collection to query it.');
   await expect(tree.getByRole('button', { name: new RegExp(`^${name} \\d`) })).toHaveCount(0);
 });
+
+test('MongoDB: a query scans the collection until an index created in Nexo serves it', async ({
+  page,
+  nexo,
+}) => {
+  test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
+  await nexo.signIn(page);
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'MongoDB' })
+    .click();
+  const editor = page.getByRole('region', { name: 'Connection', exact: true });
+  await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
+  await editor.getByRole('button', { name: 'Use URI' }).click();
+  await editor.getByLabel('Connection name').fill('Tuner');
+  await editor.getByRole('button', { name: 'Save connection' }).click();
+  await editor.getByRole('button', { name: 'Browse data' }).click();
+
+  const tree = page.getByRole('navigation', { name: 'Databases' });
+  const dialog = page.getByRole('dialog');
+  const name = `e2e_tuning_${Date.now()}`;
+  await tree.getByRole('button', { name: '＋ New database' }).click();
+  await dialog.getByLabel('Database name').fill(name);
+  await dialog.getByLabel('Collection name').fill('orders');
+  await dialog.getByRole('button', { name: 'Create' }).click();
+  const query = page.getByRole('region', { name: 'Query', exact: true });
+  await query.getByRole('button', { name: 'Insert documents' }).click();
+  await dialog
+    .locator('.cm-content[aria-label="Documents"]')
+    .fill(JSON.stringify(Array.from({ length: 60 }, (_, n) => ({ n, status: n % 3 ? 'B' : 'A' }))));
+  await dialog.getByRole('button', { name: 'Insert' }).click();
+  await expect(query.getByRole('status').filter({ hasText: 'Documents 1 to 50' })).toBeVisible();
+
+  // Without an index, the explain shows the whole collection read.
+  await query.locator('.cm-content[aria-label="Filter"]').fill("{status: 'A'}");
+  await query
+    .locator('.mongo-actions')
+    .getByRole('button', { name: 'Explain', exact: true })
+    .click();
+  const plan = query.getByRole('region', { name: 'Explain plan' });
+  await expect(plan).toContainText('Collection scan: no index is used');
+  await expect(plan.locator('.explain-stage strong').first()).toHaveText('COLLSCAN');
+  expect(await violations(page)).toEqual([]);
+
+  // An index created from Nexo, listed with its kind.
+  const views = query.getByRole('navigation', { name: 'Collection views' });
+  await views.getByRole('button', { name: 'Indexes', exact: true }).click();
+  await query.getByRole('button', { name: 'New index' }).click();
+  await query.locator('.cm-content[aria-label="Keys"]').fill('{ status: 1, n: -1 }');
+  expect(await violations(page)).toEqual([]);
+  await query.getByRole('button', { name: 'Create index' }).click();
+  await expect(page.locator('.toast')).toContainText('Index created');
+  await expect(query.getByRole('region', { name: 'Indexes' })).toContainText('status_1_n_-1');
+  await expect(query.getByRole('region', { name: 'Indexes' })).toContainText('Compound');
+
+  // The same query now reads the index.
+  await views.getByRole('button', { name: 'Explain', exact: true }).click();
+  await query.getByRole('button', { name: 'Run and measure' }).click();
+  await expect(plan.locator('.explain-stage strong').first()).toHaveText('IXSCAN');
+  await expect(plan).toContainText('Uses the index status_1_n_-1');
+  await plan.getByRole('button', { name: 'JSON', exact: true }).click();
+  await expect(plan.locator('.explain-json')).toContainText('"winningPlan"');
+
+  // The profiler of the database is read; changing it is for the person to decide.
+  await views.getByRole('button', { name: 'Profiler', exact: true }).click();
+  await expect(query.getByRole('region', { name: 'Profiler' })).toContainText(
+    `Profiler of ${name}: Off`,
+  );
+  expect(await violations(page)).toEqual([]);
+
+  await views.getByRole('button', { name: 'Documents', exact: true }).click();
+  await query.getByText('Collection', { exact: true }).click();
+  await query.getByRole('button', { name: 'Drop database' }).click();
+  await dialog.getByLabel(`Type ${name} to confirm`).fill(name);
+  await dialog.getByRole('button', { name: 'Drop database' }).click();
+  await expect(query).toContainText('Choose a collection to query it.');
+});

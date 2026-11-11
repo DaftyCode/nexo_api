@@ -1,0 +1,126 @@
+{
+  "queryPlanner": {
+    "plannerVersion": 1,
+    "namespace": "nexo_explain.orders",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "status": {
+        "$eq": "A"
+      }
+    },
+    "winningPlan": {
+      "stage": "LIMIT",
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "keyPattern": {
+            "status": 1,
+            "at": -1
+          },
+          "indexName": "status_1_at_-1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": [],
+            "at": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": [
+              "[\"A\", \"A\"]"
+            ],
+            "at": [
+              "[MaxKey, MinKey]"
+            ]
+          }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 10,
+    "executionTimeMillis": 0,
+    "totalKeysExamined": 10,
+    "totalDocsExamined": 10,
+    "executionStages": {
+      "stage": "LIMIT",
+      "nReturned": 10,
+      "executionTimeMillisEstimate": 0,
+      "works": 11,
+      "advanced": 10,
+      "needTime": 0,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "FETCH",
+        "nReturned": 10,
+        "executionTimeMillisEstimate": 0,
+        "works": 10,
+        "advanced": 10,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 0,
+        "docsExamined": 10,
+        "alreadyHasObj": 0,
+        "inputStage": {
+          "stage": "IXSCAN",
+          "nReturned": 10,
+          "executionTimeMillisEstimate": 0,
+          "works": 10,
+          "advanced": 10,
+          "needTime": 0,
+          "needYield": 0,
+          "saveState": 0,
+          "restoreState": 0,
+          "isEOF": 0,
+          "keyPattern": {
+            "status": 1,
+            "at": -1
+          },
+          "indexName": "status_1_at_-1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": [],
+            "at": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": [
+              "[\"A\", \"A\"]"
+            ],
+            "at": [
+              "[MaxKey, MinKey]"
+            ]
+          },
+          "keysExamined": 10,
+          "seeks": 1,
+          "dupsTested": 0,
+          "dupsDropped": 0
+        }
+      }
+    }
+  },
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "4.4.30",
+    "gitVersion": "4d7fa6a6260d25c5caa971dce10561690cb79dea"
+  },
+  "ok": 1
+}

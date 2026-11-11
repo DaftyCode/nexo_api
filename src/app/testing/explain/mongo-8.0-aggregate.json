@@ -1,0 +1,312 @@
+{
+  "explainVersion": "2",
+  "stages": [
+    {
+      "$cursor": {
+        "queryPlanner": {
+          "namespace": "nexo_explain.orders",
+          "parsedQuery": {
+            "status": {
+              "$eq": "B"
+            }
+          },
+          "indexFilterSet": false,
+          "queryHash": "9E060B81",
+          "planCacheShapeHash": "9E060B81",
+          "planCacheKey": "F64FD66C",
+          "optimizationTimeMillis": 2,
+          "maxIndexedOrSolutionsReached": false,
+          "maxIndexedAndSolutionsReached": false,
+          "maxScansToExplodeReached": false,
+          "prunedSimilarIndexes": false,
+          "winningPlan": {
+            "isCached": false,
+            "queryPlan": {
+              "stage": "GROUP",
+              "planNodeId": 4,
+              "inputStage": {
+                "stage": "FETCH",
+                "planNodeId": 2,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "planNodeId": 1,
+                  "keyPattern": {
+                    "status": 1,
+                    "at": -1
+                  },
+                  "indexName": "status_1_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "status": [],
+                    "at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "status": [
+                      "[\"B\", \"B\"]"
+                    ],
+                    "at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              }
+            },
+            "slotBasedPlan": {
+              "slots": "$$RESULT=s14 env: { s5 = {\"status\" : 1, \"at\" : -1} }",
+              "stages": "[4] project [s14 = newObj(\"_id\", s11, \"total\", s13)] \n[4] project [s13 = (convert ( s12, int32) ?: s12)] \n[4] group [s11] [s12 = count()] spillSlots[s10] mergingExprs[sum(s10)] \n[4] project [s11 = (s9 ?: null)] \n[4] project [s9 = traverseP(s8, lambda(l2.0) { getField(move(l2.0), \"city\") }, 1)] \n[2] nlj inner [] [s1, s2, s3, s4, s5] \n    left \n        [1] ixseek KS(3C42000F0104) KS(3C4200F5FE04) s4 s1 s2 s3 [] @\"41f180d4-24ab-4ca1-9442-9375b7d53d44\" @\"status_1_at_-1\" true \n    right \n        [2] limit 1ll \n        [2] seek s1 s6 s7 s2 s3 s4 s5 none none [s8 = customer] @\"41f180d4-24ab-4ca1-9442-9375b7d53d44\" true false \n"
+            }
+          },
+          "rejectedPlans": []
+        },
+        "executionStats": {
+          "executionSuccess": true,
+          "nReturned": 3,
+          "executionTimeMillis": 4,
+          "totalKeysExamined": 1500,
+          "totalDocsExamined": 1500,
+          "executionStages": {
+            "stage": "project",
+            "planNodeId": 4,
+            "nReturned": 3,
+            "executionTimeMillisEstimate": 0,
+            "opens": 1,
+            "closes": 1,
+            "saveState": 1,
+            "restoreState": 1,
+            "isEOF": 1,
+            "projections": {
+              "14": "newObj(\"_id\", s11, \"total\", s13) "
+            },
+            "inputStage": {
+              "stage": "project",
+              "planNodeId": 4,
+              "nReturned": 3,
+              "executionTimeMillisEstimate": 0,
+              "opens": 1,
+              "closes": 1,
+              "saveState": 1,
+              "restoreState": 1,
+              "isEOF": 1,
+              "projections": {
+                "13": "(convert ( s12, int32) ?: s12) "
+              },
+              "inputStage": {
+                "stage": "group",
+                "planNodeId": 4,
+                "nReturned": 3,
+                "executionTimeMillisEstimate": 0,
+                "opens": 1,
+                "closes": 1,
+                "saveState": 1,
+                "restoreState": 1,
+                "isEOF": 1,
+                "groupBySlots": [
+                  11
+                ],
+                "expressions": {
+                  "12": "count() ",
+                  "initExprs": {
+                    "12": null
+                  }
+                },
+                "mergingExprs": {
+                  "10": "sum(s10) "
+                },
+                "usedDisk": false,
+                "spills": 0,
+                "spilledBytes": 0,
+                "spilledRecords": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "project",
+                  "planNodeId": 4,
+                  "nReturned": 1500,
+                  "executionTimeMillisEstimate": 0,
+                  "opens": 1,
+                  "closes": 1,
+                  "saveState": 1,
+                  "restoreState": 1,
+                  "isEOF": 1,
+                  "projections": {
+                    "11": "(s9 ?: null) "
+                  },
+                  "inputStage": {
+                    "stage": "project",
+                    "planNodeId": 4,
+                    "nReturned": 1500,
+                    "executionTimeMillisEstimate": 0,
+                    "opens": 1,
+                    "closes": 1,
+                    "saveState": 1,
+                    "restoreState": 1,
+                    "isEOF": 1,
+                    "projections": {
+                      "9": "traverseP(s8, lambda(l2.0) { getField(move(l2.0), \"city\") }, 1) "
+                    },
+                    "inputStage": {
+                      "stage": "nlj",
+                      "planNodeId": 2,
+                      "nReturned": 1500,
+                      "executionTimeMillisEstimate": 0,
+                      "opens": 1,
+                      "closes": 1,
+                      "saveState": 1,
+                      "restoreState": 1,
+                      "isEOF": 1,
+                      "totalDocsExamined": 1500,
+                      "totalKeysExamined": 1500,
+                      "collectionScans": 0,
+                      "collectionSeeks": 1500,
+                      "indexScans": 0,
+                      "indexSeeks": 1,
+                      "indexesUsed": [
+                        "status_1_at_-1"
+                      ],
+                      "innerOpens": 1500,
+                      "innerCloses": 1,
+                      "outerProjects": [],
+                      "outerCorrelated": [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5
+                      ],
+                      "outerStage": {
+                        "stage": "ixseek",
+                        "planNodeId": 1,
+                        "nReturned": 1500,
+                        "executionTimeMillisEstimate": 0,
+                        "opens": 1,
+                        "closes": 1,
+                        "saveState": 1,
+                        "restoreState": 1,
+                        "isEOF": 1,
+                        "indexName": "status_1_at_-1",
+                        "keysExamined": 1500,
+                        "seeks": 1,
+                        "numReads": 1501,
+                        "indexKeySlot": 4,
+                        "recordIdSlot": 1,
+                        "snapshotIdSlot": 2,
+                        "indexIdentSlot": 3,
+                        "outputSlots": [],
+                        "indexKeysToInclude": "00000000000000000000000000000000",
+                        "seekKeyLow": "KS(3C42000F0104) ",
+                        "seekKeyHigh": "KS(3C4200F5FE04) "
+                      },
+                      "innerStage": {
+                        "stage": "limit",
+                        "planNodeId": 2,
+                        "nReturned": 1500,
+                        "executionTimeMillisEstimate": 0,
+                        "opens": 1500,
+                        "closes": 1,
+                        "saveState": 1,
+                        "restoreState": 1,
+                        "isEOF": 1,
+                        "limit": 1,
+                        "inputStage": {
+                          "stage": "seek",
+                          "planNodeId": 2,
+                          "nReturned": 1500,
+                          "executionTimeMillisEstimate": 0,
+                          "opens": 1500,
+                          "closes": 1,
+                          "saveState": 1,
+                          "restoreState": 1,
+                          "isEOF": 0,
+                          "numReads": 1500,
+                          "recordSlot": 6,
+                          "recordIdSlot": 7,
+                          "seekRecordIdSlot": 1,
+                          "snapshotIdSlot": 2,
+                          "indexIdentSlot": 3,
+                          "indexKeySlot": 4,
+                          "indexKeyPatternSlot": 5,
+                          "scanFieldNames": [
+                            "customer"
+                          ],
+                          "scanFieldSlots": [
+                            8
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 2
+    },
+    {
+      "$sort": {
+        "sortKey": {
+          "total": -1
+        }
+      },
+      "totalDataSizeSortedBytesEstimate": 759,
+      "usedDisk": false,
+      "spills": 0,
+      "spilledDataStorageSize": 0,
+      "nReturned": 3,
+      "executionTimeMillisEstimate": 2
+    }
+  ],
+  "queryShapeHash": "3BF78E676586664D7529664B37A5BF419BCB049B1F9FC7C875DCB800DA8EBE41",
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "8.0.34",
+    "gitVersion": "51db4515a6597aedcf6188ee4e48a27e65b065ae"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "trySbeRestricted",
+    "internalQueryPlannerIgnoreIndexWithCollationForRegex": 1
+  },
+  "command": {
+    "aggregate": "orders",
+    "pipeline": [
+      {
+        "$match": {
+          "status": "B"
+        }
+      },
+      {
+        "$group": {
+          "_id": "$customer.city",
+          "total": {
+            "$sum": 1
+          }
+        }
+      },
+      {
+        "$sort": {
+          "total": -1
+        }
+      }
+    ],
+    "cursor": {},
+    "maxTimeMS": 60000,
+    "comment": "nexo:explain-80-4",
+    "$db": "nexo_explain"
+  },
+  "ok": 1
+}

@@ -1,0 +1,154 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "nexo_explain.orders",
+    "indexFilterSet": false,
+    "parsedQuery": {
+      "status": {
+        "$eq": "A"
+      }
+    },
+    "queryHash": "50140B39",
+    "planCacheKey": "9AC70127",
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "winningPlan": {
+      "stage": "LIMIT",
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "FETCH",
+        "inputStage": {
+          "stage": "IXSCAN",
+          "keyPattern": {
+            "status": 1,
+            "at": -1
+          },
+          "indexName": "status_1_at_-1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": [],
+            "at": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": [
+              "[\"A\", \"A\"]"
+            ],
+            "at": [
+              "[MaxKey, MinKey]"
+            ]
+          }
+        }
+      }
+    },
+    "rejectedPlans": []
+  },
+  "executionStats": {
+    "executionSuccess": true,
+    "nReturned": 10,
+    "executionTimeMillis": 0,
+    "totalKeysExamined": 10,
+    "totalDocsExamined": 10,
+    "executionStages": {
+      "stage": "LIMIT",
+      "nReturned": 10,
+      "executionTimeMillisEstimate": 0,
+      "works": 11,
+      "advanced": 10,
+      "needTime": 0,
+      "needYield": 0,
+      "saveState": 0,
+      "restoreState": 0,
+      "isEOF": 1,
+      "limitAmount": 10,
+      "inputStage": {
+        "stage": "FETCH",
+        "nReturned": 10,
+        "executionTimeMillisEstimate": 0,
+        "works": 10,
+        "advanced": 10,
+        "needTime": 0,
+        "needYield": 0,
+        "saveState": 0,
+        "restoreState": 0,
+        "isEOF": 0,
+        "docsExamined": 10,
+        "alreadyHasObj": 0,
+        "inputStage": {
+          "stage": "IXSCAN",
+          "nReturned": 10,
+          "executionTimeMillisEstimate": 0,
+          "works": 10,
+          "advanced": 10,
+          "needTime": 0,
+          "needYield": 0,
+          "saveState": 0,
+          "restoreState": 0,
+          "isEOF": 0,
+          "keyPattern": {
+            "status": 1,
+            "at": -1
+          },
+          "indexName": "status_1_at_-1",
+          "isMultiKey": false,
+          "multiKeyPaths": {
+            "status": [],
+            "at": []
+          },
+          "isUnique": false,
+          "isSparse": false,
+          "isPartial": false,
+          "indexVersion": 2,
+          "direction": "forward",
+          "indexBounds": {
+            "status": [
+              "[\"A\", \"A\"]"
+            ],
+            "at": [
+              "[MaxKey, MinKey]"
+            ]
+          },
+          "keysExamined": 10,
+          "seeks": 1,
+          "dupsTested": 0,
+          "dupsDropped": 0
+        }
+      }
+    }
+  },
+  "command": {
+    "find": "orders",
+    "filter": {
+      "status": "A"
+    },
+    "sort": {
+      "at": -1
+    },
+    "limit": 10,
+    "maxTimeMS": 60000,
+    "comment": "nexo:explain-60-2",
+    "$db": "nexo_explain"
+  },
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "6.0.28",
+    "gitVersion": "ef888a6df901622004aeb4b7362e007b8c4299da"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600
+  },
+  "ok": 1
+}

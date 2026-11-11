@@ -442,6 +442,76 @@ export interface MongoDatabaseDropPayload {
   workspace?: string;
 }
 
+export interface MongoIndexCreatePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  keys: object;
+  workspace?: string;
+  options?: object;
+}
+
+export interface MongoIndexHidePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  name: string;
+  hidden: boolean;
+  workspace?: string;
+}
+
+export interface MongoIndexDropPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  name: string;
+  confirm: string;
+  workspace?: string;
+}
+
+export interface MongoExplainPayload {
+  connection: MongoConnection;
+  id: string;
+  database: string;
+  collection: string;
+  workspace?: string;
+  verbosity?: 'queryPlanner' | 'executionStats';
+  filter?: object;
+  projection?: object;
+  sort?: object;
+  collation?: object;
+  hint?: string | object;
+  skip?: number;
+  limit?: number;
+  pipeline?: readonly object[];
+}
+
+export interface MongoProfilePayload {
+  connection: MongoConnection;
+  database: string;
+  workspace?: string;
+}
+
+export interface MongoProfileSetPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  level: 0 | 1 | 2;
+  workspace?: string;
+  slowms?: number;
+}
+
+export interface MongoProfileEntriesPayload {
+  connection: MongoConnection;
+  database: string;
+  workspace?: string;
+  collection?: string;
+  limit?: number;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -507,6 +577,14 @@ export interface OperationPayloads {
   'mongo.collection.rename': MongoCollectionRenamePayload;
   'mongo.collection.drop': MongoCollectionDropPayload;
   'mongo.database.drop': MongoDatabaseDropPayload;
+  'mongo.indexes': MongoCollectionPayload;
+  'mongo.index.create': MongoIndexCreatePayload;
+  'mongo.index.hide': MongoIndexHidePayload;
+  'mongo.index.drop': MongoIndexDropPayload;
+  'mongo.explain': MongoExplainPayload;
+  'mongo.profile': MongoProfilePayload;
+  'mongo.profile.set': MongoProfileSetPayload;
+  'mongo.profile.entries': MongoProfileEntriesPayload;
 }
 
 /** The payload of an operation. */

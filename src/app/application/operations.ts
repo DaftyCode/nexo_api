@@ -53,6 +53,14 @@ export const EXECUTION_OPERATIONS = [
   'mongo.collection.rename',
   'mongo.collection.drop',
   'mongo.database.drop',
+  'mongo.indexes',
+  'mongo.index.create',
+  'mongo.index.hide',
+  'mongo.index.drop',
+  'mongo.explain',
+  'mongo.profile',
+  'mongo.profile.set',
+  'mongo.profile.entries',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

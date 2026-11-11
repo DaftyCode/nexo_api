@@ -359,6 +359,41 @@ mod tests {
         ) -> Result<()> {
             Err(Error::NotFound)
         }
+        async fn indexes(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            _: &str,
+        ) -> Result<Vec<crate::ports::IndexDetail>> {
+            Err(Error::NotFound)
+        }
+        async fn index(&self, _: DatabaseConnection, _: crate::ports::IndexChange) -> Result<()> {
+            Err(Error::NotFound)
+        }
+        async fn explain(
+            &self,
+            _: DatabaseConnection,
+            _: crate::ports::ExplainRequest,
+        ) -> Result<Value> {
+            Err(Error::NotFound)
+        }
+        async fn profile(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            _: Option<(i64, Option<i64>)>,
+        ) -> Result<crate::ports::ProfileStatus> {
+            Err(Error::NotFound)
+        }
+        async fn profiled(
+            &self,
+            _: DatabaseConnection,
+            _: &str,
+            _: Option<&str>,
+            _: u64,
+        ) -> Result<Vec<crate::ports::ProfileEntry>> {
+            Err(Error::NotFound)
+        }
     }
 
     fn document(

@@ -1,7 +1,7 @@
 //! Queries: `find` read a page at a time from a cursor that stays open between pages,
 //! `countDocuments`, and cancelling either while it runs.
 //!
-//! Every query carries a `comment` with its identifier. Cancelling stops waiting for it,
+//! Every query (and every explain) carries a `comment` with its identifier. Cancelling stops waiting for it,
 //! closes its cursor (the driver sends `killCursors` when a cursor is dropped) and, if the
 //! server is still running it, ends it with `killOp`.
 use crate::{MongoAdapter, errors, limits, within};
@@ -35,7 +35,8 @@ pub struct Running {
     comment: String,
 }
 
-fn comment(id: &str) -> String {
+/// The comment a query carries, so `currentOp` finds it to cancel it.
+pub(crate) fn comment(id: &str) -> String {
     format!("nexo:{id}")
 }
 
@@ -169,6 +170,7 @@ pub async fn cancel(adapter: &MongoAdapter, id: &str) -> bool {
         "currentOp": true,
         "$or": [
             {"command.comment": &running.comment},
+            {"command.explain.comment": &running.comment},
             {"cursor.originatingCommand.comment": &running.comment},
         ],
     };
@@ -187,7 +189,7 @@ pub async fn cancel(adapter: &MongoAdapter, id: &str) -> bool {
 }
 
 /// Runs a query so that `cancel` can stop it, within the operation limit.
-async fn guarded<T>(
+pub(crate) async fn guarded<T>(
     adapter: &MongoAdapter,
     id: &str,
     client: &Client,

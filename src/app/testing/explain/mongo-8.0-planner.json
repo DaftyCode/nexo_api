@@ -1,0 +1,73 @@
+{
+  "explainVersion": "1",
+  "queryPlanner": {
+    "namespace": "nexo_explain.orders",
+    "parsedQuery": {
+      "status": {
+        "$eq": "A"
+      }
+    },
+    "indexFilterSet": false,
+    "queryHash": "1C6E0BD5",
+    "planCacheShapeHash": "1C6E0BD5",
+    "planCacheKey": "9A9342B1",
+    "optimizationTimeMillis": 0,
+    "maxIndexedOrSolutionsReached": false,
+    "maxIndexedAndSolutionsReached": false,
+    "maxScansToExplodeReached": false,
+    "prunedSimilarIndexes": false,
+    "winningPlan": {
+      "isCached": false,
+      "stage": "SORT",
+      "sortPattern": {
+        "at": -1
+      },
+      "memLimit": 104857600,
+      "limitAmount": 10,
+      "type": "simple",
+      "inputStage": {
+        "stage": "COLLSCAN",
+        "filter": {
+          "status": {
+            "$eq": "A"
+          }
+        },
+        "direction": "forward"
+      }
+    },
+    "rejectedPlans": []
+  },
+  "queryShapeHash": "08C9ACDD52F4D7558592FE5116C46BCDDB12E2D819FAD8D205AA9E938227D175",
+  "command": {
+    "find": "orders",
+    "filter": {
+      "status": "A"
+    },
+    "sort": {
+      "at": -1
+    },
+    "limit": 10,
+    "maxTimeMS": 60000,
+    "comment": "nexo:explain-80-2",
+    "$db": "nexo_explain"
+  },
+  "serverInfo": {
+    "host": "mongodb.test",
+    "port": 27017,
+    "version": "8.0.34",
+    "gitVersion": "51db4515a6597aedcf6188ee4e48a27e65b065ae"
+  },
+  "serverParameters": {
+    "internalQueryFacetBufferSizeBytes": 104857600,
+    "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+    "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+    "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+    "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+    "internalQueryProhibitBlockingMergeOnMongoS": 0,
+    "internalQueryMaxAddToSetBytes": 104857600,
+    "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+    "internalQueryFrameworkControl": "trySbeRestricted",
+    "internalQueryPlannerIgnoreIndexWithCollationForRegex": 1
+  },
+  "ok": 1
+}

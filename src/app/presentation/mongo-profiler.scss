@@ -1,0 +1,54 @@
+.mongo-profiler {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+}
+.mongo-profiler-bar,
+.mongo-profiler-form {
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.mongo-profiler-bar p,
+.mongo-profiler-bar h3 {
+  margin: 0;
+}
+.mongo-profiler-bar h3 {
+  font-size: 13px;
+}
+.mongo-profiler-form {
+  align-items: flex-end;
+}
+.mongo-profiler-form .field {
+  margin-bottom: 0;
+}
+.mongo-profiler-slowms {
+  width: 140px;
+}
+.mongo-problem {
+  color: var(--red);
+  margin: 0;
+}
+.mongo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.mongo-table th,
+.mongo-table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.mongo-table th {
+  color: var(--muted);
+  font-weight: 500;
+}
+.mongo-mono {
+  font-family: var(--mono, monospace);
+  overflow-wrap: anywhere;
+}
+.mongo-collscan {
+  color: var(--red);
+}

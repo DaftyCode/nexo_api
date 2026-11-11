@@ -325,6 +325,107 @@ pub enum CollectionChange {
     },
 }
 
+/// An index with how much room it takes and how often queries use it.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct IndexDetail {
+    pub name: String,
+    /// The index as `listIndexes` gives it (keys and options), in canonical Extended JSON.
+    pub spec: Value,
+    /// Bytes on disk, added up over the shards.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<i64>,
+    /// Operations that used it since `since` (`$indexStats`), added up over the servers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accesses: Option<i64>,
+    /// When the server started counting, in ISO 8601.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub since: Option<String>,
+}
+
+/// Changes to the indexes of a collection.
+#[derive(Debug, Clone, PartialEq)]
+pub enum IndexChange {
+    /// `keys` and `options` are Extended JSON documents; options are those of `createIndexes`.
+    Create {
+        database: String,
+        collection: String,
+        keys: Value,
+        options: Option<Value>,
+    },
+    /// Hides an index from the query planner, or shows it again, without dropping it.
+    Hide {
+        database: String,
+        collection: String,
+        name: String,
+        hidden: bool,
+    },
+    Drop {
+        database: String,
+        collection: String,
+        name: String,
+    },
+}
+
+/// What an explain describes: a `find` or an aggregation pipeline.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Explained {
+    Find(Box<FindRequest>),
+    Aggregate {
+        pipeline: Vec<Value>,
+        collation: Option<Value>,
+        hint: Option<Value>,
+    },
+}
+
+/// An explain of a query. With `execution_stats` the server runs the query to measure it
+/// (`executionStats`); without it, it only plans it (`queryPlanner`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct ExplainRequest {
+    /// Chosen by the client, to cancel it while it runs.
+    pub id: String,
+    pub database: String,
+    pub collection: String,
+    pub explained: Explained,
+    pub execution_stats: bool,
+}
+
+/// The profiler of a database: level 0 (off), 1 (operations slower than `slowms`) or 2 (all).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileStatus {
+    pub level: i64,
+    pub slowms: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sample_rate: Option<f64>,
+}
+
+/// An operation the profiler recorded.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileEntry {
+    /// `query`, `command`, `getmore`, `insert`, `update`, `remove`…
+    pub op: String,
+    /// `database.collection`.
+    pub ns: String,
+    pub millis: i64,
+    /// When it ran, in ISO 8601.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ts: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan_summary: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub docs_examined: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub keys_examined: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub returned: Option<i64>,
+    /// The command as the server received it, in canonical Extended JSON; for a `getMore`,
+    /// the command that opened its cursor. Large commands are left out.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<Value>,
+}
+
 /// A document database (MongoDB and compatible servers). Connections are opened once and
 /// kept for a while; every server is checked against the egress policy when one opens.
 #[async_trait]
@@ -366,6 +467,39 @@ pub trait DocumentDatabase: Send + Sync {
     ) -> Result<WriteResult>;
     /// Creates, renames or drops a collection, or drops a database.
     async fn change(&self, connection: DatabaseConnection, change: CollectionChange) -> Result<()>;
+    /// The indexes of a collection with their size and use.
+    async fn indexes(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: &str,
+    ) -> Result<Vec<IndexDetail>>;
+    /// Creates, hides, shows or drops an index. The application has already checked that
+    /// the connection may write.
+    async fn index(&self, connection: DatabaseConnection, change: IndexChange) -> Result<()>;
+    /// How the server runs a query, in relaxed Extended JSON. `id` cancels it while it runs.
+    async fn explain(
+        &self,
+        connection: DatabaseConnection,
+        request: ExplainRequest,
+    ) -> Result<Value>;
+    /// The profiler of a database, after changing it to `set` when given. Changing it is a
+    /// write the application has already allowed.
+    async fn profile(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        set: Option<(i64, Option<i64>)>,
+    ) -> Result<ProfileStatus>;
+    /// The slowest operations the profiler recorded in a database, or in one of its
+    /// collections, slowest first.
+    async fn profiled(
+        &self,
+        connection: DatabaseConnection,
+        database: &str,
+        collection: Option<&str>,
+        limit: u64,
+    ) -> Result<Vec<ProfileEntry>>;
 }
 #[async_trait]
 pub trait VersionControl: Send + Sync {
