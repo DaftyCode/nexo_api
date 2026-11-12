@@ -53,7 +53,7 @@ describe('MongoUseCases', () => {
       value: { uri: 'mongodb://{{host}}', password: '{{vault:mongo-password:c1}}' },
     } as WorkspaceDocument;
     const target = { database: 'shop', collection: 'orders' };
-    await mongo.find(
+    await mongo.queries.find(
       'local',
       connection,
       scopes({ host: 'db.test' }),
@@ -62,7 +62,7 @@ describe('MongoUseCases', () => {
       'r1',
       50,
     );
-    await mongo.count(
+    await mongo.queries.count(
       'local',
       connection,
       scopes({ host: 'db.test' }),
@@ -96,7 +96,7 @@ describe('MongoUseCases', () => {
       },
     };
     await expect(
-      new MongoUseCases(failing as never, () => 'x').close('local', 'c'),
+      new MongoUseCases(failing as never, () => 'x').queries.close('local', 'c'),
     ).resolves.toBeUndefined();
   });
 
@@ -116,7 +116,7 @@ describe('MongoUseCases', () => {
       skip: '',
       limit: '10',
     };
-    const saved = await mongo.saveQuery('local', ' ', value);
+    const saved = await mongo.queries.saveQuery('local', ' ', value);
     expect(saved).toMatchObject({
       id: 'q1',
       kind: 'query',
@@ -130,18 +130,18 @@ describe('MongoUseCases', () => {
       },
     });
     expect(Object.keys(saved.value as object)).not.toContain('sort');
-    const history = await mongo.recordHistory('local', value);
+    const history = await mongo.queries.recordHistory('local', value);
     expect(history).toMatchObject({
       id: 'q2',
       kind: 'query-history',
       name: "shop.orders {status: 'A'}",
     });
-    expect(await mongo.historyQuery(history)).toMatchObject({
+    expect(await mongo.queries.historyQuery(history)).toMatchObject({
       filter: "{status: 'A'}",
       limit: '10',
     });
     // Listed without a value, it is read from the workspace.
-    expect(await mongo.historyQuery({ ...history, value: null })).toMatchObject({
+    expect(await mongo.queries.historyQuery({ ...history, value: null })).toMatchObject({
       filter: '{a: 1}',
     });
   });
@@ -161,7 +161,7 @@ describe('MongoUseCases', () => {
     const env = scopes({ host: 'db.test' });
     const target = { database: 'shop', collection: 'orders' };
     const sent = () => calls.at(-1)?.args;
-    await mongo.createIndex('local', connection, env, target, { at: -1 }, {});
+    await mongo.tuning.createIndex('local', connection, env, target, { at: -1 }, {});
     expect(sent()).toEqual([
       'mongo.index.create',
       {
@@ -173,16 +173,16 @@ describe('MongoUseCases', () => {
         keys: { at: -1 },
       },
     ]);
-    await mongo.hideIndex('local', connection, env, target, 'at_-1', true);
+    await mongo.tuning.hideIndex('local', connection, env, target, 'at_-1', true);
     expect(sent()?.[1]).toMatchObject({ name: 'at_-1', hidden: true, connectionId: 'c1' });
-    await mongo.dropIndex('local', connection, env, target, 'at_-1', 'at_-1');
+    await mongo.tuning.dropIndex('local', connection, env, target, 'at_-1', 'at_-1');
     expect(sent()?.[1]).toMatchObject({ name: 'at_-1', confirm: 'at_-1' });
-    await mongo.setProfile('local', connection, env, 'shop', 1, 50);
+    await mongo.tuning.setProfile('local', connection, env, 'shop', 1, 50);
     expect(sent()).toEqual([
       'mongo.profile.set',
       expect.objectContaining({ connectionId: 'c1', database: 'shop', level: 1, slowms: 50 }),
     ]);
-    await mongo.explain(
+    await mongo.tuning.explain(
       'local',
       connection,
       env,
@@ -204,7 +204,7 @@ describe('MongoUseCases', () => {
         id: 'e1',
       },
     ]);
-    await mongo.explain(
+    await mongo.tuning.explain(
       'local',
       connection,
       env,
@@ -214,7 +214,7 @@ describe('MongoUseCases', () => {
       'e2',
     );
     expect(sent()?.[1]).toMatchObject({ pipeline: [{ $match: {} }], verbosity: 'queryPlanner' });
-    await mongo.profileEntries('local', connection, env, 'shop');
+    await mongo.tuning.profileEntries('local', connection, env, 'shop');
     expect(sent()?.[1]).not.toHaveProperty('collection');
     expect(sent()?.[1]).not.toHaveProperty('connectionId');
   });

@@ -13,7 +13,7 @@ import {
   output,
   input,
 } from '@angular/core';
-import { FormField, form, min, max } from '@angular/forms/signals';
+import { FormField, form, max, min } from '@angular/forms/signals';
 import {
   RequestDraft,
   KeyValue,
@@ -32,6 +32,8 @@ import { WorkspaceState } from './workspace-state';
 import { GraphqlExplorer } from './graphql-explorer';
 import { GraphqlQueryEditor } from './graphql-query-editor';
 import { CodeEditor } from './code-editor';
+import { RequestSettings } from './request-settings';
+import { VariableStrip } from './variable-strip';
 import { bodyLanguage } from './code-language';
 import { insertAt } from '../domain/graphql-schema';
 
@@ -45,6 +47,8 @@ import { insertAt } from '../domain/graphql-schema';
     GraphqlExplorer,
     GraphqlQueryEditor,
     CodeEditor,
+    RequestSettings,
+    VariableStrip,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-request-editor',
@@ -135,12 +139,6 @@ export class RequestEditor {
   }
   protected editAuth(auth: AuthDraft) {
     this.request.update((r) => ({ ...r, auth }));
-  }
-  protected variableTitle(variable: ResolvedVariable) {
-    if (!variable.defined) return 'Not defined in the active environment, collection or globals';
-    if (variable.scope === 'dynamic') return 'Generated for each request';
-    if (variable.scope === 'vault') return 'Resolved from your vault when sent';
-    return variable.secret ? '••••••••' : (variable.value ?? '');
   }
   /** The file of a binary body: sent with the request, while the collection keeps its name. */
   protected async chooseBody(event: Event) {

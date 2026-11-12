@@ -1,0 +1,173 @@
+<nav class="feature-card mongo-sidebar" [attr.aria-label]="'Databases' | transloco">
+  <div class="row between">
+    <button type="button" class="text-button" (click)="explorer().closed.emit()">
+      ← {{ 'Connections' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Reload databases' | transloco"
+      [disabled]="explorer().browser.loading()"
+      (click)="explorer().browser.loadDatabases()"
+    >
+      ⟳
+    </button>
+  </div>
+  <h2 class="mongo-connection-name">
+    <span
+      class="mongo-color"
+      aria-hidden="true"
+      [style.background]="explorer().color() || 'transparent'"
+    ></span>
+    {{ explorer().connection().name }}
+    @if (!explorer().writable()) {
+      <span class="mongo-badge">{{ 'Read-only' | transloco }}</span>
+    }
+  </h2>
+  @if (explorer().browser.loading()) {
+    <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+  }
+  <ul class="mongo-databases">
+    @for (database of explorer().browser.databases(); track database.name) {
+      <li>
+        <button
+          type="button"
+          class="mongo-tree-item"
+          [attr.aria-expanded]="!!explorer().browser.collections()[database.name]"
+          (click)="explorer().browser.toggleDatabase(database.name)"
+        >
+          <span aria-hidden="true">{{
+            explorer().browser.collections()[database.name] ? '▾' : '▸'
+          }}</span>
+          <span class="grow">{{ database.name }}</span>
+          <span class="muted">{{ explorer().bytes(database.sizeOnDisk) }}</span>
+        </button>
+        @if (explorer().browser.collections()[database.name] === 'loading') {
+          <div class="spinner small" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+        }
+        @if (explorer().browser.collections()[database.name]) {
+          <ul>
+            @for (collection of explorer().browser.listed(database.name); track collection.name) {
+              <li>
+                <button
+                  type="button"
+                  class="mongo-tree-item mongo-collection"
+                  [class.selected]="
+                    explorer().target()?.database === database.name &&
+                    explorer().target()?.collection === collection.name
+                  "
+                  [attr.aria-current]="
+                    explorer().target()?.database === database.name &&
+                    explorer().target()?.collection === collection.name
+                      ? 'true'
+                      : null
+                  "
+                  (click)="explorer().choose(database.name, collection)"
+                >
+                  <span class="grow">{{ collection.name }}</span>
+                  @if (explorer().browser.kindLabel(collection); as kind) {
+                    <span class="mongo-badge">{{ kind | transloco }}</span>
+                  }
+                </button>
+              </li>
+            } @empty {
+              <li class="muted mongo-empty">{{ 'No collections' | transloco }}</li>
+            }
+            @if (explorer().writable()) {
+              <li>
+                <button
+                  type="button"
+                  class="mongo-tree-item muted"
+                  (click)="explorer().writes.newCollection(database.name)"
+                >
+                  {{ '＋ New collection' | transloco }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </li>
+    } @empty {
+      @if (!explorer().browser.loading()) {
+        <li class="muted">{{ 'No databases you may read.' | transloco }}</li>
+      }
+    }
+  </ul>
+
+  @if (explorer().writable()) {
+    <button type="button" class="text-button" (click)="explorer().writes.newCollection()">
+      {{ '＋ New database' | transloco }}
+    </button>
+  }
+
+  <h3 class="mongo-section">{{ 'Saved queries' | transloco }}</h3>
+  @for (group of explorer().library.savedQueries(); track group.folder) {
+    @if (group.folder) {
+      <h4 class="mongo-folder">{{ group.folder }}</h4>
+    }
+    <ul>
+      @for (query of group.connections; track query.id) {
+        <li class="row mongo-saved">
+          <button
+            type="button"
+            class="mongo-tree-item grow"
+            [class.selected]="query.id === explorer().library.savedId()"
+            (click)="explorer().library.open(query, true)"
+          >
+            {{ query.name }}
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            [attr.aria-label]="'mongo.deleteQuery' | transloco: { v0: query.name }"
+            (click)="explorer().library.remove(query)"
+          >
+            ×
+          </button>
+        </li>
+      }
+    </ul>
+  } @empty {
+    <p class="muted">{{ 'Save a query to find it here.' | transloco }}</p>
+  }
+
+  <h3 class="mongo-section">{{ 'Query history' | transloco }}</h3>
+  <ul>
+    @for (entry of explorer().library.history(); track entry.id) {
+      <li>
+        <button
+          type="button"
+          class="mongo-tree-item mongo-history"
+          (click)="explorer().library.open(entry, false)"
+        >
+          {{ entry.name }}
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">
+        {{ 'Queries you run appear here, without their results.' | transloco }}
+      </li>
+    }
+  </ul>
+
+  <h3 class="mongo-section">{{ 'Changes' | transloco }}</h3>
+  <ul>
+    @for (change of explorer().library.changes(); track change.id) {
+      <li class="row mongo-saved">
+        <span class="grow mongo-history" [title]="change.name">{{ change.name }}</span>
+        @if (explorer().undoable(change) && explorer().writable()) {
+          <button
+            type="button"
+            class="text-button"
+            [attr.aria-label]="'mongo.undoChange' | transloco: { v0: change.name }"
+            (click)="explorer().writes.undo(change)"
+          >
+            {{ 'Undo' | transloco }}
+          </button>
+        }
+      </li>
+    } @empty {
+      <li class="muted">{{ 'Writes appear here, to undo them.' | transloco }}</li>
+    }
+  </ul>
+</nav>

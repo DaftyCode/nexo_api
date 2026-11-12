@@ -46,24 +46,7 @@
     }
   </div>
   @if (variables().length) {
-    <div class="variable-strip" [attr.aria-label]="'Variables used by this request' | transloco">
-      <span class="variable-strip-label">{{ 'Variables' | transloco }}</span>
-      @for (variable of variables(); track variable.name) {
-        <button
-          type="button"
-          class="variable-chip"
-          [class.undefined]="!variable.defined"
-          [attr.data-scope]="variable.scope ?? 'missing'"
-          [title]="variableTitle(variable) | transloco"
-          (click)="manageVariables.emit()"
-        >
-          <code>{{ variable.name }}</code>
-          <span>{{
-            variable.defined ? ('scope.' + variable.scope | transloco) : ('Not defined' | transloco)
-          }}</span>
-        </button>
-      }
-    </div>
+    <app-variable-strip [variables]="variables()" (manage)="manageVariables.emit()" />
   }
 </div>
 <div class="request-configuration">
@@ -299,50 +282,7 @@
         </p>
       }
       @case ('settings') {
-        <div class="settings-grid">
-          <label class="field"
-            >{{ 'Request timeout (ms)' | transloco
-            }}<input type="number" [formField]="fields.timeout" /></label
-          ><label class="check-field"
-            ><input type="checkbox" [formField]="fields.followRedirects" />
-            {{ 'Automatically follow redirects' | transloco }}</label
-          ><label class="check-field"
-            ><input type="checkbox" [formField]="fields.strictSSL" />
-            {{ 'Verify TLS certificates' | transloco }}</label
-          ><label class="field"
-            >{{ 'Protocol' | transloco
-            }}<select [formField]="fields.protocol">
-              <option value="http">HTTP</option>
-              <option value="graphql">GraphQL</option>
-              <option value="grpc">gRPC</option>
-              <option value="websocket">WebSocket</option>
-              <option value="socketio">Socket.IO</option>
-              <option value="mqtt">MQTT</option>
-              <option value="graphql-subscription">{{ 'GraphQL subscription' | transloco }}</option>
-              <option value="kafka">Kafka</option>
-            </select></label
-          >
-        </div>
-        <div class="field">
-          <span>{{ 'Proxy and client TLS (JSON)' | transloco }}</span>
-          @defer (on immediate) {
-            <app-code-editor
-              [formField]="fields.transport"
-              language="json"
-              size="small"
-              [label]="'Transport configuration' | transloco"
-              [placeholder]="'Optional proxy, caPem and clientTls settings' | transloco"
-            />
-          } @placeholder {
-            <div class="code-editor small" aria-hidden="true"></div>
-          }
-        </div>
-        <p class="editor-hint">
-          {{
-            'Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates are supplied in memory; server file paths are never read.'
-              | transloco
-          }}
-        </p>
+        <app-request-settings [fields]="fields" />
       }
     }
   </div>

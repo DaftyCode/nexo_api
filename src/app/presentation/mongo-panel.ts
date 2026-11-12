@@ -3,17 +3,15 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState, named, success } from './workspace-state';
 import { PanelTask } from './panel-task';
-import { CodeEditor } from './code-editor';
 import { MongoExplorer } from './mongo-explorer';
 import { MONGO } from '../composition/providers';
+import { MongoConnectionSettings } from './mongo-connection-settings';
 import { WorkspaceDocument } from '../domain/models';
 import {
-  AUTH_CHOICES,
   CONNECTION_COLORS,
   ConnectionForm,
   ConnectionReport,
   MongoConnectionValue,
-  READ_PREFERENCES,
   connectionFolders,
   connectionProblem,
   connectionValue,
@@ -25,7 +23,7 @@ import {
 
 type Tab = 'server' | 'authentication' | 'tls' | 'options' | 'ssh';
 
-interface PanelModel extends ConnectionForm {
+export interface PanelModel extends ConnectionForm {
   name: string;
   folder: string;
   color: string;
@@ -60,7 +58,7 @@ function emptyModel(): PanelModel {
  * a URI or field by field, and tested against the egress policy before anything is sent.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, MongoExplorer],
+  imports: [TranslocoPipe, FormField, MongoExplorer, MongoConnectionSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-panel',
   styleUrl: './mongo-panel.scss',
@@ -72,8 +70,6 @@ export class MongoPanel {
   private readonly mongo = inject(MONGO);
   protected readonly tabs: readonly Tab[] = ['server', 'authentication', 'tls', 'options', 'ssh'];
   protected readonly tab = signal<Tab>('server');
-  protected readonly authChoices = AUTH_CHOICES;
-  protected readonly readPreferences = READ_PREFERENCES;
   protected readonly colors = CONNECTION_COLORS;
   protected readonly model = signal<PanelModel>(emptyModel());
   protected readonly fields = form(this.model);
@@ -200,7 +196,7 @@ export class MongoPanel {
       this.check();
       const saved = await (
         await this.mongo()
-      ).save(
+      ).connections.save(
         this.state.workspaceId(),
         this.model().name,
         this.value(),
@@ -222,7 +218,12 @@ export class MongoPanel {
       this.report.set(
         await (
           await this.mongo()
-        ).test(this.state.workspaceId(), this.value(), this.typed(), this.state.scopes()),
+        ).connections.test(
+          this.state.workspaceId(),
+          this.value(),
+          this.typed(),
+          this.state.scopes(),
+        ),
       );
     });
   }
@@ -232,7 +233,7 @@ export class MongoPanel {
     if (!document || !this.state.confirm('Delete this connection? Its password leaves the vault.'))
       return;
     void this.task.announce('The connection could not be deleted', async () => {
-      await (await this.mongo()).remove(document);
+      await (await this.mongo()).connections.remove(document);
       await this.state.refresh();
       this.newConnection();
       return named('Connection deleted', document.name);
@@ -253,7 +254,9 @@ export class MongoPanel {
     this.notice.set({ key: '' });
     void this.task.announce('The connections could not be imported', async () => {
       const text = await this.state.cases.files.read(file);
-      const saved = await (await this.mongo()).importCompass(this.state.workspaceId(), text);
+      const saved = await (
+        await this.mongo()
+      ).connections.importCompass(this.state.workspaceId(), text);
       await this.state.refresh();
       input.value = '';
       return success('Import completed', 'mongo.imported', { v0: String(saved.length) });

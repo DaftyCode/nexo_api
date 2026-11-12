@@ -244,49 +244,8 @@
         spellcheck="false"
     /></label>
     @for (list of lists; track list.id) {
-      @let typed = list.id;
-      @if (typed !== 'authRequestParams' || shows('authRequestParams')) {
-        <section class="parameters">
-          <h4>{{ list.label | transloco }}</h4>
-          @for (row of parameters(typed); track $index) {
-            <div class="parameter">
-              <input
-                type="checkbox"
-                [checked]="row.enabled !== false"
-                (change)="editParameter(typed, $index, 'enabled', $event)"
-                [attr.aria-label]="'Enabled' | transloco"
-              /><input
-                [value]="row.key"
-                (input)="editParameter(typed, $index, 'key', $event)"
-                [placeholder]="'Key' | transloco"
-                [attr.aria-label]="'Key' | transloco"
-              /><input
-                [value]="row.value"
-                (input)="editParameter(typed, $index, 'value', $event)"
-                [placeholder]="'Value' | transloco"
-                [attr.aria-label]="'Value' | transloco"
-              /><select
-                [value]="row.send_as"
-                (change)="editParameter(typed, $index, 'send_as', $event)"
-                [attr.aria-label]="'Send In' | transloco"
-              >
-                @for (option of placements[typed]; track option[0]) {
-                  <option [value]="option[0]">{{ option[1] | transloco }}</option>
-                }</select
-              ><button
-                type="button"
-                class="icon-button"
-                (click)="removeParameter(typed, $index)"
-                [attr.aria-label]="'Remove parameter' | transloco"
-              >
-                ×
-              </button>
-            </div>
-          }
-          <button type="button" class="text-button" (click)="addParameter(typed)">
-            {{ 'Add parameter' | transloco }}
-          </button>
-        </section>
+      @if (list.id !== 'authRequestParams' || shows('authRequestParams')) {
+        <app-oauth2-parameters [auth]="auth" [list]="list.id" [label]="list.label" />
       }
     }
     <label class="field row-field"

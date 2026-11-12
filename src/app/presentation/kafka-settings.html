@@ -1,0 +1,62 @@
+<p class="editor-hint">
+  {{ 'Bootstrap servers as host:port, separated by commas.' | transloco }}
+</p>
+<div class="row">
+  <label class="check-field"
+    ><input type="checkbox" [formField]="fields().tls" /> {{ 'Use TLS' | transloco }}</label
+  ><label class="field grow"
+    >{{ 'SASL' | transloco
+    }}<select [formField]="fields().saslMechanism">
+      <option value="none">{{ 'None' | transloco }}</option>
+      <option value="PLAIN">PLAIN</option>
+      <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
+      <option value="SCRAM-SHA-512">SCRAM-SHA-512</option>
+    </select></label
+  >
+</div>
+@if (settings().saslMechanism !== 'none') {
+  <div class="row">
+    <label class="field grow"
+      >{{ 'Username' | transloco
+      }}<input [formField]="fields().username" autocomplete="off" /></label
+    ><label class="field grow"
+      >{{ 'Password' | transloco
+      }}<input type="password" [formField]="fields().password" autocomplete="off"
+    /></label>
+  </div>
+  <p class="editor-hint">
+    {{ 'Keep the password in the vault and write its reference:' | transloco }}
+    <code>{{ vaultExample }}</code
+    >. {{ 'It is only sent to the brokers its allowed domains include.' | transloco }}
+  </p>
+}
+<div class="row">
+  <label class="field grow">{{ 'Topic' | transloco }}<input [formField]="fields().topic" /></label
+  ><label class="field grow">{{ 'Key' | transloco }}<input [formField]="fields().key" /></label
+  ><label class="field"
+    >{{ 'Partition' | transloco
+    }}<input [formField]="fields().partition" [placeholder]="'Any' | transloco"
+  /></label>
+</div>
+<div class="section-caption">{{ 'Message headers' | transloco }}</div>
+<app-key-value-editor [rows]="headers()()" (rowsChange)="headers().set($event)" />
+<div class="row">
+  <label class="field"
+    >{{ 'Read from' | transloco
+    }}<select [formField]="fields().from">
+      <option value="latest">{{ 'New messages' | transloco }}</option>
+      <option value="earliest">{{ 'The beginning' | transloco }}</option>
+      <option value="offset">{{ 'An offset' | transloco }}</option>
+    </select></label
+  >
+  @if (settings().from === 'offset') {
+    <label class="field">{{ 'Offset' | transloco }}<input [formField]="fields().offset" /></label>
+  }
+  <button class="button" (click)="action.emit('subscribe')" [disabled]="!connected()">
+    {{ 'Read topic' | transloco }}</button
+  ><button class="button" (click)="action.emit('unsubscribe')" [disabled]="!connected()">
+    {{ 'Stop reading' | transloco }}</button
+  ><button class="button" (click)="action.emit('topics')" [disabled]="!connected()">
+    {{ 'List topics' | transloco }}
+  </button>
+</div>

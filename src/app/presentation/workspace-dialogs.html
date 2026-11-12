@@ -1,0 +1,89 @@
+@if (workspace().dialogs()) {
+  <div class="modal-backdrop">
+    <section
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="workspace().dialogTitle() | transloco"
+    >
+      <div class="modal-heading">
+        <h2>
+          {{ workspace().dialogTitle() | transloco }}
+        </h2>
+        <button
+          class="icon-button"
+          (click)="workspace().dialogs.set('')"
+          [attr.aria-label]="'Close dialog' | transloco"
+        >
+          ×
+        </button>
+      </div>
+      @if (workspace().dialogs() === 'shortcuts') {
+        <dl class="shortcut-list">
+          <dt><kbd>Ctrl</kbd> + <kbd>Enter</kbd></dt>
+          <dd>{{ 'Send the request (outside script editors)' | transloco }}</dd>
+          <dt><kbd>Ctrl</kbd> + <kbd>S</kbd></dt>
+          <dd>{{ 'Save the request' | transloco }}</dd>
+          <dt><kbd>Ctrl</kbd> + <kbd>T</kbd></dt>
+          <dd>{{ 'New request tab' | transloco }}</dd>
+          <dt><kbd>Ctrl</kbd> + <kbd>K</kbd></dt>
+          <dd>{{ 'Search collections' | transloco }}</dd>
+          <dt><kbd>F1</kbd> / <kbd>Ctrl</kbd> + <kbd>/</kbd></dt>
+          <dd>{{ 'Show these shortcuts' | transloco }}</dd>
+        </dl>
+      } @else if (workspace().dialogs() === 'import') {
+        <p class="muted">
+          {{ 'Portable collections and environments, OpenAPI, HAR or a cURL command.' | transloco }}
+        </p>
+        <label class="file-drop"
+          >{{ '↑ Choose a file' | transloco
+          }}<input
+            type="file"
+            accept=".json,.yaml,.yml,.har,.txt"
+            (change)="workspace().file($event)" /></label
+        ><span class="divider-label">{{ 'or paste content' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="workspace().fields.content"
+            language="text"
+            [label]="'Import content' | transloco"
+            [placeholder]="
+              'Paste a collection, OpenAPI specification, HAR or cURL command' | transloco
+            "
+          />
+        } @placeholder {
+          <div class="code-editor" aria-hidden="true"></div>
+        }
+      } @else {
+        <label class="field"
+          >{{ 'Name' | transloco
+          }}<input
+            [formField]="workspace().fields.name"
+            [placeholder]="'Give it a name' | transloco"
+            (keydown.enter)="workspace().submitDialog()"
+        /></label>
+      }
+      <div class="modal-actions">
+        <button class="button" (click)="workspace().dialogs.set('')">
+          {{ (workspace().dialogs() === 'shortcuts' ? 'Close' : 'Cancel') | transloco }}
+        </button>
+        @if (workspace().dialogs() !== 'shortcuts') {
+          <button
+            class="button primary"
+            (click)="workspace().submitDialog()"
+            [disabled]="workspace().state.busy()"
+          >
+            {{
+              (workspace().dialogs() === 'import'
+                ? 'Import'
+                : workspace().dialogs() === 'rename'
+                  ? 'Rename'
+                  : 'Create'
+              ) | transloco
+            }}
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+}

@@ -1,0 +1,234 @@
+@switch (tab()) {
+  @case ('server') {
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().srv" />{{
+        'DNS seed list (mongodb+srv://, as Atlas gives it)' | transloco
+      }}</label
+    >
+    <div class="field">
+      <span id="mongo-hosts">{{
+        (settings().srv ? 'Host name' : 'Hosts, one host:port per line') | transloco
+      }}</span>
+      @defer (on immediate) {
+        <app-code-editor
+          [formField]="fields().hosts"
+          language="text"
+          size="small"
+          [label]="'Hosts' | transloco"
+        />
+      } @placeholder {
+        <div class="code-editor small" aria-hidden="true"></div>
+      }
+    </div>
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Replica set' | transloco
+        }}<input [formField]="fields().replicaSet" placeholder="rs0" spellcheck="false"
+      /></label>
+      <label class="field grow"
+        >{{ 'Default database' | transloco
+        }}<input [formField]="fields().database" spellcheck="false"
+      /></label>
+    </div>
+    <p class="muted">
+      {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
+    </p>
+  }
+  @case ('authentication') {
+    <label class="field"
+      >{{ 'Authentication' | transloco }}
+      <select [formField]="fields().auth">
+        @for (choice of authChoices; track choice) {
+          <option [value]="choice">
+            {{
+              choice === 'none'
+                ? ('None' | transloco)
+                : choice === 'default'
+                  ? ('Username and password (negotiated SCRAM)' | transloco)
+                  : choice === 'MONGODB-X509'
+                    ? ('X.509 client certificate' | transloco)
+                    : choice
+            }}
+          </option>
+        }
+      </select>
+    </label>
+    @if (settings().auth !== 'none') {
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Username' | transloco
+          }}<input [formField]="fields().username" autocomplete="off" spellcheck="false"
+        /></label>
+        @if (settings().auth !== 'MONGODB-X509') {
+          <label class="field grow"
+            >{{ 'Password' | transloco
+            }}<input
+              type="password"
+              [formField]="fields().password"
+              autocomplete="new-password"
+              [placeholder]="
+                passwordStored() ? ('Saved in the vault; type to replace' | transloco) : ''
+              "
+          /></label>
+        }
+        <label class="field grow"
+          >{{ 'Authentication database' | transloco
+          }}<input [formField]="fields().authSource" placeholder="admin" spellcheck="false"
+        /></label>
+      </div>
+      <p class="muted">
+        {{
+          'The password is saved in the vault, never in the URI. A vault reference also works.'
+            | transloco
+        }}
+      </p>
+    }
+    <p class="muted">
+      {{ 'Kerberos, LDAP, AWS IAM and OIDC are not supported yet.' | transloco }}
+    </p>
+  }
+  @case ('tls') {
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().tls" />{{ 'Use TLS' | transloco }}</label
+    >
+    @if (settings().tls) {
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().allowInvalidCertificates" />{{
+          'Allow invalid certificates' | transloco
+        }}</label
+      >
+      @if (settings().allowInvalidCertificates) {
+        <p class="mongo-warning" role="note">
+          {{
+            'Any certificate is accepted: someone on the network could read or change what is sent.'
+              | transloco
+          }}
+        </p>
+      }
+      <p class="muted">
+        {{
+          "The system's certificate authorities are trusted, and the server name is sent (SNI) and checked."
+            | transloco
+        }}
+      </p>
+      <div class="field">
+        <span>{{ 'CA certificate (PEM)' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields().caPem"
+            language="text"
+            size="small"
+            [label]="'CA certificate (PEM)' | transloco"
+            placeholder="-----BEGIN CERTIFICATE-----"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+      <div class="field">
+        <span>{{ 'Client certificate (PEM)' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields().certPem"
+            language="text"
+            size="small"
+            [label]="'Client certificate (PEM)' | transloco"
+            placeholder="-----BEGIN CERTIFICATE-----"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+      <div class="field">
+        <span>{{
+          (keyStored() ? 'Client key: saved in the vault; paste to replace' : 'Client key (PEM)')
+            | transloco
+        }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [formField]="fields().keyPem"
+            language="text"
+            size="small"
+            [label]="'Client key (PEM)' | transloco"
+            placeholder="-----BEGIN PRIVATE KEY-----"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+    }
+  }
+  @case ('options') {
+    <div class="mongo-options">
+      <label class="field"
+        >{{ 'Read preference' | transloco }}
+        <select [formField]="fields().readPreference">
+          @for (preference of readPreferences; track preference) {
+            <option [value]="preference">
+              {{ preference || ('Server default' | transloco) }}
+            </option>
+          }
+        </select>
+      </label>
+      <label class="field"
+        >{{ 'Read preference tags' | transloco
+        }}<input
+          [formField]="fields().readPreferenceTags"
+          placeholder="dc:east,rack:1"
+          spellcheck="false"
+      /></label>
+      <label class="field"
+        >{{ 'Write concern (w)' | transloco
+        }}<input [formField]="fields().w" placeholder="majority" spellcheck="false"
+      /></label>
+      <label class="field"
+        >{{ 'Write concern timeout (ms)' | transloco
+        }}<input [formField]="fields().wtimeoutMS" inputmode="numeric"
+      /></label>
+      <label class="field"
+        >{{ 'Connection timeout (ms)' | transloco
+        }}<input [formField]="fields().connectTimeoutMS" inputmode="numeric" placeholder="10000"
+      /></label>
+      <label class="field"
+        >{{ 'Socket timeout (ms)' | transloco
+        }}<input [formField]="fields().socketTimeoutMS" inputmode="numeric"
+      /></label>
+      <label class="field"
+        >{{ 'Server selection timeout (ms)' | transloco
+        }}<input
+          [formField]="fields().serverSelectionTimeoutMS"
+          inputmode="numeric"
+          placeholder="10000"
+      /></label>
+    </div>
+    <div class="button-grid">
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().journal" />{{
+          'Wait for the journal (j)' | transloco
+        }}</label
+      >
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().retryWrites" />{{
+          'Retry writes' | transloco
+        }}</label
+      >
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().directConnection" />{{
+          'Direct connection' | transloco
+        }}</label
+      >
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().loadBalanced" />{{
+          'Load balanced' | transloco
+        }}</label
+      >
+    </div>
+    <label class="field"
+      >{{ 'Other URI options' | transloco
+      }}<input
+        [formField]="fields().extra"
+        placeholder="appName=reports&compressors=zlib"
+        spellcheck="false"
+    /></label>
+  }
+}

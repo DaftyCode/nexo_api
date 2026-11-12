@@ -114,7 +114,7 @@ describe('OAuth 2.0 tokens: saved at once and told in a toast', () => {
 
     // The sign-in window closed: no token and no error.
     const cancelled = vi
-      .spyOn(state.cases, 'oauth2Token')
+      .spyOn(state.cases.oauth2, 'oauth2Token')
       .mockResolvedValueOnce(undefined as never);
     await state.oauth2Token(oauth2(), [], false);
     cancelled.mockRestore();

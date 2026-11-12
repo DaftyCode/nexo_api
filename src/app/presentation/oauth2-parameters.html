@@ -1,0 +1,41 @@
+<section class="parameters">
+  <h4>{{ label() | transloco }}</h4>
+  @for (row of parameters(list()); track $index) {
+    <div class="parameter">
+      <input
+        type="checkbox"
+        [checked]="row.enabled !== false"
+        (change)="editParameter(list(), $index, 'enabled', $event)"
+        [attr.aria-label]="'Enabled' | transloco"
+      /><input
+        [value]="row.key"
+        (input)="editParameter(list(), $index, 'key', $event)"
+        [placeholder]="'Key' | transloco"
+        [attr.aria-label]="'Key' | transloco"
+      /><input
+        [value]="row.value"
+        (input)="editParameter(list(), $index, 'value', $event)"
+        [placeholder]="'Value' | transloco"
+        [attr.aria-label]="'Value' | transloco"
+      /><select
+        [value]="row.send_as"
+        (change)="editParameter(list(), $index, 'send_as', $event)"
+        [attr.aria-label]="'Send In' | transloco"
+      >
+        @for (option of placements[list()]; track option[0]) {
+          <option [value]="option[0]">{{ option[1] | transloco }}</option>
+        }</select
+      ><button
+        type="button"
+        class="icon-button"
+        (click)="removeParameter(list(), $index)"
+        [attr.aria-label]="'Remove parameter' | transloco"
+      >
+        ×
+      </button>
+    </div>
+  }
+  <button type="button" class="text-button" (click)="addParameter(list())">
+    {{ 'Add parameter' | transloco }}
+  </button>
+</section>

@@ -17,10 +17,19 @@ import { KeyValue, RealtimeSettings, row } from '../domain/models';
 import { GrpcDiscovery, StreamEvent } from '../application/protocol-use-cases';
 import { PROTOCOLS } from '../composition/providers';
 import { CodeEditor } from './code-editor';
-import { GraphqlQueryEditor } from './graphql-query-editor';
+import { GraphqlSubscriptionSettings } from './graphql-subscription-settings';
+import { KafkaSettings } from './kafka-settings';
+import { ProtocolSettings, defaultProtocolSettings } from './protocol-settings';
 
 @Component({
-  imports: [TranslocoPipe, FormField, KeyValueEditor, CodeEditor, GraphqlQueryEditor],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    KeyValueEditor,
+    CodeEditor,
+    GraphqlSubscriptionSettings,
+    KafkaSettings,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-protocol-panel',
   styleUrl: './protocol-panel.scss',
@@ -31,36 +40,7 @@ export class ProtocolPanel {
   protected readonly task = new PanelTask(this.state);
   private readonly protocols = inject(PROTOCOLS);
   private readonly destroy = inject(DestroyRef);
-  protected readonly model = signal({
-    protocol: 'websocket',
-    url: 'ws://localhost:9001',
-    message: 'Hello from Nexo',
-    grpcMessage: '{\n  "name": "Nexo"\n}',
-    topic: 'nexo/demo',
-    event: 'message',
-    proto:
-      'syntax = "proto3";\npackage demo;\nservice Greeter { rpc Hello (HelloRequest) returns (HelloReply); }\nmessage HelloRequest { string name = 1; }\nmessage HelloReply { string message = 1; }',
-    service: 'demo.Greeter',
-    method: 'Hello',
-    metadata: '[]',
-    tls: false,
-    strictSSL: true,
-    caPem: '',
-    username: '',
-    password: '',
-    qos: '0',
-    query: 'subscription {\n  \n}',
-    variables: '{}',
-    connectionParams: '{}',
-    graphqlProtocol: 'graphql-transport-ws',
-    reflection: false,
-    transports: 'auto',
-    saslMechanism: 'none',
-    key: '',
-    partition: '',
-    from: 'latest',
-    offset: '',
-  });
+  protected readonly model = signal<ProtocolSettings>({ ...defaultProtocolSettings });
   protected readonly fields = form(this.model);
   protected readonly headers = signal<KeyValue[]>([row()]);
   protected readonly connection = signal('');
@@ -69,8 +49,6 @@ export class ProtocolPanel {
   protected readonly result = signal('');
   /** How a Socket.IO message writes binary data. */
   protected readonly binaryExample = '{"$binary": "<base64>"}';
-  /** How a Kafka password refers to a vault secret. */
-  protected readonly vaultExample = '{{vault:name}}';
   /** Services found for each server address (reflection) or proto, during the session. */
   private readonly discoveries = signal<Readonly<Record<string, GrpcDiscovery>>>({});
   private discoveryKey() {

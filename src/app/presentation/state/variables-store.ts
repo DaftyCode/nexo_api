@@ -30,11 +30,16 @@ export class VariablesStore {
   /** Selects the active environment and remembers it for this workspace on this device. */
   select(id: string) {
     this.environmentId.set(this.documents.environments().some((d) => d.id === id) ? id : '');
-    this.context.cases.rememberEnvironment(this.context.workspaceId(), this.environmentId());
+    this.context.cases.variables.rememberEnvironment(
+      this.context.workspaceId(),
+      this.environmentId(),
+    );
   }
   /** Selects the environment remembered for the current workspace, if it still exists. */
   restore() {
-    const remembered = this.context.cases.rememberedEnvironment(this.context.workspaceId());
+    const remembered = this.context.cases.variables.rememberedEnvironment(
+      this.context.workspaceId(),
+    );
     if (remembered && this.documents.environments().some((d) => d.id === remembered))
       this.environmentId.set(remembered);
   }
@@ -50,10 +55,12 @@ export class VariablesStore {
     const workspace = this.context.workspaceId();
     const existing = this.documents.environments().find((d) => d.id === id);
     const saved = await this.overLatest(
-      () => this.context.cases.saveEnvironment(workspace, existing, name, rows),
+      () => this.context.cases.variables.saveEnvironment(workspace, existing, name, rows),
       () => {
         const latest = this.documents.environments().find((d) => d.id === id);
-        return latest && this.context.cases.saveEnvironment(workspace, latest, name, rows);
+        return (
+          latest && this.context.cases.variables.saveEnvironment(workspace, latest, name, rows)
+        );
       },
     );
     if (saved && !existing && !this.environmentId()) this.select(saved.id);
@@ -63,8 +70,10 @@ export class VariablesStore {
   async saveGlobals(rows: readonly VariableRow[]) {
     const workspace = this.context.workspaceId();
     return this.overLatest(
-      () => this.context.cases.saveGlobals(workspace, this.documents.globalsDocument(), rows),
-      () => this.context.cases.saveGlobals(workspace, this.documents.globalsDocument(), rows),
+      () =>
+        this.context.cases.variables.saveGlobals(workspace, this.documents.globalsDocument(), rows),
+      () =>
+        this.context.cases.variables.saveGlobals(workspace, this.documents.globalsDocument(), rows),
     );
   }
   /**
@@ -100,7 +109,7 @@ export class VariablesStore {
     collection: WorkspaceDocument | undefined,
   ): Promise<WorkspaceDocument[]> {
     try {
-      const saved = await this.context.cases.persistScriptVariables(variables, {
+      const saved = await this.context.cases.variables.persistScriptVariables(variables, {
         workspace: this.context.workspaceId(),
         environment,
         globals: this.documents.globalsDocument(),

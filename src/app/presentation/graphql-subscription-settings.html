@@ -1,0 +1,75 @@
+<label class="field"
+  >{{ 'Subscription protocol' | transloco
+  }}<select [formField]="fields().graphqlProtocol">
+    <option value="graphql-transport-ws">graphql-transport-ws</option>
+    <option value="graphql-ws">
+      {{ 'graphql-ws (subscriptions-transport-ws, legacy)' | transloco }}
+    </option>
+    <option value="graphql-sse">{{ 'graphql-sse (server-sent events)' | transloco }}</option>
+  </select></label
+>
+<div class="field">
+  <span>{{ 'Subscription' | transloco }}</span>
+  <!-- With the endpoint's schema, fields and arguments are suggested as in queries. -->
+  @defer (on immediate) {
+    <app-graphql-query-editor
+      [formField]="fields().query"
+      [schema]="schema()"
+      [label]="'GraphQL subscription' | transloco"
+      placeholder="subscription { … }"
+    />
+  } @placeholder {
+    <div class="code-editor" aria-hidden="true"></div>
+  }
+</div>
+<div class="row">
+  <button
+    type="button"
+    class="button"
+    [disabled]="state.loadingSchema()"
+    (click)="schemaRequested.emit()"
+  >
+    {{ (schema() ? 'Reload schema' : 'Load schema') | transloco }}
+  </button>
+  <span class="muted">{{
+    (schema()
+      ? 'Fields and arguments of the schema are suggested as you type.'
+      : 'Load the schema, by introspection over HTTP at this address, to get suggestions.'
+    ) | transloco
+  }}</span>
+</div>
+<div class="field">
+  <span>{{ 'GraphQL variables' | transloco }}</span>
+  @defer (on immediate) {
+    <app-code-editor
+      [formField]="fields().variables"
+      language="json"
+      size="small"
+      [label]="'GraphQL variables' | transloco"
+    />
+  } @placeholder {
+    <div class="code-editor small" aria-hidden="true"></div>
+  }
+</div>
+@if (settings().graphqlProtocol !== 'graphql-sse') {
+  <div class="field">
+    <span>{{ 'Connection parameters (JSON)' | transloco }}</span>
+    @defer (on immediate) {
+      <app-code-editor
+        [formField]="fields().connectionParams"
+        language="json"
+        size="small"
+        [label]="'Connection parameters (JSON)' | transloco"
+      />
+    } @placeholder {
+      <div class="code-editor small" aria-hidden="true"></div>
+    }
+  </div>
+} @else {
+  <p class="muted">
+    {{
+      'The subscription is POSTed to the URL and its results stream back as server-sent events. Authorize it with the connection headers.'
+        | transloco
+    }}
+  </p>
+}

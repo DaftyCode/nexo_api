@@ -1,0 +1,61 @@
+<header class="topbar">
+  <a class="brand" href="/" [title]="'Nexo home' | transloco">
+    <img class="aurora-brand-mark" src="/templates/aurora/mark.svg" width="44" height="38" alt="" />
+    <span class="aurora-wordmark">Nexo <span>API</span></span>
+  </a>
+  @if (workspace().appearance.current() === 'canvas') {
+    <button
+      class="button canvas-tools-toggle"
+      [attr.aria-label]="'Open workspace tools' | transloco"
+      [attr.aria-expanded]="workspace().navigationOpen()"
+      (click)="workspace().navigationOpen.set(!workspace().navigationOpen())"
+    >
+      <app-studio-icon name="collections" /> {{ 'Tools' | transloco }}
+    </button>
+  }
+  <div class="top-links">
+    @if (workspace().appearance.current() === 'canvas') {
+      <button class="top-link active" (click)="workspace().setSection('collections')">
+        {{ 'API Studio' | transloco }}
+      </button>
+      <button class="top-link" (click)="workspace().browseCollections()">
+        {{ 'Collections' | transloco }}
+      </button>
+      <button class="top-link" (click)="workspace().setSection('environments')">
+        {{ 'Environments' | transloco }}
+      </button>
+      <button class="top-link wide-nav" (click)="workspace().setSection('history')">
+        {{ 'History' | transloco }}
+      </button>
+      <button class="top-link wide-nav" (click)="workspace().setSection('runner')">
+        {{ 'Runner' | transloco }}
+      </button>
+    } @else {
+      <span class="top-link active">{{ 'Workspace' | transloco }}</span>
+    }
+    <a class="top-link" href="/docs">{{ 'Documentation' | transloco }}</a>
+  </div>
+  <label class="top-search">
+    <app-studio-icon name="search" />
+    <input
+      #workspaceSearch
+      [formField]="workspace().fields.search"
+      [attr.aria-label]="'Search requests' | transloco"
+      [placeholder]="'Search requests…' | transloco"
+      (input)="workspace().search($event)"
+      (focus)="workspace().browseCollections()"
+    />
+    <kbd>Ctrl K</kbd>
+  </label>
+  <app-appearance-selector />
+  <app-language-selector />
+  <div class="top-right">
+    <span class="connection-dot"></span
+    ><span>{{
+      workspace().state.health()?.mode === 'web'
+        ? ('Local web workspace' | transloco)
+        : ('Local workspace' | transloco)
+    }}</span
+    ><span class="avatar">{{ 'N' | transloco }}</span>
+  </div>
+</header>

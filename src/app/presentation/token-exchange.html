@@ -1,0 +1,37 @@
+<h2>{{ 'OAuth 2.0 token' | transloco }}</h2>
+<label class="field"
+  >{{ 'Token endpoint' | transloco }}<input [formField]="fields().tokenUrl" /></label
+><label class="field"
+  >{{ 'Grant type' | transloco
+  }}<select [formField]="fields().grant">
+    <option value="client_credentials">{{ 'Client credentials' | transloco }}</option>
+    <option value="authorization_code">
+      {{ 'Authorization code / PKCE' | transloco }}
+    </option>
+    <option value="refresh_token">{{ 'Refresh token' | transloco }}</option>
+  </select></label
+>
+<div class="row">
+  <label class="field grow"
+    >{{ 'Client ID' | transloco }}<input [formField]="fields().clientId" /></label
+  ><label class="field grow"
+    >{{ 'Client secret' | transloco }}<input type="password" [formField]="fields().clientSecret"
+  /></label>
+</div>
+<label class="field">{{ 'Scope' | transloco }}<input [formField]="fields().scope" /></label>
+@if (model().grant !== 'client_credentials') {
+  <label class="field"
+    >{{
+      model().grant === 'refresh_token'
+        ? ('Refresh token' | transloco)
+        : ('Authorization code' | transloco)
+    }}<input [formField]="fields().code" /></label
+  ><label class="field"
+    >{{ 'Redirect URI' | transloco }}<input [formField]="fields().redirectUri" /></label
+  ><label class="field"
+    >{{ 'PKCE code verifier' | transloco }}<input [formField]="fields().verifier"
+  /></label>
+}
+<button class="button primary" (click)="exchange.emit()">
+  {{ 'Get token and use in request' | transloco }}
+</button>

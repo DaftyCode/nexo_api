@@ -1,0 +1,86 @@
+@switch (auth().type) {
+  @case ('digest') {
+    <label class="field"
+      >{{ 'Username' | transloco }}<input [formField]="fields().username" /></label
+    ><label class="field"
+      >{{ 'Password' | transloco
+      }}<input type="password" [formField]="fields().password" autocomplete="off"
+    /></label>
+    <label class="check-field"
+      ><input
+        type="checkbox"
+        [checked]="checked('disableRetryRequest')"
+        (change)="toggle('disableRetryRequest', $event)"
+      />{{ 'Disable retrying the request' | transloco }}</label
+    >
+    <details class="advanced">
+      <summary>{{ 'Advanced' | transloco }}</summary>
+      <p class="muted">
+        {{
+          'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+            | transloco
+        }}
+      </p>
+      @for (field of digestFields; track field.key) {
+        <label class="field"
+          >{{ field.label | transloco
+          }}<input
+            [value]="value(field.key)"
+            (input)="text(field.key, $event)"
+            [placeholder]="field.placeholder"
+            spellcheck="false"
+        /></label>
+      }
+      <label class="field"
+        >{{ 'Algorithm' | transloco
+        }}<select (change)="text('algorithm', $event)">
+          @for (algorithm of digestAlgorithms; track algorithm) {
+            <option [value]="algorithm" [selected]="algorithm === value('algorithm', 'MD5')">
+              {{ algorithm }}
+            </option>
+          }
+        </select></label
+      >
+    </details>
+  }
+  @case ('ntlm') {
+    <label class="field"
+      >{{ 'Username' | transloco }}<input [formField]="fields().username" /></label
+    ><label class="field"
+      >{{ 'Password' | transloco
+      }}<input type="password" [formField]="fields().password" autocomplete="off"
+    /></label>
+    <label class="check-field"
+      ><input
+        type="checkbox"
+        [checked]="checked('disableRetryRequest')"
+        (change)="toggle('disableRetryRequest', $event)"
+      />{{ 'Disable retrying the request' | transloco }}</label
+    >
+    <details class="advanced">
+      <summary>{{ 'Advanced' | transloco }}</summary>
+      <p class="muted">
+        {{
+          'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+            | transloco
+        }}
+      </p>
+      <label class="field"
+        >{{ 'Domain' | transloco
+        }}<input
+          [value]="value('domain')"
+          (input)="text('domain', $event)"
+          placeholder="CORP"
+          spellcheck="false"
+      /></label>
+      <label class="field"
+        >{{ 'Workstation' | transloco
+        }}<input
+          [value]="value('workstation')"
+          (input)="text('workstation', $event)"
+          placeholder="WORKSTATION"
+          spellcheck="false"
+      /></label>
+    </details>
+  }
+}

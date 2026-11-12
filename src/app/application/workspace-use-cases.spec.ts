@@ -132,10 +132,10 @@ describe('WorkspaceUseCases variables', () => {
 
   it('remembers the active environment per workspace', () => {
     const { cases } = fixture();
-    expect(cases.rememberedEnvironment('w')).toBe('');
-    cases.rememberEnvironment('w', 'env-1');
-    expect(cases.rememberedEnvironment('w')).toBe('env-1');
-    expect(cases.rememberedEnvironment('other')).toBe('');
+    expect(cases.variables.rememberedEnvironment('w')).toBe('');
+    cases.variables.rememberEnvironment('w', 'env-1');
+    expect(cases.variables.rememberedEnvironment('w')).toBe('env-1');
+    expect(cases.variables.rememberedEnvironment('other')).toBe('');
   });
 
   it('persists only the scopes that scripts changed', async () => {
@@ -150,7 +150,7 @@ describe('WorkspaceUseCases variables', () => {
       variable: [{ key: 'c', value: 'same' }],
       auth: { type: 'bearer', bearer: [] },
     });
-    const result = await cases.persistScriptVariables(
+    const result = await cases.variables.persistScriptVariables(
       {
         environment: { values: [{ key: 'a', value: '2' }] },
         globals: { values: [] },
@@ -173,7 +173,7 @@ describe('WorkspaceUseCases variables', () => {
       item: [],
       auth: { type: 'bearer', bearer: [] },
     });
-    await cases.persistScriptVariables(
+    await cases.variables.persistScriptVariables(
       { globals: { values: [{ key: 'g', value: 'x' }] }, collection: [{ key: 'n', value: '1' }] },
       { workspace: 'w', collection },
     );
@@ -197,7 +197,7 @@ describe('WorkspaceUseCases variables', () => {
       item: [{ name: 'Local', auth: rootAuth, item: [{ name: 'Request', request: {} }] }],
     });
     const folderAuth = { type: 'apikey', apikey: [{ key: 'key', value: 'X-Key' }] };
-    await cases.saveCollectionSettings(
+    await cases.variables.saveCollectionSettings(
       collection,
       { variables: [emptyVariable('host', 'localhost')], auth: folderAuth },
       [0],
@@ -210,14 +210,14 @@ describe('WorkspaceUseCases variables', () => {
       variable: [{ key: 'host', value: 'localhost' }],
     });
     // Inheriting again removes the folder's own authorization and empty variables.
-    await cases.saveCollectionSettings(saved[0], { variables: [emptyVariable()] }, [0]);
+    await cases.variables.saveCollectionSettings(saved[0], { variables: [emptyVariable()] }, [0]);
     const inherited = saved[1].value as { item: Record<string, unknown>[] };
     expect(inherited.item[0]['auth']).toBeUndefined();
     expect(inherited.item[0]['variable']).toBeUndefined();
     // The original document is not modified in place.
     expect((collection.value as { item: { auth: unknown }[] }).item[0].auth).toEqual(rootAuth);
     await expect(
-      cases.saveCollectionSettings(collection, { variables: [] }, [0, 0]),
+      cases.variables.saveCollectionSettings(collection, { variables: [] }, [0, 0]),
     ).rejects.toThrow('Folder not found');
   });
 });
@@ -225,8 +225,8 @@ describe('WorkspaceUseCases variables', () => {
 describe('WorkspaceUseCases OAuth 2.0 sign-in', () => {
   it('opens the system browser when there is no sign-in window (web version)', async () => {
     const { cases, executed } = fixture();
-    expect(cases.hasSignInWindow).toBe(false);
-    await cases.oauth2Authorize(
+    expect(cases.oauth2.hasSignInWindow).toBe(false);
+    await cases.oauth2.oauth2Authorize(
       { type: 'oauth2' },
       { environment: [], globals: [], ancestors: [] },
     );

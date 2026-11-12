@@ -1,0 +1,43 @@
+<h2>{{ 'Performance run' | transloco }}</h2>
+<p class="muted">
+  {{
+    'Runs the active request repeatedly. This version supports up to four virtual users and 120 seconds.'
+      | transloco
+  }}
+</p>
+<div class="row">
+  <label class="field"
+    >{{ 'Virtual users' | transloco
+    }}<input type="number" [formField]="run().fields.users" /></label
+  ><label class="field"
+    >{{ 'Duration (seconds)' | transloco }}<input type="number" [formField]="run().fields.duration"
+  /></label>
+</div>
+<label class="field"
+  >{{ 'Profile' | transloco
+  }}<select [formField]="run().fields.profile">
+    <option value="fixed">{{ 'Fixed' | transloco }}</option>
+    <option value="ramp-up">{{ 'Ramp up' | transloco }}</option>
+  </select></label
+>
+<div class="row">
+  <button class="button primary" (click)="run().start()">
+    {{ 'Start run' | transloco }}</button
+  ><button class="button" (click)="run().stop()">{{ 'Stop' | transloco }}</button>
+</div>
+@if (run().status(); as status) {
+  <dl class="performance-stats">
+    <dt>{{ 'State' | transloco }}</dt>
+    <dd>{{ status.state }}</dd>
+    <dt>{{ 'Requests' | transloco }}</dt>
+    <dd>{{ status.summary?.requests ?? status.completed ?? 0 }}</dd>
+    <dt>{{ 'Errors' | transloco }}</dt>
+    <dd>{{ status.summary?.errors ?? status.errors ?? 0 }}</dd>
+    <dt>{{ 'Average' | transloco }}</dt>
+    <dd>
+      {{ 'units.duration' | transloco: { v0: (status.average ?? 0).toFixed(0) } }}
+    </dd>
+    <dt>p95</dt>
+    <dd>{{ 'units.duration' | transloco: { v0: status.p95 ?? 0 } }}</dd>
+  </dl>
+}

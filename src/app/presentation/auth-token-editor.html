@@ -1,0 +1,183 @@
+@switch (auth().type) {
+  @case ('jwt') {
+    @let algorithm = value('algorithm', 'HS256');
+    @let inQuery = value('addTokenTo') === 'queryParam';
+    <label class="field"
+      >{{ 'Add JWT token to' | transloco
+      }}<select (change)="text('addTokenTo', $event)">
+        <option value="header" [selected]="!inQuery">
+          {{ 'Request Header' | transloco }}
+        </option>
+        <option value="queryParam" [selected]="inQuery">
+          {{ 'Query Param' | transloco }}
+        </option>
+      </select></label
+    >
+    <label class="field"
+      >{{ 'Algorithm' | transloco
+      }}<select (change)="text('algorithm', $event)">
+        @for (option of jwtAlgorithms; track option) {
+          <option [value]="option" [selected]="option === algorithm">{{ option }}</option>
+        }
+      </select></label
+    >
+    @if (algorithm.startsWith('HS')) {
+      <label class="field"
+        >{{ 'Secret' | transloco
+        }}<input
+          type="password"
+          [value]="value('secret')"
+          (input)="text('secret', $event)"
+          autocomplete="off"
+      /></label>
+      <label class="check-field"
+        ><input
+          type="checkbox"
+          [checked]="checked('isSecretBase64Encoded')"
+          (change)="toggle('isSecretBase64Encoded', $event)"
+        />{{ 'Secret Base64 encoded' | transloco }}</label
+      >
+    } @else {
+      <div class="field">
+        <span>{{ 'Private key' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [value]="value('privateKey')"
+            language="text"
+            size="small"
+            [label]="'Private key' | transloco"
+            placeholder="-----BEGIN PRIVATE KEY-----"
+            (valueChange)="setText('privateKey', $event)"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+    }
+    <div class="field">
+      <span>{{ 'Payload' | transloco }}</span>
+      @defer (on immediate) {
+        <app-code-editor
+          [value]="value('payload')"
+          language="json"
+          size="small"
+          [label]="'Payload' | transloco"
+          [placeholder]="jwtPayloadExample"
+          (valueChange)="setText('payload', $event)"
+        />
+      } @placeholder {
+        <div class="code-editor small" aria-hidden="true"></div>
+      }
+    </div>
+    <details class="advanced">
+      <summary>{{ 'Advanced' | transloco }}</summary>
+      <p class="muted">
+        {{
+          'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+            | transloco
+        }}
+      </p>
+      @if (inQuery) {
+        <label class="field"
+          >{{ 'Query param name' | transloco
+          }}<input
+            [value]="value('queryParamKey')"
+            (input)="text('queryParamKey', $event)"
+            placeholder="token"
+            spellcheck="false"
+        /></label>
+      } @else {
+        <label class="field"
+          >{{ 'Request header prefix' | transloco
+          }}<input
+            [value]="value('headerPrefix', 'Bearer')"
+            (input)="text('headerPrefix', $event)"
+            spellcheck="false"
+        /></label>
+      }
+      <div class="field">
+        <span>{{ 'JWT headers' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [value]="value('header')"
+            language="json"
+            size="small"
+            [label]="'JWT headers' | transloco"
+            [placeholder]="jwtHeaderExample"
+            (valueChange)="setText('header', $event)"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+    </details>
+  }
+  @case ('asap') {
+    @let asapAlgorithm = value('alg', 'RS256');
+    <label class="field"
+      >{{ 'Algorithm' | transloco
+      }}<select (change)="text('alg', $event)">
+        @for (option of asapAlgorithms; track option) {
+          <option [value]="option" [selected]="option === asapAlgorithm">{{ option }}</option>
+        }
+      </select></label
+    >
+    @for (field of asapFields; track field.key) {
+      <label class="field"
+        >{{ field.label | transloco
+        }}<input
+          [value]="value(field.key)"
+          (input)="text(field.key, $event)"
+          [placeholder]="field.placeholder"
+          spellcheck="false"
+      /></label>
+    }
+    <div class="field">
+      <span>{{ 'Private key' | transloco }}</span>
+      @defer (on immediate) {
+        <app-code-editor
+          [value]="value('privateKey')"
+          language="text"
+          size="small"
+          [label]="'Private key' | transloco"
+          placeholder="-----BEGIN PRIVATE KEY-----"
+          (valueChange)="setText('privateKey', $event)"
+        />
+      } @placeholder {
+        <div class="code-editor small" aria-hidden="true"></div>
+      }
+    </div>
+    <details class="advanced">
+      <summary>{{ 'Advanced' | transloco }}</summary>
+      <p class="muted">
+        {{
+          'These are advanced configuration options. They are optional. Nexo API generates values for some fields if left blank.'
+            | transloco
+        }}
+      </p>
+      <label class="field"
+        >{{ 'Expires in (seconds)' | transloco
+        }}<input
+          [value]="value('exp')"
+          (input)="text('exp', $event)"
+          placeholder="3600"
+          inputmode="numeric"
+      /></label>
+      <div class="field">
+        <span>{{ 'Additional claims' | transloco }}</span>
+        @defer (on immediate) {
+          <app-code-editor
+            [value]="value('claims')"
+            language="json"
+            size="small"
+            [label]="'Additional claims' | transloco"
+            [placeholder]="asapClaimsExample"
+            (valueChange)="setText('claims', $event)"
+          />
+        } @placeholder {
+          <div class="code-editor small" aria-hidden="true"></div>
+        }
+      </div>
+    </details>
+  }
+}

@@ -84,8 +84,8 @@ export class MongoProfiler {
     this.error.set('');
     try {
       const cases = await this.mongo();
-      const status = await cases.profile(...this.scope(), database);
-      const entries = await cases.profileEntries(
+      const status = await cases.tuning.profile(...this.scope(), database);
+      const entries = await cases.tuning.profileEntries(
         ...this.scope(),
         database,
         this.onlyCollection() ? this.collection() : undefined,
@@ -150,7 +150,7 @@ export class MongoProfiler {
     try {
       const level = Number(this.level()) as 0 | 1 | 2;
       const cases = await this.mongo();
-      const status = await cases.setProfile(
+      const status = await cases.tuning.setProfile(
         ...this.scope(),
         this.database(),
         level,

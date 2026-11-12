@@ -1,0 +1,112 @@
+<div class="workspace-navigation">
+  @if (workspace().appearance.current() === 'canvas') {
+    <div class="canvas-navigation-heading">
+      <strong>{{ 'Workspace' | transloco }}</strong
+      ><button
+        class="icon-button"
+        [attr.aria-label]="'Close workspace navigation' | transloco"
+        (click)="workspace().closeNavigation()"
+      >
+        ×
+      </button>
+    </div>
+  }
+  @if (workspace().appearance.current() === 'studio') {
+    <div class="studio-sidebar-controls">
+      <button class="button primary" (click)="workspace().state.newTab()">
+        {{ '＋ New request' | transloco }}
+      </button>
+    </div>
+  }
+  <nav class="rail" [attr.aria-label]="'Workspace sections' | transloco">
+    @for (item of workspace().nav; track item.id) {
+      <button
+        [class.active]="workspace().state.section() === item.id"
+        (click)="workspace().setSection(item.id)"
+        [attr.title]="item.label | transloco"
+      >
+        <app-studio-icon class="rail-vector" [name]="item.id" />
+        <span>{{ item.label | transloco }}</span>
+      </button>
+    }
+  </nav>
+  @if (workspace().state.section() === 'collections' || workspace().state.section() === 'history') {
+    <aside class="sidebar" #sidebar (scroll)="workspace().menus.follow(sidebar)">
+      <div class="sidebar-heading">
+        <strong>{{
+          workspace().state.section() === 'history'
+            ? ('History' | transloco)
+            : ('Collections' | transloco)
+        }}</strong
+        ><button
+          class="icon-button"
+          (click)="workspace().dialogs.set('collection')"
+          [attr.aria-label]="'Create collection' | transloco"
+        >
+          +
+        </button>
+      </div>
+      <div class="sidebar-search">
+        <span>⌕</span
+        ><input
+          #collectionSearch
+          [placeholder]="'Filter collections' | transloco"
+          [attr.aria-label]="'Filter collections' | transloco"
+          [value]="workspace().state.filter()"
+          (input)="workspace().search($event)"
+        />
+      </div>
+      @if (workspace().state.section() === 'history') {
+        @for (history of workspace().state.history(); track history.id) {
+          <button class="history-item" (click)="workspace().state.openHistory(history)">
+            <span>{{ history.name }}</span
+            ><small>{{
+              history.updated_at * 1000
+                | date: 'short' : undefined : workspace().language.model().language
+            }}</small>
+          </button>
+        }
+        @if (!workspace().state.history().length) {
+          <div class="sidebar-empty">
+            {{ 'Your requests will appear here as you send them.' | transloco }}
+          </div>
+        }
+      } @else {
+        <app-collection-tree [workspace]="workspace()" />
+      }
+      <div class="sidebar-bottom">
+        <span class="connection-dot"></span
+        >{{
+          'workspace.savedOn'
+            | transloco
+              : {
+                  v0: 'device' | transloco,
+                }
+        }}
+      </div>
+    </aside>
+    @if (workspace().appearance.current() === 'aurora') {
+      <app-splitter
+        target=".sidebar"
+        neighbor=".main-workspace"
+        [neighborMin]="420"
+        [label]="'Resize the sidebar' | transloco"
+        (resized)="workspace().appearance.resize('sidebar', $event)"
+        (settled)="workspace().appearance.save()"
+        (restore)="workspace().appearance.reset('sidebar')"
+      />
+    }
+  }
+  @if (workspace().appearance.current() !== 'aurora') {
+    <app-splitter
+      class="navigation-splitter"
+      target=".workspace-navigation"
+      [neighbor]="workspace().appearance.current() === 'studio' ? '.main-workspace' : ''"
+      [neighborMin]="420"
+      [label]="'Resize the sidebar' | transloco"
+      (resized)="workspace().appearance.resize('sidebar', $event)"
+      (settled)="workspace().appearance.save()"
+      (restore)="workspace().appearance.reset('sidebar')"
+    />
+  }
+</div>

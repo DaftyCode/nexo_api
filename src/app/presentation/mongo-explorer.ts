@@ -11,45 +11,39 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { FormField, form } from '@angular/forms/signals';
-import { WorkspaceState, named } from './workspace-state';
-import { CodeEditor } from './code-editor';
-import { JsonFormat, MongoResults, ResultsView } from './mongo-results';
+import { form } from '@angular/forms/signals';
+import { WorkspaceState } from './workspace-state';
+import { JsonFormat, ResultsView } from './mongo-results';
 import { MongoDialog } from './mongo-dialog';
 import { MongoWrites } from './mongo-writes';
 import { MongoIndexes } from './mongo-indexes';
 import { MongoExplain } from './mongo-explain';
 import { MongoProfiler } from './mongo-profiler';
-import { Explainable, formatBytes } from '../domain/mongo-indexes';
+import { formatBytes } from '../domain/mongo-indexes';
 import { WRITE_CONCERNS, WriteConcernChoice, changeValue } from '../domain/mongo-write';
+import { MongoBrowser } from './mongo-explorer/browser';
+import { MongoExplains } from './mongo-explorer/explains';
+import { MongoQueryLibrary } from './mongo-explorer/library';
+import { MongoPager } from './mongo-explorer/pager';
+import { MongoExplorerDocuments } from './mongo-explorer-documents';
+import { MongoExplorerSidebar } from './mongo-explorer-sidebar';
 import { MONGO } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
 import { resolveVariables } from '../domain/variables';
-import { connectionFolders, connectionValue } from '../domain/mongo';
+import { connectionValue } from '../domain/mongo';
 import {
   BuiltQuery,
   CollectionStats,
   CollectionSummary,
-  DatabaseSummary,
-  MongoQueryValue,
   QueryFieldError,
   QueryForm,
   buildQuery,
   emptyQueryForm,
-  queryValue,
 } from '../domain/mongo-query';
-import type { ExplainedQuery, QueryTarget } from '../application/mongo-use-cases';
+import type { QueryTarget } from '../application/mongo-use-cases';
 
 /** The views of a collection. */
 export type ExplorerTab = 'documents' | 'indexes' | 'explain' | 'profiler';
-
-/** An explain shown, with what it explained. */
-interface Explained {
-  target: QueryTarget;
-  query: ExplainedQuery;
-  executed: boolean;
-  result: unknown;
-}
 
 interface QueryModel extends QueryForm {
   /** Name and folder to save the query with. */
@@ -58,20 +52,6 @@ interface QueryModel extends QueryForm {
   pageSize: string;
 }
 
-/** A page of results already read, and where it starts. */
-interface Page {
-  offset: number;
-  documents: Record<string, unknown>[];
-  truncated: boolean;
-  elapsedMs: number;
-}
-
-/** Pages kept to go back without asking the server again. */
-const KEPT_PAGES = 5;
-/** History entries shown for a connection. */
-const HISTORY_SHOWN = 20;
-/** Recorded writes shown for a connection. */
-const CHANGES_SHOWN = 10;
 export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
 
 /**
@@ -81,13 +61,12 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
 @Component({
   imports: [
     TranslocoPipe,
-    FormField,
-    CodeEditor,
-    MongoResults,
     MongoDialog,
     MongoIndexes,
     MongoExplain,
     MongoProfiler,
+    MongoExplorerSidebar,
+    MongoExplorerDocuments,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -97,10 +76,10 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
 export class MongoExplorer {
   readonly connection = input.required<WorkspaceDocument>();
   readonly closed = output<void>();
-  protected readonly state = inject(WorkspaceState);
+  readonly state = inject(WorkspaceState);
   private readonly mongo = inject(MONGO);
-  protected readonly pageSizes = PAGE_SIZES;
-  protected readonly fieldLabels: Record<string, string> = {
+  readonly pageSizes = PAGE_SIZES;
+  readonly fieldLabels: Record<string, string> = {
     filter: 'Filter',
     projection: 'Projection',
     sort: 'Sort',
@@ -110,59 +89,39 @@ export class MongoExplorer {
     limit: 'Limit',
   };
 
-  protected readonly error = signal('');
-  protected readonly notice = signal('');
-  protected readonly loadingDatabases = signal(false);
-  protected readonly databases = signal<DatabaseSummary[]>([]);
-  /** Collections of the databases opened in the tree. */
-  protected readonly collections = signal<Record<string, CollectionSummary[] | 'loading'>>({});
-  protected readonly target = signal<(QueryTarget & { kind: string }) | undefined>(undefined);
-  protected readonly stats = signal<CollectionStats | undefined>(undefined);
-
-  protected readonly model = signal<QueryModel>({
+  readonly error = signal('');
+  readonly notice = signal('');
+  readonly target = signal<(QueryTarget & { kind: string }) | undefined>(undefined);
+  readonly model = signal<QueryModel>({
     ...emptyQueryForm(),
     name: '',
     folder: '',
     pageSize: '50',
   });
-  protected readonly fields = form(this.model);
-  protected readonly moreOptions = signal(false);
+  readonly fields = form(this.model);
+  readonly moreOptions = signal(false);
   /** A field of the query that cannot be used, and why. */
-  protected readonly problem = signal<
+  readonly problem = signal<
     { field: string; key: string; params: Record<string, unknown> } | undefined
   >(undefined);
-
-  /** The query whose pages are shown, as it was sent. */
-  private ran: { target: QueryTarget; query: BuiltQuery; pageSize: number } | undefined;
-  protected readonly pages = signal<Page[]>([]);
-  protected readonly page = signal(0);
-  /** The open cursor after the newest page read. */
-  private readonly cursor = signal<string | undefined>(undefined);
-  protected readonly running = signal<string | undefined>(undefined);
-  protected readonly total = signal<number | undefined>(undefined);
-  protected readonly view = signal<ResultsView>('table');
-  protected readonly format = signal<JsonFormat>('shell');
-  /** The saved query being edited, if one was opened. */
-  protected readonly savedId = signal('');
-  protected readonly tab = signal<ExplorerTab>('documents');
+  readonly view = signal<ResultsView>('table');
+  readonly format = signal<JsonFormat>('shell');
+  readonly tab = signal<ExplorerTab>('documents');
   /** The views a collection has: a view has no indexes of its own. */
   protected readonly tabs = computed<ExplorerTab[]>(() =>
     this.target()?.kind === 'view'
       ? ['documents', 'explain', 'profiler']
       : ['documents', 'indexes', 'explain', 'profiler'],
   );
-  /** The last explain, of the query bar or of an operation the profiler recorded. */
-  protected readonly explained = signal<Explained | undefined>(undefined);
-  protected readonly explainedPipeline = computed(() => {
-    const explained = this.explained();
-    return !!explained && 'pipeline' in explained.query;
-  });
-
-  protected readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
+  readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
   /** A read-only connection shows no write: the backend refuses them anyway. */
-  protected readonly writable = computed(() => !connectionValue(this.connection().value).readOnly);
-  protected readonly writeConcerns = WRITE_CONCERNS;
-  protected readonly writes = new MongoWrites({
+  readonly writable = computed(() => !connectionValue(this.connection().value).readOnly);
+  readonly writeConcerns = WRITE_CONCERNS;
+  readonly browser = new MongoBrowser(this);
+  readonly pager = new MongoPager(this);
+  readonly library = new MongoQueryLibrary(this);
+  readonly explains = new MongoExplains(this);
+  readonly writes = new MongoWrites({
     state: this.state,
     cases: () => this.mongo(),
     connection: () => this.connection(),
@@ -174,173 +133,63 @@ export class MongoExplorer {
       const query = this.query();
       return query && (query.filter ?? {});
     },
-    refresh: () => this.find(this.current()?.offset),
-    reloadCollections: (database) => this.loadCollections(database),
-    reloadDatabases: () => this.loadDatabases(),
+    refresh: () => this.pager.find(this.pager.current()?.offset),
+    reloadCollections: (database) => this.browser.loadCollections(database),
+    reloadDatabases: () => this.browser.loadDatabases(),
     choose: (database, collection) => this.select(database, collection),
     fail: (error) => this.fail(error),
   });
-  /** The latest writes of this connection, to undo them. */
-  protected readonly changes = computed(() =>
-    this.state
-      .documents()
-      .filter(
-        (d) =>
-          d.kind === 'database-change' && changeValue(d.value).connection === this.connection().id,
-      )
-      .sort((a, b) => b.updated_at - a.updated_at)
-      .slice(0, CHANGES_SHOWN),
-  );
-  protected readonly current = computed<Page | undefined>(() => this.pages()[this.page()]);
-  protected readonly hasNext = computed(() => {
-    const pages = this.pages();
-    return this.page() < pages.length - 1 || (this.page() === pages.length - 1 && !!this.cursor());
-  });
-  protected readonly hasPrevious = computed(
-    () => (this.current()?.offset ?? 0) > (this.ran?.query.skip ?? 0) || this.page() > 0,
-  );
-  protected readonly queryFolders = computed(() =>
-    this.savedQueries()
-      .map((group) => group.folder)
-      .filter(Boolean),
-  );
-  protected readonly savedQueries = computed(() =>
-    connectionFolders(
-      this.state
-        .documents()
-        .filter(
-          (d) => d.kind === 'query' && queryValue(d.value).connection === this.connection().id,
-        ),
-    ),
-  );
-  protected readonly history = computed(() =>
-    this.state
-      .documents()
-      .filter(
-        (d) =>
-          d.kind === 'query-history' && queryValue(d.value).connection === this.connection().id,
-      )
-      .sort((a, b) => b.updated_at - a.updated_at)
-      .slice(0, HISTORY_SHOWN),
-  );
 
   constructor() {
     effect(() => {
       this.connection();
-      untracked(() => void this.loadDatabases());
+      untracked(() => void this.browser.loadDatabases());
     });
-    inject(DestroyRef).onDestroy(() => this.closeCursor());
+    inject(DestroyRef).onDestroy(() => this.pager.closeCursor());
   }
 
-  private async use<T>(action: (cases: Awaited<ReturnType<typeof this.mongo>>) => Promise<T>) {
+  async use<T>(action: (cases: Awaited<ReturnType<typeof this.mongo>>) => Promise<T>) {
     return action(await this.mongo());
   }
-  private fail(error: unknown) {
+  fail(error: unknown) {
     this.error.set(this.state.describe(error));
-  }
-
-  protected async loadDatabases() {
-    this.error.set('');
-    this.loadingDatabases.set(true);
-    try {
-      const databases = await this.use((cases) =>
-        cases.databases(this.state.workspaceId(), this.connection(), this.state.scopes()),
-      );
-      this.databases.set(databases);
-      // Databases that were open stay open, with their collections listed again.
-      const open = Object.keys(this.collections()).filter((name) =>
-        databases.some((database) => database.name === name),
-      );
-      this.collections.set({});
-      await Promise.all(open.map((name) => this.loadCollections(name)));
-    } catch (error) {
-      this.fail(error);
-    } finally {
-      this.loadingDatabases.set(false);
-    }
-  }
-
-  /** Opens or closes a database in the tree, listing its collections the first time. */
-  protected async toggleDatabase(name: string) {
-    const known = this.collections()[name];
-    if (known) {
-      this.collections.update(({ [name]: _, ...rest }) => rest);
-      return;
-    }
-    await this.loadCollections(name);
   }
   /** Chooses a collection by its name, or none (after it was dropped). */
   private async select(database: string, name?: string) {
     if (!name) {
-      this.reset();
+      this.pager.reset();
       this.target.set(undefined);
-      this.stats.set(undefined);
+      this.browser.stats.set(undefined);
       return;
     }
-    const found = this.listed(database).find((c) => c.name === name) ?? {
+    const found = this.browser.listed(database).find((c) => c.name === name) ?? {
       name,
       kind: 'collection' as const,
       capped: false,
     };
     this.choose(database, found);
   }
-  protected undoable(change: WorkspaceDocument) {
+  undoable(change: WorkspaceDocument) {
     return changeValue(change.value).changes.length > 0;
   }
-  protected setConcern(event: Event) {
+  setConcern(event: Event) {
     this.writes.concern.set((event.target as HTMLSelectElement).value as WriteConcernChoice);
   }
-  private async loadCollections(name: string) {
-    this.collections.update((all) => ({ ...all, [name]: 'loading' }));
-    try {
-      const listed = await this.use((cases) =>
-        cases.collections(this.state.workspaceId(), this.connection(), this.state.scopes(), name),
-      );
-      this.collections.update((all) => ({ ...all, [name]: listed }));
-    } catch (error) {
-      this.collections.update(({ [name]: _, ...rest }) => rest);
-      this.fail(error);
-    }
-  }
-  protected listed(name: string): CollectionSummary[] {
-    const listed = this.collections()[name];
-    return Array.isArray(listed) ? listed : [];
-  }
-  protected kindLabel(collection: CollectionSummary) {
-    if (collection.gridfs) return 'GridFS';
-    if (collection.kind === 'view') return 'View';
-    if (collection.kind === 'timeseries') return 'Time series';
-    if (collection.name.startsWith('system.')) return 'System';
-    return '';
-  }
-
   /** Chooses a collection: its statistics load, and the query runs at once, as Compass does. */
-  protected choose(database: string, collection: CollectionSummary, run = true) {
+  choose(database: string, collection: CollectionSummary, run = true) {
     const changed =
       this.target()?.database !== database || this.target()?.collection !== collection.name;
     this.target.set({ database, collection: collection.name, kind: collection.kind });
     if (collection.kind === 'view' && this.tab() === 'indexes') this.tab.set('documents');
     if (changed) {
-      this.reset();
-      this.stats.set(undefined);
-      if (collection.kind !== 'view') void this.loadStats();
+      this.pager.reset();
+      this.browser.stats.set(undefined);
+      if (collection.kind !== 'view') void this.browser.loadStats();
     }
-    if (run) void this.find();
+    if (run) void this.pager.find();
   }
-  protected async loadStats() {
-    const target = this.target();
-    if (!target) return;
-    try {
-      const stats = await this.use((cases) =>
-        cases.stats(this.state.workspaceId(), this.connection(), this.state.scopes(), target),
-      );
-      if (this.target() === target) this.stats.set(stats);
-    } catch {
-      // Some servers and time series collections have no statistics: the query still works.
-    }
-  }
-
-  private query(): BuiltQuery | undefined {
+  /** The query of the bar, or `undefined` when a field cannot be used (it says why). */
+  query(): BuiltQuery | undefined {
     this.problem.set(undefined);
     try {
       const scopes = this.state.scopes();
@@ -355,287 +204,13 @@ export class MongoExplorer {
       throw error;
     }
   }
-
-  /** Runs the query and shows its first page. */
-  protected async find(skipFrom?: number) {
-    const target = this.target();
-    if (!target || this.running()) return;
-    const query = this.query();
-    if (!query) return;
-    const pageSize = Number(this.model().pageSize) || 50;
-    const first = skipFrom === undefined;
-    const offset = skipFrom ?? query.skip ?? 0;
-    const sent: BuiltQuery = { ...query };
-    if (offset) sent.skip = offset;
-    if (query.limit) {
-      const left = query.limit - (offset - (query.skip ?? 0));
-      if (left <= 0) return;
-      sent.limit = left;
-    }
-    this.closeCursor();
-    const id = crypto.randomUUID();
-    this.running.set(id);
-    this.error.set('');
-    try {
-      const page = await this.use((cases) =>
-        cases.find(
-          this.state.workspaceId(),
-          this.connection(),
-          this.state.scopes(),
-          target,
-          sent,
-          id,
-          pageSize,
-        ),
-      );
-      this.ran = { target, query, pageSize };
-      this.pages.set([{ offset, ...page }]);
-      this.page.set(0);
-      this.cursor.set(page.cursor);
-      if (first) {
-        this.total.set(undefined);
-        void this.record(target);
-      }
-    } catch (error) {
-      this.fail(error);
-    } finally {
-      this.running.set(undefined);
-    }
-  }
-
-  protected async next() {
-    const pages = this.pages();
-    const index = this.page();
-    if (index < pages.length - 1) {
-      this.page.set(index + 1);
-      return;
-    }
-    const cursor = this.cursor();
-    const current = pages[index];
-    if (!cursor || !current || !this.ran || this.running()) return;
-    const id = crypto.randomUUID();
-    this.running.set(id);
-    this.error.set('');
-    try {
-      const page = await this.use((cases) =>
-        cases.more(this.state.workspaceId(), cursor, id, this.ran?.pageSize ?? 50),
-      );
-      const offset = current.offset + current.documents.length;
-      this.pages.update((kept) => [...kept, { offset, ...page }].slice(-KEPT_PAGES));
-      this.page.set(Math.min(index + 1, KEPT_PAGES - 1));
-      this.cursor.set(page.cursor);
-    } catch (error) {
-      this.cursor.set(undefined);
-      this.fail(error);
-    } finally {
-      this.running.set(undefined);
-    }
-  }
-
-  protected async previous() {
-    const index = this.page();
-    if (index > 0) {
-      this.page.set(index - 1);
-      return;
-    }
-    // Older than the pages kept: the query runs again from there.
-    const current = this.current();
-    if (!current || !this.ran) return;
-    const start = Math.max(this.ran.query.skip ?? 0, current.offset - this.ran.pageSize);
-    await this.find(start);
-  }
-
-  protected async count() {
-    const target = this.target();
-    if (!target || this.running()) return;
-    const query = this.query();
-    if (!query) return;
-    const id = crypto.randomUUID();
-    this.running.set(id);
-    this.error.set('');
-    try {
-      this.total.set(
-        await this.use((cases) =>
-          cases.count(
-            this.state.workspaceId(),
-            this.connection(),
-            this.state.scopes(),
-            target,
-            query,
-            id,
-          ),
-        ),
-      );
-    } catch (error) {
-      this.fail(error);
-    } finally {
-      this.running.set(undefined);
-    }
-  }
-
-  /** How the server runs the query of the bar: run and measured, or only planned. */
-  protected explainQuery(executed = true) {
-    const target = this.target();
-    if (!target) return;
-    const query = this.query();
-    if (!query) {
-      this.tab.set('documents');
-      return;
-    }
-    const { database, collection } = target;
-    void this.runExplain({ database, collection }, { query }, executed);
-  }
-  /** Explains again an operation the profiler recorded. */
-  protected explainEntry({ database, collection, query, pipeline }: Explainable) {
-    void this.runExplain(
-      { database, collection },
-      pipeline ? { pipeline } : { query: query ?? {} },
-      true,
-    );
-  }
-  /** Explains again what is shown, measured or only planned. */
-  protected explainAgain(executed: boolean) {
-    const shown = this.explained();
-    if (shown) void this.runExplain(shown.target, shown.query, executed);
-  }
-  private async runExplain(target: QueryTarget, query: ExplainedQuery, executed: boolean) {
-    if (this.running()) return;
-    const id = crypto.randomUUID();
-    this.running.set(id);
-    this.error.set('');
-    this.tab.set('explain');
-    try {
-      const result = await this.use((cases) =>
-        cases.explain(
-          this.state.workspaceId(),
-          this.connection(),
-          this.state.scopes(),
-          target,
-          query,
-          executed,
-          id,
-        ),
-      );
-      this.explained.set({ target, query, executed, result });
-    } catch (error) {
-      this.fail(error);
-    } finally {
-      this.running.set(undefined);
-    }
-  }
-
-  protected async cancel() {
-    const id = this.running();
-    if (!id) return;
-    try {
-      await this.use((cases) => cases.cancel(this.state.workspaceId(), id));
-    } catch (error) {
-      this.fail(error);
-    }
-  }
-
-  private closeCursor() {
-    const cursor = this.cursor();
-    this.cursor.set(undefined);
-    if (cursor) void this.use((cases) => cases.close(this.state.workspaceId(), cursor));
-  }
-
-  private reset() {
-    this.closeCursor();
-    this.pages.set([]);
-    this.page.set(0);
-    this.total.set(undefined);
-    this.ran = undefined;
-  }
-
-  /** The query as it is stored: where it runs and its fields as typed. */
-  private value(target: QueryTarget): MongoQueryValue {
-    const { name: _, pageSize: __, folder: ___, ...form } = this.model();
-    const { database, collection } = target;
-    return { ...form, connection: this.connection().id, database, collection };
-  }
-
-  /** Adds the query to the history, unless it is the one there already. */
-  private async record(target: QueryTarget) {
-    const value = this.value(target);
-    const last = this.history()[0];
-    if (last && JSON.stringify(queryValue(last.value)) === JSON.stringify(queryValue(value)))
-      return;
-    try {
-      const saved = await this.use((cases) => cases.recordHistory(this.state.workspaceId(), value));
-      this.state.applySaved([saved]);
-    } catch {
-      // The history is a convenience: the query already ran.
-    }
-  }
-
-  protected async save() {
-    const target = this.target();
-    if (!target) return;
-    this.error.set('');
-    this.notice.set('');
-    await this.state.announce('The query could not be saved', async () => {
-      const existing = this.state.documents().find((d) => d.id === this.savedId());
-      const saved = await this.use((cases) =>
-        cases.saveQuery(
-          this.state.workspaceId(),
-          this.model().name,
-          { ...this.value(target), folder: this.model().folder.trim() },
-          existing,
-        ),
-      );
-      this.state.applySaved([saved]);
-      this.savedId.set(saved.id);
-      this.model.update((model) => ({ ...model, name: saved.name }));
-      return named('Query saved', saved.name);
-    });
-  }
-
-  protected async removeSaved(document: WorkspaceDocument) {
-    if (!this.state.confirm('Delete this saved query?')) return;
-    this.error.set('');
-    await this.state.announce('The query could not be deleted', async () => {
-      await this.use((cases) => cases.removeQuery(document));
-      this.state.forget(document);
-      if (this.savedId() === document.id) this.savedId.set('');
-      return named('Query deleted', document.name);
-    });
-  }
-
-  /** Opens a saved query or one of the history: its collection is chosen and it runs. */
-  protected async openQuery(document: WorkspaceDocument, saved: boolean) {
-    const value = await this.use((cases) => cases.historyQuery(document));
-    this.savedId.set(saved ? document.id : '');
-    const { connection: _, database, collection, folder: __, ...form } = value;
-    this.model.update((model) => ({
-      ...model,
-      ...form,
-      name: saved ? document.name : '',
-      folder: saved ? (value.folder ?? '') : '',
-    }));
-    this.moreOptions.set(!!(form.collation || form.hint || form.skip || form.limit));
-    if (!this.collections()[database]) await this.loadCollections(database);
-    const found = this.listed(database).find((c) => c.name === collection) ?? {
-      name: collection,
-      kind: 'collection' as const,
-      capped: false,
-    };
-    this.choose(database, found);
-  }
-
-  protected newQuery() {
-    this.savedId.set('');
-    this.model.update((model) => ({ ...model, ...emptyQueryForm(), name: '', folder: '' }));
-    this.problem.set(undefined);
-  }
-
-  protected setView(view: ResultsView) {
+  setView(view: ResultsView) {
     this.view.set(view);
   }
-  protected setFormat(event: Event) {
+  setFormat(event: Event) {
     this.format.set((event.target as HTMLSelectElement).value as JsonFormat);
   }
-  protected readonly bytes = formatBytes;
+  readonly bytes = formatBytes;
   protected indexNames(stats: CollectionStats) {
     return stats.indexes.map((index) => index.name).join(', ');
   }

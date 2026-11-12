@@ -43,7 +43,7 @@ describe('MongoUseCases', () => {
   it('saves the password and the key in the vault and only their references', async () => {
     const { api, calls } = fakeApi();
     const mongo = new MongoUseCases(api, () => 'c1');
-    const saved = await mongo.save(
+    const saved = await mongo.connections.save(
       'local',
       ' Production ',
       { uri: 'mongodb://ana@db.test/', folder: ' ', color: '#57ab5a', readOnly: true },
@@ -70,7 +70,7 @@ describe('MongoUseCases', () => {
     expect((saved.value as object as Record<string, unknown>)['folder']).toBeUndefined();
 
     // Saved again with nothing typed, the stored references stay; a reference typed is kept.
-    const again = await mongo.save(
+    const again = await mongo.connections.save(
       'local',
       'Production',
       saved.value as never,
@@ -85,7 +85,7 @@ describe('MongoUseCases', () => {
   it('deletes the secrets it created with the connection', async () => {
     const { api, calls } = fakeApi();
     const mongo = new MongoUseCases(api, () => 'c1');
-    await mongo.remove({
+    await mongo.connections.remove({
       id: 'c1',
       workspace_id: 'local',
       kind: 'connection',
@@ -103,7 +103,7 @@ describe('MongoUseCases', () => {
   it('tests with environment variables replaced and typed secrets as they are', async () => {
     const { api, calls } = fakeApi();
     const mongo = new MongoUseCases(api, () => 'c1');
-    await mongo.test(
+    await mongo.connections.test(
       'local',
       {
         uri: 'mongodb://{{user}}@{{host}}/?authSource={{vault:db}}&x={{missing}}',
@@ -135,7 +135,7 @@ describe('MongoUseCases', () => {
     const { api, calls } = fakeApi();
     let id = 0;
     const mongo = new MongoUseCases(api, () => `c${++id}`);
-    const saved = await mongo.importCompass(
+    const saved = await mongo.connections.importCompass(
       'local',
       JSON.stringify({
         type: 'Compass Connections',
@@ -156,7 +156,7 @@ describe('MongoUseCases', () => {
       ['mongo-password:c1', 'pw'],
     ]);
     await expect(
-      mongo.importCompass('local', '{"type":"Compass Connections","connections":[]}'),
+      mongo.connections.importCompass('local', '{"type":"Compass Connections","connections":[]}'),
     ).rejects.toThrow('The file has no connections');
   });
 });

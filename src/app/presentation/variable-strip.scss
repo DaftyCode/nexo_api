@@ -1,0 +1,55 @@
+:host {
+  display: contents;
+}
+.variable-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px 8px;
+  font-size: 11px;
+}
+.variable-strip-label {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.variable-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid #27b39155;
+  border-radius: 999px;
+  background: #27b3911a;
+  color: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.variable-chip code {
+  font-size: 11px;
+}
+.variable-chip span {
+  color: var(--muted);
+}
+.variable-chip[data-scope='collection'] {
+  border-color: #7d70e955;
+  background: #7d70e91a;
+}
+.variable-chip[data-scope='globals'] {
+  border-color: #5aa0e755;
+  background: #5aa0e71a;
+}
+.variable-chip[data-scope='dynamic'],
+.variable-chip[data-scope='vault'] {
+  border-color: #8888;
+  background: #8881;
+}
+.variable-chip.undefined {
+  border-color: #e75a5a99;
+  background: #e75a5a1f;
+}
+.variable-chip.undefined span {
+  color: #ff9b9b;
+}

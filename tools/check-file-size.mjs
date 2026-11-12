@@ -27,26 +27,6 @@ const EXCEPTIONS = [
   },
 ];
 
-/** Files still to split (docs/tareas/R-01-dividir-componentes.md). Temporary: each one leaves
- * this list in the change that splits it, and nothing is added to it. */
-const PENDING = [
-  'src/app/application/mongo-use-cases.ts',
-  'src/app/application/workspace-use-cases.ts',
-  'src/app/presentation/auth-editor.html',
-  'src/app/presentation/integration-panel.html',
-  'src/app/presentation/integration-panel.ts',
-  'src/app/presentation/mongo-explorer.html',
-  'src/app/presentation/mongo-explorer.ts',
-  'src/app/presentation/mongo-panel.html',
-  'src/app/presentation/mongo-writes.ts',
-  'src/app/presentation/oauth2-editor.html',
-  'src/app/presentation/protocol-panel.html',
-  'src/app/presentation/request-editor.html',
-  'src/app/presentation/workspace-state.ts',
-  'src/app/presentation/workspace.html',
-  'src/app/presentation/workspace.ts',
-];
-
 /** Written by tools or not text: lockfiles, images, fonts and archives. */
 const SKIPPED =
   /(?:^|\/)(?:package-lock\.json|Cargo\.lock)$|\.(?:png|jpe?g|gif|ico|icns|webp|svg|woff2?|ttf|otf|pdf|zip|gz|wasm|exe|dll|der|p12|pfx)$/i;
@@ -67,7 +47,6 @@ const paths = execFileSync(
   .filter(Boolean);
 
 const failures = [];
-const pending = [];
 for (const path of paths) {
   if (SKIPPED.test(path) || EXCEPTIONS.some(({ pattern }) => pattern.test(path))) continue;
   let text;
@@ -77,27 +56,16 @@ for (const path of paths) {
     continue; // Deleted from the working tree but still in the index.
   }
   const lines = lineCount(text);
-  if (lines <= MAX_LINES) continue;
-  (PENDING.includes(path) ? pending : failures).push({ path, lines });
+  if (lines > MAX_LINES) failures.push({ path, lines });
 }
-// A pending file that is already short enough must leave the list.
-const done = PENDING.filter((path) => !pending.some((entry) => entry.path === path));
-if (pending.length > 0) {
-  console.warn(`${pending.length} files are still to split (PENDING):`);
-  for (const { path, lines } of pending) console.warn(`  ${lines}\t${path}`);
-}
-if (failures.length > 0 || done.length > 0) {
+if (failures.length > 0) {
   failures.sort((a, b) => b.lines - a.lines);
-  if (failures.length > 0)
-    console.error(
-      `${failures.length} files are longer than ${MAX_LINES} lines; split them by what they do:`,
-    );
+  console.error(
+    `${failures.length} files are longer than ${MAX_LINES} lines; split them by what they do:`,
+  );
   for (const { path, lines } of failures) console.error(`  ${lines}\t${path}`);
-  for (const path of done) console.error(`  ${path} is split: remove it from PENDING.`);
   process.exit(1);
 }
 console.log(
-  pending.length > 0
-    ? `File sizes: no other file passes ${MAX_LINES} lines; ${pending.length} still to split.`
-    : `File sizes: every file has at most ${MAX_LINES} lines (${EXCEPTIONS.length} exceptions).`,
+  `File sizes: every file has at most ${MAX_LINES} lines (${EXCEPTIONS.length} exceptions).`,
 );

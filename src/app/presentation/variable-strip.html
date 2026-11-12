@@ -1,0 +1,18 @@
+<div class="variable-strip" [attr.aria-label]="'Variables used by this request' | transloco">
+  <span class="variable-strip-label">{{ 'Variables' | transloco }}</span>
+  @for (variable of variables(); track variable.name) {
+    <button
+      type="button"
+      class="variable-chip"
+      [class.undefined]="!variable.defined"
+      [attr.data-scope]="variable.scope ?? 'missing'"
+      [title]="variableTitle(variable) | transloco"
+      (click)="manage.emit()"
+    >
+      <code>{{ variable.name }}</code>
+      <span>{{
+        variable.defined ? ('scope.' + variable.scope | transloco) : ('Not defined' | transloco)
+      }}</span>
+    </button>
+  }
+</div>

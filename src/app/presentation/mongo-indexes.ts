@@ -87,7 +87,7 @@ export class MongoIndexes {
     this.loading.set(true);
     this.error.set('');
     try {
-      const listed = await (await this.mongo()).indexes(...this.scope(), target);
+      const listed = await (await this.mongo()).tuning.indexes(...this.scope(), target);
       if (this.target() === target) this.indexes.set(listed);
     } catch (error) {
       this.indexes.set([]);
@@ -122,7 +122,7 @@ export class MongoIndexes {
     this.busy.set(true);
     try {
       const cases = await this.mongo();
-      await cases.createIndex(...this.scope(), this.target(), request.keys, request.options);
+      await cases.tuning.createIndex(...this.scope(), this.target(), request.keys, request.options);
       const name =
         typeof request.options['name'] === 'string'
           ? request.options['name']
@@ -150,7 +150,7 @@ export class MongoIndexes {
       },
       async () => {
         const cases = await this.mongo();
-        await cases.hideIndex(...this.scope(), this.target(), index.name, hidden);
+        await cases.tuning.hideIndex(...this.scope(), this.target(), index.name, hidden);
         return hidden ? 'Index hidden' : 'Index shown';
       },
       index.name,
@@ -168,7 +168,7 @@ export class MongoIndexes {
       },
       async () => {
         const cases = await this.mongo();
-        await cases.dropIndex(...this.scope(), this.target(), index.name, index.name);
+        await cases.tuning.dropIndex(...this.scope(), this.target(), index.name, index.name);
         return 'Index dropped';
       },
       index.name,

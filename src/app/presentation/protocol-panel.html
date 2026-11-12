@@ -116,71 +116,12 @@
       /></label>
     }
     @if (model().protocol === 'kafka') {
-      <p class="editor-hint">
-        {{ 'Bootstrap servers as host:port, separated by commas.' | transloco }}
-      </p>
-      <div class="row">
-        <label class="check-field"
-          ><input type="checkbox" [formField]="fields.tls" /> {{ 'Use TLS' | transloco }}</label
-        ><label class="field grow"
-          >{{ 'SASL' | transloco
-          }}<select [formField]="fields.saslMechanism">
-            <option value="none">{{ 'None' | transloco }}</option>
-            <option value="PLAIN">PLAIN</option>
-            <option value="SCRAM-SHA-256">SCRAM-SHA-256</option>
-            <option value="SCRAM-SHA-512">SCRAM-SHA-512</option>
-          </select></label
-        >
-      </div>
-      @if (model().saslMechanism !== 'none') {
-        <div class="row">
-          <label class="field grow"
-            >{{ 'Username' | transloco
-            }}<input [formField]="fields.username" autocomplete="off" /></label
-          ><label class="field grow"
-            >{{ 'Password' | transloco
-            }}<input type="password" [formField]="fields.password" autocomplete="off"
-          /></label>
-        </div>
-        <p class="editor-hint">
-          {{ 'Keep the password in the vault and write its reference:' | transloco }}
-          <code>{{ vaultExample }}</code
-          >. {{ 'It is only sent to the brokers its allowed domains include.' | transloco }}
-        </p>
-      }
-      <div class="row">
-        <label class="field grow"
-          >{{ 'Topic' | transloco }}<input [formField]="fields.topic" /></label
-        ><label class="field grow">{{ 'Key' | transloco }}<input [formField]="fields.key" /></label
-        ><label class="field"
-          >{{ 'Partition' | transloco
-          }}<input [formField]="fields.partition" [placeholder]="'Any' | transloco"
-        /></label>
-      </div>
-      <div class="section-caption">{{ 'Message headers' | transloco }}</div>
-      <app-key-value-editor [(rows)]="headers" />
-      <div class="row">
-        <label class="field"
-          >{{ 'Read from' | transloco
-          }}<select [formField]="fields.from">
-            <option value="latest">{{ 'New messages' | transloco }}</option>
-            <option value="earliest">{{ 'The beginning' | transloco }}</option>
-            <option value="offset">{{ 'An offset' | transloco }}</option>
-          </select></label
-        >
-        @if (model().from === 'offset') {
-          <label class="field"
-            >{{ 'Offset' | transloco }}<input [formField]="fields.offset"
-          /></label>
-        }
-        <button class="button" (click)="send('subscribe')" [disabled]="!connection()">
-          {{ 'Read topic' | transloco }}</button
-        ><button class="button" (click)="send('unsubscribe')" [disabled]="!connection()">
-          {{ 'Stop reading' | transloco }}</button
-        ><button class="button" (click)="send('topics')" [disabled]="!connection()">
-          {{ 'List topics' | transloco }}
-        </button>
-      </div>
+      <app-kafka-settings
+        [fields]="fields"
+        [headers]="headers"
+        [connected]="!!connection()"
+        (action)="send($event)"
+      />
     }
     @if (model().protocol === 'mqtt') {
       <label class="field">{{ 'Topic' | transloco }}<input [formField]="fields.topic" /></label>
@@ -228,81 +169,7 @@
       </div>
     }
     @if (model().protocol === 'graphql-subscription') {
-      <label class="field"
-        >{{ 'Subscription protocol' | transloco
-        }}<select [formField]="fields.graphqlProtocol">
-          <option value="graphql-transport-ws">graphql-transport-ws</option>
-          <option value="graphql-ws">
-            {{ 'graphql-ws (subscriptions-transport-ws, legacy)' | transloco }}
-          </option>
-          <option value="graphql-sse">{{ 'graphql-sse (server-sent events)' | transloco }}</option>
-        </select></label
-      >
-      <div class="field">
-        <span>{{ 'Subscription' | transloco }}</span>
-        <!-- With the endpoint's schema, fields and arguments are suggested as in queries. -->
-        @defer (on immediate) {
-          <app-graphql-query-editor
-            [formField]="fields.query"
-            [schema]="subscriptionSchema()"
-            [label]="'GraphQL subscription' | transloco"
-            placeholder="subscription { … }"
-          />
-        } @placeholder {
-          <div class="code-editor" aria-hidden="true"></div>
-        }
-      </div>
-      <div class="row">
-        <button
-          type="button"
-          class="button"
-          [disabled]="state.loadingSchema()"
-          (click)="loadSchema()"
-        >
-          {{ (subscriptionSchema() ? 'Reload schema' : 'Load schema') | transloco }}
-        </button>
-        <span class="muted">{{
-          (subscriptionSchema()
-            ? 'Fields and arguments of the schema are suggested as you type.'
-            : 'Load the schema, by introspection over HTTP at this address, to get suggestions.'
-          ) | transloco
-        }}</span>
-      </div>
-      <div class="field">
-        <span>{{ 'GraphQL variables' | transloco }}</span>
-        @defer (on immediate) {
-          <app-code-editor
-            [formField]="fields.variables"
-            language="json"
-            size="small"
-            [label]="'GraphQL variables' | transloco"
-          />
-        } @placeholder {
-          <div class="code-editor small" aria-hidden="true"></div>
-        }
-      </div>
-      @if (model().graphqlProtocol !== 'graphql-sse') {
-        <div class="field">
-          <span>{{ 'Connection parameters (JSON)' | transloco }}</span>
-          @defer (on immediate) {
-            <app-code-editor
-              [formField]="fields.connectionParams"
-              language="json"
-              size="small"
-              [label]="'Connection parameters (JSON)' | transloco"
-            />
-          } @placeholder {
-            <div class="code-editor small" aria-hidden="true"></div>
-          }
-        </div>
-      } @else {
-        <p class="muted">
-          {{
-            'The subscription is POSTed to the URL and its results stream back as server-sent events. Authorize it with the connection headers.'
-              | transloco
-          }}
-        </p>
-      }
+      <app-graphql-subscription-settings [fields]="fields" (schemaRequested)="loadSchema()" />
     }
     @if (
       model().protocol === 'websocket' ||

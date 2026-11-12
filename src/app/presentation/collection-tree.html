@@ -1,0 +1,182 @@
+@for (collection of workspace().state.collections(); track collection.id) {
+  <div class="collection">
+    <div
+      class="collection-title"
+      [class.drop-inside]="workspace().tree.hint(collection.id, [])?.position === 'inside'"
+      (dragover)="workspace().tree.dragOver($event, collection, [], true)"
+      (dragleave)="workspace().tree.dropHint.set(undefined)"
+      (drop)="workspace().tree.drop($event, collection, [], true)"
+    >
+      <button
+        class="tree-toggle"
+        (click)="workspace().tree.toggle(collection.id)"
+        [attr.aria-expanded]="!workspace().tree.collapsed().includes(collection.id)"
+        [attr.aria-label]="collection.name"
+      >
+        <app-studio-icon name="chevron" /></button
+      ><button
+        class="collection-name"
+        [title]="collection.name"
+        (click)="workspace().tree.toggle(collection.id)"
+      >
+        <app-studio-icon class="tree-icon collection-icon" name="collections" /><span>{{
+          collection.name
+        }}</span>
+      </button>
+      <details class="collection-menu" (toggle)="workspace().menus.toggled($event)">
+        <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
+        <div>
+          <button (click)="workspace().state.openCollectionSettings(collection.id)">
+            {{ 'Variables & settings' | transloco }}</button
+          ><button (click)="workspace().state.addRequest(collection)">
+            {{ 'Add request' | transloco }}</button
+          ><button (click)="workspace().folder(collection)">
+            {{ 'Add folder' | transloco }}</button
+          ><button (click)="workspace().state.export(collection)">
+            {{ 'Export collection' | transloco }}</button
+          ><button (click)="workspace().state.reportCollection(collection.id)">
+            {{ 'Export documentation (PDF)' | transloco }}</button
+          ><button (click)="workspace().duplicate(collection)">
+            {{ 'Duplicate' | transloco }}</button
+          ><button (click)="workspace().state.section.set('runner')">
+            {{ 'Run collection' | transloco }}</button
+          ><button class="danger" (click)="workspace().state.remove(collection)">
+            {{ 'Delete collection' | transloco }}
+          </button>
+        </div>
+      </details>
+    </div>
+    @if (!workspace().tree.collapsed().includes(collection.id)) {
+      @for (entry of workspace().tree.visibleEntries(collection.id); track entry.path.join('.')) {
+        <div
+          class="tree-row"
+          [style.padding-left.px]="14 + entry.depth * 22"
+          draggable="true"
+          (dragstart)="workspace().tree.dragStart($event, collection, entry.path, entry.item.name)"
+          (dragend)="workspace().tree.dragEnd()"
+          (dragover)="workspace().tree.dragOver($event, collection, entry.path, !!entry.item.item)"
+          (dragleave)="workspace().tree.dropHint.set(undefined)"
+          (drop)="workspace().tree.drop($event, collection, entry.path, !!entry.item.item)"
+          [class.drop-before]="
+            workspace().tree.hint(collection.id, entry.path)?.position === 'before'
+          "
+          [class.drop-after]="
+            workspace().tree.hint(collection.id, entry.path)?.position === 'after'
+          "
+          [class.drop-inside]="
+            workspace().tree.hint(collection.id, entry.path)?.position === 'inside'
+          "
+          [class.drop-invalid]="workspace().tree.hint(collection.id, entry.path)?.invalid"
+        >
+          @if (entry.item.item) {
+            <button
+              class="tree-toggle"
+              (click)="
+                workspace().tree.toggle(workspace().tree.folderKey(collection.id, entry.path))
+              "
+              [attr.aria-expanded]="
+                !workspace()
+                  .tree.collapsed()
+                  .includes(workspace().tree.folderKey(collection.id, entry.path))
+              "
+              [attr.aria-label]="entry.item.name"
+            >
+              <app-studio-icon name="chevron" /></button
+            ><button
+              class="folder-name"
+              [title]="entry.item.name"
+              (click)="
+                workspace().tree.toggle(workspace().tree.folderKey(collection.id, entry.path))
+              "
+            >
+              <app-studio-icon class="tree-icon" name="folder" /><span>{{
+                entry.item.name
+              }}</span></button
+            ><button
+              class="icon-button"
+              (click)="workspace().state.addRequest(collection, entry.path)"
+              [attr.aria-label]="'Add request in folder' | transloco"
+            >
+              +
+            </button>
+          } @else {
+            <button
+              class="request-leaf"
+              (click)="workspace().state.openItem(collection, entry.item, entry.path)"
+            >
+              <span
+                class="method-tag"
+                [class.post]="workspace().tree.method(entry.item) === 'POST'"
+                [class.delete]="workspace().tree.method(entry.item) === 'DELETE'"
+                >{{ workspace().tree.method(entry.item) }}</span
+              ><span>{{ entry.item.name }}</span>
+            </button>
+          }
+          <details class="collection-menu item-menu" (toggle)="workspace().menus.toggled($event)">
+            <summary [attr.aria-label]="'Item actions' | transloco">···</summary>
+            <div>
+              <button (click)="workspace().rename(collection, entry.path, entry.item.name)">
+                {{ 'Rename' | transloco }}
+              </button>
+              @if (entry.item.item) {
+                <button
+                  (click)="workspace().state.openCollectionSettings(collection.id, entry.path)"
+                >
+                  {{ 'Variables & settings' | transloco }}
+                </button>
+                <button (click)="workspace().folder(collection, entry.path)">
+                  {{ 'Add folder' | transloco }}
+                </button>
+              }
+              <button (click)="workspace().state.reorderItem(collection, entry.path, -1)">
+                {{ 'Move up' | transloco }}</button
+              ><button (click)="workspace().state.reorderItem(collection, entry.path, 1)">
+                {{ 'Move down' | transloco }}</button
+              ><label
+                >{{ 'Move to' | transloco
+                }}<select (change)="workspace().tree.moveTo(collection, entry.path, $event)">
+                  <option value=""></option>
+                  <option value="root">{{ collection.name }}</option>
+                  @for (
+                    target of workspace().tree.folderChoices(collection, entry.path);
+                    track target.path.join('.')
+                  ) {
+                    <option [value]="target.path.join('.')">{{ target.name }}</option>
+                  }
+                </select></label
+              ><button
+                class="danger"
+                (click)="workspace().state.removeItem(collection, entry.path)"
+              >
+                {{ 'Delete' | transloco }}
+              </button>
+            </div>
+          </details>
+        </div>
+      }
+      <button class="add-request" (click)="workspace().state.addRequest(collection)">
+        {{ '+ Add request' | transloco }}
+      </button>
+    }
+  </div>
+}
+@if (!workspace().state.collections().length) {
+  <div class="sidebar-empty">
+    <img
+      class="collection-art"
+      src="/templates/aurora/collections.svg"
+      width="112"
+      height="120"
+      alt=""
+    />
+    <strong>{{ 'A place for your APIs' | transloco }}</strong>
+    <p>
+      {{ 'Organize requests into collections and keep your work together.' | transloco }}
+    </p>
+    <button class="button" (click)="workspace().dialogs.set('collection')">
+      {{ 'Create collection' | transloco }}</button
+    ><button class="text-button" (click)="workspace().dialogs.set('import')">
+      {{ 'or import existing work' | transloco }}
+    </button>
+  </div>
+}

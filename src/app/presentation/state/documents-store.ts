@@ -54,7 +54,9 @@ export class DocumentsStore {
   ) {
     const document = this.collections().find((d) => d.id === id);
     if (!document) throw new Error('Choose a collection');
-    this.applySaved([await this.context.cases.saveCollectionSettings(document, settings, folder)]);
+    this.applySaved([
+      await this.context.cases.variables.saveCollectionSettings(document, settings, folder),
+    ]);
   }
   /** Keeps the most recent history entries; older ones are removed in the background. */
   async pruneHistory(keep = 200) {

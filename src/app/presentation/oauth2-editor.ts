@@ -26,14 +26,7 @@ import {
 } from '../domain/auth';
 import { WorkspaceState } from './workspace-state';
 
-/** A custom parameter of the authorization, token or refresh request (Postman's format). */
-interface Parameter {
-  key: string;
-  value: string;
-  enabled: boolean;
-  send_as: string;
-}
-type ParameterList = 'authRequestParams' | 'tokenRequestParams' | 'refreshRequestParams';
+import { OAuth2Parameters, ParameterList } from './oauth2-parameters';
 
 /**
  * OAuth 2.0 settings laid out as in Postman: the current token, "Configure New Token" with
@@ -41,7 +34,7 @@ type ParameterList = 'authRequestParams' | 'tokenRequestParams' | 'refreshReques
  * resource and origin. Values are stored under Postman's keys.
  */
 @Component({
-  imports: [TranslocoPipe, DatePipe],
+  imports: [TranslocoPipe, DatePipe, OAuth2Parameters],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-oauth2-editor',
   styleUrl: './oauth2-editor.scss',
@@ -96,22 +89,6 @@ export class OAuth2Editor {
     // Stored only when turned off, so collections keep Postman's default.
     this.set('autoRefreshToken', (event.target as HTMLInputElement).checked ? undefined : false);
   }
-  protected readonly placements = {
-    authRequestParams: [
-      ['request_url', 'Request URL'],
-      ['request_header', 'Request Headers'],
-    ],
-    tokenRequestParams: [
-      ['request_body', 'Request Body'],
-      ['request_url', 'Request URL'],
-      ['request_header', 'Request Headers'],
-    ],
-    refreshRequestParams: [
-      ['request_body', 'Request Body'],
-      ['request_url', 'Request URL'],
-      ['request_header', 'Request Headers'],
-    ],
-  } satisfies Record<ParameterList, [string, string][]>;
   protected readonly lists: { id: ParameterList; label: string }[] = [
     { id: 'authRequestParams', label: 'Auth Request' },
     { id: 'tokenRequestParams', label: 'Token Request' },
@@ -137,30 +114,5 @@ export class OAuth2Editor {
   }
   protected toggle(key: string, event: Event) {
     this.set(key, (event.target as HTMLInputElement).checked);
-  }
-  protected parameters(list: ParameterList): Parameter[] {
-    const rows = this.auth().values[list] as unknown;
-    return Array.isArray(rows) ? (rows as Parameter[]) : [];
-  }
-  protected addParameter(list: ParameterList) {
-    const send_as = this.placements[list][0][0];
-    this.set(list, [...this.parameters(list), { key: '', value: '', enabled: true, send_as }]);
-  }
-  protected editParameter(
-    list: ParameterList,
-    index: number,
-    field: keyof Parameter,
-    event: Event,
-  ) {
-    const target = event.target as HTMLInputElement | HTMLSelectElement;
-    const value = field === 'enabled' ? (target as HTMLInputElement).checked : target.value;
-    this.set(
-      list,
-      this.parameters(list).map((row, i) => (i === index ? { ...row, [field]: value } : row)),
-    );
-  }
-  protected removeParameter(list: ParameterList, index: number) {
-    const rows = this.parameters(list).filter((_, i) => i !== index);
-    this.set(list, rows.length ? rows : undefined);
   }
 }

@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { WorkspaceUseCases } from '../../application/workspace-use-cases';
+import { VariableCases, WorkspaceUseCases } from '../../application/workspace-use-cases';
 import { ApiFailure } from '../../application/ports';
 import { RequestDraft, WorkspaceDocument, asCollection, newRequest } from '../../domain/models';
 import { RequestsStore } from './requests-store';
@@ -25,11 +25,18 @@ const document = (
   value,
 });
 
+/** Use cases replaced by functions; those of variables are given flat as well. */
+type Fakes = Partial<Record<keyof WorkspaceUseCases | keyof VariableCases, unknown>>;
+
 /** A context whose use cases are replaced by the given functions. */
-function context(cases: Partial<Record<keyof WorkspaceUseCases, unknown>>, confirm = true) {
+function context(cases: Fakes, confirm = true) {
   let next = 0;
   const value: StateContext = {
-    cases: { files: { id: () => `id${++next}` }, ...cases } as unknown as WorkspaceUseCases,
+    cases: {
+      files: { id: () => `id${++next}` },
+      ...cases,
+      variables: cases,
+    } as unknown as WorkspaceUseCases,
     status: new StatusStore(),
     tabs: new TabsStore(() => `t${++next}`),
     workspaceId: signal('w1'),
