@@ -19,6 +19,7 @@ mod indexes;
 mod profiler;
 mod query;
 mod tls;
+mod watch;
 mod write;
 
 use async_trait::async_trait;
@@ -32,7 +33,7 @@ use nexo_application::ports::{
     ConnectionReport, CountRequest, DatabaseConnection, DatabaseHost, DatabaseSummary,
     DocumentDatabase, DocumentPage, DocumentWrite, ExplainRequest, FindRequest, ImportBatch,
     ImportResult, IndexChange, IndexDetail, NetworkPolicy, ProfileEntry, ProfileStatus,
-    WriteResult, WriteTarget,
+    WatchEvents, WatchRequest, WatchSummary, WriteResult, WriteTarget,
 };
 use nexo_domain::{Error, Result};
 use std::{
@@ -84,6 +85,7 @@ pub struct MongoAdapter {
     clients: tokio::sync::Mutex<HashMap<String, Open>>,
     cursors: Mutex<HashMap<String, query::Stored>>,
     running: Mutex<HashMap<String, query::Running>>,
+    watches: Mutex<HashMap<String, watch::Watching>>,
 }
 
 impl MongoAdapter {
@@ -97,6 +99,7 @@ impl MongoAdapter {
             clients: Default::default(),
             cursors: Default::default(),
             running: Default::default(),
+            watches: Default::default(),
         }
     }
 }

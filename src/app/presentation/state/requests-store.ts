@@ -13,6 +13,7 @@ const realtimeProtocols = [
   'grpc',
   'graphql-subscription',
   'kafka',
+  'mongodb',
 ];
 
 /**

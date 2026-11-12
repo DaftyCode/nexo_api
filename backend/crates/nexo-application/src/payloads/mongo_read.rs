@@ -167,6 +167,26 @@ payload! {
 }
 
 payload! {
+    /// `mongo.watch`: opens a change stream of a collection, of a database (no `collection`)
+    /// or of the whole deployment (no `database`), read with `realtime.poll` and closed with
+    /// `realtime.close`. `pipeline` filters the changes; `fullDocument` and
+    /// `fullDocumentBeforeChange` add the document after and before each change;
+    /// `resumeAfter` (a resume token or its `_data`) starts after an earlier change.
+    closed MongoWatchPayload {
+        required { connection "connection": MongoConnection => "MongoConnection" }
+        optional {
+            workspace "workspace": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            pipeline "pipeline": Vec<Map<String, Value>> => "readonly object[]",
+            full_document "fullDocument": String => "'default' | 'updateLookup' | 'whenAvailable' | 'required'",
+            full_document_before_change "fullDocumentBeforeChange": String => "'off' | 'whenAvailable' | 'required'",
+            resume_after "resumeAfter": Value => "string | object",
+        }
+    }
+}
+
+payload! {
     /// `mongo.profile`: the profiler level of a database and its `slowms`.
     closed MongoProfilePayload {
         required {

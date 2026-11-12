@@ -121,7 +121,8 @@ impl ExecutionGateway for Engine {
             | Operation::MongoAggregate
             | Operation::MongoAggregateWrite
             | Operation::MongoSchema
-            | Operation::MongoCollectionValidator => Err(Error::Validation(format!(
+            | Operation::MongoCollectionValidator
+            | Operation::MongoWatch => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

@@ -28,6 +28,13 @@ export const defaultProtocolSettings = {
   partition: '',
   from: 'latest',
   offset: '',
+  mongoConnection: '',
+  database: '',
+  collection: '',
+  pipeline: '[]',
+  fullDocument: 'default',
+  fullDocumentBeforeChange: 'off',
+  resumeAfter: '',
 };
 
 export type ProtocolSettings = typeof defaultProtocolSettings;

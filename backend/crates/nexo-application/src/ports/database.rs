@@ -208,6 +208,15 @@ pub trait DocumentDatabase: Send + Sync {
         collection: Option<&str>,
         limit: u64,
     ) -> Result<Vec<ProfileEntry>>;
+    /// Opens a change stream (a replica set or a sharded cluster is needed). Its
+    /// identifier starts with `WATCH_PREFIX`.
+    async fn watch(&self, connection: DatabaseConnection, request: WatchRequest) -> Result<String>;
+    /// The events of a change stream after the sequence number `after`.
+    async fn watch_events(&self, id: &str, after: u64) -> Result<WatchEvents>;
+    /// Closes a change stream.
+    async fn watch_close(&self, id: &str) -> Result<()>;
+    /// The change streams open or closed a short while ago.
+    async fn watches(&self) -> Result<Vec<WatchSummary>>;
     /// Writes a batch of an import; refused, like every write, on a read-only connection.
     async fn import(
         &self,

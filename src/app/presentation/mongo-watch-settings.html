@@ -1,0 +1,75 @@
+<label class="field"
+  >{{ 'MongoDB connection' | transloco }}
+  <select [formField]="fields().mongoConnection">
+    <option value="">{{ 'Choose a saved connection' | transloco }}</option>
+    @for (connection of connections(); track connection.id) {
+      <option [value]="connection.id">{{ connection.name }}</option>
+    }
+  </select>
+</label>
+@if (!connections().length) {
+  <p class="editor-hint">
+    {{ 'Save a connection in the MongoDB section to watch it.' | transloco }}
+  </p>
+}
+<div class="row">
+  <label class="field grow"
+    >{{ 'Database' | transloco
+    }}<input
+      [formField]="fields().database"
+      [placeholder]="'Every database' | transloco"
+      spellcheck="false"
+  /></label>
+  <label class="field grow"
+    >{{ 'Collection' | transloco
+    }}<input
+      [formField]="fields().collection"
+      [placeholder]="'Every collection' | transloco"
+      spellcheck="false"
+  /></label>
+</div>
+<div class="field">
+  <span>{{ 'Pipeline' | transloco }}</span>
+  @defer (on immediate) {
+    <app-code-editor
+      [formField]="fields().pipeline"
+      language="javascript"
+      size="small"
+      [label]="'Pipeline' | transloco"
+    />
+  } @placeholder {
+    <div class="code-editor small" aria-hidden="true"></div>
+  }
+</div>
+<div class="row">
+  <label class="field grow"
+    >{{ 'Document after the change' | transloco }}
+    <select [formField]="fields().fullDocument">
+      <option value="default">{{ 'Only for inserts and replacements' | transloco }}</option>
+      <option value="updateLookup">{{ 'Also for updates (read again)' | transloco }}</option>
+      <option value="whenAvailable">{{ 'When the collection keeps it' | transloco }}</option>
+      <option value="required">{{ 'Always (fail without it)' | transloco }}</option>
+    </select>
+  </label>
+  <label class="field grow"
+    >{{ 'Document before the change' | transloco }}
+    <select [formField]="fields().fullDocumentBeforeChange">
+      <option value="off">{{ 'No' | transloco }}</option>
+      <option value="whenAvailable">{{ 'When the collection keeps it' | transloco }}</option>
+      <option value="required">{{ 'Always (fail without it)' | transloco }}</option>
+    </select>
+  </label>
+</div>
+<label class="field"
+  >{{ 'Start after the resume token' | transloco
+  }}<input
+    [formField]="fields().resumeAfter"
+    [placeholder]="'Empty: from now' | transloco"
+    spellcheck="false"
+/></label>
+<p class="editor-hint">
+  {{
+    'Change streams need a replica set or a sharded cluster. Each change keeps its resume token in _id._data; if the connection drops, Nexo opens the stream again after the last change.'
+      | transloco
+  }}
+</p>

@@ -26,13 +26,19 @@
       <option value="mqtt">MQTT</option>
       <option value="grpc">gRPC</option>
       <option value="graphql-subscription">{{ 'GraphQL subscription' | transloco }}</option>
-      <option value="kafka">Kafka</option></select
-    ><input
-      class="grow"
-      [formField]="fields.url"
-      [attr.aria-label]="'Connection URL' | transloco"
-      [placeholder]="'Enter connection URL' | transloco"
-    />
+      <option value="kafka">Kafka</option>
+      <option value="mongodb">{{ 'MongoDB change stream' | transloco }}</option>
+    </select>
+    @if (model().protocol === 'mongodb') {
+      <span class="grow muted">{{ watch.label() }}</span>
+    } @else {
+      <input
+        class="grow"
+        [formField]="fields.url"
+        [attr.aria-label]="'Connection URL' | transloco"
+        [placeholder]="'Enter connection URL' | transloco"
+      />
+    }
     @if (model().protocol !== 'grpc') {
       @if (connection()) {
         <button class="button" (click)="disconnect()">{{ 'Disconnect' | transloco }}</button>
@@ -51,7 +57,9 @@
           ? ('Service definition' | transloco)
           : model().protocol === 'graphql-subscription'
             ? ('Subscription' | transloco)
-            : ('Compose message' | transloco)
+            : model().protocol === 'mongodb'
+              ? ('Change stream' | transloco)
+              : ('Compose message' | transloco)
       }}
     </h2>
     @if (model().protocol === 'grpc') {
@@ -168,6 +176,9 @@
         /></label>
       </div>
     }
+    @if (model().protocol === 'mongodb') {
+      <app-mongo-watch-settings [fields]="fields" [connections]="watch.connections()" />
+    }
     @if (model().protocol === 'graphql-subscription') {
       <app-graphql-subscription-settings [fields]="fields" (schemaRequested)="loadSchema()" />
     }
@@ -179,28 +190,30 @@
       <div class="section-caption">{{ 'Connection headers' | transloco }}</div>
       <app-key-value-editor [(rows)]="headers" />
     }
-    <details class="advanced-tls">
-      <summary>{{ 'TLS settings' | transloco }}</summary>
-      @if (model().protocol !== 'grpc') {
-        <label class="check-field"
-          ><input type="checkbox" [formField]="fields.strictSSL" />
-          {{ 'Verify TLS certificates' | transloco }}</label
-        >
-      }
-      <div class="field">
-        <span>{{ 'Certificate authority (PEM)' | transloco }}</span>
-        @defer (on immediate) {
-          <app-code-editor
-            [formField]="fields.caPem"
-            language="text"
-            size="small"
-            [label]="'Certificate authority (PEM)' | transloco"
-          />
-        } @placeholder {
-          <div class="code-editor small" aria-hidden="true"></div>
+    @if (model().protocol !== 'mongodb') {
+      <details class="advanced-tls">
+        <summary>{{ 'TLS settings' | transloco }}</summary>
+        @if (model().protocol !== 'grpc') {
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.strictSSL" />
+            {{ 'Verify TLS certificates' | transloco }}</label
+          >
         }
-      </div>
-    </details>
+        <div class="field">
+          <span>{{ 'Certificate authority (PEM)' | transloco }}</span>
+          @defer (on immediate) {
+            <app-code-editor
+              [formField]="fields.caPem"
+              language="text"
+              size="small"
+              [label]="'Certificate authority (PEM)' | transloco"
+            />
+          } @placeholder {
+            <div class="code-editor small" aria-hidden="true"></div>
+          }
+        </div>
+      </details>
+    }
     @if (model().protocol === 'grpc') {
       <div class="field">
         <span>{{ 'Request message (JSON)' | transloco }}</span>
@@ -215,7 +228,7 @@
           <div class="code-editor small" aria-hidden="true"></div>
         }
       </div>
-    } @else if (model().protocol !== 'graphql-subscription') {
+    } @else if (!receiveOnly()) {
       <div class="field">
         <span>{{ (model().protocol === 'kafka' ? 'Value' : 'Message') | transloco }}</span>
         @defer (on immediate) {
@@ -241,7 +254,7 @@
       >
         {{ 'Produce message ↗' | transloco }}
       </button>
-    } @else if (model().protocol !== 'graphql-subscription') {
+    } @else if (!receiveOnly()) {
       <button class="button primary" (click)="send()" [disabled]="status() !== 'connected'">
         {{ 'Send message ↗' | transloco }}
       </button>

@@ -1,4 +1,8 @@
 import { ExecutionPort } from './ports';
+import { WorkspaceDocument } from '../domain/models';
+import { WatchOptions } from '../domain/mongo-watch';
+import { VariableScopes } from '../domain/variables';
+import { savedConnection } from './mongo-use-cases/payload';
 
 export interface StreamEvent {
   sequence: number;
@@ -96,6 +100,22 @@ export class ProtocolUseCases {
     return this.api.execute<ConnectionState>('realtime.connect', { workspace, ...options });
   }
   /** Events after `after`, with the connection state. */
+  /**
+   * Opens a change stream of a saved MongoDB connection; it is read and closed like the
+   * other connections.
+   */
+  watch(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    options: WatchOptions,
+  ) {
+    return this.api.execute<ConnectionState>('mongo.watch', {
+      workspace,
+      connection: savedConnection(connection, scopes),
+      ...options,
+    });
+  }
   poll(workspace: string, id: string, after: number) {
     return this.api.execute<ConnectionEvents>('realtime.poll', { workspace, id, after });
   }

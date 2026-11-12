@@ -64,6 +64,17 @@ impl Application {
         if operation.is_database() {
             return self.database(operation, Value::Object(payload)).await;
         }
+        // Change streams are sessions of the database, read like the engine's connections.
+        if let Some(answer) = self.realtime_watch(operation, &payload).await? {
+            return Ok(answer);
+        }
+        if operation == Operation::RealtimeList {
+            let engine = self
+                .executor
+                .execute(operation, Value::Object(payload))
+                .await?;
+            return self.realtime_list(engine).await;
+        }
         if matches!(
             operation,
             Operation::Request

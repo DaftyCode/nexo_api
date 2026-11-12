@@ -233,6 +233,7 @@ operation_payloads! {
     MongoAggregateWrite => MongoAggregateWritePayload,
     MongoSchema => MongoSchemaPayload,
     MongoCollectionValidator => MongoCollectionValidatorPayload,
+    MongoWatch => MongoWatchPayload,
 }
 
 /// Checks the payload of a Git operation.

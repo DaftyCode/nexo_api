@@ -577,6 +577,17 @@ export interface MongoCollectionValidatorPayload {
   validationAction?: 'error' | 'warn';
 }
 
+export interface MongoWatchPayload {
+  connection: MongoConnection;
+  workspace?: string;
+  database?: string;
+  collection?: string;
+  pipeline?: readonly object[];
+  fullDocument?: 'default' | 'updateLookup' | 'whenAvailable' | 'required';
+  fullDocumentBeforeChange?: 'off' | 'whenAvailable' | 'required';
+  resumeAfter?: string | object;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -655,6 +666,7 @@ export interface OperationPayloads {
   'mongo.aggregate.write': MongoAggregateWritePayload;
   'mongo.schema': MongoSchemaPayload;
   'mongo.collection.validator': MongoCollectionValidatorPayload;
+  'mongo.watch': MongoWatchPayload;
 }
 
 /** The payload of an operation. */

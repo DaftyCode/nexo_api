@@ -10,6 +10,7 @@ mod reads;
 mod schema;
 #[cfg(test)]
 mod tests;
+mod watch;
 mod writes;
 
 use crate::{Application, operations::Operation, vault::redact_error};

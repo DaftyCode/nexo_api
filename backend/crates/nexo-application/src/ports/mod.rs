@@ -9,10 +9,12 @@ use serde_json::Value;
 
 mod database;
 mod queries;
+mod watch;
 mod writes;
 
 pub use database::*;
 pub use queries::*;
+pub use watch::*;
 pub use writes::*;
 
 #[async_trait]

@@ -100,6 +100,37 @@ impl DocumentDatabase for Fake {
         self.aggregate_writes.lock().unwrap().push(request);
         Ok(5)
     }
+    async fn watch(
+        &self,
+        connection: DatabaseConnection,
+        request: ports::WatchRequest,
+    ) -> Result<String> {
+        self.connections.lock().unwrap().push(connection);
+        self.watches.lock().unwrap().push(request);
+        Ok(format!("{}1", ports::WATCH_PREFIX))
+    }
+    async fn watch_events(&self, id: &str, after: u64) -> Result<ports::WatchEvents> {
+        Ok(ports::WatchEvents {
+            id: id.into(),
+            state: "connected".into(),
+            events: vec![json!({"sequence": after + 1, "type": "insert", "data": {}, "time": 0})],
+        })
+    }
+    async fn watch_close(&self, id: &str) -> Result<()> {
+        if id.ends_with('1') {
+            Ok(())
+        } else {
+            Err(Error::Validation("Connection not found".into()))
+        }
+    }
+    async fn watches(&self) -> Result<Vec<ports::WatchSummary>> {
+        Ok(vec![ports::WatchSummary {
+            id: format!("{}1", ports::WATCH_PREFIX),
+            protocol: "mongodb".into(),
+            url: "shop.orders".into(),
+            state: "connected".into(),
+        }])
+    }
     async fn more(&self, cursor: &str, _: &str, _: u64) -> Result<ports::DocumentPage> {
         Err(Error::Validation(format!("Cursor {cursor} closed")))
     }

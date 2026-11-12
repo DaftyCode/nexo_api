@@ -42,7 +42,8 @@ export type Protocol =
   | 'socketio'
   | 'mqtt'
   | 'graphql-subscription'
-  | 'kafka';
+  | 'kafka'
+  | 'mongodb';
 export interface RequestDraft {
   id: string;
   name: string;
@@ -71,7 +72,8 @@ export interface RequestDraft {
   realtime?: RealtimeSettings;
 }
 export interface RealtimeSettings {
-  protocol: 'websocket' | 'socketio' | 'mqtt' | 'grpc' | 'graphql-subscription' | 'kafka';
+  protocol:
+    'websocket' | 'socketio' | 'mqtt' | 'grpc' | 'graphql-subscription' | 'kafka' | 'mongodb';
   url: string;
   message: string;
   grpcMessage: string;
@@ -104,6 +106,18 @@ export interface RealtimeSettings {
   partition?: string;
   from?: string;
   offset?: string;
+  /**
+   * MongoDB change streams: the id of the saved connection, what is watched (no database: the
+   * deployment; no collection: the database), the pipeline as typed, the documents each
+   * change carries and the resume token to start after.
+   */
+  mongoConnection?: string;
+  database?: string;
+  collection?: string;
+  pipeline?: string;
+  fullDocument?: string;
+  fullDocumentBeforeChange?: string;
+  resumeAfter?: string;
 }
 const realtimeProtocols = [
   'websocket',
@@ -112,6 +126,7 @@ const realtimeProtocols = [
   'grpc',
   'graphql-subscription',
   'kafka',
+  'mongodb',
 ];
 const isReference = (value: string) => /^\s*\{\{[^{}]+\}\}\s*$/.test(value);
 /** Realtime settings as stored in a collection: literal passwords are never written. */

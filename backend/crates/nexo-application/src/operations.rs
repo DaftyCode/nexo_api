@@ -100,6 +100,7 @@ operations!(
         MongoAggregateWrite => "mongo.aggregate.write",
         MongoSchema => "mongo.schema",
         MongoCollectionValidator => "mongo.collection.validator",
+        MongoWatch => "mongo.watch",
     }
 );
 impl Operation {
@@ -138,6 +139,7 @@ impl Operation {
                 | Self::MongoAggregateWrite
                 | Self::MongoSchema
                 | Self::MongoCollectionValidator
+                | Self::MongoWatch
         )
     }
     /// Database operations that change data or the server's settings: refused on a

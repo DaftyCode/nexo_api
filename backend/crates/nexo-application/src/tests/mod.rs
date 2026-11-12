@@ -5,4 +5,5 @@ mod imports;
 mod indexes;
 mod schema;
 mod vault;
+mod watch;
 mod writes;

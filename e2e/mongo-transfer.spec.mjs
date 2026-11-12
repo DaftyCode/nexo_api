@@ -8,6 +8,8 @@ test('MongoDB: a query exported to JSON Lines and imported again keeps its docum
   nexo,
 }, testInfo) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
+  // Exporting and importing 2 500 documents through the browser takes most of a minute.
+  test.setTimeout(120_000);
   await nexo.signIn(page);
   await page
     .getByRole('navigation', { name: 'Workspace sections' })

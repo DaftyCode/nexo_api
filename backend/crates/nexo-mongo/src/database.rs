@@ -60,6 +60,19 @@ impl DocumentDatabase for MongoAdapter {
         let (client, _) = within(self.client(&connection)).await?;
         query::aggregate_write(self, client, request).await
     }
+    async fn watch(&self, connection: DatabaseConnection, request: WatchRequest) -> Result<String> {
+        let (client, _) = within(self.client(&connection)).await?;
+        watch::watch(self, client, request).await
+    }
+    async fn watch_events(&self, id: &str, after: u64) -> Result<WatchEvents> {
+        watch::events(self, id, after)
+    }
+    async fn watch_close(&self, id: &str) -> Result<()> {
+        watch::close(self, id)
+    }
+    async fn watches(&self) -> Result<Vec<WatchSummary>> {
+        Ok(watch::list(self))
+    }
     async fn more(&self, cursor: &str, id: &str, page_size: u64) -> Result<DocumentPage> {
         query::more(self, cursor, id, page_size).await
     }
