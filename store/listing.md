@@ -25,20 +25,24 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 - Pre-request and test scripts in a sandbox, with assertions and logs
 - Collection runner with iterations and JSON/CSV data
 - WebSocket, Socket.IO, MQTT, Kafka and gRPC clients
-- MongoDB explorer: queries, table, tree and JSON views, and writes with undo
+- MongoDB: explorer, aggregations, schema, indexes, shell, SQL, import/export and compare
 - Local mock servers and SQL queries over JSON/CSV datasets
 - Import cURL, OpenAPI/Swagger, HAR and portable collections; generate code in 8 languages
 - Works offline, without an account; English and Spanish; three visual themes
 
 ### What's new in this version
 
-MongoDB next to your API, Kafka, and editors with autocompletion.
+A complete MongoDB client inside your API workspace.
 
-- MongoDB: connections with the password in the vault (TLS, X.509, replica sets, Atlas, import from Compass), an explorer of databases and collections, queries in the shell syntax with table, tree and JSON views, and writes that keep BSON types, count before changing many documents, respect read-only connections and can be undone.
-- Kafka client, Socket.IO, gRPC server reflection, and a GraphQL schema explorer with autocompletion and subscriptions over SSE.
-- Code editors with highlighting and autocompletion of the pm and nx script APIs.
-- Files in form-data and binary bodies; each request tab keeps its own response.
-- Cookie manager, Git remotes (clone, pull, push), MCP resources and prompts, PDF reports, OpenAPI linting and comparison, pause and resume of runs, and drag and drop in the collection tree.
+- Aggregation pipelines built stage by stage, with a preview of each stage.
+- Schema analysis of a sample, with anomalies, JSON Schema export and validation rules.
+- Indexes, explain plans stage by stage and the profiler.
+- Import and export JSON, JSON Lines and CSV, and copy between collections.
+- A MongoDB shell with mongosh commands, and nx.mongo in request and test scripts.
+- Query with SQL, build filters with blocks, and generate driver code in nine languages.
+- Compare two collections and sync them.
+- Change streams in the realtime panel, and read-only MongoDB tools for MCP agents.
+- A message after every save, delete and download says whether it worked.
 - Many fixes and security improvements.
 
 ### Search terms
@@ -85,20 +89,24 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 - Scripts previos y de pruebas en un entorno aislado, con aserciones y registros
 - Runner de colecciones con iteraciones y datos JSON/CSV
 - Clientes de WebSocket, Socket.IO, MQTT, Kafka y gRPC
-- Explorador de MongoDB: consultas, vistas de tabla, árbol y JSON, y escritura con deshacer
+- MongoDB: explorador, agregaciones, esquema, índices, shell, SQL, importar/exportar y comparar
 - Servidores mock locales y consultas SQL sobre datasets JSON/CSV
 - Importa cURL, OpenAPI/Swagger, HAR y colecciones portables; genera código en 8 lenguajes
 - Funciona sin conexión y sin cuenta; en español e inglés; tres temas visuales
 
 ### Novedades de esta versión
 
-MongoDB junto a tu API, Kafka y editores con autocompletado.
+Un cliente completo de MongoDB dentro de tu espacio de trabajo de APIs.
 
-- MongoDB: conexiones con la contraseña en el vault (TLS, X.509, replica sets, Atlas, importar de Compass), explorador de bases de datos y colecciones, consultas con la sintaxis de la shell y vistas de tabla, árbol y JSON, y escritura que conserva los tipos BSON, cuenta antes de cambiar muchos documentos, respeta las conexiones de solo lectura y se puede deshacer.
-- Cliente de Kafka, Socket.IO, reflexión de servidores gRPC y explorador del esquema GraphQL con autocompletado y subscriptions por SSE.
-- Editores de código con resaltado y autocompletado de las API de scripts pm y nx.
-- Ficheros en cuerpos form-data y binarios; cada pestaña de petición conserva su respuesta.
-- Gestor de cookies, remotos Git (clonar, pull, push), recursos y prompts MCP, informes en PDF, linter y comparación de OpenAPI, pausar y reanudar ejecuciones, y arrastrar y soltar en el árbol de colecciones.
+- Pipelines de agregación etapa a etapa, con la vista previa de cada etapa.
+- Análisis del esquema de una muestra, con anomalías, exportación a JSON Schema y reglas de validación.
+- Índices, explain de las consultas etapa a etapa y el profiler.
+- Importar y exportar JSON, JSON Lines y CSV, y copiar entre colecciones.
+- Una shell de MongoDB con los comandos de mongosh, y nx.mongo en los scripts de petición y de test.
+- Consultas en SQL, filtros con bloques y código del driver en nueve lenguajes.
+- Comparar dos colecciones y sincronizarlas.
+- Change streams en el panel de tiempo real, y herramientas de MongoDB de solo lectura para agentes MCP.
+- Un aviso tras cada guardado, borrado y descarga dice si funcionó.
 - Muchas correcciones y mejoras de seguridad.
 
 ### Términos de búsqueda
