@@ -228,7 +228,10 @@ pub(super) async fn send_queued(
         if !calls.is_empty() {
             let state = session.snapshot()?;
             for (id, call) in calls {
-                match super::databases::call(&context.databases, workspace, &state, &call).await {
+                let variables = super::databases::variables(&state);
+                match super::databases::call(&context.databases, workspace, variables, &call, None)
+                    .await
+                {
                     Ok(result) => session.deliver_mongo(&id, Some(&result), None)?,
                     Err(error) => session.deliver_mongo(&id, None, Some(&error.to_string()))?,
                 }

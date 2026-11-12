@@ -10,6 +10,8 @@ use async_trait::async_trait;
 use nexo_domain::{DocumentKind, Error, Result, WorkspaceId};
 use serde_json::{Map, Value, json};
 
+mod admin;
+
 /// Documents a script reads at most with `find` or `aggregate`.
 pub const SCRIPT_DOCUMENTS: u64 = 1_000;
 
@@ -88,7 +90,9 @@ impl ScriptDatabase for Application {
             .documents(&workspace, Some(DocumentKind::Connection))
             .await?
             .into_iter()
-            .find(|document| document.name == call.connection)
+            .find(|document| {
+                document.id.as_str() == call.connection || document.name == call.connection
+            })
             .ok_or_else(|| {
                 Error::Validation(format!(
                     "No saved MongoDB connection is named {}",
@@ -147,7 +151,7 @@ impl ScriptDatabase for Application {
                     Value::Array(documents)
                 })
             }
-            "countDocuments" => {
+            "countDocuments" | "estimatedDocumentCount" => {
                 let answer = self
                     .execute(
                         Operation::MongoCount,
@@ -229,16 +233,22 @@ impl ScriptDatabase for Application {
                 if many {
                     fields["expected"] = self.matching(&with(json!({})), &fields["filter"]).await?;
                     // Emptying the collection needs its name, as in the interface.
-                    if let Some(confirm) = options(1)?.get("confirm") {
-                        fields["confirm"] = confirm.clone();
+                    if let Some(confirm) = options(1)?
+                        .get("confirm")
+                        .cloned()
+                        .or(call.confirm.clone().map(Value::String))
+                    {
+                        fields["confirm"] = confirm;
                     }
                 }
                 let answer = self.execute(Operation::MongoDelete, write(fields)).await?;
                 Ok(json!({"acknowledged": true, "deletedCount": answer["deleted"]}))
             }
-            other => Err(Error::Validation(format!(
-                "nx.mongo collections have no method {other}"
-            ))),
+            _ => {
+                let connection = base["connection"].clone();
+                self.script_admin(&call, connection, saved.id.as_str())
+                    .await
+            }
         }
     }
 }

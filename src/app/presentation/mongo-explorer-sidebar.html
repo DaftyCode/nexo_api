@@ -5,6 +5,15 @@
     </button>
     <button
       type="button"
+      class="button small"
+      [class.primary]="explorer().shellOpen()"
+      [attr.aria-pressed]="explorer().shellOpen()"
+      (click)="explorer().openShell()"
+    >
+      {{ 'Shell' | transloco }}
+    </button>
+    <button
+      type="button"
       class="icon-button"
       [attr.aria-label]="'Reload databases' | transloco"
       [disabled]="explorer().browser.loading()"

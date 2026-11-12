@@ -1,0 +1,143 @@
+<div class="row between mongo-target">
+  <h2>
+    {{ 'Shell' | transloco }}
+    <span class="mongo-badge">{{ explorer().connection().name }}</span>
+  </h2>
+  <button type="button" class="text-button" (click)="explorer().shellOpen.set(false)">
+    {{ 'Close the shell' | transloco }}
+  </button>
+</div>
+
+<div
+  class="mongo-shell-output"
+  role="log"
+  tabindex="0"
+  [attr.aria-label]="'Shell output' | transloco"
+>
+  @for (entry of console().entries(); track $index) {
+    <div class="mongo-shell-entry">
+      <pre
+        class="mongo-shell-command"
+      ><span class="muted">{{ entry.database }}&gt;</span> {{ entry.command }}</pre>
+      @if (entry.error; as error) {
+        <pre class="mongo-problem">{{ error | transloco }}</pre>
+      }
+      @if (entry.answer; as answer) {
+        @for (log of answer.logs; track $index) {
+          <pre>{{ log.join(' ') }}</pre>
+        }
+        @if (answer.kind === 'documents') {
+          <p class="muted">
+            {{ 'mongo.shell.documents' | transloco: { v0: count(answer), v1: answer.elapsedMs } }}
+          </p>
+        }
+        @if (answer.kind !== 'none') {
+          <pre>{{ text(answer) }}</pre>
+        }
+      }
+    </div>
+  } @empty {
+    <p class="muted">
+      {{
+        'Write a command as in mongosh: db.orders.find({ status: "A" }), show collections, use shop.'
+          | transloco
+      }}
+    </p>
+  }
+</div>
+
+@if (console().pending(); as pending) {
+  <div
+    class="mongo-shell-confirm"
+    role="alertdialog"
+    [attr.aria-label]="'Confirm the command' | transloco"
+  >
+    <p>
+      {{
+        (pending.what === 'database' ? 'mongo.shell.database' : 'mongo.shell.collection')
+          | transloco: { v0: pending.name }
+      }}
+    </p>
+    <pre>{{ pending.command }}</pre>
+    <div class="row mongo-inline">
+      <label class="field"
+        >{{ 'mongo.typeName' | transloco: { v0: pending.name } }}
+        <input [formField]="console().fields.confirm" spellcheck="false" autocomplete="off"
+      /></label>
+      <button
+        type="button"
+        class="button danger"
+        [disabled]="console().model().confirm.trim() !== pending.name"
+        (click)="console().confirm()"
+      >
+        {{ 'Run it' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="console().cancelPending()">
+        {{ 'Cancel' | transloco }}
+      </button>
+    </div>
+  </div>
+}
+
+<div class="mongo-shell-input">
+  <app-code-editor
+    language="javascript"
+    size="small"
+    [formField]="console().fields.command"
+    [label]="'Shell command' | transloco"
+    [words]="console().words()"
+    placeholder="db.orders.find({ status: 'A' })"
+  />
+  <div class="row mongo-actions">
+    <span class="muted" data-testid="shell-database">{{ console().database() }}&gt;</span>
+    @if (console().running()) {
+      <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+    } @else {
+      <button type="button" class="button primary" (click)="console().run()">
+        {{ 'Run' | transloco }}
+      </button>
+    }
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Previous command' | transloco"
+      (click)="console().recall(1)"
+    >
+      ↑
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Next command' | transloco"
+      (click)="console().recall(-1)"
+    >
+      ↓
+    </button>
+    <span class="grow muted">{{
+      'Ctrl+Enter runs; Alt+↑ and Alt+↓ go through the history.' | transloco
+    }}</span>
+    <button type="button" class="text-button" (click)="console().clear()">
+      {{ 'Clear' | transloco }}
+    </button>
+  </div>
+</div>
+
+<details class="mongo-options">
+  <summary>{{ 'History' | transloco }}</summary>
+  <ul class="mongo-shell-history">
+    @for (command of recent(); track $index) {
+      <li>
+        <button
+          type="button"
+          class="text-button"
+          [title]="command"
+          (click)="console().use(command)"
+        >
+          {{ command }}
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'The commands run on this connection appear here.' | transloco }}</li>
+    }
+  </ul>
+</details>

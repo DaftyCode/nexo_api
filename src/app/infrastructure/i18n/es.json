@@ -1620,5 +1620,19 @@
   "Change streams need a replica set or a sharded cluster. Each change keeps its resume token in _id._data; if the connection drops, Nexo opens the stream again after the last change.": "Los change streams necesitan un replica set o un clúster con shards. Cada cambio lleva su resume token en _id._data; si se corta la conexión, Nexo vuelve a abrir el stream después del último cambio.",
   "mongo.watch.syntax": "No se puede leer el pipeline: revisa sus corchetes, comas y comillas.",
   "mongo.watch.pipeline": "El pipeline es un array de etapas: [{ $match: … }]",
-  "mongo.watch.database": "Elige la base de datos de la colección que quieres vigilar"
+  "mongo.watch.database": "Elige la base de datos de la colección que quieres vigilar",
+  "Close the shell": "Cerrar la shell",
+  "Shell output": "Salida de la shell",
+  "mongo.shell.documents": "{{v0}} documentos · {{v1}} ms",
+  "Write a command as in mongosh: db.orders.find({ status: \"A\" }), show collections, use shop.": "Escribe un comando como en mongosh: db.orders.find({ status: \"A\" }), show collections, use shop.",
+  "Confirm the command": "Confirma el comando",
+  "mongo.shell.database": "Este comando borra la base de datos {{v0}} con todas sus colecciones. No se puede deshacer.",
+  "mongo.shell.collection": "Este comando borra o vacía la colección {{v0}}. No se puede deshacer.",
+  "Run it": "Ejecutarlo",
+  "Shell command": "Comando de la shell",
+  "Previous command": "Comando anterior",
+  "Next command": "Comando siguiente",
+  "Ctrl+Enter runs; Alt+↑ and Alt+↓ go through the history.": "Ctrl+Intro ejecuta; Alt+↑ y Alt+↓ recorren el historial.",
+  "The commands run on this connection appear here.": "Aquí aparecen los comandos ejecutados en esta conexión.",
+  "Write a command": "Escribe un comando"
 }

@@ -27,6 +27,7 @@ fn call(connection: &str, method: &str, arguments: Value) -> ScriptCall {
         collection: "orders".into(),
         method: method.into(),
         arguments: arguments.as_array().unwrap().clone(),
+        confirm: None,
     }
 }
 
@@ -119,10 +120,10 @@ async fn writes_keep_the_rules_of_the_interface() {
     assert_eq!(
         error(
             application
-                .script_call(call("Local", "drop", json!([])))
+                .script_call(call("Local", "rename", json!([])))
                 .await
         ),
-        "nx.mongo collections have no method drop"
+        "nx.mongo collections have no method rename"
     );
     assert!(fake.writes.lock().unwrap().is_empty());
 

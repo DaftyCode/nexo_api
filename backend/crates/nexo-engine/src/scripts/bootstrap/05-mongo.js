@@ -164,6 +164,8 @@
       skip: (skip) => ((options.skip = skip), chain),
       project: (projection) => ((options.projection = projection), chain),
       toArray: () => run(options),
+      /** The options chained so far. */
+      options: () => ({ ...options }),
     };
     return chain;
   };
@@ -181,6 +183,12 @@
       replaceOne: (filter, replacement) => call('replaceOne', filter, replacement),
       deleteOne: (filter) => call('deleteOne', filter),
       deleteMany: (filter, options = {}) => call('deleteMany', filter, options),
+      estimatedDocumentCount: () => call('estimatedDocumentCount', {}),
+      getIndexes: () => call('getIndexes'),
+      createIndex: (keys, options = {}) => call('createIndex', keys, options),
+      // Dropping needs the collection's name: `{ confirm: name }`, or the shell's question.
+      drop: (options = {}) => call('drop', options),
+      getName: () => name,
     });
   };
   api.mongo = (connection) => {
@@ -188,9 +196,19 @@
     if (!name) throw new TypeError('nx.mongo needs the name of a saved connection');
     const db = (database) => {
       const collection = (collection) => mongoCollection(name, String(database), String(collection));
-      return Object.freeze({ collection, getCollection: collection });
+      const call = (method, ...args) => mongoCall(name, String(database), '', method, args);
+      return Object.freeze({
+        collection,
+        getCollection: collection,
+        getName: () => String(database),
+        listCollections: () => call('listCollections'),
+        getCollectionNames: () =>
+          call('listCollections').then((list) => list.map((item) => item.name).sort()),
+        dropDatabase: (options = {}) => call('dropDatabase', options),
+      });
     };
-    return Object.freeze({ db, getDB: db });
+    const listDatabases = () => mongoCall(name, '', '', 'listDatabases', []);
+    return Object.freeze({ db, getDB: db, listDatabases });
   };
   Object.assign(globalThis, {
     ObjectId,
@@ -203,6 +221,13 @@
     UUID,
     MinKey,
     MaxKey,
+    // Extended JSON as mongosh has it: values to and from canonical Extended JSON.
+    EJSON: Object.freeze({
+      serialize: toBson,
+      deserialize: fromBson,
+      stringify: (value, replacer, space) => stringify(toBson(value), replacer, space),
+      parse: (text) => fromBson(JSON.parse(text)),
+    }),
   });
   const deliverMongo = (id, result, error) => {
     const entry = state.callbacks[id];

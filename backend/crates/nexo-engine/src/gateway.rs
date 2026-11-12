@@ -32,6 +32,7 @@ impl ExecutionGateway for Engine {
                 Ok(json!({"id": job.id(), "state": "running"}))
             }
             Operation::Cancel => self.runs.cancel(id(&payload)),
+            Operation::MongoShell => shell::run(self.databases.clone(), payload).await,
             Operation::RunPause => self.runs.pause(id(&payload)),
             Operation::RunResume => self.runs.resume(id(&payload)),
             Operation::Import => interchange::import(&payload),

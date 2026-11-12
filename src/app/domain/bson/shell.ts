@@ -127,3 +127,30 @@ export function relaxed(value: unknown): unknown {
       return value;
   }
 }
+
+/**
+ * A value in the shell's syntax as a person writes it: plain numbers stay plain and keys that
+ * need no quotes have none. For pasted stages and the output of the shell.
+ */
+export function shellText(value: unknown, indent = 0): string {
+  if (typeof value === 'number') return String(value);
+  const type = bsonType(value);
+  const pad = '  '.repeat(indent + 1);
+  const end = '  '.repeat(indent);
+  if (type === 'Array') {
+    const items = value as unknown[];
+    if (!items.length) return '[]';
+    const lines = items.map((item) => pad + shellText(item, indent + 1));
+    return `[\n${lines.join(',\n')}\n${end}]`;
+  }
+  if (type === 'Document') {
+    const entries = Object.entries(value as Record<string, unknown>);
+    if (!entries.length) return '{}';
+    const key = (name: string) => (/^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name));
+    const lines = entries.map(
+      ([name, item]) => `${pad}${key(name)}: ${shellText(item, indent + 1)}`,
+    );
+    return `{\n${lines.join(',\n')}\n${end}}`;
+  }
+  return shell(value);
+}

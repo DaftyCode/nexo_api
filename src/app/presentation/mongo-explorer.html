@@ -13,7 +13,9 @@
 <div class="mongo-explorer">
   <app-mongo-explorer-sidebar [explorer]="this" />
   <section class="feature-card mongo-query" [attr.aria-label]="'Query' | transloco">
-    @if (target(); as target) {
+    @if (shellOpen()) {
+      <app-mongo-shell [explorer]="this" />
+    } @else if (target(); as target) {
       <div class="row between mongo-target">
         <h2>
           {{ target.database }}.{{ target.collection }}

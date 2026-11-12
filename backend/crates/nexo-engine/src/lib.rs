@@ -38,6 +38,7 @@ pub mod realtime;
 pub mod runner;
 pub mod scripts;
 pub mod secret_hosts;
+mod shell;
 pub mod socketio;
 pub mod tls;
 mod token_requests;

@@ -43,6 +43,25 @@ payload! {
     }
 }
 
+payload! {
+    /// `mongo.shell`: a command of the MongoDB shell (`db.orders.find({…})`, `use shop`,
+    /// `show collections`) on a saved `connection` (its identifier), starting in `database`.
+    /// `confirm` is the name typed to confirm a destructive command; `variables` fill the
+    /// connection's URI.
+    closed MongoShellPayload {
+        required {
+            connection "connection": String => "string",
+            database "database": String => "string",
+            command "command": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            confirm "confirm": String => "string",
+            variables "variables": Map<String, Value> => "Record<string, string>",
+        }
+    }
+}
+
 /// Which writes a validator checks: none, every one, or those of documents already valid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]

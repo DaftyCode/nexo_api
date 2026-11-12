@@ -33,6 +33,8 @@ import { MongoAggregations } from './mongo-aggregations';
 import { AggregationEditor } from './mongo-aggregations/editor';
 import { MongoSchema } from './mongo-schema';
 import { SchemaExplorer } from './mongo-schema/explorer';
+import { MongoShell } from './mongo-shell';
+import { MongoConsole } from './mongo-shell/console';
 import { fieldNames } from '../domain/mongo-schema';
 import { MongoTransfers } from './mongo-transfer/transfers';
 import { MONGO, TRANSFER_FILES } from '../composition/providers';
@@ -81,6 +83,7 @@ const SUGGESTED = 50;
     MongoTransfer,
     MongoAggregations,
     MongoSchema,
+    MongoShell,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -138,6 +141,9 @@ export class MongoExplorer {
   readonly transfers = new MongoTransfers(this, inject(TRANSFER_FILES));
   readonly aggregations = new AggregationEditor(this, inject(Injector));
   readonly schema = new SchemaExplorer(this, inject(Injector), inject(TRANSFER_FILES));
+  /** The shell of the connection, shown instead of the collection while open. */
+  readonly shellOpen = signal(false);
+  readonly shell = new MongoConsole(this, inject(Injector));
   /** Field paths suggested in the filter and the stages: the schema's, then the page's. */
   readonly fieldNames = computed(() =>
     fieldNames(this.schema.report(), this.pager.current()?.documents.slice(0, SUGGESTED) ?? []),
@@ -202,6 +208,7 @@ export class MongoExplorer {
   }
   /** Chooses a collection: its statistics load, and the query runs at once, as Compass does. */
   choose(database: string, collection: CollectionSummary, run = true) {
+    this.shellOpen.set(false);
     const changed =
       this.target()?.database !== database || this.target()?.collection !== collection.name;
     this.target.set({ database, collection: collection.name, kind: collection.kind });
@@ -230,6 +237,11 @@ export class MongoExplorer {
       }
       throw error;
     }
+  }
+  /** Opens the shell of the connection. */
+  openShell() {
+    this.shellOpen.set(true);
+    void this.shell.open().catch((error: unknown) => this.fail(error));
   }
   setView(view: ResultsView) {
     this.view.set(view);

@@ -4,7 +4,7 @@
  * Extended JSON, and laid out as table columns and tree rows.
  */
 
-export { relaxed, shell } from './bson/shell';
+export { relaxed, shell, shellText } from './bson/shell';
 export { summary, tableColumns, treeRows, valueAt } from './bson/views';
 export type { TableColumn, TreeRow } from './bson/views';
 

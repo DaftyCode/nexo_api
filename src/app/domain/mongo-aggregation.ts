@@ -4,7 +4,7 @@
  * write: the preview of a stage never carries them, and they can only be the last stage.
  */
 
-import { bsonType, shell } from './bson';
+import { shellText } from './bson';
 import { type Json, QuerySyntaxError } from './mongo-query/reader';
 import { shellToExtendedJson } from './mongo-query';
 import { STAGE_TEMPLATES } from './mongo-aggregation/templates';
@@ -193,30 +193,6 @@ export function pipelineText(stages: readonly PipelineStage[]): string {
   return items.length ? `[\n${items.join(',\n')}\n]` : '[]';
 }
 
-/** A value of a pasted stage in the shell's syntax; plain numbers stay plain, as typed. */
-function stageText(value: unknown, indent = 0): string {
-  if (typeof value === 'number') return String(value);
-  const type = bsonType(value);
-  const pad = '  '.repeat(indent + 1);
-  const end = '  '.repeat(indent);
-  if (type === 'Array') {
-    const items = value as unknown[];
-    if (!items.length) return '[]';
-    const lines = items.map((item) => pad + stageText(item, indent + 1));
-    return `[\n${lines.join(',\n')}\n${end}]`;
-  }
-  if (type === 'Document') {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (!entries.length) return '{}';
-    const key = (name: string) => (/^[A-Za-z_$][\w$]*$/.test(name) ? name : JSON.stringify(name));
-    const lines = entries.map(
-      ([name, item]) => `${pad}${key(name)}: ${stageText(item, indent + 1)}`,
-    );
-    return `{\n${lines.join(',\n')}\n${end}}`;
-  }
-  return shell(value);
-}
-
 /** The stages of a pipeline typed or pasted as an array, in the shell's syntax or JSON. */
 export function stagesFromText(text: string): PipelineStage[] {
   const value = parse(text, -1, (t) => t);
@@ -227,6 +203,6 @@ export function stagesFromText(text: string): PipelineStage[] {
     if (entries.length !== 1 || !OPERATOR.test(entries[0][0]))
       throw new StageError(-1, 'mongo.stage.one', { v0: index + 1 });
     const [operator, body] = entries[0];
-    return { operator, body: stageText(body), enabled: true };
+    return { operator, body: shellText(body), enabled: true };
   });
 }

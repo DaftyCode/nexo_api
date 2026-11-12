@@ -97,10 +97,24 @@ impl ScriptSession {
 
     /// Evaluates source with the time limit and runs the promise jobs it queued.
     fn evaluate(&self, source: &str) -> Result<Option<String>> {
+        self.evaluate_keeping(source, None)
+    }
+    /// Evaluates source and keeps its completion value in the global `name`: what the last
+    /// statement of a shell command gave.
+    pub(crate) fn evaluate_into(&self, source: &str, name: &str) -> Result<()> {
+        self.evaluate_keeping(source, Some(name)).map(|_| ())
+    }
+    fn evaluate_keeping(&self, source: &str, keep: Option<&str>) -> Result<Option<String>> {
         *self.deadline.lock().unwrap_or_else(|e| e.into_inner()) =
             Some(Instant::now() + SCRIPT_TIMEOUT);
         let result = self.context.with(|ctx| -> Result<Option<String>> {
             match ctx.eval::<rquickjs::Value, _>(source) {
+                Ok(value) if keep.is_some() => {
+                    ctx.globals()
+                        .set(keep.unwrap_or_default(), value)
+                        .map_err(infrastructure)?;
+                    Ok(None)
+                }
                 Ok(value) => Ok(value.as_string().and_then(|text| text.to_string().ok())),
                 Err(rquickjs::Error::Exception) => {
                     Err(Error::Validation(exception_message(&ctx.catch())))

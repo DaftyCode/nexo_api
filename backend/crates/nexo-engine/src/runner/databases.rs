@@ -5,23 +5,28 @@ use nexo_application::ports::{ScriptCall, ScriptDatabase};
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value};
 use std::sync::{Arc, OnceLock, Weak};
+use tokio::runtime::Handle;
 
-/// The application's answer to `nx.mongo`, set by the composition root. Weak, as the
-/// application holds the engine.
+/// The application's answer to `nx.mongo`, set by the composition root, with the runtime it
+/// runs on. Weak, as the application holds the engine.
 #[derive(Clone, Default)]
-pub struct ScriptDatabases(Arc<OnceLock<Weak<dyn ScriptDatabase>>>);
+pub struct ScriptDatabases(Arc<OnceLock<(Weak<dyn ScriptDatabase>, Handle)>>);
 
 impl ScriptDatabases {
+    /// Connects the application; called from the runtime of the service.
     pub fn connect(&self, databases: Weak<dyn ScriptDatabase>) {
-        let _ = self.0.set(databases);
+        if let Ok(runtime) = Handle::try_current() {
+            let _ = self.0.set((databases, runtime));
+        }
     }
-    fn get(&self) -> Option<Arc<dyn ScriptDatabase>> {
-        self.0.get().and_then(Weak::upgrade)
+    fn get(&self) -> Option<(Arc<dyn ScriptDatabase>, Handle)> {
+        let (databases, runtime) = self.0.get()?;
+        Some((databases.upgrade()?, runtime.clone()))
     }
 }
 
 /// The script's variables, the narrowest scope winning, to fill the connection's URI.
-fn variables(state: &Value) -> Map<String, Value> {
+pub(crate) fn variables(state: &Value) -> Map<String, Value> {
     let mut variables = Map::new();
     for scope in ["globals", "collection", "environment", "data", "local"] {
         if let Some(values) = state[scope].as_object() {
@@ -32,31 +37,37 @@ fn variables(state: &Value) -> Map<String, Value> {
 }
 
 /// A queued `nx.mongo` call, answered by the application.
-pub(super) async fn call(
+pub(crate) async fn call(
     databases: &ScriptDatabases,
     workspace: &str,
-    state: &Value,
+    variables: Map<String, Value>,
     call: &Value,
+    confirm: Option<String>,
 ) -> Result<Value> {
-    let databases = databases.get().ok_or_else(|| {
+    let (databases, runtime) = databases.get().ok_or_else(|| {
         Error::Validation("nx.mongo is not available here: run the request in Nexo".into())
     })?;
     let text = |key: &str| call[key].as_str().unwrap_or_default().to_string();
-    databases
-        .script_call(ScriptCall {
-            workspace: if workspace.is_empty() {
-                "local".into()
-            } else {
-                workspace.into()
-            },
-            connection: text("connection"),
-            variables: variables(state),
-            database: text("database"),
-            collection: text("collection"),
-            method: text("method"),
-            arguments: call["arguments"].as_array().cloned().unwrap_or_default(),
-        })
+    let call = ScriptCall {
+        workspace: if workspace.is_empty() {
+            "local".into()
+        } else {
+            workspace.into()
+        },
+        connection: text("connection"),
+        variables,
+        database: text("database"),
+        collection: text("collection"),
+        method: text("method"),
+        arguments: call["arguments"].as_array().cloned().unwrap_or_default(),
+        confirm,
+    };
+    // On the service's runtime: scripts run on runtimes of their own, which end with them,
+    // and the database connections they open must outlive them.
+    runtime
+        .spawn(async move { databases.script_call(call).await })
         .await
+        .map_err(|error| Error::Infrastructure(error.to_string()))?
 }
 
 #[cfg(test)]

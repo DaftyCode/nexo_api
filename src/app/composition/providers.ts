@@ -49,10 +49,11 @@ export const workspaceProviders = [
     useFactory: (): MongoLoader => {
       const api = inject(HttpApi);
       const files = inject(BrowserFiles);
+      const preferences = inject(BrowserPreferences);
       let loaded: Promise<MongoUseCases> | undefined;
       return () =>
         (loaded ??= import('../application/mongo-use-cases').then(
-          ({ MongoUseCases }) => new MongoUseCases(api, () => files.id()),
+          ({ MongoUseCases }) => new MongoUseCases(api, () => files.id(), preferences),
         ));
     },
   },

@@ -64,58 +64,29 @@ fn every_operation_has_a_payload_type() {
     // An empty object is valid exactly when the operation has no required field.
     for operation in Operation::ALL {
         let result = validate(*operation, json!({}));
-        let required = matches!(
-            operation,
-            Operation::Cancel
-                | Operation::RunPause
-                | Operation::RunResume
-                | Operation::Import
-                | Operation::ApiInspect
-                | Operation::ApiDiff
-                | Operation::RealtimeSend
-                | Operation::RealtimeClose
-                | Operation::RealtimePoll
-                | Operation::MockStop
-                | Operation::DatasetQuery
-                | Operation::DatasetSchema
-                | Operation::DatasetDelete
-                | Operation::OauthToken
-                | Operation::CookiesSet
-                | Operation::CookiesDelete
-                | Operation::PerformanceCancel
-                | Operation::MongoTest
-                | Operation::MongoDatabases
-                | Operation::MongoCollections
-                | Operation::MongoStats
-                | Operation::MongoFind
-                | Operation::MongoMore
-                | Operation::MongoCount
-                | Operation::MongoCancel
-                | Operation::MongoClose
-                | Operation::MongoInsert
-                | Operation::MongoUpdate
-                | Operation::MongoReplace
-                | Operation::MongoDelete
-                | Operation::MongoUndo
-                | Operation::MongoCollectionCreate
-                | Operation::MongoCollectionRename
-                | Operation::MongoCollectionDrop
-                | Operation::MongoDatabaseDrop
-                | Operation::MongoIndexes
-                | Operation::MongoIndexCreate
-                | Operation::MongoIndexHide
-                | Operation::MongoIndexDrop
-                | Operation::MongoExplain
-                | Operation::MongoProfile
-                | Operation::MongoProfileSet
-                | Operation::MongoProfileEntries
-                | Operation::MongoImport
-                | Operation::MongoAggregate
-                | Operation::MongoAggregateWrite
-                | Operation::MongoSchema
-                | Operation::MongoCollectionValidator
-                | Operation::MongoWatch
-        );
+        // Every database operation names at least its connection.
+        let required = operation.is_database()
+            || matches!(
+                operation,
+                Operation::Cancel
+                    | Operation::RunPause
+                    | Operation::RunResume
+                    | Operation::Import
+                    | Operation::ApiInspect
+                    | Operation::ApiDiff
+                    | Operation::RealtimeSend
+                    | Operation::RealtimeClose
+                    | Operation::RealtimePoll
+                    | Operation::MockStop
+                    | Operation::DatasetQuery
+                    | Operation::DatasetSchema
+                    | Operation::DatasetDelete
+                    | Operation::OauthToken
+                    | Operation::CookiesSet
+                    | Operation::CookiesDelete
+                    | Operation::PerformanceCancel
+                    | Operation::MongoShell
+            );
         assert_eq!(result.is_err(), required, "{operation}");
         assert!(
             validate(

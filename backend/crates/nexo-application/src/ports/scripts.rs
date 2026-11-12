@@ -11,7 +11,7 @@ use serde_json::{Map, Value};
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ScriptCall {
     pub workspace: String,
-    /// The name of a saved connection of the workspace.
+    /// The name (or the identifier) of a saved connection of the workspace.
     pub connection: String,
     /// The script's variables, to fill `{{name}}` in the connection's URI and certificates.
     pub variables: Map<String, Value>,
@@ -20,6 +20,9 @@ pub struct ScriptCall {
     pub method: String,
     /// The arguments, in Extended JSON.
     pub arguments: Vec<Value>,
+    /// The name the person typed to confirm a destructive command of the shell (`drop`,
+    /// `dropDatabase`, `deleteMany({})`); scripts pass it in the command's options.
+    pub confirm: Option<String>,
 }
 
 #[async_trait]

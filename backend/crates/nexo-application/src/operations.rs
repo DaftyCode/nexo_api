@@ -101,6 +101,7 @@ operations!(
         MongoSchema => "mongo.schema",
         MongoCollectionValidator => "mongo.collection.validator",
         MongoWatch => "mongo.watch",
+        MongoShell => "mongo.shell",
     }
 );
 impl Operation {
@@ -191,6 +192,7 @@ impl Operation {
                 | Self::MongoIndexDrop
                 | Self::MongoProfileSet
                 | Self::MongoCollectionValidator
+                | Self::MongoShell
         )
     }
 }

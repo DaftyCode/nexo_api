@@ -67,6 +67,7 @@ export const EXECUTION_OPERATIONS = [
   'mongo.schema',
   'mongo.collection.validator',
   'mongo.watch',
+  'mongo.shell',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

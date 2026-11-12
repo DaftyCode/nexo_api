@@ -588,6 +588,15 @@ export interface MongoWatchPayload {
   resumeAfter?: string | object;
 }
 
+export interface MongoShellPayload {
+  connection: string;
+  database: string;
+  command: string;
+  workspace?: string;
+  confirm?: string;
+  variables?: Record<string, string>;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -667,6 +676,7 @@ export interface OperationPayloads {
   'mongo.schema': MongoSchemaPayload;
   'mongo.collection.validator': MongoCollectionValidatorPayload;
   'mongo.watch': MongoWatchPayload;
+  'mongo.shell': MongoShellPayload;
 }
 
 /** The payload of an operation. */

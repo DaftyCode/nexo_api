@@ -61,4 +61,10 @@ impl ScriptSession {
         ))?;
         Ok(())
     }
+    /// What the shell command gave, as JSON: the current database, the kind of result and
+    /// its value in Extended JSON, or the error.
+    pub(crate) fn output(&self) -> Result<String> {
+        self.evaluate("__shell.output()")?
+            .ok_or_else(|| Error::Infrastructure("The shell gave no output".into()))
+    }
 }

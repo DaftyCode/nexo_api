@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+.mongo-shell-output {
+  max-height: 460px;
+  min-height: 160px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+}
+.mongo-shell-output pre {
+  margin: 2px 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.mongo-shell-entry + .mongo-shell-entry {
+  border-top: 1px solid var(--border);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+.mongo-shell-command {
+  font-weight: 600;
+}
+.mongo-shell-confirm {
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+}
+.mongo-shell-history {
+  list-style: none;
+  margin: 4px 0;
+  padding: 0;
+  max-height: 200px;
+  overflow: auto;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+}
+.mongo-shell-history .text-button {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
