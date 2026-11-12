@@ -188,7 +188,17 @@ try {
   const mcp = await api('POST', '/mcp', {
     payload: { jsonrpc: '2.0', id: 1, method: 'tools/list' },
   });
-  assert.equal(mcp.body.result.tools.length, 2);
+  assert.deepEqual(mcp.body.result.tools.map((tool) => tool.name).sort(), [
+    'list_workspaces',
+    'mongo_aggregate',
+    'mongo_explain',
+    'mongo_find',
+    'mongo_list_collections',
+    'mongo_list_connections',
+    'mongo_list_databases',
+    'mongo_schema',
+    'send_request',
+  ]);
   checks.push('MCP tool discovery');
 
   console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));
