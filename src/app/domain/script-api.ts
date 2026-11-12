@@ -1,6 +1,6 @@
 /**
  * What request scripts can use, as `pm` (Postman's name) and `nx`: the same object in the
- * QuickJS sandbox (`backend/crates/nexo-engine/src/scripts/bootstrap.js`). The editor
+ * QuickJS sandbox (`backend/crates/nexo-engine/src/scripts/bootstrap/`). The editor
  * suggests these members as one types `pm.` or `nx.`.
  */
 export interface ScriptMember {

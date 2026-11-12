@@ -1,0 +1,203 @@
+.studio[data-template='canvas'] {
+  .main-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.03fr);
+    grid-template-rows: auto auto auto minmax(265px, 1fr);
+    gap: 14px;
+    overflow: auto;
+    padding-bottom: 12px;
+    align-content: start;
+  }
+  .canvas-intro {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 1px 0;
+  }
+  .canvas-eyebrow {
+    display: inline-block;
+    color: #6c55df;
+    font-size: 10px;
+    font-weight: 700;
+    background: #ebe8ff;
+    border-radius: 7px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+  }
+  .canvas-intro h1 {
+    font-size: 25px;
+    font-weight: 750;
+    letter-spacing: 0.1px;
+    margin: 0 0 2px;
+  }
+  .canvas-intro p {
+    color: #7b8ba9;
+    font-size: 12px;
+    margin: 0;
+  }
+  .canvas-intro .button {
+    border-radius: 11px;
+    background: #fff;
+    color: #34425e;
+    min-height: 36px;
+    font-size: 11px;
+  }
+  .canvas-intro .canvas-new {
+    color: #6953ed;
+    border-color: transparent;
+    background: #efedff;
+  }
+  .request-tabbar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 34px;
+    background: transparent;
+    border: 0;
+    gap: 8px;
+    padding: 0;
+  }
+  .request-tab {
+    border: 1px solid #dde3ef;
+    height: 33px;
+    border-radius: 9px;
+    background: #f8f9fd;
+  }
+  .request-tab.active {
+    background: #fff;
+    border-color: #c9c1fa;
+  }
+  .request-tab.active::before {
+    height: 2px;
+    border-radius: 4px;
+    top: auto;
+    bottom: 0;
+  }
+  .request-tab > button:first-child {
+    font-size: 10px;
+    padding: 0 9px;
+  }
+  .request-tab .method-tag {
+    font-size: 9px;
+    min-width: auto;
+    padding: 3px 6px;
+    background: #e6f7ef;
+    border-radius: 5px;
+  }
+  .main-workspace > app-request-editor {
+    display: contents;
+  }
+  .request-chrome {
+    min-height: 102px;
+    grid-column: 1 / -1;
+    grid-row: 3;
+    background: white;
+    border: 1px solid #e1e7f3;
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .request-title {
+    height: 38px;
+    padding: 0 15px;
+  }
+  .breadcrumb {
+    font-size: 10px;
+  }
+  .breadcrumb input {
+    font-size: 11px;
+    color: #40506b;
+    padding: 4px;
+  }
+  .request-title .button {
+    min-height: 26px;
+    padding: 4px 8px;
+    font-size: 10px;
+    background: #f4f4ff;
+    border-color: transparent;
+    color: #6b5ac9;
+  }
+  .request-title app-studio-icon {
+    width: 14px;
+    height: 14px;
+  }
+  .request-title kbd {
+    font-size: 8px;
+    border: 0;
+  }
+  .url-toolbar {
+    min-height: 54px;
+    margin: 0;
+    padding: 7px 11px 11px;
+    background: white;
+    border: 0;
+    border-radius: 0;
+  }
+  .method-select {
+    background: #e9f8f2;
+    color: #009c75;
+    font-family: var(--font);
+    font-size: 15px;
+    width: 115px;
+    border-radius: 11px;
+    font-weight: 750;
+  }
+  .method-select.post {
+    background: #fff5e5;
+    color: #c18c25;
+  }
+  .url-input {
+    color: #32415f;
+    border-left: 1px solid #e7ebf4;
+    font-size: 15px;
+    margin: 5px 15px;
+    padding: 7px 13px;
+  }
+  .url-toolbar .button.primary {
+    border-radius: 11px;
+    background: linear-gradient(120deg, #6f58ff, #4736d6);
+    border: 0;
+    color: #fff;
+    gap: 9px;
+    min-width: 120px;
+    font-size: 14px;
+  }
+  .request-configuration {
+    grid-column: 1;
+    grid-row: 4;
+    display: flex;
+    flex-direction: column;
+    min-height: 265px;
+    background: #fff;
+    border: 1px solid #e2e7f3;
+    border-radius: 18px;
+    overflow: hidden;
+  }
+  .request-panel-heading,
+  .response-panel-heading {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 21px 23px 11px;
+    min-height: 61px;
+  }
+  .request-panel-heading h2,
+  .response-panel-heading h2 {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 700;
+  }
+  .request-panel-heading > span,
+  .response-panel-heading > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 29px;
+    height: 29px;
+    background: #efedff;
+    border-radius: 9px;
+    color: #7760f8;
+    font-weight: 700;
+    font-size: 17px;
+  }
+}

@@ -4,8 +4,8 @@
 #   27118 SCRAM (user nexo) and X.509, with TLS allowed (a CA made here)
 #   27119 a one-member replica set (rs0)
 #   27120 FerretDB (user nexo), a compatible server on PostgreSQL
-# Prints the NEXO_MONGO_* variables tests/contract/mongo.test.mjs reads, and adds them to
-# $GITHUB_ENV in CI.  Usage: tools/mongo-fixture.sh start | stop
+# Prints the NEXO_MONGO_* variables the tests/contract/mongo-*.test.mjs files read, and adds
+# them to $GITHUB_ENV in CI.  Usage: tools/mongo-fixture.sh start | stop
 set -euo pipefail
 # Git Bash on Windows would turn arguments such as /CN=… or /certs into Windows paths.
 export MSYS_NO_PATHCONV=1

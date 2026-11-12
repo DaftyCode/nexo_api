@@ -1,0 +1,136 @@
+.request-content {
+  /* As tall as its content (a few params, or the body editor) up to a share of the
+     window; dragging the divider below fixes a height instead. */
+  height: auto;
+  max-height: clamp(213px, 45vh, 560px);
+  overflow: auto;
+  padding: 13px 21px 16px;
+}
+.section-caption {
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+.section-caption > span {
+  font-size: 9px;
+  color: var(--dim);
+}
+.section-caption code {
+  color: #b6aa7b;
+}
+.kv-table {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.kv-head,
+.kv-row {
+  display: grid;
+  grid-template-columns: 35px 1fr 1.5fr 32px;
+  align-items: center;
+}
+.kv-head {
+  height: 27px;
+  font-size: 10px;
+  color: var(--muted);
+  background: #1b1e24;
+}
+.kv-head > span:not(:first-child) {
+  padding: 0 9px;
+}
+.kv-row {
+  border-top: 1px solid var(--border);
+  min-height: 34px;
+}
+.kv-row > input[type='checkbox'] {
+  margin: auto;
+}
+.kv-row > input:not([type='checkbox']) {
+  border: 0;
+  border-radius: 0;
+  background: none;
+  height: 33px;
+  padding: 6px 9px;
+  font-size: 11px;
+  border-left: 1px solid var(--border);
+  width: 100%;
+}
+.kv-row > .kv-key {
+  padding: 6px 9px;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.kv-row > .icon-button {
+  font-size: 15px;
+  opacity: 0.55;
+}
+.kv-add {
+  font-size: 10px;
+  padding: 7px 10px;
+}
+.body-options {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.body-options label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+.body-options select {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+.code-editor {
+  background: #14171b;
+  color: #c6d5cc;
+  display: block;
+  width: 100%;
+  min-height: 175px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  font: 11px/1.8 var(--mono);
+  border-radius: 5px;
+  tab-size: 2;
+  resize: vertical;
+}
+.code-editor.small {
+  min-height: 100px;
+}
+.auth-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 1fr) 1.4fr;
+  gap: 40px;
+}
+.auth-grid .field:first-child {
+  margin-top: 0;
+}
+.auth-grid .muted {
+  font-size: 11px;
+  max-width: 330px;
+}
+.empty-inline {
+  padding: 24px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 35px;
+}
+.editor-hint {
+  color: var(--dim);
+  font-size: 10px;
+  margin-top: 12px;
+}
+.editor-hint code {
+  color: #a8b9a7;
+}

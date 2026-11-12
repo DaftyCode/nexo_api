@@ -1,0 +1,125 @@
+.topbar {
+  height: 54px;
+  display: flex;
+  align-items: center;
+  gap: 33px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  background: #181a1e;
+  flex-shrink: 0;
+}
+.topbar .brand {
+  font-size: 23px;
+}
+.topbar .brand-mark {
+  width: 29px;
+  height: 29px;
+  font-size: 25px;
+}
+.top-links {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  gap: 24px;
+}
+.top-link {
+  color: var(--muted);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+  font-size: 12px;
+}
+.top-link.active {
+  color: var(--text);
+}
+.top-link.active:after {
+  position: absolute;
+  content: '';
+  height: 2px;
+  background: var(--accent);
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.top-search {
+  margin: auto;
+  width: 330px;
+  max-width: 30vw;
+  border: 1px solid #30333a;
+  background: #22252b;
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: var(--dim);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.top-search > span {
+  font-size: 18px;
+}
+.top-search kbd {
+  margin-left: auto;
+}
+.top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: #40483e;
+  color: #cee2c9;
+  border: 1px solid #566250;
+  border-radius: 50%;
+  font-size: 10px;
+  margin-left: 14px;
+}
+.workspace-bar {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  flex-shrink: 0;
+}
+.workspace-icon {
+  color: #b6bbc5;
+  font-size: 19px;
+}
+.workspace-select {
+  background: none;
+  border: 0;
+  padding: 5px 22px 5px 3px;
+  font-weight: 600;
+  max-width: 220px;
+}
+.vertical-divider {
+  height: 18px;
+  background: var(--border);
+  width: 1px;
+  margin: 0 2px;
+}
+.environment-select {
+  background: transparent;
+  min-width: 180px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  font-size: 11px;
+}
+.studio-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}

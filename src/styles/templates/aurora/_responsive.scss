@@ -1,0 +1,197 @@
+.studio[data-template='aurora'],
+.studio[data-template='studio'] {
+  @media (max-width: 1250px) {
+    .topbar {
+      gap: 14px;
+      padding: 0 16px;
+    }
+    .top-links {
+      padding-left: 13px;
+    }
+    .top-link {
+      padding: 0 10px;
+      font-size: 12px;
+    }
+    .top-search kbd {
+      display: none;
+    }
+    .top-right > span:not(.connection-dot):not(.avatar) {
+      display: none;
+    }
+    .rail {
+      width: 102px;
+    }
+    .sidebar {
+      width: 244px;
+    }
+    .sidebar-empty {
+      padding: 30px 18px;
+    }
+    .sidebar-empty strong {
+      font-size: 16px;
+    }
+    .floating-console {
+      left: 102px;
+    }
+    .editor-tabs {
+      gap: 18px;
+    }
+    .response-tabs {
+      gap: 18px;
+    }
+    .response-meta {
+      font-size: 10.5px;
+      gap: 6px;
+    }
+  }
+  @media (max-height: 830px) {
+    .rail {
+      padding-top: 8px;
+    }
+    .rail button {
+      min-height: 54px;
+      padding: 7px 2px;
+      gap: 5px;
+      font-size: 10px;
+    }
+    .rail-vector {
+      width: 21px;
+      height: 21px;
+    }
+    .rail button:last-child {
+      margin-top: 8px;
+      padding-top: 10px;
+    }
+    .sidebar-empty {
+      padding-top: 28px;
+    }
+    .request-title {
+      height: 54px;
+    }
+    .request-content {
+      height: 182px;
+    }
+    .empty-response {
+      min-height: 170px;
+      padding: 18px;
+    }
+    .response-art {
+      width: 62px;
+      height: 58px;
+    }
+  }
+  @media (max-width: 800px) {
+    .topbar {
+      height: 60px;
+      gap: 12px;
+      padding: 0 12px;
+      flex-wrap: nowrap;
+    }
+    .brand .aurora-wordmark {
+      font-size: 21px;
+    }
+    .aurora-brand-mark {
+      width: 32px;
+    }
+    .aurora-wordmark > span {
+      font-size: 12px;
+    }
+    .top-links {
+      display: none;
+    }
+    .top-search {
+      max-width: none;
+      min-width: 90px;
+    }
+    .top-right {
+      display: none;
+    }
+    .rail {
+      width: 76px;
+      padding: 7px 5px;
+    }
+    .rail button {
+      font-size: 9px;
+      min-height: 58px;
+    }
+    .sidebar {
+      width: 205px;
+    }
+    .sidebar-heading {
+      font-size: 15px;
+      padding: 15px 13px 9px;
+    }
+    .sidebar-search {
+      margin: 8px 11px;
+    }
+    .sidebar-empty {
+      padding: 22px 13px;
+      font-size: 11px;
+      gap: 12px;
+    }
+    .sidebar-empty p {
+      font-size: 11px;
+    }
+    .sidebar-empty .button {
+      font-size: 11px;
+    }
+    .collection-art {
+      width: 85px;
+      height: 95px;
+    }
+    .request-title {
+      padding: 0 14px;
+    }
+    .url-toolbar {
+      margin-left: 14px;
+      margin-right: 14px;
+    }
+    .method-select {
+      width: 83px;
+      font-size: 12px;
+    }
+    .url-toolbar .button.primary {
+      min-width: 75px;
+      font-size: 12px;
+    }
+    .request-content {
+      padding: 12px 14px;
+    }
+    .editor-tabs {
+      padding: 0 14px;
+      gap: 17px;
+    }
+    .editor-tabs button {
+      font-size: 11px;
+    }
+    .editor-tabs app-studio-icon {
+      width: 16px;
+      height: 16px;
+    }
+    .section-caption > span {
+      display: none;
+    }
+    .response-section {
+      margin: 0 10px;
+    }
+    .response-tabs {
+      padding: 0 14px;
+      gap: 16px;
+    }
+    .response-meta {
+      display: flex;
+      padding: 0 14px 8px;
+    }
+    .response-toolbar {
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .empty-response h3 {
+      font-size: 16px;
+      text-align: center;
+    }
+    .floating-console {
+      left: 76px;
+    }
+  }
+}

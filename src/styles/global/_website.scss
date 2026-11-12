@@ -1,0 +1,227 @@
+.website {
+  background: #16191c;
+  min-height: 100vh;
+}
+.site-nav {
+  max-width: 1240px;
+  margin: auto;
+  height: 100px;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #ffffff0c;
+}
+.site-nav > div {
+  display: flex;
+  align-items: center;
+  gap: 35px;
+  font-size: 12px;
+}
+.site-nav .brand-mark {
+  width: 35px;
+  height: 35px;
+}
+.site-hero {
+  max-width: 1240px;
+  margin: auto;
+  min-height: 650px;
+  padding: 105px 40px 95px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 75px;
+  align-items: center;
+}
+.hero-copy h1 {
+  font-size: 64px;
+  line-height: 1.07;
+  font-weight: 550;
+  letter-spacing: -3.5px;
+  margin: 23px 0;
+}
+.hero-copy h1 em {
+  font-style: normal;
+  color: var(--accent);
+}
+.hero-copy p {
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 440px;
+  line-height: 1.9;
+  margin-bottom: 26px;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+}
+.hero-protocols {
+  font: 10px var(--mono);
+  color: var(--dim);
+  margin-top: 28px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.hero-protocols span {
+  color: #4a5059;
+}
+.hero-preview {
+  border: 1px solid #3d434a;
+  border-radius: 10px;
+  background: #1c2025;
+  box-shadow: 0 35px 100px #0006;
+  overflow: hidden;
+  transform: perspective(1400px) rotateY(-4deg);
+}
+.preview-top {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+.preview-top .brand-mark {
+  width: 23px;
+  height: 23px;
+  font-size: 20px;
+  border-radius: 6px;
+}
+.preview-top > .connection-dot {
+  margin-left: auto;
+}
+.preview-url {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 17px 12px;
+  border: 1px solid #434a54;
+  border-radius: 5px;
+  padding-left: 12px;
+  font-size: 11px;
+}
+.preview-url b {
+  color: var(--green);
+  font: 10px var(--mono);
+}
+.preview-url code {
+  flex: 1;
+  color: #b6bdc8;
+  font-size: 10px;
+}
+.preview-url .button {
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+}
+.preview-tabs {
+  display: flex;
+  gap: 18px;
+  padding: 10px 18px 17px;
+  font-size: 9px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.preview-tabs span {
+  color: var(--dim);
+}
+.preview-response > div {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 21px 0;
+  font-size: 9px;
+}
+.preview-response > div b {
+  color: var(--green);
+  font-weight: 500;
+}
+.preview-response > div span {
+  color: var(--dim);
+}
+.preview-response pre {
+  font: 11px/2 var(--mono);
+  padding: 13px 22px;
+  color: #b3cbb8;
+}
+.preview-bottom {
+  border-top: 1px solid var(--border);
+  padding: 14px 18px;
+  color: var(--green);
+  font-size: 9px;
+  display: flex;
+  justify-content: space-between;
+}
+.preview-bottom span {
+  color: var(--dim);
+}
+.site-features {
+  max-width: 1240px;
+  margin: auto;
+  padding: 55px 40px 90px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 65px;
+}
+.site-features article > span {
+  font: 10px var(--mono);
+  color: var(--accent);
+}
+.site-features h2 {
+  font-size: 23px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -0.6px;
+  margin: 22px 0 13px;
+}
+.site-features p {
+  font-size: 12px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+.site-footer {
+  max-width: 1160px;
+  margin: auto;
+  border-top: 1px solid var(--border);
+  padding: 25px 0 35px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--dim);
+  font-size: 10px;
+}
+.site-footer > span:first-child {
+  color: var(--muted);
+}
+.docs {
+  max-width: 850px;
+  margin: auto;
+  padding: 80px 35px;
+}
+.docs h1 {
+  font-size: 44px;
+  letter-spacing: -2px;
+}
+.docs .lead {
+  font-size: 18px;
+  color: var(--muted);
+  margin-bottom: 60px;
+}
+.docs section {
+  margin: 35px 0;
+}
+.docs section h2 {
+  font-size: 21px;
+}
+.docs section p {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+.docs section pre {
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: #bad0be;
+  font-size: 12px;
+}

@@ -20,6 +20,7 @@
 - Preserve document revisions, workspace scoping, secret redaction, the egress policy, the script sandbox limits, engine operation allowlists and loopback-only access.
 - The interface is client-rendered only (no SSR). Private API responses must not be cached or persisted by the browser.
 - Add adapters through narrow ports; keep vendor packages outside inward layers. Add meaningful contract tests for behavior changes.
+- Every file has at most 300 lines (`tools/check-file-size.mjs`, part of `test:architecture`). Split by responsibility before a file reaches it: a Rust module becomes a folder (`name/mod.rs` with its parts) and its tests go to `tests.rs` or `tests/`; a TypeScript module keeps its path and moves parts to `name/`; a long template becomes child components. Only the owner adds entries to `EXCEPTIONS`, with the reason the file cannot be split.
 - Required checks: `npm run test:architecture`, `npm test -- --watch=false`, `npm run engine:test`, `npm run backend:test`, `npm run backend:clippy`, `npm run build`, `npm run build:desktop`.
 - Refresh both dependency lockfiles deliberately. `engine:test` builds `nexo-server` and runs the contract tests in `tests/contract`; behavior changes in the engine need a contract test there.
 - The desktop build includes its runtime. A UI preview does not verify the packaged executable; use the native app for release verification.

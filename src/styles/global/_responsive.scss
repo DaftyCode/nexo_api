@@ -1,0 +1,279 @@
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 225px;
+  }
+  .top-search {
+    display: none;
+  }
+  .top-right {
+    margin-left: auto;
+  }
+  .editor-tabs {
+    gap: 18px;
+  }
+  .response-meta {
+    gap: 8px;
+    font-size: 9px;
+  }
+  .tools-page {
+    padding: 25px;
+  }
+  .feature-columns {
+    gap: 14px;
+  }
+  .feature-card {
+    padding: 18px;
+  }
+  .site-hero {
+    gap: 30px;
+  }
+  .hero-copy h1 {
+    font-size: 54px;
+  }
+  .hero-preview {
+    transform: none;
+  }
+  .site-features {
+    gap: 35px;
+  }
+}
+@media (max-width: 900px) {
+  .sidebar {
+    width: 190px;
+  }
+  .rail {
+    width: 63px;
+  }
+  .rail button {
+    font-size: 8px;
+  }
+  .top-links {
+    display: none;
+  }
+  .topbar {
+    gap: 20px;
+  }
+  .response-toolbar {
+    flex-wrap: wrap;
+    gap: 0;
+    padding-bottom: 6px;
+  }
+  .response-meta {
+    padding-left: 21px;
+  }
+  .request-title .breadcrumb {
+    max-width: 50%;
+  }
+  .request-title kbd {
+    display: none;
+  }
+  .feature-columns {
+    flex-direction: column;
+  }
+  .feature-columns > .feature-card,
+  .feature-columns > .resource-list {
+    width: 100%;
+    max-width: none;
+  }
+  .auth-grid {
+    gap: 20px;
+  }
+  .section-caption > span {
+    display: none;
+  }
+  .site-hero {
+    grid-template-columns: 1fr;
+    padding-top: 65px;
+  }
+  .hero-preview {
+    max-width: 560px;
+    width: 100%;
+  }
+  .hero-copy h1 {
+    font-size: 64px;
+  }
+  .site-features {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .site-nav {
+    height: 80px;
+    padding: 0 25px;
+  }
+  .site-footer {
+    margin: 0 25px;
+  }
+  .hero-copy p {
+    max-width: 550px;
+  }
+  .top-right > span:nth-child(2) {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .sidebar {
+    display: none;
+  }
+  .rail {
+    width: 58px;
+    padding: 6px 3px;
+  }
+  .topbar {
+    height: 47px;
+    padding: 0 12px;
+  }
+  .workspace-bar {
+    padding: 0 8px;
+    height: 45px;
+    gap: 5px;
+  }
+  .workspace-select {
+    width: 140px;
+  }
+  .workspace-bar .small {
+    padding: 5px 7px;
+  }
+  .environment-select {
+    min-width: 120px;
+    max-width: 135px;
+  }
+  .workspace-bar .row:last-child > .button {
+    display: none;
+  }
+  .request-title {
+    padding: 0 12px;
+    gap: 4px;
+  }
+  .request-title .breadcrumb {
+    font-size: 9px;
+  }
+  .breadcrumb input {
+    max-width: 130px;
+  }
+  .request-title .button {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+  .url-toolbar {
+    margin: 0 12px 8px;
+  }
+  .method-select {
+    width: 85px;
+    padding: 0 6px;
+    font-size: 11px;
+  }
+  .url-toolbar .button {
+    min-width: 60px;
+    padding: 8px;
+  }
+  .url-input {
+    font-size: 11px;
+    padding: 9px;
+  }
+  .editor-tabs {
+    padding: 0 12px;
+    gap: 16px;
+    overflow-x: auto;
+  }
+  .editor-tabs button {
+    font-size: 10px;
+  }
+  .request-content {
+    padding: 12px;
+    height: 190px;
+  }
+  .tools-page {
+    padding: 22px 15px;
+  }
+  .feature-heading {
+    flex-wrap: wrap;
+  }
+  .feature-heading h1 {
+    font-size: 25px;
+  }
+  .feature-heading p {
+    font-size: 11px;
+  }
+  .feature-card > .row {
+    flex-wrap: wrap;
+  }
+  .statusbar-right {
+    display: none;
+  }
+  .auth-grid {
+    grid-template-columns: 1fr;
+  }
+  .site-hero {
+    padding: 60px 25px;
+    gap: 45px;
+  }
+  .hero-copy h1 {
+    font-size: 52px;
+  }
+  .hero-actions .button {
+    font-size: 11px;
+    padding: 12px;
+  }
+  .site-nav > div {
+    gap: 15px;
+    font-size: 10px;
+  }
+  .site-nav .button {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .site-features {
+    padding: 35px 25px;
+  }
+  .site-footer {
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .docs {
+    padding: 50px 25px;
+  }
+  .docs h1 {
+    font-size: 36px;
+  }
+  .response-code {
+    font-size: 10px;
+  }
+  .request-title .subtle {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition: none !important;
+  }
+}
+
+/* Errors raised by a tool panel are shown inside that panel. */
+.panel-alert {
+  border: 1px solid #773d45;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+/* Printing a report: only its copy (`.print-sheet`, added by BrowserPrinter) is printed. */
+.print-sheet {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  html,
+  body.printing {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body.printing > :not(.print-sheet) {
+    display: none !important;
+  }
+  body.printing > .print-sheet {
+    display: block;
+  }
+}

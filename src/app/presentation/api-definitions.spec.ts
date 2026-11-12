@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { diagnosticCount } from '@codemirror/lint';
+import { ApiDefinitions } from './api-definitions';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
+import { WorkspaceState } from './workspace-state';
 import {
   buttons,
   clickButton,
@@ -9,144 +10,50 @@ import {
   renderDeferred,
   typeCode,
 } from '../testing/controls';
-import { ApiDiff, ApiInspection } from '../domain/api-definitions';
-import { WorkspaceDocument } from '../domain/models';
-import { ApiDefinitions } from './api-definitions';
-import { WorkspaceState } from './workspace-state';
-
-const source = 'openapi: 3.0.0\ninfo:\n  title: Shop\npaths:\n  /orders:\n    get: {}\n';
-const inspection: ApiInspection = {
-  version: '3.0',
-  findings: [
-    { severity: 'error', rule: 'info-version', params: [], pointer: '/info', line: 2 },
-    {
-      severity: 'warning',
-      rule: 'operation-summary',
-      params: ['GET /orders'],
-      pointer: '/paths/~1orders/get',
-      line: 6,
-    },
-    { severity: 'info', rule: 'ref-external', params: ['other.yaml'], pointer: '/x' },
-  ],
-  outline: {
-    title: 'Shop',
-    version: '',
-    paths: [
-      {
-        path: '/orders',
-        pointer: '/paths/~1orders',
-        line: 5,
-        operations: [
-          {
-            method: 'get',
-            operationId: 'listOrders',
-            summary: '',
-            deprecated: true,
-            pointer: '/paths/~1orders/get',
-            line: 6,
-            parameters: [
-              {
-                name: 'status',
-                in: 'query',
-                required: true,
-                type: 'string',
-                pointer: '/p',
-                line: 4,
-              },
-            ],
-            requestBody: {
-              required: true,
-              media: ['application/json'],
-              schema: 'Order',
-              pointer: '/b',
-              line: 3,
-            },
-            responses: [
-              { status: '200', description: 'OK', schema: 'Order[]', pointer: '/r', line: 6 },
-            ],
-          },
-        ],
-      },
-      {
-        path: '/users',
-        pointer: '/paths/~1users',
-        operations: [
-          {
-            method: 'post',
-            operationId: '',
-            summary: 'Add a user',
-            deprecated: false,
-            pointer: '/u',
-            parameters: [],
-            requestBody: null,
-            responses: [],
-          },
-        ],
-      },
-    ],
-    schemas: [{ name: 'Order', type: 'object', pointer: '/components/schemas/Order', line: 1 }],
-  },
-};
-const diff: ApiDiff = {
-  breaking: 2,
-  removed: [{ method: 'delete', path: '/orders/{id}', pointer: '/d', line: 9 }],
-  added: [{ method: 'put', path: '/orders/{id}', pointer: '/a', line: 3 }],
-  changed: [
-    {
-      method: 'get',
-      path: '/orders',
-      pointer: '/g',
-      line: 5,
-      changes: [
-        {
-          rule: 'parameter-added-required',
-          params: ['query', 'customer'],
-          breaking: true,
-          pointer: '/c',
-          side: 'source',
-          line: 4,
-        },
-        {
-          rule: 'response-removed',
-          params: ['404'],
-          breaking: false,
-          pointer: '/o',
-          side: 'base',
-          line: 7,
-        },
-      ],
-    },
-  ],
-};
+import { diff, inspection, source } from '../testing/api-definitions';
+import { diagnosticCount } from '@codemirror/lint';
 
 describe('ApiDefinitions', () => {
   let fixture: ComponentFixture<ApiDefinitions>;
+
   let api: TestApi;
+
   let state: WorkspaceState;
+
   const root = () => fixture.nativeElement as HTMLElement;
+
   const settle = async () => {
     for (let i = 0; i < 4; i++) await fixture.whenStable();
   };
+
   // The definition's code editor: its text, its selection and typing in it.
   const view = () => codeView(codeEditor(root(), 'OpenAPI definition'));
+
   const written = () => view().state.doc.toString();
+
   const selection = () => view().state.selection.main;
+
   const selected = () => written().slice(selection().from, selection().to);
+
   const selectedLine = () => view().state.doc.lineAt(selection().from).number;
+
   const typeSource = async (value: string) => {
     typeCode(codeEditor(root(), 'OpenAPI definition'), value);
     await fixture.whenStable();
   };
+
   const type = async (control: HTMLInputElement, value: string) => {
     control.value = value;
     control.dispatchEvent(new Event('input'));
     await fixture.whenStable();
   };
+
   const choose = async (select: HTMLSelectElement, value: string) => {
     select.value = value;
     select.dispatchEvent(new Event('change'));
     await settle();
   };
+
   const calls = (operation: string) =>
     api.calls.filter((call) => call.operation === operation).map((call) => call.payload);
 
@@ -219,107 +126,6 @@ describe('ApiDefinitions', () => {
     await clickButton(fixture, 'Generate collection');
     await settle();
     expect(calls('import').at(-1)).toMatchObject({ content: `${source}# more\n` });
-  });
-
-  it('explores paths, operations and schemas, with search', async () => {
-    await clickButton(fixture, 'Explorer');
-    expect(root().textContent).toContain('Check the definition to explore it.');
-    await typeSource(source);
-    await clickButton(fixture, 'Check definition');
-    await settle();
-    expect(calls('api.inspect')).toHaveLength(1);
-    for (const text of [
-      '/orders',
-      'GET',
-      'listOrders',
-      'status *',
-      'query · string',
-      'Order *',
-      'Order[]',
-      'Add a user',
-      'Order',
-    ])
-      expect(root().textContent).toContain(text);
-    expect(root().querySelector('.deprecated')).not.toBeNull();
-    buttons(root(), /status \*/)[0].click();
-    expect(selectedLine()).toBe(4);
-    await clickButton(fixture, 'Go to definition');
-    expect(selectedLine()).toBe(6);
-
-    const search = root().querySelector('input[type="search"]') as HTMLInputElement;
-    await type(search, 'users');
-    const tree = () => root().querySelector('.api-tree')!.textContent;
-    expect(tree()).toContain('/users');
-    expect(tree()).not.toContain('/orders');
-    expect(root().textContent).not.toContain('Schemas');
-    await type(search, 'nothing');
-    expect(root().textContent).toContain('No paths match.');
-  });
-
-  it('compares versions and marks the breaking changes', async () => {
-    await clickButton(fixture, 'Changes');
-    await clickButton(fixture, 'Compare');
-    await settle();
-    expect(root().textContent).toContain('Save the definition first');
-
-    const saved: WorkspaceDocument = {
-      id: 'api1',
-      workspace_id: 'local',
-      kind: 'api',
-      name: 'Shop API',
-      revision: 2,
-      updated_at: 0,
-      value: { source: 'saved: true' },
-    };
-    api.documentsStore.push(saved);
-    api.revisions = async () => [
-      {
-        revision: 1,
-        changed_at: Date.UTC(2026, 0, 1),
-        value: { ...saved, value: { source: 'first: true' } },
-      },
-    ];
-    await state.refresh();
-    await settle();
-    await choose(root().querySelector('select') as HTMLSelectElement, 'api1');
-    expect(written()).toBe('saved: true');
-    const [base, target] = [...root().querySelectorAll('select')].slice(1) as HTMLSelectElement[];
-    expect([...base.options].map((o) => o.value)).toEqual(['saved', 'r:1']);
-    await choose(base, 'r:1');
-    await typeSource(source);
-    await clickButton(fixture, 'Compare');
-    await settle();
-    expect(calls('api.diff').at(-1)).toEqual({ workspace: 'local', base: 'first: true', source });
-    for (const text of [
-      '2 breaking changes',
-      'Endpoint removed',
-      'Endpoint added',
-      'New required query parameter customer',
-      'Response 404 was removed',
-      'Breaking',
-    ])
-      expect(root().textContent).toContain(text);
-    // Lines of the later version are the editor's; those of the earlier one are not.
-    expect(buttons(root(), 'Line').map((b) => b.textContent?.trim())).toEqual(['Line 3', 'Line 4']);
-    await clickButton(fixture, 'Line 4');
-    expect(selectedLine()).toBe(4);
-
-    await choose(target, 'saved');
-    api.responses['api.diff'] = { breaking: 0, added: [], removed: [], changed: [] };
-    await clickButton(fixture, 'Compare');
-    await settle();
-    expect(calls('api.diff').at(-1)).toMatchObject({ base: 'first: true', source: 'saved: true' });
-    expect(root().textContent).toContain('No breaking changes.');
-    expect(root().textContent).toContain('The endpoints did not change.');
-    expect(buttons(root(), 'Line')).toHaveLength(0);
-
-    // A revision that is no longer in the list cannot be compared.
-    api.revisions = async () => [];
-    await choose(root().querySelector('select') as HTMLSelectElement, '');
-    await choose(root().querySelector('select') as HTMLSelectElement, 'api1');
-    expect(written()).toBe('saved: true');
-    const [, later] = [...root().querySelectorAll('select')].slice(1) as HTMLSelectElement[];
-    expect([...later.options].map((o) => o.value)).toEqual(['editing', 'saved']);
   });
 
   it('shows why a definition cannot be read, and keeps working without revisions', async () => {

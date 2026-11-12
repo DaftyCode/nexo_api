@@ -1,0 +1,126 @@
+.studio[data-template='canvas'] {
+  @media (max-width: 1500px) {
+    .topbar {
+      gap: 14px;
+      padding: 0 20px;
+    }
+    .top-links {
+      padding-left: 12px;
+    }
+    .top-link {
+      padding: 0 9px;
+      font-size: 11px;
+    }
+    .top-search kbd {
+      display: none;
+    }
+    .top-right > span:not(.avatar):not(.connection-dot) {
+      display: none;
+    }
+    .response-meta {
+      gap: 8px;
+      font-size: 9px;
+      right: 17px;
+    }
+    .response-meta > span:first-child {
+      font-size: 10px;
+      padding: 6px 8px;
+    }
+  }
+  @media (max-width: 1200px) {
+    .wide-nav {
+      display: none;
+    }
+    .canvas-intro h1 {
+      font-size: 22px;
+    }
+    .section-caption > span {
+      display: none;
+    }
+    .editor-tabs {
+      gap: 17px;
+      margin: 0 18px;
+    }
+    .request-content {
+      padding: 17px 18px;
+    }
+  }
+  @media (max-width: 1050px) {
+    .studio-body {
+      padding: 8px 18px 0;
+    }
+    .main-workspace {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto auto minmax(310px, auto) minmax(350px, 1fr);
+    }
+    .request-configuration {
+      grid-column: 1;
+      grid-row: 4;
+    }
+    .main-workspace > app-response-view {
+      grid-column: 1;
+      grid-row: 5;
+      min-height: 350px;
+    }
+    .top-links .top-link:nth-child(3) {
+      display: none;
+    }
+    .canvas-intro p {
+      font-size: 11px;
+    }
+  }
+  @media (max-width: 800px) {
+    .topbar {
+      height: 60px;
+      padding: 0 12px;
+      gap: 12px;
+    }
+    .aurora-wordmark {
+      font-size: 20px;
+    }
+    .aurora-brand-mark {
+      width: 29px;
+    }
+    .top-links {
+      display: none;
+    }
+    .top-search {
+      max-width: none;
+    }
+    .top-right {
+      display: none;
+    }
+    .canvas-intro {
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .canvas-intro h1 {
+      font-size: 22px;
+    }
+    .canvas-intro .button {
+      min-height: 30px;
+      padding: 7px 10px;
+    }
+    .workspace-bar {
+      padding: 0 18px;
+      gap: 10px;
+    }
+    .url-input {
+      font-size: 12px;
+      margin-left: 8px;
+      margin-right: 8px;
+      padding-left: 8px;
+    }
+    .method-select {
+      width: 80px;
+      font-size: 12px;
+    }
+    .url-toolbar .button.primary {
+      min-width: 88px;
+      font-size: 12px;
+    }
+    app-workspace-context {
+      overflow-x: auto;
+    }
+  }
+}

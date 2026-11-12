@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { buttons, change, clickButton, fill, valueOf } from '../testing/controls';
+import { buttons, change, clickButton, fill } from '../testing/controls';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { newRequest } from '../domain/models';
 import { IntegrationPanel } from './integration-panel';
@@ -7,12 +7,17 @@ import { WorkspaceState } from './workspace-state';
 
 describe('IntegrationPanel', () => {
   let fixture: ComponentFixture<IntegrationPanel>;
+
   let api: TestApi;
+
   let state: WorkspaceState;
+
   const root = () => fixture.nativeElement as HTMLElement;
+
   // Inputs, selects and code editors alike.
-  const field = (label: string) => ({ value: valueOf(root(), label) });
+
   const type = (label: string, value: string) => fill(fixture, label, value);
+
   const settle = async () => {
     for (let i = 0; i < 3; i++) await fixture.whenStable();
   };
@@ -99,140 +104,6 @@ describe('IntegrationPanel', () => {
     expect(root().textContent).toContain('↓3');
   });
 
-  it('calls an MCP server and lists its tools, texts and errors', async () => {
-    api.responses['mcp.request'] = {
-      status: 200,
-      sessionId: 'session-1',
-      result: [
-        { result: { tools: [{ name: 'echo', description: 'Echoes text' }] } },
-        { result: { content: [{ text: 'hello' }] } },
-        { error: { message: 'Unknown tool' } },
-      ],
-    };
-    fixture.componentRef.setInput('section', 'mcp');
-    await fixture.whenStable();
-    await type('Parameters (JSON)', '{ broken');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    expect(root().querySelector('[role="alert"]')?.textContent).toContain(
-      'Parameters must be valid JSON',
-    );
-    await clickButton(fixture, 'Dismiss error');
-    expect(root().querySelector('[role="alert"]')).toBeNull();
-
-    await type('Method', 'tools/call');
-    await type('Parameters (JSON)', '{"name":"echo"}');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    expect(api.calls.at(-1)).toMatchObject({
-      operation: 'mcp.request',
-      payload: { method: 'tools/call', params: { name: 'echo' } },
-    });
-    for (const text of ['session-1', 'echo', 'Echoes text', 'hello', 'Unknown tool'])
-      expect(root().textContent).toContain(text);
-  });
-
-  it('browses the resources and prompts of an MCP server in one session', async () => {
-    api.responses['mcp.request'] = ({ method, params, url }: Record<string, unknown>) => {
-      const answer = (result: unknown) => ({
-        status: 200,
-        sessionId: url === 'http://localhost:3000/mcp' ? 'session-1' : undefined,
-        result: { jsonrpc: '2.0', id: 1, result },
-      });
-      const p = params as { uri?: string; name?: string; arguments?: Record<string, string> };
-      switch (method) {
-        case 'resources/list':
-          return answer({
-            resources: [{ uri: 'nexo://shop', name: 'Shop', description: 'Collection' }],
-          });
-        case 'resources/templates/list':
-          return answer({ resourceTemplates: [{ uriTemplate: 'nexo://{id}', name: 'By id' }] });
-        case 'resources/read':
-          return answer({ contents: [{ uri: p.uri, text: `contents of ${p.uri}` }] });
-        case 'prompts/list':
-          return answer({
-            prompts: [
-              {
-                name: 'write_tests',
-                description: 'Tests for a request',
-                arguments: [
-                  { name: 'request', required: true },
-                  { name: 'workspace', required: false },
-                ],
-              },
-            ],
-            tools: [{ name: 'send_request', description: 'Sends' }],
-          });
-        case 'prompts/get':
-          return answer({
-            messages: [
-              {
-                role: 'user',
-                content: { type: 'text', text: `tests for ${p.arguments?.['request']}` },
-              },
-            ],
-          });
-        default:
-          return answer({});
-      }
-    };
-    const sent = () => api.calls.filter((c) => c.operation === 'mcp.request').map((c) => c.payload);
-    fixture.componentRef.setInput('section', 'mcp');
-    await fixture.whenStable();
-    await type('Method', 'resources/list');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    expect(sent()[0]).not.toHaveProperty('sessionId');
-    await clickButton(fixture, 'Read Shop');
-    await settle();
-    expect(sent().at(-1)).toMatchObject({
-      method: 'resources/read',
-      params: { uri: 'nexo://shop' },
-      sessionId: 'session-1',
-    });
-    expect(root().textContent).toContain('contents of nexo://shop');
-
-    await type('Method', 'resources/templates/list');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    const calls = sent().length;
-    await clickButton(fixture, 'Use template By id');
-    expect(sent()).toHaveLength(calls);
-    expect(field('Method').value).toBe('resources/read');
-    expect(JSON.parse(field('Parameters (JSON)').value)).toEqual({ uri: 'nexo://{id}' });
-
-    await type('Method', 'prompts/list');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    const get = buttons(root(), 'Get prompt write_tests')[0];
-    expect(get.disabled).toBe(true);
-    await type('request *', 'List orders');
-    expect(get.disabled).toBe(false);
-    get.click();
-    await settle();
-    expect(sent().at(-1)).toMatchObject({
-      method: 'prompts/get',
-      params: { name: 'write_tests', arguments: { request: 'List orders' } },
-    });
-    expect(root().textContent).toContain('tests for List orders');
-
-    await type('Method', 'prompts/list');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    await clickButton(fixture, 'Use tool send_request');
-    expect(field('Method').value).toBe('tools/call');
-    expect(JSON.parse(field('Parameters (JSON)').value)).toEqual({
-      name: 'send_request',
-      arguments: {},
-    });
-
-    // Another server starts without the first one's session.
-    await type('Server URL', 'http://localhost:4000/mcp');
-    await clickButton(fixture, 'Send JSON-RPC');
-    await settle();
-    expect(sent().at(-1)).not.toHaveProperty('sessionId');
-  });
-
   it('generates code for the active request', async () => {
     api.responses['codegen'] = ({ language }: Record<string, unknown>) => ({
       code: `snippet in ${String(language)}`,
@@ -263,86 +134,6 @@ describe('IntegrationPanel', () => {
     await clickButton(fixture, 'Delete workspace');
     await settle();
     expect(state.notice()).toBeTruthy();
-  });
-
-  it('saves, edits and removes vault secrets with their allowed domains', async () => {
-    await clickButton(fixture, 'vault');
-    await settle();
-    expect(root().textContent).toContain('No secrets saved yet.');
-    await type('Secret name', 'api_token');
-    await clickButton(fixture, 'Save secret');
-    await settle();
-    expect(state.toast()).toMatchObject({
-      kind: 'error',
-      title: 'The secret could not be saved',
-      detail: 'Enter the secret value',
-    });
-
-    await type('Value', 's3cret');
-    await type('Allowed domains', 'api.example.com');
-    await clickButton(fixture, 'Save secret');
-    await settle();
-    expect(api.secretNames).toEqual(['api_token']);
-    expect(root().textContent).toContain('{{vault:api_token}}');
-    expect(state.toast()).toMatchObject({
-      kind: 'success',
-      title: 'Secret saved',
-      message: 'toast.secretSaved',
-      params: { v0: '{{vault:api_token}}' },
-    });
-
-    await clickButton(fixture, 'Edit');
-    expect(field('Secret name').value).toBe('api_token');
-    const [remove] = buttons(root(), /^\s*Remove\s*$/);
-    remove.click();
-    await settle();
-    expect(api.secretNames).toEqual([]);
-    expect(state.toast()).toMatchObject({ title: 'Secret removed', params: { v0: 'api_token' } });
-    await type('Secret name', '');
-    await clickButton(fixture, 'Remove secret');
-    await settle();
-    expect(state.toast()).toMatchObject({
-      kind: 'error',
-      title: 'The secret could not be removed',
-      detail: 'Enter a secret name',
-    });
-  });
-
-  it('exchanges an OAuth token and uses it in the active request', async () => {
-    api.responses['oauth.token'] = {
-      status: 200,
-      body: { access_token: 'abcdefghijklmnopqrstuvwxyz', token_type: 'Bearer', expires_in: 60 },
-    };
-    await clickButton(fixture, 'oauth');
-    await clickButton(fixture, 'Get token and use in request');
-    await settle();
-    expect(root().textContent).toContain('Enter the full token endpoint URL');
-
-    state.newTab(newRequest('r1'));
-    await type('Token endpoint', 'https://auth.example.com/token');
-    await type('Grant type', 'authorization_code');
-    for (const [label, value] of [
-      ['Client ID', 'client'],
-      ['Client secret', 'secret'],
-      ['Scope', 'read'],
-      ['Authorization code', 'code-1'],
-      ['Redirect URI', 'http://localhost/cb'],
-      ['PKCE code verifier', 'verifier'],
-    ])
-      await type(label, value);
-    await clickButton(fixture, 'Get token and use in request');
-    await settle();
-    expect(api.calls.at(-1)?.payload['fields']).toMatchObject({
-      grant_type: 'authorization_code',
-      code: 'code-1',
-      redirect_uri: 'http://localhost/cb',
-      code_verifier: 'verifier',
-    });
-    expect(root().textContent).toContain('abcdef…wxyz');
-    expect(state.active()?.request.auth).toMatchObject({
-      type: 'bearer',
-      token: 'abcdefghijklmnopqrstuvwxyz',
-    });
   });
 
   it('lists the revisions of a document and restores one', async () => {

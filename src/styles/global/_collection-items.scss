@@ -1,0 +1,108 @@
+.request-leaf {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 3px;
+  text-align: left;
+  font-size: 11px;
+  min-width: 0;
+}
+.request-leaf > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.method-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--green);
+  font-weight: 600;
+  min-width: 32px;
+  text-align: left;
+  flex-shrink: 0;
+}
+.method-tag.post {
+  color: #e6bd6d;
+}
+.method-tag.delete {
+  color: var(--red);
+}
+.add-request {
+  color: var(--dim);
+  font-size: 10px;
+  padding: 8px 20px;
+}
+.add-request:hover {
+  color: var(--accent);
+}
+.collection-menu {
+  position: relative;
+}
+.collection-menu summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 20px;
+  color: var(--muted);
+  padding: 2px 6px;
+}
+/* The sidebar clips its overflow, so the menu is positioned against the window and
+   floats over the next panel (Workspace.placeMenu). It stays hidden until placed. */
+.collection-menu > div {
+  position: fixed;
+  min-width: 170px;
+  /* The "Move to" select would otherwise grow to its longest folder name. */
+  max-width: 260px;
+  background: var(--panel-3);
+  border: 1px solid var(--border);
+  z-index: 50;
+  border-radius: 5px;
+  box-shadow: 0 10px 35px #0008;
+  padding: 5px;
+}
+.collection-menu:not([data-placed]) > div {
+  visibility: hidden;
+}
+.collection-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  font-size: 11px;
+  border-radius: 3px;
+}
+.collection-menu button:hover {
+  background: #ffffff0c;
+}
+.collection-menu label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  font-size: 11px;
+}
+.collection-menu select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}
+.history-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.history-item > span {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  width: 100%;
+  font-size: 11px;
+}
+.history-item small {
+  font-size: 10px;
+  color: var(--muted);
+}

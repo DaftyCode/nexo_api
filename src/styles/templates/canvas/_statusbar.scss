@@ -1,0 +1,53 @@
+.studio[data-template='canvas'] {
+  .main-workspace > app-tools-panel {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    overflow: auto;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+  }
+  app-workspace-context {
+    flex-shrink: 0;
+    padding-bottom: 8px;
+  }
+  .statusbar {
+    height: 27px;
+    background: var(--bg);
+    border: 0;
+    font-size: 9px;
+    padding: 0 30px;
+    color: #94a0b9;
+  }
+  .statusbar > button {
+    color: #7685a2;
+    font-size: 9px;
+  }
+  .statusbar-right {
+    gap: 16px;
+  }
+  .floating-console {
+    left: 30px;
+    right: 30px;
+    bottom: 28px;
+    border-color: #d5ddec;
+    background: #fff;
+    color: #405271;
+  }
+  .modal,
+  .feature-card,
+  .auth-card {
+    background: white;
+    border-color: #e1e7f3;
+    border-radius: 16px;
+  }
+  .button.primary {
+    color: #fff;
+    background: #6953ed;
+    border-color: #6953ed;
+  }
+  .data-table th,
+  .data-table td {
+    border-color: #e6ebf4;
+  }
+}
