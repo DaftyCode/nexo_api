@@ -1,0 +1,160 @@
+<div class="mongo-backdrop">
+  <form
+    class="feature-card mongo-dialog mongo-transfer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mongo-transfer-title"
+    (submit)="$event.preventDefault(); transfers().run(draft())"
+  >
+    <h2 id="mongo-transfer-title">
+      {{ (draft().direction === 'export' ? 'Export documents' : 'Import documents') | transloco }}
+    </h2>
+    @switch (draft().phase()) {
+      @case ('setup') {
+        @if (draft().direction === 'export') {
+          <app-mongo-transfer-export [transfers]="transfers()" [draft]="draft()" />
+        } @else {
+          <app-mongo-transfer-import [transfers]="transfers()" [draft]="draft()" />
+        }
+        <div class="row mongo-transfer-save">
+          <label class="field grow"
+            >{{ 'Transfer name' | transloco }}<input [formField]="draft().fields.name"
+          /></label>
+          <button
+            type="button"
+            class="button"
+            [disabled]="draft().model().scope === 'page' && draft().direction === 'export'"
+            [title]="'Save it to run it again from the sidebar' | transloco"
+            (click)="transfers().save(draft())"
+          >
+            {{ (transfers().savedId() ? 'Save' : 'Save transfer') | transloco }}
+          </button>
+        </div>
+      }
+      @case ('running') {
+        <div class="mongo-transfer-progress" role="status" aria-live="polite">
+          @if (draft().percent() !== undefined) {
+            <progress max="100" [value]="draft().percent()"></progress>
+            <span>{{ draft().percent() }} % · {{ bytes(draft().progress().total) }}</span>
+          } @else {
+            <div class="spinner small"></div>
+          }
+          <span>{{
+            'mongo.transfer.progress' | transloco: { v0: draft().progress().documents }
+          }}</span>
+        </div>
+      }
+      @default {
+        @if (draft().outcome(); as outcome) {
+          <div role="status">
+            @if (outcome.cancelled) {
+              <p class="mongo-warning">
+                {{
+                  (draft().direction === 'export' && draft().model().destination === 'file'
+                    ? 'The export was cancelled: no file was written.'
+                    : 'The transfer was cancelled: what was written before stays.'
+                  ) | transloco
+                }}
+              </p>
+            }
+            <dl class="mongo-stats mongo-transfer-outcome">
+              <div>
+                <dt>{{ 'Read' | transloco }}</dt>
+                <dd>{{ outcome.documents }}</dd>
+              </div>
+              @if (draft().direction === 'import' || draft().model().destination === 'collection') {
+                <div>
+                  <dt>{{ 'Inserted' | transloco }}</dt>
+                  <dd>{{ outcome.inserted }}</dd>
+                </div>
+                @if (draft().model().mode === 'upsert') {
+                  <div>
+                    <dt>{{ 'Added by key' | transloco }}</dt>
+                    <dd>{{ outcome.upserted }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'Replaced' | transloco }}</dt>
+                    <dd>{{ outcome.replaced }}</dd>
+                  </div>
+                }
+                @if (draft().model().mode === 'replace') {
+                  <div>
+                    <dt>{{ 'Removed first' | transloco }}</dt>
+                    <dd>{{ outcome.cleared }}</dd>
+                  </div>
+                }
+                <div>
+                  <dt>{{ 'Failed' | transloco }}</dt>
+                  <dd>{{ outcome.failed }}</dd>
+                </div>
+              }
+            </dl>
+            @if (outcome.failures.length) {
+              <ul
+                class="mongo-transfer-failures"
+                tabindex="0"
+                [attr.aria-label]="'Failures' | transloco"
+              >
+                @for (failure of outcome.failures; track $index) {
+                  <li>
+                    <strong>{{ 'mongo.transfer.at' | transloco: { v0: failure.position } }}</strong>
+                    @if (failure.key === 'mongo.transfer.badCell') {
+                      {{
+                        'mongo.transfer.badCell'
+                          | transloco
+                            : { v0: failure.params?.['v0'], v1: failureType(failure) | transloco }
+                      }}
+                    } @else {
+                      {{ failure.key | transloco: failure.params }}
+                    }
+                  </li>
+                }
+              </ul>
+              @if (outcome.failed > outcome.failures.length) {
+                <p class="muted">
+                  {{
+                    'mongo.transfer.more'
+                      | transloco: { v0: outcome.failed - outcome.failures.length }
+                  }}
+                </p>
+              }
+            }
+          </div>
+        }
+      }
+    }
+    @if (draft().error(); as error) {
+      <p class="mongo-problem" role="alert">{{ error | transloco }}</p>
+    }
+    <div class="row mongo-dialog-actions">
+      @switch (draft().phase()) {
+        @case ('running') {
+          <button type="button" class="button danger" (click)="transfers().cancel()">
+            {{ 'Cancel' | transloco }}
+          </button>
+        }
+        @case ('done') {
+          <button type="button" class="button" (click)="transfers().again(draft())">
+            {{ 'Run again' | transloco }}
+          </button>
+          <button type="button" class="button primary" (click)="transfers().close()">
+            {{ 'Close' | transloco }}
+          </button>
+        }
+        @default {
+          <button type="button" class="button" (click)="transfers().close()">
+            {{ 'Cancel' | transloco }}
+          </button>
+          <button
+            type="submit"
+            class="button"
+            [class.primary]="draft().model().mode !== 'replace'"
+            [class.danger]="draft().model().mode === 'replace'"
+          >
+            {{ runLabel() | transloco }}
+          </button>
+        }
+      }
+    </div>
+  </form>
+</div>

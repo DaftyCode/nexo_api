@@ -95,6 +95,7 @@ operations!(
         MongoProfile => "mongo.profile",
         MongoProfileSet => "mongo.profile.set",
         MongoProfileEntries => "mongo.profile.entries",
+        MongoImport => "mongo.import",
     }
 );
 impl Operation {
@@ -128,6 +129,7 @@ impl Operation {
                 | Self::MongoProfile
                 | Self::MongoProfileSet
                 | Self::MongoProfileEntries
+                | Self::MongoImport
         )
     }
     /// Database operations that change data or the server's settings: refused on a
@@ -148,6 +150,7 @@ impl Operation {
                 | Self::MongoIndexHide
                 | Self::MongoIndexDrop
                 | Self::MongoProfileSet
+                | Self::MongoImport
         )
     }
     /// Operations whose data belongs to a workspace and need one.

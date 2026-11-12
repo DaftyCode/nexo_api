@@ -168,6 +168,20 @@ impl DocumentDatabase for Fake {
             sample_rate: None,
         })
     }
+    async fn import(
+        &self,
+        connection: DatabaseConnection,
+        target: ports::WriteTarget,
+        batch: ports::ImportBatch,
+    ) -> Result<ports::ImportResult> {
+        self.connections.lock().unwrap().push(connection);
+        let inserted = batch.documents.len() as u64;
+        self.imports.lock().unwrap().push((target, batch));
+        Ok(ports::ImportResult {
+            inserted,
+            ..Default::default()
+        })
+    }
     async fn profiled(
         &self,
         _: DatabaseConnection,

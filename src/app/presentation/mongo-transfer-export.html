@@ -1,0 +1,141 @@
+<div class="row">
+  <label class="field grow"
+    >{{ 'Database' | transloco }}<input [formField]="draft().fields.database" spellcheck="false"
+  /></label>
+  <label class="field grow"
+    >{{ 'Collection' | transloco
+    }}<input [formField]="draft().fields.collection" spellcheck="false"
+  /></label>
+</div>
+<label class="field"
+  >{{ 'Documents' | transloco }}
+  <select [formField]="draft().fields.scope">
+    <option value="collection">{{ 'The whole collection' | transloco }}</option>
+    <option value="query">{{ 'The query of the bar' | transloco }}</option>
+    <option value="page">{{ 'The page shown' | transloco }}</option>
+  </select>
+</label>
+@if (draft().model().scope === 'query') {
+  @if (queryText(); as query) {
+    <pre class="mongo-transfer-hint">{{ query }}</pre>
+  } @else {
+    <p class="mongo-transfer-hint">{{ 'The query has no filter: every document.' | transloco }}</p>
+  }
+}
+@if (draft().model().scope === 'page') {
+  <p class="mongo-transfer-hint">
+    {{ 'Only the documents of the page shown; it cannot be saved.' | transloco }}
+  </p>
+}
+<label class="field"
+  >{{ 'Destination' | transloco }}
+  <select [formField]="draft().fields.destination">
+    <option value="file">{{ 'A file' | transloco }}</option>
+    <option value="collection">{{ 'Another collection' | transloco }}</option>
+  </select>
+</label>
+@if (draft().model().destination === 'file') {
+  <div class="row">
+    <label class="field grow"
+      >{{ 'Format' | transloco }}
+      <select [formField]="draft().fields.format">
+        <option value="json">{{ 'JSON array' | transloco }}</option>
+        <option value="jsonl">{{ 'JSON Lines' | transloco }}</option>
+        <option value="csv">CSV</option>
+      </select>
+    </label>
+    @if (draft().model().format !== 'csv') {
+      <label class="field grow"
+        >{{ 'Extended JSON' | transloco }}
+        <select [formField]="draft().fields.flavour">
+          <option value="canonical">{{ 'Canonical' | transloco }}</option>
+          <option value="relaxed">{{ 'Relaxed' | transloco }}</option>
+        </select>
+      </label>
+    }
+  </div>
+  @if (draft().model().format === 'csv') {
+    <fieldset class="mongo-options">
+      <legend>{{ 'Columns, in their order' | transloco }}</legend>
+      <ul
+        class="mongo-transfer-fields"
+        tabindex="0"
+        [attr.aria-label]="'Columns, in their order' | transloco"
+      >
+        @for (field of draft().chosen(); track field; let first = $first, last = $last) {
+          <li>
+            <input
+              type="checkbox"
+              checked
+              [attr.aria-label]="field"
+              (change)="draft().toggleField(field, false)"
+            />
+            <span class="grow">{{ field }}</span>
+            <button
+              type="button"
+              class="icon-button"
+              [disabled]="first"
+              [attr.aria-label]="'mongo.transfer.up' | transloco: { v0: field }"
+              (click)="draft().moveField(field, -1)"
+            >
+              ↑
+            </button>
+            <button
+              type="button"
+              class="icon-button"
+              [disabled]="last"
+              [attr.aria-label]="'mongo.transfer.down' | transloco: { v0: field }"
+              (click)="draft().moveField(field, 1)"
+            >
+              ↓
+            </button>
+          </li>
+        }
+        @for (field of left(); track field) {
+          <li class="muted">
+            <input
+              type="checkbox"
+              [attr.aria-label]="field"
+              (change)="draft().toggleField(field, true)"
+            />
+            <span class="grow">{{ field }}</span>
+          </li>
+        }
+      </ul>
+      <p class="mongo-transfer-hint">
+        {{
+          'Embedded fields go in columns named with dots; arrays are written as JSON.' | transloco
+        }}
+      </p>
+    </fieldset>
+  } @else {
+    <p class="mongo-transfer-hint">
+      {{
+        (draft().model().flavour === 'canonical'
+          ? 'Canonical keeps every type, to import the documents again exactly.'
+          : 'Relaxed writes plain numbers and dates, easier to read; some types are lost.'
+        ) | transloco
+      }}
+    </p>
+  }
+} @else {
+  <div class="row">
+    <label class="field grow"
+      >{{ 'Connection' | transloco }}
+      <select [formField]="draft().fields.copyConnection">
+        @for (connection of transfers().destinations(); track connection.id) {
+          <option [value]="connection.id">{{ connection.name }}</option>
+        }
+      </select>
+    </label>
+    <label class="field grow"
+      >{{ 'Database' | transloco
+      }}<input [formField]="draft().fields.copyDatabase" spellcheck="false"
+    /></label>
+    <label class="field grow"
+      >{{ 'Collection' | transloco
+      }}<input [formField]="draft().fields.copyCollection" spellcheck="false"
+    /></label>
+  </div>
+  <app-mongo-transfer-write [draft]="draft()" [collection]="draft().model().copyCollection" />
+}

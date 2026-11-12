@@ -200,3 +200,36 @@ payload! {
         optional { workspace "workspace": String => "string" }
     }
 }
+
+payload! {
+    /// `mongo.import`: a batch of documents written to a saved connection. `upsert` replaces
+    /// the document with the same values of the `key` fields, or inserts it. `clearConfirm`,
+    /// the collection's name, first deletes every document of the collection (its indexes
+    /// stay). Without `ordered` the documents that fail are reported and the others written.
+    closed MongoImportPayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            documents "documents": Vec<Map<String, Value>> => "readonly object[]",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            mode "mode": ImportMode => "'insert' | 'upsert'",
+            key "key": Vec<String> => "readonly string[]",
+            clear_confirm "clearConfirm": String => "string",
+            ordered "ordered": bool => "boolean",
+            write_concern "writeConcern": Map<String, Value> => "object",
+        }
+    }
+}
+
+/// How `mongo.import` writes each document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ImportMode {
+    #[default]
+    Insert,
+    Upsert,
+}

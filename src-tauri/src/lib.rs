@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use tauri::{Manager, RunEvent};
 
 mod sign_in;
+mod transfer;
 
 #[derive(Clone, Serialize)]
 struct DesktopInfo {
@@ -103,13 +104,19 @@ pub fn run() {
             };
             app.manage(backend);
             app.manage(sign_in::Current::default());
+            app.manage(transfer::Files::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             desktop_info,
             print_page,
             sign_in::oauth2_sign_in_window,
-            sign_in::oauth2_sign_in_window_close
+            sign_in::oauth2_sign_in_window_close,
+            transfer::transfer_open,
+            transfer::transfer_read,
+            transfer::transfer_save,
+            transfer::transfer_write,
+            transfer::transfer_close
         ])
         .build(tauri::generate_context!());
     let application = match application {

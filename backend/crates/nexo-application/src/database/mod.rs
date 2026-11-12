@@ -4,6 +4,7 @@
 //! back in an error.
 mod admin;
 mod connection;
+mod import;
 mod reads;
 #[cfg(test)]
 mod tests;
@@ -13,6 +14,8 @@ use crate::{Application, operations::Operation, vault::redact_error};
 use nexo_domain::{Error, Result};
 use serde_json::Value;
 
+#[cfg(test)]
+pub(crate) use import::IMPORT_BATCH;
 pub use writes::CHANGE_LIMIT;
 
 /// Documents in a page of MongoDB results when the client does not say.

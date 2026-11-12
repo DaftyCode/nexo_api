@@ -196,4 +196,11 @@ pub trait DocumentDatabase: Send + Sync {
         collection: Option<&str>,
         limit: u64,
     ) -> Result<Vec<ProfileEntry>>;
+    /// Writes a batch of an import; refused, like every write, on a read-only connection.
+    async fn import(
+        &self,
+        connection: DatabaseConnection,
+        target: WriteTarget,
+        batch: ImportBatch,
+    ) -> Result<ImportResult>;
 }

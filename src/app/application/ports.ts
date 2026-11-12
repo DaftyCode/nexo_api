@@ -102,6 +102,33 @@ export interface FilePort {
   readBase64(file: File): Promise<string>;
   id(): string;
 }
+/** A file to import, chosen by the person and read in chunks. */
+export interface TransferSource {
+  readonly name: string;
+  readonly size: number;
+  /** Bytes from `offset`, at most `length`; none past the end. */
+  read(offset: number, length: number): Promise<Uint8Array>;
+  close(): Promise<void>;
+}
+/** Where an export is written, chosen by the person, in pieces of text. */
+export interface TransferTarget {
+  readonly name: string;
+  write(text: string): Promise<void>;
+  /** Ends the file: the web version downloads it then. */
+  close(): Promise<void>;
+  /** Drops what was written, as a cancelled export. */
+  discard(): Promise<void>;
+}
+/**
+ * Files of imports and exports. The web version reads the file chosen in the browser and
+ * downloads the export; the desktop app opens and saves files with the system dialogs.
+ */
+export interface TransferFilesPort {
+  /** A file to import, among `extensions`; `undefined` when the person cancels. */
+  open(extensions: readonly string[]): Promise<TransferSource | undefined>;
+  /** Where to write an export named `name`; `undefined` when the person cancels. */
+  save(name: string, extension: string, type: string): Promise<TransferTarget | undefined>;
+}
 /** Prints a report shown on screen, where the system lets the person save it as PDF. */
 export interface PrintPort {
   print(sheet: HTMLElement): Promise<void>;

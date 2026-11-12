@@ -1,0 +1,85 @@
+<div class="row">
+  <button type="button" class="button" (click)="transfers().chooseFile(draft())">
+    {{ (draft().file() ? 'Choose another file' : 'Choose a file') | transloco }}
+  </button>
+  @if (draft().file(); as file) {
+    <span class="grow" data-testid="transfer-file">{{ file.name }} · {{ bytes(file.size) }}</span>
+  } @else {
+    <span class="grow muted">{{ 'JSON, JSON Lines or CSV with a header row' | transloco }}</span>
+  }
+  <label class="field"
+    >{{ 'Format' | transloco }}
+    <select [formField]="draft().fields.format">
+      <option value="json">{{ 'JSON array' | transloco }}</option>
+      <option value="jsonl">{{ 'JSON Lines' | transloco }}</option>
+      <option value="csv">CSV</option>
+    </select>
+  </label>
+</div>
+@if (draft().preview(); as preview) {
+  <div
+    class="mongo-transfer-preview"
+    role="region"
+    tabindex="0"
+    [attr.aria-label]="'First documents' | transloco"
+  >
+    @if (draft().model().format === 'csv') {
+      <table class="mongo-table mongo-transfer-columns">
+        <thead>
+          <tr>
+            <th>{{ 'Column' | transloco }}</th>
+            <th>{{ 'Field' | transloco }}</th>
+            <th>{{ 'Type' | transloco }}</th>
+            <th>{{ 'First values' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (column of draft().columns(); track column.column; let i = $index) {
+            <tr>
+              <td>{{ column.column }}</td>
+              <td>
+                <input
+                  [value]="column.field"
+                  [attr.aria-label]="'mongo.transfer.fieldOf' | transloco: { v0: column.column }"
+                  [disabled]="column.type === 'skip'"
+                  spellcheck="false"
+                  (change)="setField(i, $event)"
+                />
+              </td>
+              <td>
+                <select
+                  [value]="column.type"
+                  [attr.aria-label]="'mongo.transfer.typeOf' | transloco: { v0: column.column }"
+                  (change)="setType(i, $event)"
+                >
+                  @for (type of types; track type) {
+                    <option [value]="type">{{ typeLabels[type] | transloco }}</option>
+                  }
+                </select>
+              </td>
+              <td class="muted">
+                {{ firstValues(preview.rows, i) }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      @for (document of preview.documents; track $index) {
+        <pre>{{ json(document) }}</pre>
+      } @empty {
+        <p class="muted">{{ 'No document was read from the start of the file.' | transloco }}</p>
+      }
+    }
+  </div>
+}
+<div class="row">
+  <label class="field grow"
+    >{{ 'Database' | transloco }}<input [formField]="draft().fields.database" spellcheck="false"
+  /></label>
+  <label class="field grow"
+    >{{ 'Collection' | transloco
+    }}<input [formField]="draft().fields.collection" spellcheck="false"
+  /></label>
+</div>
+<app-mongo-transfer-write [draft]="draft()" [collection]="draft().model().collection" />

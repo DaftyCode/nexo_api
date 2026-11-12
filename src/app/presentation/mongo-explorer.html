@@ -143,3 +143,6 @@
     (cancelled)="writes.cancel()"
   />
 }
+@if (transfers.draft(); as draft) {
+  <app-mongo-transfer [transfers]="transfers" [draft]="draft" />
+}

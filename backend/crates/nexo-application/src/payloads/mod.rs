@@ -226,6 +226,7 @@ operation_payloads! {
     MongoProfile => MongoProfilePayload,
     MongoProfileSet => MongoProfileSetPayload,
     MongoProfileEntries => MongoProfileEntriesPayload,
+    MongoImport => MongoImportPayload,
 }
 
 /// Checks the payload of a Git operation.

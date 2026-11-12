@@ -1,0 +1,67 @@
+.mongo-transfer .row {
+  gap: 10px;
+}
+.mongo-transfer-save {
+  align-items: flex-end;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 8px;
+}
+.mongo-transfer-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}
+.mongo-transfer-progress progress {
+  width: 100%;
+}
+.mongo-transfer-outcome {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.mongo-transfer-failures {
+  max-height: 200px;
+  overflow: auto;
+  margin: 8px 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.mongo-transfer-hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+.mongo-transfer-fields {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  max-height: 180px;
+  overflow: auto;
+}
+.mongo-transfer-fields li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono, monospace);
+  font-size: 12px;
+}
+.mongo-transfer-preview {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11px;
+}
+.mongo-transfer-preview pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.mongo-transfer-columns td,
+.mongo-transfer-columns th {
+  padding: 2px 6px;
+  text-align: left;
+}
+.mongo-transfer-columns input,
+.mongo-transfer-columns select {
+  width: 100%;
+}

@@ -9,6 +9,7 @@ import {
   DATA,
   INTEGRATION,
   MONGO,
+  TRANSFER_FILES,
   PROTOCOLS,
   REPORTS,
   WORKSPACE,
@@ -22,6 +23,7 @@ import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
 import { ApiPort, FilePort } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
+import { TestTransferFiles } from './mongo-transfer';
 
 /** What the fake engine answers to an operation: a value, or a function of the payload. */
 export type FakeResponse = unknown | ((payload: Record<string, unknown>) => unknown);
@@ -145,6 +147,7 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     { provide: INTEGRATION, useValue: new IntegrationUseCases(api) },
     { provide: DATA, useValue: new DataUseCases(api, files.id) },
     { provide: PROTOCOLS, useValue: new ProtocolUseCases(api) },
+    { provide: TRANSFER_FILES, useValue: new TestTransferFiles() },
     {
       provide: MONGO,
       useValue: (

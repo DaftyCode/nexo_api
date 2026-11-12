@@ -131,3 +131,36 @@ pub enum IndexChange {
         name: String,
     },
 }
+
+/// A batch of an import: documents in Extended JSON written as they come, not recorded to
+/// undo them.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImportBatch {
+    pub documents: Vec<Value>,
+    /// With fields, a document replaces the one with the same values of them, or is
+    /// inserted; without, every document is inserted.
+    pub upsert_key: Option<Vec<String>>,
+    /// Deletes every document of the collection first; its indexes stay.
+    pub clear: bool,
+    /// Stops at the first document that fails; otherwise the others are written.
+    pub ordered: bool,
+}
+
+/// What a batch of an import did.
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportResult {
+    pub inserted: u64,
+    pub upserted: u64,
+    pub replaced: u64,
+    /// Documents deleted first, when the collection was emptied.
+    pub cleared: u64,
+    pub failed: Vec<ImportFailure>,
+}
+
+/// A document of the batch that was not written, by its position in the batch.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ImportFailure {
+    pub index: u64,
+    pub message: String,
+}

@@ -9,6 +9,9 @@
     <button type="button" class="button small" (click)="explorer().writes.deleteMany()">
       {{ 'Delete many…' | transloco }}
     </button>
+    <button type="button" class="button small" (click)="explorer().transfers.open('import')">
+      {{ 'Import…' | transloco }}
+    </button>
     <span class="grow"></span>
     <label class="field mongo-format"
       >{{ 'Write concern' | transloco }}
@@ -189,6 +192,9 @@
       <option value="canonical">{{ 'Canonical Extended JSON' | transloco }}</option>
     </select>
   </label>
+  <button type="button" class="button small" (click)="explorer().transfers.open('export')">
+    {{ 'Export…' | transloco }}
+  </button>
   <span class="grow"></span>
   @if (explorer().pager.current(); as page) {
     <span class="muted" role="status" data-testid="mongo-range">

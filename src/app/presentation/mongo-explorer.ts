@@ -27,7 +27,9 @@ import { MongoQueryLibrary } from './mongo-explorer/library';
 import { MongoPager } from './mongo-explorer/pager';
 import { MongoExplorerDocuments } from './mongo-explorer-documents';
 import { MongoExplorerSidebar } from './mongo-explorer-sidebar';
-import { MONGO } from '../composition/providers';
+import { MongoTransfer } from './mongo-transfer';
+import { MongoTransfers } from './mongo-transfer/transfers';
+import { MONGO, TRANSFER_FILES } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
 import { resolveVariables } from '../domain/variables';
 import { connectionValue } from '../domain/mongo';
@@ -67,6 +69,7 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
     MongoProfiler,
     MongoExplorerSidebar,
     MongoExplorerDocuments,
+    MongoTransfer,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -121,6 +124,7 @@ export class MongoExplorer {
   readonly pager = new MongoPager(this);
   readonly library = new MongoQueryLibrary(this);
   readonly explains = new MongoExplains(this);
+  readonly transfers = new MongoTransfers(this, inject(TRANSFER_FILES));
   readonly writes = new MongoWrites({
     state: this.state,
     cases: () => this.mongo(),
@@ -145,7 +149,10 @@ export class MongoExplorer {
       this.connection();
       untracked(() => void this.browser.loadDatabases());
     });
-    inject(DestroyRef).onDestroy(() => this.pager.closeCursor());
+    inject(DestroyRef).onDestroy(() => {
+      this.pager.closeCursor();
+      this.transfers.close();
+    });
   }
 
   async use<T>(action: (cases: Awaited<ReturnType<typeof this.mongo>>) => Promise<T>) {

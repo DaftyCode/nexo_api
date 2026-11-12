@@ -12,6 +12,8 @@ import { ProtocolUseCases } from '../application/protocol-use-cases';
 import type { MongoUseCases } from '../application/mongo-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
+import type { TransferFilesPort } from '../application/ports';
+import { transferFiles } from '../infrastructure/transfer-files';
 export const WORKSPACE = new InjectionToken<WorkspaceUseCases>('Nexo workspace use cases');
 export const APPEARANCE = new InjectionToken<AppearanceUseCases>('Nexo appearance use cases');
 export const INTEGRATION = new InjectionToken<IntegrationUseCases>('Nexo integration use cases');
@@ -21,6 +23,8 @@ export const REPORTS = new InjectionToken<ReportUseCases>('Nexo printable report
 /** Loads the MongoDB use cases with the panel, so the first screen does not carry them. */
 export type MongoLoader = () => Promise<MongoUseCases>;
 export const MONGO = new InjectionToken<MongoLoader>('Nexo MongoDB connections');
+/** Files of MongoDB imports and exports: chosen in the browser, or in the desktop dialogs. */
+export const TRANSFER_FILES = new InjectionToken<TransferFilesPort>('Nexo transfer files');
 export const workspaceProviders = [
   HttpApi,
   BrowserFiles,
@@ -39,6 +43,7 @@ export const workspaceProviders = [
     },
   },
   { provide: PROTOCOLS, useFactory: () => new ProtocolUseCases(inject(HttpApi)) },
+  { provide: TRANSFER_FILES, useFactory: transferFiles },
   {
     provide: MONGO,
     useFactory: (): MongoLoader => {

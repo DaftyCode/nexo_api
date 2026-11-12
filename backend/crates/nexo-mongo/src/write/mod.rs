@@ -4,6 +4,7 @@
 
 mod collections;
 mod documents;
+mod import;
 
 use crate::{
     browse::check_name,
@@ -13,6 +14,7 @@ use crate::{
 use bson::{Document, doc, oid::ObjectId};
 pub use collections::change;
 use documents::{insert, restore, single};
+pub use import::import;
 use mongodb::{
     Client, Collection,
     options::{

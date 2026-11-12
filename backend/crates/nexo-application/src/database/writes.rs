@@ -160,6 +160,7 @@ impl Application {
                     database.write(connection, target, write).await?,
                 )
             }
+            Operation::MongoImport => return self.import_batch(&payload, connection).await,
             _ => {
                 return self
                     .collection_change(operation, &payload, connection)

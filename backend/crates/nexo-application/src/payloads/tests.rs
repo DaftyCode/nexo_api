@@ -109,6 +109,7 @@ fn every_operation_has_a_payload_type() {
                 | Operation::MongoProfile
                 | Operation::MongoProfileSet
                 | Operation::MongoProfileEntries
+                | Operation::MongoImport
         );
         assert_eq!(result.is_err(), required, "{operation}");
         assert!(

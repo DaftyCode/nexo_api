@@ -66,6 +66,18 @@ impl DocumentDatabase for MongoAdapter {
         })
         .await
     }
+    async fn import(
+        &self,
+        connection: DatabaseConnection,
+        target: WriteTarget,
+        batch: ImportBatch,
+    ) -> Result<ImportResult> {
+        within(async {
+            let (client, _) = self.client(&connection).await?;
+            write::import(&client, target, batch).await
+        })
+        .await
+    }
     async fn change(&self, connection: DatabaseConnection, change: CollectionChange) -> Result<()> {
         within(async {
             let (client, _) = self.client(&connection).await?;

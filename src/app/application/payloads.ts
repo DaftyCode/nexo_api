@@ -512,6 +512,20 @@ export interface MongoProfileEntriesPayload {
   limit?: number;
 }
 
+export interface MongoImportPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  documents: readonly object[];
+  workspace?: string;
+  mode?: 'insert' | 'upsert';
+  key?: readonly string[];
+  clearConfirm?: string;
+  ordered?: boolean;
+  writeConcern?: object;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -585,6 +599,7 @@ export interface OperationPayloads {
   'mongo.profile': MongoProfilePayload;
   'mongo.profile.set': MongoProfileSetPayload;
   'mongo.profile.entries': MongoProfileEntriesPayload;
+  'mongo.import': MongoImportPayload;
 }
 
 /** The payload of an operation. */

@@ -131,6 +131,32 @@
     <p class="muted">{{ 'Save a query to find it here.' | transloco }}</p>
   }
 
+  <h3 class="mongo-section">{{ 'Saved transfers' | transloco }}</h3>
+  <ul>
+    @for (transfer of explorer().transfers.saved(); track transfer.id) {
+      <li class="row mongo-saved">
+        <button
+          type="button"
+          class="mongo-tree-item grow"
+          [class.selected]="transfer.id === explorer().transfers.savedId()"
+          (click)="explorer().transfers.openSaved(transfer)"
+        >
+          {{ transfer.name }}
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'mongo.deleteTransfer' | transloco: { v0: transfer.name }"
+          (click)="explorer().transfers.remove(transfer)"
+        >
+          ×
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'Save an import or export to run it again.' | transloco }}</li>
+    }
+  </ul>
+
   <h3 class="mongo-section">{{ 'Query history' | transloco }}</h3>
   <ul>
     @for (entry of explorer().library.history(); track entry.id) {
