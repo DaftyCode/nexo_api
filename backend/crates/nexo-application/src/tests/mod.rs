@@ -4,6 +4,7 @@ mod execute;
 mod imports;
 mod indexes;
 mod schema;
+mod scripts;
 mod vault;
 mod watch;
 mod writes;

@@ -34,6 +34,7 @@ pub(super) async fn run_steps(
     // Files chosen for this request; collection runs from the interface bring none.
     let files = crate::files::Files::from_payload(payload)?;
     let jar = jars.get(&cookie_scope(payload));
+    let workspace = payload["workspace"].as_str().unwrap_or_default();
     outcome.collection = values(&collection["variable"]);
     let mut local = Map::new();
     let iterations = payload["iterations"].as_u64().unwrap_or(1).clamp(1, 10_000);
@@ -115,7 +116,7 @@ pub(super) async fn run_steps(
             let session = ScriptSession::new(&seed, job.cancelled.clone())?;
             let groups: Vec<&Value> = step.parents.iter().chain(std::iter::once(item)).collect();
             session.run(&scripts(&groups, "prerequest"), None)?;
-            send_queued(&session, transport).await?;
+            send_queued(&session, transport, context, workspace).await?;
             let state = session.snapshot()?;
             if state["skip"] != true {
                 // Script variables first; where restricted secrets go is read from the
@@ -145,7 +146,7 @@ pub(super) async fn run_steps(
                     .results
                     .push(result.clone());
                 session.run(&scripts(&groups, "test"), Some(&result))?;
-                send_queued(&session, transport).await?;
+                send_queued(&session, transport, context, workspace).await?;
             }
             let state = session.snapshot()?;
             // `nx.oauth2.reset(name)`: the next send gets a new token (Bruno's
@@ -210,12 +211,28 @@ pub(super) async fn run_steps(
     Ok(())
 }
 
-/// Sends requests queued by `pm.sendRequest` and delivers their responses.
-pub(super) async fn send_queued(session: &ScriptSession, transport: &Transport) -> Result<()> {
+/// Sends requests queued by `pm.sendRequest` and `nx.mongo` calls, and delivers their
+/// answers, until a round queues nothing more.
+pub(super) async fn send_queued(
+    session: &ScriptSession,
+    transport: &Transport,
+    context: &Context,
+    workspace: &str,
+) -> Result<()> {
     for _round in 0..100 {
         let queue = session.take_queue()?;
-        if queue.is_empty() {
+        let calls = session.take_mongo()?;
+        if queue.is_empty() && calls.is_empty() {
             return Ok(());
+        }
+        if !calls.is_empty() {
+            let state = session.snapshot()?;
+            for (id, call) in calls {
+                match super::databases::call(&context.databases, workspace, &state, &call).await {
+                    Ok(result) => session.deliver_mongo(&id, Some(&result), None)?,
+                    Err(error) => session.deliver_mongo(&id, None, Some(&error.to_string()))?,
+                }
+            }
         }
         for (id, request) in queue {
             let mut request = request;

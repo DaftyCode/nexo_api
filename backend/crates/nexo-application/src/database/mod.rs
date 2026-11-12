@@ -8,6 +8,7 @@ mod connection;
 mod import;
 mod reads;
 mod schema;
+mod scripts;
 #[cfg(test)]
 mod tests;
 mod watch;

@@ -50,7 +50,7 @@ use crate::{
     mocks::Mocks,
     performance::Performance,
     realtime::Realtime,
-    runner::{Context, Jars, Runs, cookie_scope},
+    runner::{Context, Jars, Runs, ScriptDatabases, cookie_scope},
     transport::{guarded_client, parse_url, read_limited},
     vault::{Vault, load_master_key},
 };
@@ -78,6 +78,7 @@ pub struct Engine {
     performance: Performance,
     vault: Arc<Vault>,
     oauth2_flows: oauth2_flow::Flows,
+    databases: ScriptDatabases,
 }
 impl Engine {
     /// Opens the engine over `<data>`: `vault/`, `datasets/` and `cookies/`.
@@ -92,12 +93,14 @@ impl Engine {
             Arc::new(move || mocks.ports()) as Arc<dyn Fn() -> Vec<u16> + Send + Sync>
         };
         let vault = Arc::new(Vault::new(data.join("vault"), key, "local"));
+        let databases = ScriptDatabases::default();
         let runs = Arc::new(Runs::new(
             Arc::new(Jars::new(data.join("cookies"))),
             Context {
                 egress: egress.clone(),
                 loopback_ports: ports.clone(),
                 vault: Some(vault.clone()),
+                databases: databases.clone(),
             },
         ));
         Ok(Self {
@@ -106,10 +109,18 @@ impl Engine {
             performance: Performance::new(runs.clone()),
             vault,
             oauth2_flows: oauth2_flow::Flows::default(),
+            databases,
             egress,
             mocks,
             runs,
         })
+    }
+    /// Lets scripts reach the databases of a workspace (`nx.mongo`) through the application.
+    pub fn connect_databases(
+        &self,
+        databases: std::sync::Weak<dyn nexo_application::ports::ScriptDatabase>,
+    ) {
+        self.databases.connect(databases);
     }
     /// Stops connections, mocks and executions.
     pub fn close(&self) {

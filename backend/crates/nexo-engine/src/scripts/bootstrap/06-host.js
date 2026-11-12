@@ -41,6 +41,7 @@
         stringify({
           ...state,
           queue: undefined,
+          mongo: undefined,
           callbacks: undefined,
           request: {
             ...state.request,
@@ -55,6 +56,12 @@
         state.queue = [];
         return stringify(queue);
       },
+      mongoQueue: () => {
+        const queue = state.mongo;
+        state.mongo = [];
+        return stringify(queue);
+      },
+      deliverMongo,
       response: (value) => {
         api.response = responseApi(value);
       },

@@ -1,5 +1,6 @@
 //! Collection runs and single requests: variables, scripts, transport and results.
 
+mod databases;
 mod execute;
 mod job;
 mod steps;
@@ -13,6 +14,7 @@ use crate::{
     vault::Vault,
 };
 use base64::{Engine as _, engine::general_purpose::STANDARD};
+pub use databases::ScriptDatabases;
 use execute::execute;
 pub use job::{Cursor, Job};
 use job::{JobState, Outcome, finish};
@@ -85,6 +87,8 @@ pub struct Context {
     pub loopback_ports: Arc<dyn Fn() -> Vec<u16> + Send + Sync>,
     /// Where `nx.oauth2.reset(name)` deletes OAuth 2.0 tokens; `None` in tests without one.
     pub vault: Option<Arc<Vault>>,
+    /// Where `nx.mongo` calls go, once the composition root connects the application.
+    pub databases: ScriptDatabases,
 }
 
 pub struct Runs {

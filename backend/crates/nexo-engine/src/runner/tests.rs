@@ -65,6 +65,7 @@ fn runs() -> Runs {
     Runs::new(
         Arc::new(Jars::new(directory)),
         Context {
+            databases: Default::default(),
             egress: Policy::AllowAll,
             loopback_ports: Arc::new(Vec::new),
             vault: None,
@@ -219,6 +220,7 @@ async fn cookies_survive_a_restart_and_manager_changes_reach_the_next_request() 
         Runs::new(
             Arc::new(Jars::new(directory.clone())),
             Context {
+                databases: Default::default(),
                 egress: Policy::AllowAll,
                 loopback_ports: Arc::new(Vec::new),
                 vault: None,

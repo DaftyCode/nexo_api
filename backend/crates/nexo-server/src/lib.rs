@@ -92,7 +92,11 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         )),
         Arc::new(MongoAdapter::new(&config.data, engine.clone())),
     );
-    Ok((Arc::new(application), engine))
+    let application = Arc::new(application);
+    // Scripts reach the databases through the application, with its rules (`nx.mongo`).
+    let databases: Arc<dyn nexo_application::ports::ScriptDatabase> = application.clone();
+    engine.connect_databases(Arc::downgrade(&databases));
+    Ok((application, engine))
 }
 
 /// A running service; `stop` drains connections and stops the engine.

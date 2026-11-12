@@ -2,8 +2,9 @@
 //!
 //! Each execution gets its own runtime and context with memory and time limits. The context
 //! has no host functions: scripts exchange JSON strings with the engine through the
-//! `__nexo` object installed by the `bootstrap/` script, and requests made with
-//! `pm.sendRequest` are queued for the engine to send. Code generation from strings is
+//! `__nexo` object installed by the `bootstrap/` script, requests made with
+//! `pm.sendRequest` are queued for the engine to send, and `nx.mongo` calls for the
+//! application to answer. Code generation from strings is
 //! disabled. Vault secrets and OAuth 2.0 tokens never enter the context: the host fills them
 //! into the request.
 use nexo_domain::{Error, Result};
@@ -23,8 +24,11 @@ const BOOTSTRAP: &str = concat!(
     include_str!("bootstrap/02-expect.js"),
     include_str!("bootstrap/03-variables.js"),
     include_str!("bootstrap/04-api.js"),
-    include_str!("bootstrap/05-host.js"),
+    include_str!("bootstrap/05-mongo.js"),
+    include_str!("bootstrap/06-host.js"),
 );
+mod queue;
+
 const SCRIPT_TIMEOUT: Duration = Duration::from_secs(5);
 const MEMORY_LIMIT: usize = 128 * 1024 * 1024;
 /// Removes every way to compile code from strings inside the sandbox.
@@ -178,33 +182,6 @@ impl ScriptSession {
         for source in sources {
             self.evaluate(source)?;
         }
-        Ok(())
-    }
-    /// Requests queued by `pm.sendRequest` since the last call.
-    pub fn take_queue(&self) -> Result<Vec<(String, Value)>> {
-        let queue = self.json("__nexo.queue()")?;
-        Ok(queue
-            .as_array()
-            .map(|items| {
-                items
-                    .iter()
-                    .map(|entry| {
-                        (
-                            entry["id"].as_str().unwrap_or_default().to_string(),
-                            entry["request"].clone(),
-                        )
-                    })
-                    .collect()
-            })
-            .unwrap_or_default())
-    }
-    pub fn deliver(&self, id: &str, result: Option<&Value>, error: Option<&str>) -> Result<()> {
-        self.evaluate(&format!(
-            "__nexo.deliver({},{},{})",
-            serde_json::to_string(id).map_err(infrastructure)?,
-            serde_json::to_string(&result.map(script_response)).map_err(infrastructure)?,
-            serde_json::to_string(&error).map_err(infrastructure)?
-        ))?;
         Ok(())
     }
 }

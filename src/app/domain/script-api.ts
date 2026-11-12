@@ -35,6 +35,41 @@ const object = (name: string, doc: string, members: ScriptMember[]): ScriptMembe
   members,
 });
 
+/** What a collection of `nx.mongo(name).db(database).collection(name)` can do. */
+const MONGO_COLLECTION: ScriptMember[] = [
+  method('findOne', '(filter?, options?) → Promise', 'The first document that matches, or null.'),
+  method(
+    'find',
+    '(filter?, options?) → cursor',
+    'Documents that match: sort, limit, skip, project, then toArray() (1 000 at most).',
+  ),
+  method('countDocuments', '(filter?) → Promise', 'How many documents match.'),
+  method(
+    'aggregate',
+    '(pipeline, options?) → cursor',
+    'An aggregation that reads; toArray() gives its documents.',
+  ),
+  method(
+    'insertOne',
+    '(document) → Promise',
+    'Inserts a document; refused on a read-only connection.',
+  ),
+  method('insertMany', '(documents) → Promise', 'Inserts several documents.'),
+  method('updateOne', '(filter, update) → Promise', 'Updates the first document that matches.'),
+  method('updateMany', '(filter, update) → Promise', 'Updates every document that matches.'),
+  method('replaceOne', '(filter, document) → Promise', 'Replaces the first document that matches.'),
+  method('deleteOne', '(filter) → Promise', 'Deletes the first document that matches.'),
+  method(
+    'deleteMany',
+    '(filter, options?) → Promise',
+    'Deletes every match; an empty filter needs { confirm: collection }.',
+  ),
+];
+const MONGO_DATABASE = method('db', '(name) → database', 'A database of the connection.', [
+  method('collection', '(name) → collection', 'A collection of the database.', MONGO_COLLECTION),
+  method('getCollection', '(name) → collection', 'The same as collection.', MONGO_COLLECTION),
+]);
+
 /** A variable scope: environment, globals, collection variables… */
 function scope(readOnly: boolean): ScriptMember[] {
   const read = [
@@ -188,6 +223,12 @@ export const SCRIPT_API: ScriptMember[] = [
     method('reset', '(name)', 'Deletes the token with that name, so the next send gets a new one.'),
   ]),
   method('sendRequest', '(request, callback?) → Promise', 'Sends another request from the script.'),
+  method(
+    'mongo',
+    '(connection) → client',
+    'A saved MongoDB connection, by its name; the script never sees its URI or password.',
+    [MONGO_DATABASE],
+  ),
 ];
 
 /** The script globals: `pm`, as in Postman, and `nx`. */

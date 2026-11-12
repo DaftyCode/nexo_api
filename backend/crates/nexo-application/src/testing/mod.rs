@@ -69,8 +69,19 @@ impl WorkspaceRepository for Fake {
     ) -> Result<Vec<DocumentSummary>> {
         Ok(vec![])
     }
-    async fn documents(&self, _: &WorkspaceId, _: Option<DocumentKind>) -> Result<Vec<Document>> {
-        Ok(vec![])
+    async fn documents(
+        &self,
+        workspace: &WorkspaceId,
+        kind: Option<DocumentKind>,
+    ) -> Result<Vec<Document>> {
+        Ok(self
+            .documents
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|d| &d.workspace_id == workspace && kind.is_none_or(|kind| d.kind == kind))
+            .cloned()
+            .collect())
     }
     async fn document(&self, id: &DocumentId) -> Result<Document> {
         self.documents
