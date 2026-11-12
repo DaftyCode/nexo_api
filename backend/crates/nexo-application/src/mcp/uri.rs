@@ -49,6 +49,10 @@ pub(super) enum Resource {
     Environment(WorkspaceId, String),
     Globals(WorkspaceId),
     LastExecution(WorkspaceId),
+    /// The databases and collections of an exposed MongoDB connection, by its name.
+    MongoConnection(WorkspaceId, String),
+    /// The schema of a collection of an exposed MongoDB connection.
+    MongoCollection(WorkspaceId, String, String, String),
 }
 pub(super) fn parse_uri(uri: &str) -> Option<Resource> {
     let rest = uri.strip_prefix(SCHEME)?;
@@ -63,6 +67,13 @@ pub(super) fn parse_uri(uri: &str) -> Option<Resource> {
         ["environments", id] => Resource::Environment(workspace, (*id).into()),
         ["globals"] => Resource::Globals(workspace),
         ["history", "latest"] => Resource::LastExecution(workspace),
+        ["mongo", connection] => Resource::MongoConnection(workspace, (*connection).into()),
+        ["mongo", connection, database, collection] => Resource::MongoCollection(
+            workspace,
+            (*connection).into(),
+            (*database).into(),
+            (*collection).into(),
+        ),
         _ => return None,
     })
 }

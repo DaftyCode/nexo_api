@@ -33,6 +33,7 @@ impl ExecutionGateway for Engine {
             }
             Operation::Cancel => self.runs.cancel(id(&payload)),
             Operation::MongoShell => shell::run(self.databases.clone(), payload).await,
+            Operation::MongoSql => sql::translate(payload["sql"].as_str().unwrap_or_default()),
             Operation::RunPause => self.runs.pause(id(&payload)),
             Operation::RunResume => self.runs.resume(id(&payload)),
             Operation::Import => interchange::import(&payload),
@@ -123,7 +124,9 @@ impl ExecutionGateway for Engine {
             | Operation::MongoAggregateWrite
             | Operation::MongoSchema
             | Operation::MongoCollectionValidator
-            | Operation::MongoWatch => Err(Error::Validation(format!(
+            | Operation::MongoWatch
+            | Operation::MongoCompare
+            | Operation::MongoSync => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

@@ -102,6 +102,9 @@ operations!(
         MongoCollectionValidator => "mongo.collection.validator",
         MongoWatch => "mongo.watch",
         MongoShell => "mongo.shell",
+        MongoSql => "mongo.sql",
+        MongoCompare => "mongo.compare",
+        MongoSync => "mongo.sync",
     }
 );
 impl Operation {
@@ -141,6 +144,8 @@ impl Operation {
                 | Self::MongoSchema
                 | Self::MongoCollectionValidator
                 | Self::MongoWatch
+                | Self::MongoCompare
+                | Self::MongoSync
         )
     }
     /// Database operations that change data or the server's settings: refused on a
@@ -164,6 +169,7 @@ impl Operation {
                 | Self::MongoImport
                 | Self::MongoAggregateWrite
                 | Self::MongoCollectionValidator
+                | Self::MongoSync
         )
     }
     /// Operations whose data belongs to a workspace and need one.
@@ -193,6 +199,7 @@ impl Operation {
                 | Self::MongoProfileSet
                 | Self::MongoCollectionValidator
                 | Self::MongoShell
+                | Self::MongoSync
         )
     }
 }

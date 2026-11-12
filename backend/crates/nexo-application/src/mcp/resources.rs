@@ -80,6 +80,15 @@ impl Application {
                     "mimeType": JSON,
                 }));
             }
+            for connection in self.mcp_connections(id).await? {
+                resources.push(json!({
+                    "uri": uri(id, &["mongo", encode(&connection.name).as_str()]),
+                    "name": format!("{} / MongoDB {}", workspace.name, connection.name),
+                    "title": connection.name,
+                    "description": "Databases and collections of an exposed MongoDB connection",
+                    "mimeType": JSON,
+                }));
+            }
             if latest.is_some() {
                 resources.push(json!({
                     "uri": uri(id, &["history", "latest"]),
@@ -99,6 +108,12 @@ impl Application {
             "name": "Request",
             "title": "A request of a collection",
             "description": "One request by its ID or name, without credentials",
+            "mimeType": JSON,
+        }, {
+            "uriTemplate": format!("{SCHEME}{{workspace}}/mongo/{{connection}}/{{database}}/{{collection}}"),
+            "name": "MongoDB collection schema",
+            "title": "The schema of a collection",
+            "description": "Fields, types, presence and anomalies of a sample of a collection of an exposed connection",
             "mimeType": JSON,
         }]})
     }
@@ -132,7 +147,25 @@ impl Application {
                     .value
             }
             Resource::LastExecution(workspace) => self.last_execution(workspace).await?.value,
+            Resource::MongoConnection(workspace, connection) => {
+                self.mcp_mongo_overview(workspace, connection).await?
+            }
+            Resource::MongoCollection(workspace, connection, database, collection) => {
+                let arguments = json!({"workspace": workspace.as_str(), "connection": connection,
+                                       "database": database, "collection": collection});
+                match self.mongo_tool("mongo_schema", &arguments).await {
+                    Some(schema) => schema?,
+                    None => return Err(Missing::Resource),
+                }
+            }
         };
+        if matches!(
+            resource,
+            Resource::MongoConnection(..) | Resource::MongoCollection(..)
+        ) {
+            let text = self.redacted(&value).await?;
+            return Ok(json!({"contents": [{"uri": uri, "mimeType": JSON, "text": text}]}));
+        }
         let text = self.redacted(&shareable(&value)).await?;
         Ok(json!({"contents": [{"uri": uri, "mimeType": JSON, "text": text}]}))
     }

@@ -5,6 +5,7 @@
 //! execution) and prompts built on them share nothing secret: credentials in
 //! authorizations, credential headers and sensitive variables are masked as in a Git export,
 //! and every vault value that still appears is replaced before the text is sent.
+mod mongo;
 mod prompts;
 mod resources;
 mod share;
@@ -15,6 +16,9 @@ mod uri;
 use crate::{Application, operations::Operation};
 use nexo_domain::Error;
 use serde_json::{Value, json};
+
+#[cfg(test)]
+pub(crate) use mongo::bounded as mongo_bounded;
 
 pub const PROTOCOL: &str = "2025-06-18";
 const SUPPORTED: [&str; 3] = ["2025-06-18", "2025-03-26", "2024-11-05"];
@@ -130,18 +134,22 @@ impl Application {
                 })
             }
             "ping" => json!({}),
-            "tools/list" => json!({"tools": [
-                {"name": "send_request", "description": "Execute an HTTP request using the Nexo runtime",
-                 "inputSchema": {"type": "object", "properties": {
-                    "request": {"type": "object", "properties": {
-                        "method": {"type": "string"}, "url": {"type": "string"},
-                        "headers": {"type": "array"}, "body": {"type": "string"}},
-                     "required": ["url"]},
-                    "workspace": {"type": "string"}},
-                  "required": ["request"]}},
-                {"name": "list_workspaces", "description": "List your workspaces",
-                 "inputSchema": {"type": "object", "properties": {}}}
-            ]}),
+            "tools/list" => {
+                let mut tools = vec![
+                    json!({"name": "send_request", "description": "Execute an HTTP request using the Nexo runtime",
+                     "inputSchema": {"type": "object", "properties": {
+                        "request": {"type": "object", "properties": {
+                            "method": {"type": "string"}, "url": {"type": "string"},
+                            "headers": {"type": "array"}, "body": {"type": "string"}},
+                         "required": ["url"]},
+                        "workspace": {"type": "string"}},
+                      "required": ["request"]}}),
+                    json!({"name": "list_workspaces", "description": "List your workspaces",
+                     "inputSchema": {"type": "object", "properties": {}}}),
+                ];
+                tools.extend(mongo::tools());
+                json!({ "tools": tools })
+            }
             "tools/call" => {
                 let outcome = match params["name"].as_str().unwrap_or("") {
                     "send_request" => {
@@ -158,7 +166,10 @@ impl Application {
                         serde_json::to_value(workspaces)
                             .map_err(|error| Error::Infrastructure(error.to_string()))
                     }),
-                    _ => return rpc_error(id, -32602, "Unknown tool"),
+                    name => match self.mongo_tool(name, &params["arguments"]).await {
+                        Some(outcome) => outcome,
+                        None => return rpc_error(id, -32602, "Unknown tool"),
+                    },
                 };
                 match outcome {
                     Ok(value) => {

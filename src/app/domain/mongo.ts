@@ -24,6 +24,10 @@ export interface MongoConnectionValue {
   color?: string;
   /** Writes are refused while it is set. */
   readOnly?: boolean;
+  /** MCP agents may read it (never write); no connection is exposed unless set. */
+  mcp?: boolean;
+  /** Fields masked in what MCP agents read, at any depth. */
+  mcpHidden?: string[];
 }
 
 /** A server of a connection, as "Test connection" found it. */
@@ -187,6 +191,14 @@ export function connectionValue(value: unknown): MongoConnectionValue {
     ...(text('folder') ? { folder: text('folder') } : {}),
     ...(text('color') ? { color: text('color') } : {}),
     ...(source['readOnly'] === true ? { readOnly: true } : {}),
+    ...(source['mcp'] === true ? { mcp: true } : {}),
+    ...(Array.isArray(source['mcpHidden'])
+      ? {
+          mcpHidden: (source['mcpHidden'] as unknown[]).filter(
+            (name): name is string => typeof name === 'string',
+          ),
+        }
+      : {}),
   };
 }
 

@@ -1,0 +1,73 @@
+<div
+  class="mongo-blocks"
+  role="group"
+  [attr.aria-label]="(path().length ? 'Group of conditions' : 'Filter blocks') | transloco"
+>
+  <div class="row mongo-inline">
+    <label class="field"
+      >{{ 'Documents where' | transloco }}
+      <select [value]="group().join" (change)="builder().setJoin(path(), $any(text($event)))">
+        <option value="$and">{{ 'all of these hold' | transloco }}</option>
+        <option value="$or">{{ 'any of these holds' | transloco }}</option>
+      </select>
+    </label>
+    <button type="button" class="button small" (click)="builder().add(path(), 'condition')">
+      {{ 'Add condition' | transloco }}
+    </button>
+    <button type="button" class="button small" (click)="builder().add(path(), 'group')">
+      {{ 'Add group' | transloco }}
+    </button>
+    @if (path().length) {
+      <button type="button" class="text-button" (click)="builder().remove(path())">
+        {{ 'Remove group' | transloco }}
+      </button>
+    }
+  </div>
+  <ul class="mongo-blocks-items">
+    @for (item of group().items; track $index; let index = $index) {
+      <li>
+        @if (item.kind === 'condition') {
+          <div class="row mongo-inline">
+            <input
+              [value]="item.field"
+              list="mongo-block-fields"
+              spellcheck="false"
+              [attr.aria-label]="'Field' | transloco"
+              [placeholder]="'Field' | transloco"
+              (change)="builder().setCondition(inner(index), { field: text($event) })"
+            />
+            <select
+              [value]="item.operator"
+              [attr.aria-label]="'Operator' | transloco"
+              (change)="builder().setCondition(inner(index), { operator: $any(text($event)) })"
+            >
+              @for (operator of operators; track operator) {
+                <option [value]="operator">{{ labels[operator] | transloco }}</option>
+              }
+            </select>
+            <input
+              class="grow"
+              [value]="item.value"
+              spellcheck="false"
+              [attr.aria-label]="'Value' | transloco"
+              placeholder="'A', 5, [1, 2], ISODate('2024-01-02')"
+              (change)="builder().setCondition(inner(index), { value: text($event) })"
+            />
+            <button
+              type="button"
+              class="icon-button"
+              [attr.aria-label]="'Remove condition' | transloco"
+              (click)="builder().remove(inner(index))"
+            >
+              ×
+            </button>
+          </div>
+        } @else {
+          <app-mongo-filter-blocks [builder]="builder()" [group]="item" [path]="inner(index)" />
+        }
+      </li>
+    } @empty {
+      <li class="muted">{{ 'No conditions: every document.' | transloco }}</li>
+    }
+  </ul>
+</div>

@@ -78,12 +78,38 @@
     <button
       type="button"
       class="text-button"
+      [attr.aria-pressed]="explorer().blocks.open()"
+      (click)="explorer().blocks.toggle()"
+    >
+      {{ 'Blocks' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="text-button"
       [attr.aria-expanded]="explorer().moreOptions()"
       (click)="explorer().moreOptions.set(!explorer().moreOptions())"
     >
       {{ 'More options' | transloco }}
     </button>
   </div>
+  @if (explorer().blocks.open()) {
+    <datalist id="mongo-block-fields">
+      @for (field of explorer().fieldNames(); track field) {
+        <option [value]="field"></option>
+      }
+    </datalist>
+    @if (explorer().blocks.problem(); as problem) {
+      <p class="mongo-problem" role="alert">
+        {{ problem | transloco }}
+        @if (problem === 'mongo.blocks.unreadable') {
+          <button type="button" class="text-button" (click)="explorer().blocks.restart()">
+            {{ 'Start from an empty filter' | transloco }}
+          </button>
+        }
+      </p>
+    }
+    <app-mongo-filter-blocks [builder]="explorer().blocks" [group]="explorer().blocks.group()" />
+  }
   @if (explorer().moreOptions()) {
     <div class="row mongo-inline">
       <label class="field grow"
@@ -146,6 +172,14 @@
     >
       {{ 'Explain' | transloco }}
     </button>
+    <button
+      type="button"
+      class="button"
+      [title]="'The driver code of this query, in nine languages' | transloco"
+      (click)="explorer().showQueryCode()"
+    >
+      {{ 'Code' | transloco }}
+    </button>
     <button type="button" class="text-button" (click)="explorer().library.newQuery()">
       {{ 'Clear' | transloco }}
     </button>
@@ -195,6 +229,9 @@
   </label>
   <button type="button" class="button small" (click)="explorer().transfers.open('export')">
     {{ 'Export…' | transloco }}
+  </button>
+  <button type="button" class="button small" (click)="explorer().comparisons.open()">
+    {{ 'Compare…' | transloco }}
   </button>
   <span class="grow"></span>
   @if (explorer().pager.current(); as page) {

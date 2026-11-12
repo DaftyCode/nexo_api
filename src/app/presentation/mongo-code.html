@@ -1,0 +1,54 @@
+<div class="mongo-backdrop">
+  <section
+    class="feature-card mongo-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mongo-code-title"
+  >
+    <h2 id="mongo-code-title">{{ 'Code' | transloco }}</h2>
+    <div class="row mongo-inline">
+      <label class="field"
+        >{{ 'Language' | transloco }}
+        <select [value]="language()" (change)="choose($event)">
+          @for (option of languages; track option.id) {
+            <option [value]="option.id">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <p class="muted">
+      {{
+        'A whole program that runs this query with the official driver. It reads the connection from the MONGODB_URI environment variable: the URI and the password stay in Nexo.'
+          | transloco
+      }}
+    </p>
+    @if (generated().error; as error) {
+      <p class="mongo-problem" role="alert">{{ error.key | transloco: error.params }}</p>
+    } @else {
+      <app-code-editor
+        size="large"
+        [language]="editorLanguage()"
+        [value]="generated().code"
+        [readonly]="true"
+        [label]="'Code' | transloco"
+      />
+    }
+    <div class="row mongo-actions">
+      <button
+        type="button"
+        class="button primary"
+        [disabled]="!!generated().error"
+        (click)="copy()"
+      >
+        {{ (copied() ? 'Copied' : 'Copy') | transloco }}
+      </button>
+      <button type="button" class="button" [disabled]="!!generated().error" (click)="download()">
+        {{ 'Download' | transloco }}
+      </button>
+      <span class="grow"></span>
+      <button type="button" class="button" (click)="closed.emit()">
+        {{ 'Close' | transloco }}
+      </button>
+    </div>
+  </section>
+</div>

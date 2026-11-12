@@ -4,10 +4,11 @@ import { FormField } from '@angular/forms/signals';
 import { CodeEditor } from './code-editor';
 import type { MongoExplorer } from './mongo-explorer';
 import { MongoResults } from './mongo-results';
+import { MongoFilterBlocks } from './mongo-filter-blocks';
 
 /** The documents of a collection: the query bar, its pages of results and their writes. */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, MongoResults],
+  imports: [TranslocoPipe, FormField, CodeEditor, MongoResults, MongoFilterBlocks],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer-documents',
   styleUrl: './mongo-explorer.scss',

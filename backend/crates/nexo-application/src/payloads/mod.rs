@@ -87,6 +87,7 @@ mod auth;
 mod common;
 mod git;
 mod http;
+mod mongo_compare;
 mod mongo_read;
 mod mongo_schema;
 mod mongo_write;
@@ -98,6 +99,7 @@ pub use auth::*;
 pub use common::*;
 pub use git::*;
 pub use http::*;
+pub use mongo_compare::*;
 pub use mongo_read::*;
 pub use mongo_schema::*;
 pub use mongo_write::*;
@@ -235,6 +237,9 @@ operation_payloads! {
     MongoCollectionValidator => MongoCollectionValidatorPayload,
     MongoWatch => MongoWatchPayload,
     MongoShell => MongoShellPayload,
+    MongoSql => MongoSqlPayload,
+    MongoCompare => MongoComparePayload,
+    MongoSync => MongoSyncPayload,
 }
 
 /// Checks the payload of a Git operation.
@@ -256,6 +261,7 @@ pub fn typescript_contract() -> String {
         CookieKey::TYPESCRIPT.to_string(),
         GitFile::TYPESCRIPT.to_string(),
         MongoConnection::TYPESCRIPT.to_string(),
+        MongoCollectionRef::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
     parts.push(GitPayload::TYPESCRIPT.to_string());

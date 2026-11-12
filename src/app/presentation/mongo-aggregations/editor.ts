@@ -20,6 +20,7 @@ import {
   writtenCollection,
 } from '../../domain/mongo-aggregation';
 import { resolveVariables } from '../../domain/variables';
+import { shellText } from '../../domain/bson';
 import type { MongoExplorer } from '../mongo-explorer';
 import { named } from '../workspace-state';
 import { AggregationRunner } from './runner';
@@ -175,6 +176,20 @@ export class AggregationEditor {
       },
     );
   }
+  /** Driver code for the pipeline, with its options. */
+  showCode() {
+    const target = this.explorer.target();
+    const built = this.build();
+    if (!target || !built) return;
+    const { database, collection } = target;
+    this.explorer.code.set({
+      kind: 'aggregate',
+      database,
+      collection,
+      pipeline: built.pipeline,
+      ...built.options,
+    });
+  }
   /** Exports the results of the pipeline with the dialog of imports and exports. */
   export() {
     if (!this.build()) return;
@@ -198,6 +213,16 @@ export class AggregationEditor {
     this.textOpen.set(false);
   }
 
+  /** Replaces the stages with those of a pipeline, such as one translated from SQL. */
+  load(pipeline: readonly Record<string, unknown>[]) {
+    this.savedId.set('');
+    this.stages(() =>
+      pipeline.map((stage) => {
+        const [operator, value] = Object.entries(stage)[0] ?? ['$match', {}];
+        return { operator, body: shellText(value), enabled: true };
+      }),
+    );
+  }
   /** A new pipeline, with one `$match`. */
   clear() {
     this.savedId.set('');
@@ -241,14 +266,7 @@ export class AggregationEditor {
   async open(document: WorkspaceDocument) {
     const { explorer } = this;
     const value = aggregationValue(document.value);
-    const browser = explorer.browser;
-    if (!browser.collections()[value.database]) await browser.loadCollections(value.database);
-    const found = browser.listed(value.database).find((c) => c.name === value.collection) ?? {
-      name: value.collection,
-      kind: 'collection' as const,
-      capped: false,
-    };
-    explorer.choose(value.database, found, false);
+    await explorer.openCollection(value.database, value.collection);
     explorer.tab.set('aggregations');
     this.runner.reset();
     this.savedId.set(document.id);

@@ -1,5 +1,6 @@
 import { resolveVariables } from '../domain/variables';
 import { MongoAggregationCases } from './mongo-use-cases/aggregations';
+import { MongoCompareCases } from './mongo-use-cases/compare';
 import { MongoConnectionCases } from './mongo-use-cases/connections';
 import { MongoPorts } from './mongo-use-cases/payload';
 import { MongoQueryCases } from './mongo-use-cases/queries';
@@ -23,9 +24,12 @@ export {
   type WriteWhere,
 } from './mongo-use-cases/payload';
 export type { AggregateWritten, BuiltAggregation } from './mongo-use-cases/aggregations';
+export type { SqlQuery } from './mongo-use-cases/queries';
+export type * from './mongo-use-cases/compare';
 export type { ValidationAction, ValidationLevel } from './mongo-use-cases/schema';
 export {
   MongoAggregationCases,
+  MongoCompareCases,
   MongoConnectionCases,
   MongoQueryCases,
   MongoSchemaCases,
@@ -54,6 +58,7 @@ export class MongoUseCases {
   readonly tuning: MongoTuningCases;
   readonly schema: MongoSchemaCases;
   readonly shell: MongoShellCases;
+  readonly compare: MongoCompareCases;
   readonly transfer: MongoTransferCases;
 
   constructor(api: MongoPorts, id: () => string, preferences: PreferencePort = memory()) {
@@ -64,6 +69,7 @@ export class MongoUseCases {
     this.tuning = new MongoTuningCases(api);
     this.schema = new MongoSchemaCases(api);
     this.shell = new MongoShellCases(api, preferences);
+    this.compare = new MongoCompareCases(api);
     this.transfer = new MongoTransferCases(api, id);
   }
 }

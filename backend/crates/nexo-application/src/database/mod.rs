@@ -4,6 +4,7 @@
 //! back in an error.
 mod admin;
 mod aggregate;
+mod compare;
 mod connection;
 mod import;
 mod reads;
@@ -22,6 +23,7 @@ use serde_json::Value;
 pub(crate) use aggregate::written;
 #[cfg(test)]
 pub(crate) use import::IMPORT_BATCH;
+pub(crate) use scripts::connection as saved_connection;
 pub use writes::CHANGE_LIMIT;
 
 /// Documents in a page of MongoDB results when the client does not say.

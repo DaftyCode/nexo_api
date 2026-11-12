@@ -9,6 +9,20 @@ import {
 import { VariableScopes } from '../../domain/variables';
 import { MongoPorts, QueryTarget, savedConnection } from './payload';
 
+type Plain = Record<string, unknown>;
+/** A SQL `SELECT` as MongoDB: a `find` with its fields, or a pipeline. */
+export type SqlQuery = { collection: string } & (
+  | {
+      kind: 'find';
+      filter?: Plain;
+      projection?: Plain;
+      sort?: Plain;
+      skip?: number;
+      limit?: number;
+    }
+  | { kind: 'aggregate'; pipeline: Plain[] }
+);
+
 /** Queries of a collection: pages, counts, cancelling, and the saved queries and history. */
 export class MongoQueryCases {
   constructor(
@@ -65,6 +79,11 @@ export class MongoQueryCases {
       id,
     });
     return answer.count;
+  }
+
+  /** The MongoDB query a SQL `SELECT` stands for; nothing runs. */
+  sql(workspace: string, sql: string): Promise<SqlQuery> {
+    return this.api.execute<SqlQuery>('mongo.sql', { workspace, sql });
   }
 
   /** Cancels a query, count or explain that is running. */

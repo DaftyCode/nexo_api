@@ -161,6 +161,7 @@ impl Application {
                 )
             }
             Operation::MongoImport => return self.import_batch(&payload, connection).await,
+            Operation::MongoSync => return self.sync(&payload, connection, values).await,
             Operation::MongoAggregateWrite => {
                 return self.aggregate_write(&payload, connection).await;
             }

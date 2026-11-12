@@ -237,6 +237,20 @@ describe('MongoPanel', () => {
     expect(api.documentsStore.map((d) => d.name)).toEqual(['Connection 1']);
   });
 
+  it('exposes a connection to MCP agents with the fields they never see', async () => {
+    await fill(fixture, 'Paste a connection string', 'mongodb://db.test:27017/app');
+    await click('Use URI');
+    await fill(fixture, 'Connection name', 'Shop');
+    expect(text()).not.toContain('Fields hidden from MCP agents');
+    await tick('Let MCP agents read it');
+    await fill(fixture, 'Fields hidden from MCP agents', 'email, address.phone, ');
+    await click('Save connection');
+    expect(api.documentsStore[0].value).toMatchObject({
+      mcp: true,
+      mcpHidden: ['email', 'address.phone'],
+    });
+  });
+
   it('every control reaches the form', async () => {
     const tabs = ['Server', 'Authentication', 'TLS', 'Options'];
     const unchanged: string[] = [];

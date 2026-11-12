@@ -3,6 +3,7 @@ mod database;
 mod execute;
 mod imports;
 mod indexes;
+mod mcp_mongo;
 mod schema;
 mod scripts;
 mod vault;

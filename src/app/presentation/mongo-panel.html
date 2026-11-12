@@ -121,6 +121,17 @@
             'Read-only: no writes' | transloco
           }}</label
         >
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.mcp" />{{
+            'Let MCP agents read it (never write)' | transloco
+          }}</label
+        >
+        @if (model().mcp) {
+          <label class="field"
+            >{{ 'Fields hidden from MCP agents' | transloco
+            }}<input [formField]="fields.mcpHidden" placeholder="email, phone" spellcheck="false"
+          /></label>
+        }
       </div>
 
       <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">

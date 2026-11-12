@@ -38,7 +38,7 @@ fn fill(text: &str, variables: &Map<String, Value>) -> String {
 
 /// A saved connection as the operations receive it: variables filled where the interface
 /// fills them, vault references left for the application to resolve.
-fn connection(value: &Value, variables: &Map<String, Value>) -> Value {
+pub(crate) fn connection(value: &Value, variables: &Map<String, Value>) -> Value {
     let mut connection = Map::new();
     for (key, filled) in [
         ("uri", true),

@@ -40,6 +40,7 @@ pub mod scripts;
 pub mod secret_hosts;
 mod shell;
 pub mod socketio;
+pub mod sql;
 pub mod tls;
 mod token_requests;
 pub mod transport;

@@ -55,20 +55,7 @@
             [attr.aria-current]="tab() === option ? 'page' : null"
             (click)="tab.set(option)"
           >
-            {{
-              (option === 'documents'
-                ? 'Documents'
-                : option === 'aggregations'
-                  ? 'Aggregations'
-                  : option === 'schema'
-                    ? 'Schema'
-                    : option === 'indexes'
-                      ? 'Indexes'
-                      : option === 'explain'
-                        ? 'Explain'
-                        : 'Profiler'
-              ) | transloco
-            }}
+            {{ tabLabels[option] | transloco }}
           </button>
         }
       </nav>
@@ -76,6 +63,9 @@
       @switch (tab()) {
         @case ('aggregations') {
           <app-mongo-aggregations [explorer]="this" />
+        }
+        @case ('sql') {
+          <app-mongo-sql [explorer]="this" />
         }
         @case ('schema') {
           <app-mongo-schema [explorer]="this" />
@@ -154,6 +144,12 @@
     (confirmed)="writes.answer($event)"
     (cancelled)="writes.cancel()"
   />
+}
+@if (code(); as query) {
+  <app-mongo-code [query]="query" (closed)="code.set(undefined)" />
+}
+@if (comparisons.draft(); as draft) {
+  <app-mongo-compare [comparisons]="comparisons" [draft]="draft" />
 }
 @if (transfers.draft(); as draft) {
   <app-mongo-transfer [transfers]="transfers" [draft]="draft" />

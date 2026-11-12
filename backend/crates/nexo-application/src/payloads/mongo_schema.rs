@@ -62,6 +62,15 @@ payload! {
     }
 }
 
+payload! {
+    /// `mongo.sql`: the MongoDB query a SQL `SELECT` stands for (a `find` or an aggregation
+    /// pipeline), to show and run; nothing runs here.
+    closed MongoSqlPayload {
+        required { sql "sql": String => "string" }
+        optional { workspace "workspace": String => "string" }
+    }
+}
+
 /// Which writes a validator checks: none, every one, or those of documents already valid.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]

@@ -166,6 +166,32 @@
     }
   </ul>
 
+  <h3 class="mongo-section">{{ 'Saved comparisons' | transloco }}</h3>
+  <ul>
+    @for (comparison of explorer().comparisons.saved(); track comparison.id) {
+      <li class="row mongo-saved">
+        <button
+          type="button"
+          class="mongo-tree-item grow"
+          [class.selected]="comparison.id === explorer().comparisons.savedId()"
+          (click)="explorer().comparisons.openSaved(comparison)"
+        >
+          {{ comparison.name }}
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'mongo.deleteComparison' | transloco: { v0: comparison.name }"
+          (click)="explorer().comparisons.remove(comparison)"
+        >
+          ×
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'Save a comparison to run it again.' | transloco }}</li>
+    }
+  </ul>
+
   <h3 class="mongo-section">{{ 'Saved transfers' | transloco }}</h3>
   <ul>
     @for (transfer of explorer().transfers.saved(); track transfer.id) {

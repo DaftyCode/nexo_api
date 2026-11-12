@@ -28,6 +28,9 @@ export interface PanelModel extends ConnectionForm {
   folder: string;
   color: string;
   readOnly: boolean;
+  /** Exposed to MCP agents, read-only, and the fields they never see. */
+  mcp: boolean;
+  mcpHidden: string;
   /** Typed here; blank keeps what the vault has. */
   password: string;
   caPem: string;
@@ -45,6 +48,8 @@ function emptyModel(): PanelModel {
     folder: '',
     color: '',
     readOnly: false,
+    mcp: false,
+    mcpHidden: '',
     password: '',
     caPem: '',
     certPem: '',
@@ -133,6 +138,8 @@ export class MongoPanel {
       folder: value.folder ?? '',
       color: value.color ?? '',
       readOnly: !!value.readOnly,
+      mcp: !!value.mcp,
+      mcpHidden: (value.mcpHidden ?? []).join(', '),
       caPem: value.caPem ?? '',
       certPem: value.certPem ?? '',
     });
@@ -167,6 +174,10 @@ export class MongoPanel {
   private value(): MongoConnectionValue {
     const model = this.model();
     const stored = this.stored();
+    const hidden = model.mcpHidden
+      .split(',')
+      .map((name) => name.trim())
+      .filter(Boolean);
     return {
       uri: this.uri(),
       ...(stored.password && model.auth !== 'none' ? { password: stored.password } : {}),
@@ -176,6 +187,8 @@ export class MongoPanel {
       ...(model.folder.trim() ? { folder: model.folder.trim() } : {}),
       ...(model.color ? { color: model.color } : {}),
       ...(model.readOnly ? { readOnly: true } : {}),
+      ...(model.mcp ? { mcp: true } : {}),
+      ...(model.mcp && hidden.length ? { mcpHidden: hidden } : {}),
     };
   }
   private typed() {

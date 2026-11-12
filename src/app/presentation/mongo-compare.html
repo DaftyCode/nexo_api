@@ -1,0 +1,186 @@
+<div class="mongo-backdrop">
+  <form
+    class="feature-card mongo-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="mongo-compare-title"
+    (submit)="$event.preventDefault(); comparisons().run(draft())"
+  >
+    <h2 id="mongo-compare-title">
+      {{ 'mongo.compare.title' | transloco: { v0: draft().source()?.collection } }}
+    </h2>
+    <div class="row mongo-inline">
+      <label class="field grow"
+        >{{ 'Connection' | transloco }}
+        <select [formField]="draft().fields.connection">
+          @for (connection of draft().connections(); track connection.id) {
+            <option [value]="connection.id">{{ connection.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="field grow"
+        >{{ 'Database' | transloco
+        }}<input [formField]="draft().fields.database" spellcheck="false"
+      /></label>
+      <label class="field grow"
+        >{{ 'Collection' | transloco
+        }}<input [formField]="draft().fields.collection" spellcheck="false"
+      /></label>
+    </div>
+    <div class="row mongo-inline">
+      <label class="field grow"
+        >{{ 'Filter of both' | transloco
+        }}<input
+          [formField]="draft().fields.filter"
+          placeholder="{ status: 'A' }"
+          spellcheck="false"
+      /></label>
+      <label class="field"
+        >{{ 'Key' | transloco
+        }}<input [formField]="draft().fields.key" placeholder="_id" spellcheck="false"
+      /></label>
+      <label class="field grow"
+        >{{ 'Fields left out' | transloco
+        }}<input [formField]="draft().fields.ignore" placeholder="updatedAt" spellcheck="false"
+      /></label>
+    </div>
+    @if (draft().error(); as error) {
+      <p class="mongo-problem" role="alert">{{ error | transloco }}</p>
+    }
+    @if (draft().phase() === 'running') {
+      <div class="row mongo-actions">
+        <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+        <button type="button" class="button danger" (click)="comparisons().cancel()">
+          {{ 'Cancel' | transloco }}
+        </button>
+      </div>
+    }
+    @if (draft().result(); as result) {
+      <div class="row mongo-actions" role="group" [attr.aria-label]="'Differences' | transloco">
+        <button
+          type="button"
+          class="button small"
+          [class.primary]="draft().shown() === 'all'"
+          [attr.aria-pressed]="draft().shown() === 'all'"
+          (click)="draft().shown.set('all'); draft().chosen.set(-1)"
+        >
+          {{ 'All' | transloco }}
+        </button>
+        @for (kind of kinds; track kind) {
+          <button
+            type="button"
+            class="button small"
+            [class.primary]="draft().shown() === kind"
+            [attr.aria-pressed]="draft().shown() === kind"
+            (click)="draft().shown.set(kind); draft().chosen.set(-1)"
+          >
+            {{ labels[kind] | transloco }} · {{ count(kind) }}
+          </button>
+        }
+        <span class="muted" data-testid="compare-equal">
+          {{ 'mongo.compare.equal' | transloco: { v0: count('equal'), v1: result.elapsedMs } }}
+        </span>
+      </div>
+      @if (result.counts.withoutKey) {
+        <p class="muted">
+          {{
+            'mongo.compare.withoutKey' | transloco: { v0: result.counts.withoutKey, v1: result.key }
+          }}
+        </p>
+      }
+      @if (result.truncated) {
+        <p class="muted">
+          {{ 'mongo.compare.truncated' | transloco: { v0: result.differences.length } }}
+        </p>
+      }
+      <ul
+        class="mongo-transfer-failures"
+        tabindex="0"
+        [attr.aria-label]="'Differences' | transloco"
+      >
+        @for (difference of draft().differences(); track $index; let index = $index) {
+          <li>
+            <button
+              type="button"
+              class="text-button"
+              [attr.aria-pressed]="draft().chosen() === index"
+              (click)="draft().chosen.set(index)"
+            >
+              {{ result.key }}: {{ text(difference.key) }}
+            </button>
+            <span class="muted">{{ labels[difference.kind] | transloco }}</span>
+          </li>
+        } @empty {
+          <li class="muted">{{ 'No differences' | transloco }}</li>
+        }
+      </ul>
+      @if (chosen()?.fields; as fields) {
+        <table class="mongo-schema-table" [attr.aria-label]="'Fields that differ' | transloco">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Field' | transloco }}</th>
+              <th scope="col">{{ 'This collection' | transloco }}</th>
+              <th scope="col">{{ 'The other' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (field of fields; track field.path) {
+              <tr>
+                <th scope="row">{{ field.path }}</th>
+                <td>{{ text(field.source) }}</td>
+                <td>{{ text(field.target) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      @if (draft().synced(); as synced) {
+        <p class="muted" role="status">
+          {{
+            'mongo.compare.synced'
+              | transloco: { v0: synced.inserted, v1: synced.replaced, v2: synced.deleted }
+          }}
+        </p>
+      }
+      @if (draft().writable()) {
+        <fieldset class="mongo-options">
+          <legend>{{ 'Make the other collection like this one' | transloco }}</legend>
+          <label class="check-field"
+            ><input type="checkbox" [formField]="draft().fields.remove" />{{
+              'Also delete what only the other has' | transloco
+            }}</label
+          >
+          <p>{{ 'mongo.compare.preview' | transloco: preview() }}</p>
+          <div class="row mongo-inline">
+            <label class="field"
+              >{{ 'mongo.typeName' | transloco: { v0: draft().model().collection } }}
+              <input [formField]="draft().fields.confirm" spellcheck="false" autocomplete="off"
+            /></label>
+            <button
+              type="button"
+              class="button danger"
+              [disabled]="draft().phase() === 'running'"
+              (click)="comparisons().sync(draft())"
+            >
+              {{ 'Sync' | transloco }}
+            </button>
+          </div>
+        </fieldset>
+      }
+    }
+    <div class="row mongo-actions mongo-transfer-save">
+      <label class="field grow"
+        >{{ 'Comparison name' | transloco }}<input [formField]="draft().fields.name"
+      /></label>
+      <button type="button" class="button" (click)="comparisons().save(draft())">
+        {{ (comparisons().savedId() ? 'Save' : 'Save comparison') | transloco }}
+      </button>
+      <button type="submit" class="button primary" [disabled]="draft().phase() === 'running'">
+        {{ 'Compare' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="comparisons().close()">
+        {{ 'Close' | transloco }}
+      </button>
+    </div>
+  </form>
+</div>

@@ -35,9 +35,13 @@ pub enum DocumentKind {
     /// as typed (also those turned off) and options.
     #[serde(rename = "mongo-aggregation")]
     Aggregation,
+    /// A saved comparison of two collections (MongoDB): both sides, the filter, the key and
+    /// the fields left out, run again by hand.
+    #[serde(rename = "mongo-compare")]
+    Comparison,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 17] = [
+    pub const ALL: [DocumentKind; 18] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -55,6 +59,7 @@ impl DocumentKind {
         Self::DatabaseChange,
         Self::Transfer,
         Self::Aggregation,
+        Self::Comparison,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -75,6 +80,7 @@ impl DocumentKind {
             Self::DatabaseChange => "database-change",
             Self::Transfer => "mongo-transfer",
             Self::Aggregation => "mongo-aggregation",
+            Self::Comparison => "mongo-compare",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

@@ -6,6 +6,7 @@
 mod kind;
 pub use kind::DocumentKind;
 
+pub mod diff;
 pub mod hosts;
 pub mod schema;
 use serde::{Deserialize, Serialize};

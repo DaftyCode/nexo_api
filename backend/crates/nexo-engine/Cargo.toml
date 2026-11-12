@@ -16,6 +16,9 @@ uuid.workspace = true
 tokio.workspace = true
 reqwest.workspace = true
 rusqlite.workspace = true
+# SQL read by the MongoDB SQL query (M-12). Without its default features: no `recursive`
+# (which brings `stacker` and a C build); the engine limits the size of the SQL instead.
+sqlparser = { version = "0.64.0", default-features = false, features = ["std"] }
 tracing.workspace = true
 futures-util.workspace = true
 base64.workspace = true

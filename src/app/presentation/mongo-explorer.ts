@@ -34,6 +34,12 @@ import { AggregationEditor } from './mongo-aggregations/editor';
 import { MongoSchema } from './mongo-schema';
 import { SchemaExplorer } from './mongo-schema/explorer';
 import { MongoShell } from './mongo-shell';
+import { MongoCode } from './mongo-code';
+import { MongoSql } from './mongo-sql';
+import { FilterBuilder } from './mongo-explorer/blocks';
+import { MongoCompare } from './mongo-compare';
+import { MongoComparisons } from './mongo-compare/comparisons';
+import type { CodeQuery } from '../domain/mongo-codegen';
 import { MongoConsole } from './mongo-shell/console';
 import { fieldNames } from '../domain/mongo-schema';
 import { MongoTransfers } from './mongo-transfer/transfers';
@@ -54,7 +60,18 @@ import type { QueryTarget } from '../application/mongo-use-cases';
 
 /** The views of a collection. */
 export type ExplorerTab =
-  'documents' | 'aggregations' | 'schema' | 'indexes' | 'explain' | 'profiler';
+  'documents' | 'aggregations' | 'sql' | 'schema' | 'indexes' | 'explain' | 'profiler';
+
+/** The name of each view of a collection. */
+export const TAB_LABELS: Record<ExplorerTab, string> = {
+  documents: 'Documents',
+  aggregations: 'Aggregations',
+  sql: 'SQL',
+  schema: 'Schema',
+  indexes: 'Indexes',
+  explain: 'Explain',
+  profiler: 'Profiler',
+};
 
 interface QueryModel extends QueryForm {
   /** Name and folder to save the query with. */
@@ -84,6 +101,9 @@ const SUGGESTED = 50;
     MongoAggregations,
     MongoSchema,
     MongoShell,
+    MongoCode,
+    MongoSql,
+    MongoCompare,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -127,8 +147,8 @@ export class MongoExplorer {
   /** The views a collection has: a view has no indexes of its own. */
   protected readonly tabs = computed<ExplorerTab[]>(() =>
     this.target()?.kind === 'view'
-      ? ['documents', 'aggregations', 'schema', 'explain', 'profiler']
-      : ['documents', 'aggregations', 'schema', 'indexes', 'explain', 'profiler'],
+      ? ['documents', 'aggregations', 'sql', 'schema', 'explain', 'profiler']
+      : ['documents', 'aggregations', 'sql', 'schema', 'indexes', 'explain', 'profiler'],
   );
   readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
   /** A read-only connection shows no write: the backend refuses them anyway. */
@@ -141,6 +161,10 @@ export class MongoExplorer {
   readonly transfers = new MongoTransfers(this, inject(TRANSFER_FILES));
   readonly aggregations = new AggregationEditor(this, inject(Injector));
   readonly schema = new SchemaExplorer(this, inject(Injector), inject(TRANSFER_FILES));
+  /** The query or pipeline whose driver code is shown. */
+  readonly code = signal<CodeQuery | undefined>(undefined);
+  readonly blocks = new FilterBuilder(this);
+  readonly comparisons = new MongoComparisons(this);
   /** The shell of the connection, shown instead of the collection while open. */
   readonly shellOpen = signal(false);
   readonly shell = new MongoConsole(this, inject(Injector));
@@ -176,6 +200,7 @@ export class MongoExplorer {
       this.pager.closeCursor();
       this.aggregations.runner.reset();
       this.transfers.close();
+      this.comparisons.close();
     });
   }
 
@@ -237,6 +262,25 @@ export class MongoExplorer {
       }
       throw error;
     }
+  }
+  protected readonly tabLabels = TAB_LABELS;
+  /** Chooses a collection by name, listing its database first, without running a query. */
+  async openCollection(database: string, name: string) {
+    if (!this.browser.collections()[database]) await this.browser.loadCollections(database);
+    const found = this.browser.listed(database).find((c) => c.name === name) ?? {
+      name,
+      kind: 'collection' as const,
+      capped: false,
+    };
+    this.choose(database, found, false);
+  }
+  /** Driver code for the query of the bar. */
+  showQueryCode() {
+    const target = this.target();
+    const query = this.query();
+    if (!target || !query) return;
+    const { database, collection } = target;
+    this.code.set({ kind: 'find', database, collection, ...query });
   }
   /** Opens the shell of the connection. */
   openShell() {

@@ -46,6 +46,12 @@ export interface MongoConnection {
   keyPem?: string;
 }
 
+export interface MongoCollectionRef {
+  connection: MongoConnection;
+  database: string;
+  collection: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -597,6 +603,37 @@ export interface MongoShellPayload {
   variables?: Record<string, string>;
 }
 
+export interface MongoSqlPayload {
+  sql: string;
+  workspace?: string;
+}
+
+export interface MongoComparePayload {
+  id: string;
+  source: MongoCollectionRef;
+  target: MongoCollectionRef;
+  workspace?: string;
+  filter?: object;
+  key?: string;
+  ignore?: readonly string[];
+  kept?: number;
+}
+
+export interface MongoSyncPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  id: string;
+  database: string;
+  collection: string;
+  source: MongoCollectionRef;
+  confirm: string;
+  workspace?: string;
+  filter?: object;
+  key?: string;
+  ignore?: readonly string[];
+  remove?: boolean;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -677,6 +714,9 @@ export interface OperationPayloads {
   'mongo.collection.validator': MongoCollectionValidatorPayload;
   'mongo.watch': MongoWatchPayload;
   'mongo.shell': MongoShellPayload;
+  'mongo.sql': MongoSqlPayload;
+  'mongo.compare': MongoComparePayload;
+  'mongo.sync': MongoSyncPayload;
 }
 
 /** The payload of an operation. */

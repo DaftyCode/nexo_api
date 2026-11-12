@@ -1,0 +1,44 @@
+<p class="muted">
+  {{
+    'A SELECT of this database: WHERE, ORDER BY, LIMIT, OFFSET, GROUP BY with COUNT, SUM, AVG, MIN and MAX, HAVING, and INNER or LEFT JOIN by equality. It becomes the MongoDB query shown below, which runs only when you open it.'
+      | transloco
+  }}
+</p>
+<app-code-editor
+  size="small"
+  [value]="sql()"
+  (valueChange)="change($event)"
+  [placeholder]="placeholder()"
+  [label]="'SQL' | transloco"
+/>
+<div class="row mongo-actions">
+  @if (running()) {
+    <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+  } @else {
+    <button type="button" class="button primary" (click)="translate()">
+      {{ 'Translate' | transloco }}
+    </button>
+  }
+</div>
+@if (problem(); as problem) {
+  <p class="mongo-problem" role="alert">{{ problem | transloco }}</p>
+}
+@if (translated(); as query) {
+  <section [attr.aria-label]="'MongoDB query' | transloco">
+    <h3 class="mongo-section">
+      {{ (query.kind === 'aggregate' ? 'Aggregation pipeline' : 'Find') | transloco }}
+    </h3>
+    <app-code-editor
+      size="small"
+      language="javascript"
+      [value]="mongo()"
+      [readonly]="true"
+      [label]="'MongoDB query' | transloco"
+    />
+    <div class="row mongo-actions">
+      <button type="button" class="button primary" (click)="open()">
+        {{ (query.kind === 'aggregate' ? 'Run in Aggregations' : 'Run in Documents') | transloco }}
+      </button>
+    </div>
+  </section>
+}
