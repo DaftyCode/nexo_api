@@ -44,3 +44,22 @@ export async function nextAuthorizationUrl(page) {
   // Wrapped: awaiting this function must not wait for the sign-in itself.
   return { url: captured.finally(() => page.unroute(pattern, handler)) };
 }
+
+/**
+ * Leaves the MongoDB explorer and deletes the connection it browsed. The tests share one
+ * server, so a connection left behind would show up in the list of the next one.
+ */
+export async function deleteMongoConnection(page, name) {
+  await page
+    .getByRole('navigation', { name: 'Databases' })
+    .getByRole('button', { name: '← Connections' })
+    .click();
+  const list = page.getByRole('navigation', { name: 'Connections' });
+  await list.getByRole('button', { name, exact: true }).click();
+  page.once('dialog', (confirm) => confirm.accept());
+  await page
+    .getByRole('region', { name: 'Connection', exact: true })
+    .getByRole('button', { name: 'Delete connection' })
+    .click();
+  await expect(list.getByRole('button', { name, exact: true })).toHaveCount(0);
+}

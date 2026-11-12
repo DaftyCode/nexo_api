@@ -23,6 +23,55 @@ pub struct FindRequest {
     pub page_size: u64,
 }
 
+/// Aggregation stages that write their results to a collection: they run only with an
+/// aggregation that writes, never in a preview, an explain or a read.
+pub const WRITING_STAGES: [&str; 2] = ["$out", "$merge"];
+
+/// The writing stage of a stage document (`{$out: …}` or `{$merge: …}`), if it is one.
+pub fn writing_stage(stage: &Value) -> Option<&'static str> {
+    let fields = stage.as_object()?;
+    WRITING_STAGES
+        .into_iter()
+        .find(|name| fields.contains_key(*name))
+}
+
+/// Options of an aggregation. Collation and hint are Extended JSON.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct AggregateOptions {
+    pub collation: Option<Value>,
+    /// An index name or its keys.
+    pub hint: Option<Value>,
+    /// Lets stages that need more memory than the server allows write temporary files.
+    pub allow_disk_use: bool,
+    /// How long the server may run it, in milliseconds; the adapter's limit when absent.
+    pub max_time_ms: Option<u64>,
+}
+
+/// An aggregation pipeline that only reads, its results read a page at a time like a
+/// `find`. The application has already refused the stages that write.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct AggregateRequest {
+    /// Chosen by the client, to cancel it while it runs.
+    pub id: String,
+    pub database: String,
+    pub collection: String,
+    /// Each stage in Extended JSON.
+    pub pipeline: Vec<Value>,
+    pub options: AggregateOptions,
+    pub page_size: u64,
+}
+
+/// An aggregation whose last stage (`$out` or `$merge`) writes its results. The application
+/// has already checked that the connection may write and that the person confirmed it.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct AggregateWrite {
+    pub id: String,
+    pub database: String,
+    pub collection: String,
+    pub pipeline: Vec<Value>,
+    pub options: AggregateOptions,
+}
+
 /// A page of documents.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]

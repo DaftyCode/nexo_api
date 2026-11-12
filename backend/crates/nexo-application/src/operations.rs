@@ -96,6 +96,8 @@ operations!(
         MongoProfileSet => "mongo.profile.set",
         MongoProfileEntries => "mongo.profile.entries",
         MongoImport => "mongo.import",
+        MongoAggregate => "mongo.aggregate",
+        MongoAggregateWrite => "mongo.aggregate.write",
     }
 );
 impl Operation {
@@ -130,6 +132,8 @@ impl Operation {
                 | Self::MongoProfileSet
                 | Self::MongoProfileEntries
                 | Self::MongoImport
+                | Self::MongoAggregate
+                | Self::MongoAggregateWrite
         )
     }
     /// Database operations that change data or the server's settings: refused on a
@@ -151,6 +155,7 @@ impl Operation {
                 | Self::MongoIndexDrop
                 | Self::MongoProfileSet
                 | Self::MongoImport
+                | Self::MongoAggregateWrite
         )
     }
     /// Operations whose data belongs to a workspace and need one.

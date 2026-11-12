@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   computed,
   effect,
   inject,
@@ -28,6 +29,8 @@ import { MongoPager } from './mongo-explorer/pager';
 import { MongoExplorerDocuments } from './mongo-explorer-documents';
 import { MongoExplorerSidebar } from './mongo-explorer-sidebar';
 import { MongoTransfer } from './mongo-transfer';
+import { MongoAggregations } from './mongo-aggregations';
+import { AggregationEditor } from './mongo-aggregations/editor';
 import { MongoTransfers } from './mongo-transfer/transfers';
 import { MONGO, TRANSFER_FILES } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
@@ -45,7 +48,7 @@ import {
 import type { QueryTarget } from '../application/mongo-use-cases';
 
 /** The views of a collection. */
-export type ExplorerTab = 'documents' | 'indexes' | 'explain' | 'profiler';
+export type ExplorerTab = 'documents' | 'aggregations' | 'indexes' | 'explain' | 'profiler';
 
 interface QueryModel extends QueryForm {
   /** Name and folder to save the query with. */
@@ -70,6 +73,7 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
     MongoExplorerSidebar,
     MongoExplorerDocuments,
     MongoTransfer,
+    MongoAggregations,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -113,8 +117,8 @@ export class MongoExplorer {
   /** The views a collection has: a view has no indexes of its own. */
   protected readonly tabs = computed<ExplorerTab[]>(() =>
     this.target()?.kind === 'view'
-      ? ['documents', 'explain', 'profiler']
-      : ['documents', 'indexes', 'explain', 'profiler'],
+      ? ['documents', 'aggregations', 'explain', 'profiler']
+      : ['documents', 'aggregations', 'indexes', 'explain', 'profiler'],
   );
   readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
   /** A read-only connection shows no write: the backend refuses them anyway. */
@@ -125,6 +129,7 @@ export class MongoExplorer {
   readonly library = new MongoQueryLibrary(this);
   readonly explains = new MongoExplains(this);
   readonly transfers = new MongoTransfers(this, inject(TRANSFER_FILES));
+  readonly aggregations = new AggregationEditor(this, inject(Injector));
   readonly writes = new MongoWrites({
     state: this.state,
     cases: () => this.mongo(),
@@ -151,6 +156,7 @@ export class MongoExplorer {
     });
     inject(DestroyRef).onDestroy(() => {
       this.pager.closeCursor();
+      this.aggregations.runner.reset();
       this.transfers.close();
     });
   }
@@ -190,6 +196,7 @@ export class MongoExplorer {
     if (collection.kind === 'view' && this.tab() === 'indexes') this.tab.set('documents');
     if (changed) {
       this.pager.reset();
+      this.aggregations.runner.reset();
       this.browser.stats.set(undefined);
       if (collection.kind !== 'view') void this.browser.loadStats();
     }

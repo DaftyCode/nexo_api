@@ -1,0 +1,112 @@
+<article
+  class="mongo-stage"
+  [class.off]="!stage()?.enabled"
+  [class.writes]="writes()"
+  [attr.aria-label]="'mongo.stage.label' | transloco: { v0: label() }"
+>
+  <header class="row mongo-stage-head">
+    <span class="mongo-stage-number" aria-hidden="true">{{ index() + 1 }}</span>
+    <label class="field mongo-stage-operator"
+      >{{ 'Operator' | transloco }}
+      <input
+        [formField]="field().operator"
+        list="mongo-stage-operators"
+        spellcheck="false"
+        autocomplete="off"
+    /></label>
+    @if (writes()) {
+      <span class="mongo-badge danger">{{ 'Writes data' | transloco }}</span>
+    }
+    <span class="grow"></span>
+    <label class="check"
+      ><input type="checkbox" [formField]="field().enabled" />{{
+        'Run this stage' | transloco
+      }}</label
+    >
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!!editor().runner.running()"
+      [attr.aria-label]="'mongo.stage.preview' | transloco: { v0: label() }"
+      (click)="editor().runner.preview(index())"
+    >
+      {{ 'Preview' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [disabled]="index() === 0"
+      [attr.aria-label]="'mongo.stage.up' | transloco: { v0: label() }"
+      (click)="editor().move(index(), -1)"
+    >
+      ↑
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [disabled]="index() === count() - 1"
+      [attr.aria-label]="'mongo.stage.down' | transloco: { v0: label() }"
+      (click)="editor().move(index(), 1)"
+    >
+      ↓
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'mongo.stage.remove' | transloco: { v0: label() }"
+      (click)="editor().remove(index())"
+    >
+      ×
+    </button>
+  </header>
+  <app-code-editor
+    size="small"
+    language="javascript"
+    [formField]="field().body"
+    [label]="'mongo.stage.value' | transloco: { v0: label() }"
+  />
+  @if (problem(); as problem) {
+    <p class="mongo-problem" role="alert">
+      @if (problem.key === 'mongo.syntax') {
+        {{ $any(problem.params['v0']) | transloco }}
+        @if (problem.params['v3']) {
+          ({{ problem.params['v3'] }})
+        }
+        —
+        {{ 'mongo.position' | transloco: { v0: problem.params['v1'], v1: problem.params['v2'] } }}
+      } @else {
+        {{ problem.key | transloco: problem.params }}
+      }
+    </p>
+  }
+  @if (editor().runner.previewing() === index()) {
+    <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+  } @else if (preview(); as preview) {
+    <div
+      class="mongo-stage-preview"
+      role="region"
+      tabindex="0"
+      [attr.aria-label]="'mongo.stage.output' | transloco: { v0: label() }"
+    >
+      @if (preview.writes) {
+        <p class="muted">
+          {{ 'This stage writes: a preview never runs it. Run the pipeline to write.' | transloco }}
+        </p>
+      } @else if (preview.error) {
+        <p class="mongo-problem" role="alert">{{ preview.error | transloco }}</p>
+      } @else if (preview.documents) {
+        <p class="muted" role="status">
+          {{
+            'mongo.stage.shown' | transloco: { v0: preview.documents.length, v1: preview.elapsedMs }
+          }}
+        </p>
+        <app-mongo-results
+          [documents]="preview.documents"
+          [view]="editor().explorer.view()"
+          [format]="editor().explorer.format()"
+          (copied)="editor().explorer.notice.set($event)"
+        />
+      }
+    </div>
+  }
+</article>

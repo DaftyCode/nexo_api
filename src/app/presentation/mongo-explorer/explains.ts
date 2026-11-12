@@ -38,6 +38,10 @@ export class MongoExplains {
   entry({ database, collection, query, pipeline }: Explainable) {
     void this.run({ database, collection }, pipeline ? { pipeline } : { query: query ?? {} }, true);
   }
+  /** How the server runs an aggregation of the Aggregations tab, run and measured. */
+  aggregation(target: QueryTarget, explained: ExplainedQuery) {
+    void this.run(target, explained, true);
+  }
   /** Explains again what is shown, measured or only planned. */
   again(executed: boolean) {
     const shown = this.shown();

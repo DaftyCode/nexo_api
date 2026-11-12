@@ -1,3 +1,4 @@
+import { readingPipeline } from '../../domain/mongo-aggregation';
 import { DocumentPage } from '../../domain/mongo-query';
 import { csvRecord, csvRow, documentFields, jsonDocument } from '../../domain/mongo-transfer';
 import { TransferTarget } from '../ports';
@@ -10,6 +11,36 @@ import {
   TransferOutcome,
   emptyOutcome,
 } from './transfer-types';
+
+/** The first page of the query or the pipeline of an export, `limit` documents at most. */
+function firstPage(
+  api: MongoPorts,
+  source: ExportSource,
+  id: string,
+  pageSize: number,
+  limit?: number,
+): Promise<DocumentPage> {
+  const { workspace, connection, scopes, target, query, pipeline } = source;
+  const where = {
+    workspace,
+    connection: savedConnection(connection, scopes),
+    database: target.database,
+    collection: target.collection,
+    id,
+    pageSize,
+  };
+  if (pipeline)
+    return api.execute<DocumentPage>('mongo.aggregate', {
+      ...where,
+      ...pipeline.options,
+      pipeline: [...readingPipeline(pipeline.pipeline), ...(limit ? [{ $limit: limit }] : [])],
+    });
+  return api.execute<DocumentPage>('mongo.find', {
+    ...where,
+    ...query,
+    ...(limit ? { limit } : {}),
+  });
+}
 
 /**
  * The documents of an export, page by page through an open cursor; the page shown is one
@@ -24,17 +55,9 @@ export async function* exportPages(
     yield source.page;
     return;
   }
-  const { workspace, connection, scopes, target, query } = source;
+  const { workspace } = source;
   const id = () => `transfer-${crypto.randomUUID()}`;
-  let page = await api.execute<DocumentPage>('mongo.find', {
-    workspace,
-    connection: savedConnection(connection, scopes),
-    database: target.database,
-    collection: target.collection,
-    ...query,
-    id: id(),
-    pageSize: TRANSFER_BATCH,
-  });
+  let page = await firstPage(api, source, id(), TRANSFER_BATCH);
   try {
     for (;;) {
       if (page.documents.length) yield page.documents;
@@ -55,16 +78,7 @@ export async function* exportPages(
 /** The fields of the first documents of a collection or query, for the columns of a CSV. */
 export async function sampleFields(api: MongoPorts, source: ExportSource): Promise<string[]> {
   if (source.page) return documentFields(source.page);
-  const page = await api.execute<DocumentPage>('mongo.find', {
-    workspace: source.workspace,
-    connection: savedConnection(source.connection, source.scopes),
-    database: source.target.database,
-    collection: source.target.collection,
-    ...source.query,
-    id: `fields-${crypto.randomUUID()}`,
-    pageSize: 100,
-    limit: 100,
-  });
+  const page = await firstPage(api, source, `fields-${crypto.randomUUID()}`, 100, 100);
   if (page.cursor)
     await api
       .execute('mongo.close', { workspace: source.workspace, cursor: page.cursor })

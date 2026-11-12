@@ -3,6 +3,13 @@
  * and the transfers saved in a workspace to run them again.
  */
 import { isPlain } from './bson';
+import {
+  AggregationOptions,
+  PipelineStage,
+  aggregationValue,
+  emptyAggregationOptions,
+  storedStages,
+} from './mongo-aggregation';
 import { QueryForm, emptyQueryForm } from './mongo-query';
 
 export type { CsvColumn, ImportType } from './mongo-transfer/cells';
@@ -22,8 +29,11 @@ import type { CsvColumn } from './mongo-transfer/cells';
 export type TransferFormat = 'json' | 'jsonl' | 'csv';
 /** Extended JSON: canonical keeps every type; relaxed writes plain numbers and dates. */
 export type JsonFlavour = 'canonical' | 'relaxed';
-/** What an export reads: the whole collection, the query of the bar, or the page shown. */
-export type ExportScope = 'collection' | 'query' | 'page';
+/**
+ * What an export reads: the whole collection, the query of the bar, an aggregation pipeline
+ * (without the stage that writes), or the page shown.
+ */
+export type ExportScope = 'collection' | 'query' | 'aggregation' | 'page';
 /** How an import writes: inserts, replaces by some fields, or empties the collection first. */
 export type ImportMode = 'insert' | 'upsert' | 'replace';
 
@@ -50,6 +60,9 @@ export interface TransferValue {
   /** Export: what it reads (the query as typed), and the fields of a CSV in their order. */
   scope: ExportScope;
   query: QueryForm;
+  /** Export of an aggregation: its stages as typed, and its options. */
+  pipeline: PipelineStage[];
+  pipelineOptions: AggregationOptions;
   fields: string[];
   /** Export: to a file, or copied to a collection of a saved connection. */
   destination: 'file' | 'collection';
@@ -76,6 +89,8 @@ export function emptyTransfer(
     flavour: 'canonical',
     scope: 'collection',
     query: emptyQueryForm(),
+    pipeline: [],
+    pipelineOptions: emptyAggregationOptions(),
     fields: [],
     destination: 'file',
     to: { connection, database, collection: '' },
@@ -114,8 +129,10 @@ export function transferValue(value: unknown): TransferValue {
     ...base,
     format: oneOf(stored['format'], TRANSFER_FORMATS, 'json'),
     flavour: oneOf(stored['flavour'], ['canonical', 'relaxed'], 'canonical'),
-    scope: oneOf(stored['scope'], ['collection', 'query', 'page'], 'collection'),
+    scope: oneOf(stored['scope'], ['collection', 'query', 'aggregation', 'page'], 'collection'),
     query: fieldsOf(stored['query'], base.query),
+    pipeline: storedStages(stored['pipeline']),
+    pipelineOptions: aggregationValue({ options: stored['pipelineOptions'] }).options,
     fields: texts(stored['fields']),
     destination: oneOf(stored['destination'], ['file', 'collection'], 'file'),
     to: fieldsOf(stored['to'], base.to),

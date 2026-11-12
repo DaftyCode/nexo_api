@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+.mongo-stages {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mongo-stage {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.mongo-stage.off {
+  opacity: 0.6;
+}
+.mongo-stage.writes {
+  border-color: var(--red);
+}
+.mongo-stage-head {
+  gap: 8px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.mongo-stage-number {
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 18px;
+}
+.mongo-stage-operator input {
+  width: 150px;
+  font-family: var(--mono, monospace);
+}
+.mongo-badge.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
+.mongo-stage-preview {
+  margin-top: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+.mongo-pipeline-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+.mongo-stage-write {
+  border: 1px solid var(--red);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: 8px 0;
+}
+.mongo-stage-write p {
+  margin: 0 0 6px;
+}
+.mongo-options {
+  margin: 8px 0;
+}
+.check {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}

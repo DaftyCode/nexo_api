@@ -526,6 +526,35 @@ export interface MongoImportPayload {
   writeConcern?: object;
 }
 
+export interface MongoAggregatePayload {
+  connection: MongoConnection;
+  id: string;
+  database: string;
+  collection: string;
+  pipeline: readonly object[];
+  workspace?: string;
+  collation?: object;
+  hint?: string | object;
+  allowDiskUse?: boolean;
+  maxTimeMS?: number;
+  pageSize?: number;
+}
+
+export interface MongoAggregateWritePayload {
+  connection: MongoConnection;
+  connectionId: string;
+  id: string;
+  database: string;
+  collection: string;
+  pipeline: readonly object[];
+  confirm: string;
+  workspace?: string;
+  collation?: object;
+  hint?: string | object;
+  allowDiskUse?: boolean;
+  maxTimeMS?: number;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -600,6 +629,8 @@ export interface OperationPayloads {
   'mongo.profile.set': MongoProfileSetPayload;
   'mongo.profile.entries': MongoProfileEntriesPayload;
   'mongo.import': MongoImportPayload;
+  'mongo.aggregate': MongoAggregatePayload;
+  'mongo.aggregate.write': MongoAggregateWritePayload;
 }
 
 /** The payload of an operation. */

@@ -8,6 +8,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
+import { pipelineText, writes } from '../domain/mongo-aggregation';
 import { MongoTransferWrite } from './mongo-transfer-write';
 import type { TransferDraft } from './mongo-transfer/draft';
 import type { MongoTransfers } from './mongo-transfer/transfers';
@@ -32,6 +33,10 @@ export class MongoTransferExport {
       .filter(([, text]) => text.trim())
       .map(([field, text]) => `${field}: ${text.trim()}`)
       .join('\n'),
+  );
+  /** The pipeline exported, without the stage that writes, as typed. */
+  protected readonly pipelineText = computed(() =>
+    pipelineText(this.draft().pipeline.filter((stage) => !writes(stage))),
   );
   /** The fields found that the CSV does not write. */
   protected readonly left = computed(() => {

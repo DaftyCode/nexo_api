@@ -1,3 +1,4 @@
+mod aggregations;
 mod database;
 mod execute;
 mod imports;

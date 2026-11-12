@@ -71,6 +71,11 @@ impl Application {
                 };
                 answer(database.find(connection, request).await?)
             }
+            Operation::MongoAggregate => {
+                let sent: payloads::MongoConnection = read(payload["connection"].clone())?;
+                let connection = self.resolve_connection(sent, values).await?;
+                self.aggregate(payload, connection).await
+            }
             Operation::MongoMore => {
                 let payload: payloads::MongoMorePayload = read(payload)?;
                 answer(

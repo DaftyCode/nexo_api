@@ -41,7 +41,13 @@ export interface WriteWhere extends QueryTarget {
 }
 
 /** What an explain describes: a query of the query bar, or an aggregation pipeline. */
-export type ExplainedQuery = { query: BuiltQuery } | { pipeline: Record<string, unknown>[] };
+export type ExplainedQuery =
+  | { query: BuiltQuery }
+  | {
+      pipeline: Record<string, unknown>[];
+      collation?: Record<string, unknown>;
+      hint?: string | Record<string, unknown>;
+    };
 
 /**
  * A connection as the backend receives it: variables of the active environment replaced,

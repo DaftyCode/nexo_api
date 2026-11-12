@@ -62,6 +62,8 @@ export const EXECUTION_OPERATIONS = [
   'mongo.profile.set',
   'mongo.profile.entries',
   'mongo.import',
+  'mongo.aggregate',
+  'mongo.aggregate.write',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

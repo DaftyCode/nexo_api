@@ -28,10 +28,11 @@ use mongodb::{
     options::{ClientOptions, ServerAddress},
 };
 use nexo_application::ports::{
-    CollectionChange, CollectionStats, CollectionSummary, ConnectionReport, CountRequest,
-    DatabaseConnection, DatabaseHost, DatabaseSummary, DocumentDatabase, DocumentPage,
-    DocumentWrite, ExplainRequest, FindRequest, ImportBatch, ImportResult, IndexChange,
-    IndexDetail, NetworkPolicy, ProfileEntry, ProfileStatus, WriteResult, WriteTarget,
+    AggregateRequest, AggregateWrite, CollectionChange, CollectionStats, CollectionSummary,
+    ConnectionReport, CountRequest, DatabaseConnection, DatabaseHost, DatabaseSummary,
+    DocumentDatabase, DocumentPage, DocumentWrite, ExplainRequest, FindRequest, ImportBatch,
+    ImportResult, IndexChange, IndexDetail, NetworkPolicy, ProfileEntry, ProfileStatus,
+    WriteResult, WriteTarget,
 };
 use nexo_domain::{Error, Result};
 use std::{

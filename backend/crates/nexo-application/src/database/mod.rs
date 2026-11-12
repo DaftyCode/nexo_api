@@ -3,6 +3,7 @@
 //! those secrets go along to be checked against every server, and their values never come
 //! back in an error.
 mod admin;
+mod aggregate;
 mod connection;
 mod import;
 mod reads;
@@ -14,6 +15,8 @@ use crate::{Application, operations::Operation, vault::redact_error};
 use nexo_domain::{Error, Result};
 use serde_json::Value;
 
+#[cfg(test)]
+pub(crate) use aggregate::written;
 #[cfg(test)]
 pub(crate) use import::IMPORT_BATCH;
 pub use writes::CHANGE_LIMIT;

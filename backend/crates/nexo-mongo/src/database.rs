@@ -44,6 +44,22 @@ impl DocumentDatabase for MongoAdapter {
         let (client, _) = within(self.client(&connection)).await?;
         query::find(self, client, request).await
     }
+    async fn aggregate(
+        &self,
+        connection: DatabaseConnection,
+        request: AggregateRequest,
+    ) -> Result<DocumentPage> {
+        let (client, _) = within(self.client(&connection)).await?;
+        query::aggregate(self, client, request).await
+    }
+    async fn aggregate_write(
+        &self,
+        connection: DatabaseConnection,
+        request: AggregateWrite,
+    ) -> Result<u64> {
+        let (client, _) = within(self.client(&connection)).await?;
+        query::aggregate_write(self, client, request).await
+    }
     async fn more(&self, cursor: &str, id: &str, page_size: u64) -> Result<DocumentPage> {
         query::more(self, cursor, id, page_size).await
     }

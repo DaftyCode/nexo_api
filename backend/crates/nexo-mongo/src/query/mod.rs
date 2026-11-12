@@ -1,14 +1,17 @@
 //! Queries: `find` read a page at a time from a cursor that stays open between pages,
-//! `countDocuments`, and cancelling either while it runs.
+//! aggregations read the same way or written with `$out` and `$merge`, `countDocuments`, and
+//! cancelling any of them while it runs.
 //!
 //! Every query (and every explain) carries a `comment` with its identifier. Cancelling stops waiting for it,
 //! closes its cursor (the driver sends `killCursors` when a cursor is dropped) and, if the
 //! server is still running it, ends it with `killOp`.
 
+mod aggregate;
 mod cursor;
 mod options;
 
 use crate::{MongoAdapter, errors, limits, within};
+pub use aggregate::{aggregate, aggregate_write};
 use bson::{Bson, Document, RawDocument, RawDocumentBuf, doc};
 pub(crate) use cursor::guarded;
 use cursor::{keep, read_page};

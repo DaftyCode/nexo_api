@@ -31,9 +31,13 @@ pub enum DocumentKind {
     /// the format and the mapping of fields, run again by hand.
     #[serde(rename = "mongo-transfer")]
     Transfer,
+    /// A saved aggregation pipeline (MongoDB): its connection, database, collection, stages
+    /// as typed (also those turned off) and options.
+    #[serde(rename = "mongo-aggregation")]
+    Aggregation,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 16] = [
+    pub const ALL: [DocumentKind; 17] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -50,6 +54,7 @@ impl DocumentKind {
         Self::QueryHistory,
         Self::DatabaseChange,
         Self::Transfer,
+        Self::Aggregation,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -69,6 +74,7 @@ impl DocumentKind {
             Self::QueryHistory => "query-history",
             Self::DatabaseChange => "database-change",
             Self::Transfer => "mongo-transfer",
+            Self::Aggregation => "mongo-aggregation",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

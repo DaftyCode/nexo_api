@@ -9,12 +9,9 @@ use crate::{
 };
 use bson::{Bson, Document, doc};
 use mongodb::Client;
-use nexo_application::ports::{ExplainRequest, Explained};
+use nexo_application::ports::{ExplainRequest, Explained, WRITING_STAGES};
 use nexo_domain::{Error, Result};
 use serde_json::Value;
-
-/// Aggregation stages that write: an explain that runs the pipeline could write with them.
-const WRITING_STAGES: [&str; 2] = ["$out", "$merge"];
 
 pub async fn explain(
     adapter: &MongoAdapter,

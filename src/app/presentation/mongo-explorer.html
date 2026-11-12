@@ -56,11 +56,13 @@
             {{
               (option === 'documents'
                 ? 'Documents'
-                : option === 'indexes'
-                  ? 'Indexes'
-                  : option === 'explain'
-                    ? 'Explain'
-                    : 'Profiler'
+                : option === 'aggregations'
+                  ? 'Aggregations'
+                  : option === 'indexes'
+                    ? 'Indexes'
+                    : option === 'explain'
+                      ? 'Explain'
+                      : 'Profiler'
               ) | transloco
             }}
           </button>
@@ -68,6 +70,9 @@
       </nav>
 
       @switch (tab()) {
+        @case ('aggregations') {
+          <app-mongo-aggregations [explorer]="this" />
+        }
         @case ('indexes') {
           <app-mongo-indexes
             [connection]="connection()"

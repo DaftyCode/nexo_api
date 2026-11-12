@@ -1,7 +1,7 @@
 // End-to-end test of MongoDB exports and imports in the browser: a query exported to a file
 // the browser downloads, and that file imported into a new collection.
 import { expect, test } from './fixture.mjs';
-import { violations } from './helpers.mjs';
+import { deleteMongoConnection, violations } from './helpers.mjs';
 
 test('MongoDB: a query exported to JSON Lines and imported again keeps its documents', async ({
   page,
@@ -65,4 +65,5 @@ test('MongoDB: a query exported to JSON Lines and imported again keeps its docum
   await dialog.getByLabel(`Type ${name} to confirm`).fill(name);
   await dialog.getByRole('button', { name: 'Drop database' }).click();
   await expect(query).toContainText('Choose a collection to query it.');
+  await deleteMongoConnection(page, 'Transfers');
 });

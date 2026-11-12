@@ -3,6 +3,7 @@ import type { ExportSource, TransferEnd, TransferOutcome } from '../../applicati
 import type { TransferFilesPort } from '../../application/ports';
 import { WorkspaceDocument } from '../../domain/models';
 import { connectionValue } from '../../domain/mongo';
+import { buildAggregationOptions, buildPipeline } from '../../domain/mongo-aggregation';
 import { buildQuery } from '../../domain/mongo-query';
 import {
   EXTENSIONS,
@@ -53,8 +54,14 @@ export class MongoTransfers {
     private readonly files: TransferFilesPort,
   ) {}
 
-  /** Opens the dialog for the collection chosen; an export reads the query of the bar. */
-  open(direction: TransferValue['direction']) {
+  /**
+   * Opens the dialog for the collection chosen. An export reads the query of the bar, or the
+   * pipeline of the Aggregations tab when it is given.
+   */
+  open(
+    direction: TransferValue['direction'],
+    pipeline?: Pick<TransferValue, 'pipeline' | 'pipelineOptions'>,
+  ) {
     const target = this.explorer.target();
     if (!target) return;
     const stored = emptyTransfer(
@@ -63,7 +70,8 @@ export class MongoTransfers {
       target.database,
       target.collection,
     );
-    if (direction === 'export') {
+    if (pipeline) Object.assign(stored, pipeline, { scope: 'aggregation' });
+    else if (direction === 'export') {
       if (!this.explorer.query()) return;
       const { name: _, folder: __, pageSize: ___, ...query } = this.explorer.model();
       stored.query = query;
@@ -130,7 +138,17 @@ export class MongoTransfers {
       return { ...end, query: {}, page: this.explorer.pager.current()?.documents ?? [] };
     if (m.scope === 'collection') return { ...end, query: {} };
     const scopes = this.explorer.state.scopes();
-    return { ...end, query: buildQuery(draft.query, (text) => resolveVariables(text, scopes)) };
+    const resolve = (text: string) => resolveVariables(text, scopes);
+    if (m.scope === 'aggregation')
+      return {
+        ...end,
+        query: {},
+        pipeline: {
+          pipeline: buildPipeline(draft.pipeline, resolve),
+          options: buildAggregationOptions(draft.pipelineOptions, resolve),
+        },
+      };
+    return { ...end, query: buildQuery(draft.query, resolve) };
   }
 
   /** Why the transfer cannot run yet, as a message key, or `''`. */

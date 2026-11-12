@@ -150,6 +150,18 @@ pub trait DocumentDatabase: Send + Sync {
     /// The next page of an open cursor. `id` cancels it while it runs.
     async fn more(&self, cursor: &str, id: &str, page_size: u64) -> Result<DocumentPage>;
     async fn count(&self, connection: DatabaseConnection, request: CountRequest) -> Result<u64>;
+    /// The first page of an aggregation that only reads; its next pages come with `more`.
+    async fn aggregate(
+        &self,
+        connection: DatabaseConnection,
+        request: AggregateRequest,
+    ) -> Result<DocumentPage>;
+    /// Runs an aggregation that ends in `$out` or `$merge`. How long it took, in milliseconds.
+    async fn aggregate_write(
+        &self,
+        connection: DatabaseConnection,
+        request: AggregateWrite,
+    ) -> Result<u64>;
     /// Stops a running query and whatever it started on the server. Whether one was running.
     async fn cancel(&self, id: &str) -> Result<bool>;
     /// Closes a cursor the interface no longer reads.

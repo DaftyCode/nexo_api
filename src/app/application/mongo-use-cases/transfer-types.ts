@@ -2,6 +2,7 @@ import { WorkspaceDocument } from '../../domain/models';
 import { BuiltQuery } from '../../domain/mongo-query';
 import { CsvColumn, ImportMode, JsonFlavour, TransferFormat } from '../../domain/mongo-transfer';
 import { VariableScopes } from '../../domain/variables';
+import type { BuiltAggregation } from './aggregations';
 import { QueryTarget } from './payload';
 
 /** Documents in a page read for an export, and in a batch sent by an import. */
@@ -19,9 +20,13 @@ export interface TransferEnd {
   target: QueryTarget;
 }
 
-/** What an export reads: a query of the collection, or the documents of the page shown. */
+/**
+ * What an export reads: a query of the collection, an aggregation pipeline that only reads,
+ * or the documents of the page shown.
+ */
 export interface ExportSource extends TransferEnd {
   query: BuiltQuery;
+  pipeline?: BuiltAggregation;
   page?: readonly Record<string, unknown>[];
 }
 

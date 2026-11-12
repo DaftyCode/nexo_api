@@ -12,6 +12,9 @@
   <select [formField]="draft().fields.scope">
     <option value="collection">{{ 'The whole collection' | transloco }}</option>
     <option value="query">{{ 'The query of the bar' | transloco }}</option>
+    @if (draft().pipeline.length) {
+      <option value="aggregation">{{ 'The aggregation pipeline' | transloco }}</option>
+    }
     <option value="page">{{ 'The page shown' | transloco }}</option>
   </select>
 </label>
@@ -21,6 +24,9 @@
   } @else {
     <p class="mongo-transfer-hint">{{ 'The query has no filter: every document.' | transloco }}</p>
   }
+}
+@if (draft().model().scope === 'aggregation') {
+  <pre class="mongo-transfer-hint">{{ pipelineText() }}</pre>
 }
 @if (draft().model().scope === 'page') {
   <p class="mongo-transfer-hint">

@@ -225,6 +225,30 @@ payload! {
     }
 }
 
+payload! {
+    /// `mongo.aggregate.write`: an aggregation whose last stage, `$out` or `$merge`, writes
+    /// its results to a collection of a saved connection that is not read-only. `confirm`
+    /// repeats the name of the collection written. `id` cancels it with `mongo.cancel`.
+    closed MongoAggregateWritePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            connection_id "connectionId": String => "string",
+            id "id": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            pipeline "pipeline": Vec<Map<String, Value>> => "readonly object[]",
+            confirm "confirm": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            collation "collation": Map<String, Value> => "object",
+            hint "hint": Value => "string | object",
+            allow_disk_use "allowDiskUse": bool => "boolean",
+            max_time_ms "maxTimeMS": u64 => "number",
+        }
+    }
+}
+
 /// How `mongo.import` writes each document.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]

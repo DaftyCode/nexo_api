@@ -1,0 +1,239 @@
+<datalist id="mongo-stage-operators">
+  @for (operator of editor().operators; track operator) {
+    <option [value]="operator"></option>
+  }
+</datalist>
+<div class="row mongo-actions" role="toolbar" [attr.aria-label]="'Pipeline' | transloco">
+  <label class="field mongo-format"
+    >{{ 'New stage' | transloco }}
+    <select [formField]="editor().fields.adding">
+      @for (operator of editor().operators; track operator) {
+        <option [value]="operator">{{ operator }}</option>
+      }
+    </select>
+  </label>
+  <button type="button" class="button small" (click)="editor().add()">
+    {{ 'Add stage' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small"
+    [disabled]="!!runner().running()"
+    (click)="runner().previewAll()"
+  >
+    {{ 'Preview every stage' | transloco }}
+  </button>
+  <label class="field mongo-page-size"
+    >{{ 'Documents in a preview' | transloco }}
+    <select [formField]="editor().fields.previewLimit">
+      @for (limit of previewLimits; track limit) {
+        <option [value]="limit">{{ limit }}</option>
+      }
+    </select>
+  </label>
+  <span class="grow"></span>
+  <button
+    type="button"
+    class="text-button"
+    [attr.aria-expanded]="editor().textOpen()"
+    (click)="editor().textOpen() ? editor().textOpen.set(false) : editor().openText()"
+  >
+    {{ 'Pipeline as text' | transloco }}
+  </button>
+  <button type="button" class="text-button" (click)="editor().clear()">
+    {{ 'Clear' | transloco }}
+  </button>
+</div>
+
+@if (editor().textOpen()) {
+  <section class="mongo-pipeline-text" [attr.aria-label]="'Pipeline as text' | transloco">
+    <app-code-editor
+      language="javascript"
+      [formField]="editor().fields.text"
+      [label]="'Pipeline as text' | transloco"
+    />
+    <p class="muted">
+      {{
+        'Copy the pipeline, or paste one in the shell syntax or in JSON to replace the stages. Stages turned off are left out.'
+          | transloco
+      }}
+    </p>
+    <div class="row">
+      <button type="button" class="button small" (click)="editor().applyText()">
+        {{ 'Use this pipeline' | transloco }}
+      </button>
+    </div>
+  </section>
+}
+
+<ol class="mongo-stages">
+  @for (stage of editor().fields.stages; track $index) {
+    <li>
+      <app-mongo-aggregation-stage
+        [editor]="editor()"
+        [field]="stage"
+        [index]="$index"
+        [count]="editor().model().stages.length"
+      />
+    </li>
+  } @empty {
+    <li class="muted">{{ 'Add a stage to build the pipeline.' | transloco }}</li>
+  }
+</ol>
+
+<details class="mongo-options">
+  <summary>{{ 'Options' | transloco }}</summary>
+  <div class="row mongo-inline">
+    <label class="field grow"
+      >{{ 'Collation' | transloco
+      }}<input
+        [formField]="editor().fields.options.collation"
+        placeholder="{ locale: 'es' }"
+        spellcheck="false"
+    /></label>
+    <label class="field grow"
+      >{{ 'Index hint' | transloco
+      }}<input [formField]="editor().fields.options.hint" placeholder="status_1" spellcheck="false"
+    /></label>
+    <label class="field mongo-number"
+      >maxTimeMS<input
+        [formField]="editor().fields.options.maxTimeMS"
+        inputmode="numeric"
+        placeholder="60000"
+    /></label>
+    <label class="check"
+      ><input type="checkbox" [formField]="editor().fields.options.allowDiskUse" />{{
+        'Allow disk use' | transloco
+      }}</label
+    >
+  </div>
+</details>
+
+@if (problem(); as problem) {
+  <p class="mongo-problem" role="alert">
+    @if (problem.key === 'mongo.syntax') {
+      {{ $any(problem.params['v0']) | transloco }}
+      @if (problem.params['v3']) {
+        ({{ problem.params['v3'] }})
+      }
+      —
+      {{ 'mongo.position' | transloco: { v0: problem.params['v1'], v1: problem.params['v2'] } }}
+    } @else {
+      {{ problem.key | transloco: problem.params }}
+    }
+  </p>
+}
+
+@if (editor().writing()) {
+  @if (explorer().writable()) {
+    <div class="mongo-stage-write" role="note">
+      <p>
+        {{ 'mongo.aggregate.writes' | transloco: { v0: editor().written() || '…' } }}
+      </p>
+      <label class="field"
+        >{{ 'mongo.typeName' | transloco: { v0: editor().written() || '…' } }}
+        <input [formField]="editor().fields.confirm" spellcheck="false" autocomplete="off"
+      /></label>
+    </div>
+  } @else {
+    <p class="mongo-problem" role="note">
+      {{
+        'This connection is read-only: a pipeline that ends in $out or $merge does not run.'
+          | transloco
+      }}
+    </p>
+  }
+}
+
+<div class="row mongo-actions">
+  @if (runner().running() && runner().previewing() === undefined) {
+    <button type="button" class="button danger" (click)="runner().cancel()">
+      {{ 'Cancel' | transloco }}
+    </button>
+    <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+  } @else {
+    <button
+      type="button"
+      class="button primary"
+      [disabled]="!!runner().running() || (editor().writing() && !explorer().writable())"
+      (click)="runner().run()"
+    >
+      {{ (editor().writing() ? 'Run and write' : 'Run') | transloco }}
+    </button>
+  }
+  <button
+    type="button"
+    class="button"
+    [disabled]="!!runner().running()"
+    [title]="'How the server runs this pipeline, without the stage that writes' | transloco"
+    (click)="editor().explain()"
+  >
+    {{ 'Explain' | transloco }}
+  </button>
+  <button type="button" class="button" (click)="editor().export()">
+    {{ 'Export…' | transloco }}
+  </button>
+  <span class="grow"></span>
+  <label class="field mongo-save-name"
+    >{{ 'Pipeline name' | transloco }}<input [formField]="editor().fields.name"
+  /></label>
+  <button type="button" class="button" (click)="editor().save()">
+    {{ (editor().savedId() ? 'Save' : 'Save pipeline') | transloco }}
+  </button>
+</div>
+
+@if (runner().written(); as written) {
+  <p class="muted" role="status">
+    {{
+      'mongo.aggregate.written'
+        | transloco: { v0: written.database + '.' + written.collection, v1: written.elapsedMs }
+    }}
+  </p>
+}
+
+@if (runner().current(); as page) {
+  <div class="row mongo-results-bar">
+    <span class="grow"></span>
+    <span class="muted" role="status" data-testid="aggregation-range">
+      @if (page.documents.length) {
+        {{
+          'mongo.range'
+            | transloco: { v0: page.offset + 1, v1: page.offset + page.documents.length }
+        }}
+      } @else {
+        {{ 'No documents' | transloco }}
+      }
+      · {{ page.elapsedMs }} ms
+    </span>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Previous page' | transloco"
+      [disabled]="!runner().hasPrevious() || !!runner().running()"
+      (click)="runner().previous()"
+    >
+      ‹
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Next page' | transloco"
+      [disabled]="!runner().hasNext() || !!runner().running()"
+      (click)="runner().next()"
+    >
+      ›
+    </button>
+  </div>
+  @if (page.truncated) {
+    <p class="muted" role="status">
+      {{ 'This page stopped at 16 MiB of documents: the next page continues it.' | transloco }}
+    </p>
+  }
+  <app-mongo-results
+    [documents]="page.documents"
+    [offset]="page.offset"
+    [view]="explorer().view()"
+    [format]="explorer().format()"
+    (copied)="explorer().notice.set($event)"
+  />
+}

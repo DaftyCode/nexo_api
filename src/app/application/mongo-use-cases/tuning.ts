@@ -89,7 +89,7 @@ export class MongoTuningCases {
       workspace,
       connection: savedConnection(connection, scopes),
       ...target,
-      ...('pipeline' in explained ? { pipeline: explained.pipeline } : explained.query),
+      ...('pipeline' in explained ? explained : explained.query),
       verbosity: executed ? 'executionStats' : 'queryPlanner',
       id,
     });

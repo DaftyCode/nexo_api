@@ -143,6 +143,30 @@ payload! {
 }
 
 payload! {
+    /// `mongo.aggregate`: the first page of an aggregation that only reads; `mongo.more`
+    /// reads the next ones. Each stage, `collation` and `hint` are Extended JSON. A pipeline
+    /// with `$out` or `$merge` runs only with `mongo.aggregate.write`. `maxTimeMS` is at most
+    /// the operation limit. `id` cancels it with `mongo.cancel`.
+    closed MongoAggregatePayload {
+        required {
+            connection "connection": MongoConnection => "MongoConnection",
+            id "id": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            pipeline "pipeline": Vec<Map<String, Value>> => "readonly object[]",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            collation "collation": Map<String, Value> => "object",
+            hint "hint": Value => "string | object",
+            allow_disk_use "allowDiskUse": bool => "boolean",
+            max_time_ms "maxTimeMS": u64 => "number",
+            page_size "pageSize": u64 => "number",
+        }
+    }
+}
+
+payload! {
     /// `mongo.profile`: the profiler level of a database and its `slowms`.
     closed MongoProfilePayload {
         required {

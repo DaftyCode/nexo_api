@@ -131,6 +131,32 @@
     <p class="muted">{{ 'Save a query to find it here.' | transloco }}</p>
   }
 
+  <h3 class="mongo-section">{{ 'Saved aggregations' | transloco }}</h3>
+  <ul>
+    @for (aggregation of explorer().aggregations.saved(); track aggregation.id) {
+      <li class="row mongo-saved">
+        <button
+          type="button"
+          class="mongo-tree-item grow"
+          [class.selected]="aggregation.id === explorer().aggregations.savedId()"
+          (click)="explorer().aggregations.open(aggregation)"
+        >
+          {{ aggregation.name }}
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'mongo.deleteAggregation' | transloco: { v0: aggregation.name }"
+          (click)="explorer().aggregations.removeSaved(aggregation)"
+        >
+          ×
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'Save a pipeline to find it here.' | transloco }}</li>
+    }
+  </ul>
+
   <h3 class="mongo-section">{{ 'Saved transfers' | transloco }}</h3>
   <ul>
     @for (transfer of explorer().transfers.saved(); track transfer.id) {

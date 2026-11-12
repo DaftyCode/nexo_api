@@ -2,6 +2,7 @@ import { Injector, computed, runInInjectionContext, signal } from '@angular/core
 import { form } from '@angular/forms/signals';
 import type { TransferOutcome, TransferProgress } from '../../application/mongo-use-cases';
 import type { TransferSource } from '../../application/ports';
+import { AggregationOptions, PipelineStage } from '../../domain/mongo-aggregation';
 import { QueryForm } from '../../domain/mongo-query';
 import {
   CsvColumn,
@@ -68,6 +69,9 @@ export class TransferDraft {
   controller?: AbortController;
   /** Export of a query: its fields as typed. */
   readonly query: QueryForm;
+  /** Export of an aggregation: its stages as typed, and its options. */
+  readonly pipeline: PipelineStage[];
+  readonly pipelineOptions: AggregationOptions;
 
   constructor(
     readonly direction: TransferValue['direction'],
@@ -93,6 +97,8 @@ export class TransferDraft {
     });
     this.fields = runInInjectionContext(injector, () => form(this.model));
     this.query = { ...stored.query };
+    this.pipeline = stored.pipeline.map((stage) => ({ ...stage }));
+    this.pipelineOptions = { ...stored.pipelineOptions };
     this.chosen.set([...stored.fields]);
     this.columns.set(stored.columns.map((column) => ({ ...column })));
   }
@@ -114,6 +120,8 @@ export class TransferDraft {
       flavour: m.flavour,
       scope: m.scope,
       query: { ...this.query },
+      pipeline: this.pipeline.map((stage) => ({ ...stage })),
+      pipelineOptions: { ...this.pipelineOptions },
       fields: [...this.chosen()],
       destination: m.destination,
       to: { connection: m.copyConnection, database: m.copyDatabase, collection: m.copyCollection },

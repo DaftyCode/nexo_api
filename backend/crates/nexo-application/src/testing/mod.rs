@@ -31,6 +31,8 @@ pub(crate) struct Fake {
     pub(crate) indexes: Mutex<Vec<ports::IndexChange>>,
     pub(crate) explains: Mutex<Vec<ports::ExplainRequest>>,
     pub(crate) imports: Mutex<Vec<(ports::WriteTarget, ports::ImportBatch)>>,
+    pub(crate) aggregates: Mutex<Vec<ports::AggregateRequest>>,
+    pub(crate) aggregate_writes: Mutex<Vec<ports::AggregateWrite>>,
 }
 pub(crate) fn workspace(id: &str) -> Workspace {
     Workspace {

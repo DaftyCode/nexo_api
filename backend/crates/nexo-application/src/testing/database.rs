@@ -77,6 +77,29 @@ impl DocumentDatabase for Fake {
             elapsed_ms: 2,
         })
     }
+    async fn aggregate(
+        &self,
+        connection: DatabaseConnection,
+        request: ports::AggregateRequest,
+    ) -> Result<ports::DocumentPage> {
+        self.connections.lock().unwrap().push(connection);
+        self.aggregates.lock().unwrap().push(request);
+        Ok(ports::DocumentPage {
+            documents: vec![json!({"_id": "A", "total": {"$numberInt": "3"}})],
+            cursor: None,
+            truncated: false,
+            elapsed_ms: 1,
+        })
+    }
+    async fn aggregate_write(
+        &self,
+        connection: DatabaseConnection,
+        request: ports::AggregateWrite,
+    ) -> Result<u64> {
+        self.connections.lock().unwrap().push(connection);
+        self.aggregate_writes.lock().unwrap().push(request);
+        Ok(5)
+    }
     async fn more(&self, cursor: &str, _: &str, _: u64) -> Result<ports::DocumentPage> {
         Err(Error::Validation(format!("Cursor {cursor} closed")))
     }
