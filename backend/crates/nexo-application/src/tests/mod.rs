@@ -3,5 +3,6 @@ mod database;
 mod execute;
 mod imports;
 mod indexes;
+mod schema;
 mod vault;
 mod writes;

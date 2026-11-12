@@ -112,6 +112,8 @@ fn every_operation_has_a_payload_type() {
                 | Operation::MongoImport
                 | Operation::MongoAggregate
                 | Operation::MongoAggregateWrite
+                | Operation::MongoSchema
+                | Operation::MongoCollectionValidator
         );
         assert_eq!(result.is_err(), required, "{operation}");
         assert!(

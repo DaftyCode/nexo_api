@@ -15,7 +15,7 @@ import { FormValueControl } from '@angular/forms/signals';
 import { Diagnostic, setDiagnostics } from '@codemirror/lint';
 import { Compartment, EditorState, Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { baseExtensions, lineSpan, readOnly } from './code-editor-setup';
+import { baseExtensions, lineSpan, readOnly, wordCompletions } from './code-editor-setup';
 import { CodeLanguage, CodeMark } from './code-language';
 
 export type { CodeLanguage, CodeMark } from './code-language';
@@ -84,10 +84,13 @@ export class CodeEditor implements FormValueControl<string> {
   readonly readonly = input(false);
   /** Problems to mark, by line. */
   readonly marks = input<readonly CodeMark[]>([]);
+  /** Words suggested while typing, such as the field names of a collection. */
+  readonly words = input<readonly string[]>([]);
   private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
   private view: EditorView | undefined;
   private readonly languages = new Compartment();
   private readonly editable = new Compartment();
+  private readonly completions = new Compartment();
   /** The language last asked for, so a slow load never replaces a newer one. */
   private wanted: CodeLanguage = 'text';
 
@@ -110,6 +113,12 @@ export class CodeEditor implements FormValueControl<string> {
       untracked(() => this.view?.dispatch({ effects: this.editable.reconfigure(readOnly(value)) }));
     });
     effect(() => {
+      const words = this.words();
+      untracked(() =>
+        this.view?.dispatch({ effects: this.completions.reconfigure(wordCompletions(words)) }),
+      );
+    });
+    effect(() => {
       const marks = this.marks();
       untracked(() => this.mark(marks));
     });
@@ -129,6 +138,7 @@ export class CodeEditor implements FormValueControl<string> {
           }),
           this.languages.of([]),
           this.editable.of(readOnly(this.readonly())),
+          this.completions.of(wordCompletions(this.words())),
         ],
       }),
     });

@@ -88,6 +88,7 @@ mod common;
 mod git;
 mod http;
 mod mongo_read;
+mod mongo_schema;
 mod mongo_write;
 mod protocols;
 #[cfg(test)]
@@ -98,6 +99,7 @@ pub use common::*;
 pub use git::*;
 pub use http::*;
 pub use mongo_read::*;
+pub use mongo_schema::*;
 pub use mongo_write::*;
 pub use protocols::*;
 
@@ -229,6 +231,8 @@ operation_payloads! {
     MongoImport => MongoImportPayload,
     MongoAggregate => MongoAggregatePayload,
     MongoAggregateWrite => MongoAggregateWritePayload,
+    MongoSchema => MongoSchemaPayload,
+    MongoCollectionValidator => MongoCollectionValidatorPayload,
 }
 
 /// Checks the payload of a Git operation.

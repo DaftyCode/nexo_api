@@ -33,6 +33,7 @@ pub(crate) struct Fake {
     pub(crate) imports: Mutex<Vec<(ports::WriteTarget, ports::ImportBatch)>>,
     pub(crate) aggregates: Mutex<Vec<ports::AggregateRequest>>,
     pub(crate) aggregate_writes: Mutex<Vec<ports::AggregateWrite>>,
+    pub(crate) changes: Mutex<Vec<ports::CollectionChange>>,
 }
 pub(crate) fn workspace(id: &str) -> Workspace {
     Workspace {

@@ -1,0 +1,246 @@
+<div class="row mongo-actions" role="toolbar" [attr.aria-label]="'Schema' | transloco">
+  <label class="field mongo-page-size"
+    >{{ 'Documents sampled' | transloco }}
+    <select [formField]="schema().fields.size">
+      @for (size of sizes; track size) {
+        <option [value]="size">{{ size }}</option>
+      }
+    </select>
+  </label>
+  <label class="check"
+    ><input type="checkbox" [formField]="schema().fields.useQuery" />{{
+      'Only the documents of the query' | transloco
+    }}</label
+  >
+  @if (schema().running()) {
+    <button type="button" class="button danger" (click)="schema().cancel()">
+      {{ 'Cancel' | transloco }}
+    </button>
+    <div class="spinner small" role="status" [attr.aria-label]="'Running' | transloco"></div>
+  } @else {
+    <button type="button" class="button primary" (click)="schema().analyze()">
+      {{ 'Analyze' | transloco }}
+    </button>
+  }
+  <span class="grow"></span>
+  @if (schema().report()) {
+    <div class="row mongo-schema-exports" role="group" [attr.aria-label]="'Export' | transloco">
+      <button type="button" class="button small" (click)="schema().export('csv')">CSV</button>
+      <button type="button" class="button small" (click)="schema().export('markdown')">
+        Markdown
+      </button>
+      <button type="button" class="button small" (click)="schema().export('jsonSchema')">
+        JSON Schema
+      </button>
+      <button type="button" class="button small" (click)="schema().export('validator')">
+        $jsonSchema
+      </button>
+    </div>
+  }
+</div>
+@if (schema().problem(); as problem) {
+  <p class="mongo-problem" role="alert">{{ problem | transloco }}</p>
+}
+
+@if (schema().report(); as report) {
+  <p class="muted" role="status" data-testid="schema-sampled">
+    {{ 'mongo.schema.sampled' | transloco: { v0: report.sampled, v1: report.elapsedMs } }}
+  </p>
+  @if (report.truncated) {
+    <p class="muted">{{ 'mongo.schema.truncated' | transloco }}</p>
+  }
+  @if (anomalies().length) {
+    <section class="mongo-schema-anomalies" [attr.aria-label]="'Anomalies' | transloco">
+      <h3 class="mongo-section">{{ 'Anomalies' | transloco }}</h3>
+      <ul>
+        @for (field of anomalies(); track field.path) {
+          <li>
+            <code>{{ field.path }}</code
+            >:
+            @if (field.anomalies.includes('mixedTypes')) {
+              {{
+                'mongo.schema.mixed'
+                  | transloco: { v0: field.types.length, v1: field.types[0].name }
+              }}
+            }
+            @if (field.anomalies.includes('sometimesMissing')) {
+              {{
+                'mongo.schema.missing'
+                  | transloco: { v0: field.parents - field.count, v1: field.parents }
+              }}
+            }
+          </li>
+        }
+      </ul>
+    </section>
+  }
+
+  <div
+    class="mongo-schema-scroll"
+    role="region"
+    tabindex="0"
+    [attr.aria-label]="'Fields' | transloco"
+  >
+    <table class="mongo-schema-table">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Field' | transloco }}</th>
+          <th scope="col">{{ 'Presence' | transloco }}</th>
+          <th scope="col">{{ 'Types' | transloco }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (field of report.fields; track field.path) {
+          <tr [class.anomaly]="field.anomalies.length > 0">
+            <th scope="row" [style.padding-left.px]="6 + field.depth * 16">
+              <button
+                type="button"
+                class="text-button"
+                [attr.aria-expanded]="schema().expanded().has(field.path)"
+                [title]="field.path"
+                (click)="schema().toggle(field.path)"
+              >
+                @if (field.name === '[]') {
+                  {{ 'Items' | transloco }}
+                } @else {
+                  {{ field.name }}
+                }
+              </button>
+              @for (anomaly of field.anomalies; track anomaly) {
+                <span class="mongo-badge danger">{{
+                  (anomaly === 'mixedTypes' ? 'Several types' : 'Sometimes missing') | transloco
+                }}</span>
+              }
+            </th>
+            <td>
+              <span class="mongo-share" aria-hidden="true"
+                ><span [style.width.%]="presence(field)"></span
+              ></span>
+              {{ presence(field) }}%
+              <span class="muted">({{ field.count }}/{{ field.parents }})</span>
+            </td>
+            <td>
+              @for (type of field.types; track type.name) {
+                <span class="mongo-type"
+                  >{{ type.name }} {{ percent(type.count, field.count) }}%</span
+                >
+              }
+            </td>
+          </tr>
+          @if (schema().expanded().has(field.path)) {
+            <tr class="mongo-schema-detail">
+              <td colspan="3">
+                @for (type of field.types; track type.name) {
+                  @if (type.min !== undefined) {
+                    <p>
+                      {{
+                        'mongo.schema.range'
+                          | transloco
+                            : { v0: type.name, v1: valueText(type.min), v2: valueText(type.max) }
+                      }}
+                    </p>
+                  }
+                  @if (type.lengths; as lengths) {
+                    <p>
+                      {{
+                        'mongo.schema.lengths'
+                          | transloco
+                            : {
+                                v0: type.name,
+                                v1: lengths.min,
+                                v2: lengths.max,
+                                v3: average(lengths.average),
+                              }
+                      }}
+                    </p>
+                  }
+                }
+                @if (field.values.length) {
+                  <p class="muted">
+                    {{
+                      'mongo.schema.distinct'
+                        | transloco: { v0: field.distinct + (field.distinctCapped ? '+' : '') }
+                    }}
+                  </p>
+                  <ul class="mongo-schema-values">
+                    @for (entry of field.values; track $index) {
+                      <li>
+                        <button
+                          type="button"
+                          class="text-button"
+                          [attr.aria-label]="
+                            'mongo.schema.find' | transloco: { v0: valueText(entry.value) }
+                          "
+                          (click)="schema().openValue(field, entry.value)"
+                        >
+                          {{ valueText(entry.value) }}
+                        </button>
+                        <span class="muted">{{ entry.count }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <details class="mongo-options mongo-schema-rules">
+    <summary>{{ 'Validation rules' | transloco }}</summary>
+    <p class="muted">
+      {{
+        'Rules made from the sample: every field present in all of it is required, and each field keeps the types it had. Review them before applying them.'
+          | transloco
+      }}
+    </p>
+    <app-code-editor
+      language="json"
+      [formField]="schema().fields.validator"
+      [label]="'Validation rules' | transloco"
+    />
+    @if (validates()) {
+      <div class="row mongo-inline">
+        <label class="field"
+          >{{ 'Validation level' | transloco }}
+          <select [formField]="schema().fields.level">
+            <option value="strict">{{ 'Every insert and update' | transloco }}</option>
+            <option value="moderate">{{ 'Only documents already valid' | transloco }}</option>
+            <option value="off">{{ 'Off' | transloco }}</option>
+          </select>
+        </label>
+        <label class="field"
+          >{{ 'Validation action' | transloco }}
+          <select [formField]="schema().fields.action">
+            <option value="error">{{ 'Refuse the write' | transloco }}</option>
+            <option value="warn">{{ 'Only log it' | transloco }}</option>
+          </select>
+        </label>
+      </div>
+      <p class="mongo-problem" role="note">
+        {{ 'Applying them replaces the current rules of the collection.' | transloco }}
+      </p>
+      <div class="row mongo-inline">
+        <label class="field"
+          >{{ 'mongo.typeName' | transloco: { v0: explorer().target()?.collection } }}
+          <input [formField]="schema().fields.confirm" spellcheck="false" autocomplete="off"
+        /></label>
+        <button type="button" class="button danger" (click)="schema().applyValidator()">
+          {{ 'Apply the rules' | transloco }}
+        </button>
+      </div>
+      @if (schema().applied(); as applied) {
+        <p class="muted" role="status">{{ applied | transloco }}</p>
+      }
+    }
+  </details>
+} @else if (!schema().running()) {
+  <p class="muted">
+    {{
+      'Analyze a sample to see the fields of the collection, their types and what looks wrong.'
+        | transloco
+    }}
+  </p>
+}

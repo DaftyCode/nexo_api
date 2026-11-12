@@ -58,11 +58,13 @@
                 ? 'Documents'
                 : option === 'aggregations'
                   ? 'Aggregations'
-                  : option === 'indexes'
-                    ? 'Indexes'
-                    : option === 'explain'
-                      ? 'Explain'
-                      : 'Profiler'
+                  : option === 'schema'
+                    ? 'Schema'
+                    : option === 'indexes'
+                      ? 'Indexes'
+                      : option === 'explain'
+                        ? 'Explain'
+                        : 'Profiler'
               ) | transloco
             }}
           </button>
@@ -72,6 +74,9 @@
       @switch (tab()) {
         @case ('aggregations') {
           <app-mongo-aggregations [explorer]="this" />
+        }
+        @case ('schema') {
+          <app-mongo-schema [explorer]="this" />
         }
         @case ('indexes') {
           <app-mongo-indexes

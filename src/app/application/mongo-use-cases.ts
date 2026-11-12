@@ -3,6 +3,7 @@ import { MongoAggregationCases } from './mongo-use-cases/aggregations';
 import { MongoConnectionCases } from './mongo-use-cases/connections';
 import { MongoPorts } from './mongo-use-cases/payload';
 import { MongoQueryCases } from './mongo-use-cases/queries';
+import { MongoSchemaCases } from './mongo-use-cases/schema';
 import { MongoTuningCases } from './mongo-use-cases/tuning';
 import { MongoTransferCases } from './mongo-use-cases/transfer';
 import { MongoWriteCases } from './mongo-use-cases/writes';
@@ -20,10 +21,12 @@ export {
   type WriteWhere,
 } from './mongo-use-cases/payload';
 export type { AggregateWritten, BuiltAggregation } from './mongo-use-cases/aggregations';
+export type { ValidationAction, ValidationLevel } from './mongo-use-cases/schema';
 export {
   MongoAggregationCases,
   MongoConnectionCases,
   MongoQueryCases,
+  MongoSchemaCases,
   MongoTransferCases,
   MongoTuningCases,
   MongoWriteCases,
@@ -32,7 +35,7 @@ export type * from './mongo-use-cases/transfer-types';
 
 /**
  * MongoDB use cases, by area: connections, queries, aggregations, writes, indexes with the
- * profiler, and imports and exports.
+ * profiler, schemas, and imports and exports.
  */
 export class MongoUseCases {
   readonly connections: MongoConnectionCases;
@@ -40,6 +43,7 @@ export class MongoUseCases {
   readonly aggregations: MongoAggregationCases;
   readonly writes: MongoWriteCases;
   readonly tuning: MongoTuningCases;
+  readonly schema: MongoSchemaCases;
   readonly transfer: MongoTransferCases;
 
   constructor(api: MongoPorts, id: () => string) {
@@ -48,6 +52,7 @@ export class MongoUseCases {
     this.aggregations = new MongoAggregationCases(api, id);
     this.writes = new MongoWriteCases(api);
     this.tuning = new MongoTuningCases(api);
+    this.schema = new MongoSchemaCases(api);
     this.transfer = new MongoTransferCases(api, id);
   }
 }

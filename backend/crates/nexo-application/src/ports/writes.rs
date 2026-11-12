@@ -88,6 +88,15 @@ pub enum CollectionChange {
     DropDatabase {
         database: String,
     },
+    /// Replaces the validation rules of a collection (`collMod`); an empty validator removes
+    /// them. Level `off`, `strict` or `moderate`; action `error` or `warn`.
+    Validator {
+        database: String,
+        collection: String,
+        validator: Value,
+        level: &'static str,
+        action: &'static str,
+    },
 }
 
 /// An index with how much room it takes and how often queries use it.

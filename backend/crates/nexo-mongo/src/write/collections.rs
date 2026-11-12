@@ -1,4 +1,5 @@
-//! Creating, renaming and dropping collections and databases.
+//! Creating, renaming and dropping collections and databases, and replacing the validation
+//! rules of a collection.
 use super::*;
 
 /// Options of a new collection Nexo passes to `create`.
@@ -65,6 +66,27 @@ pub async fn change(client: &Client, change: CollectionChange) -> Result<()> {
                 .database(&database)
                 .collection::<Document>(&collection)
                 .drop()
+                .await
+                .map_err(errors::driver)?;
+        }
+        CollectionChange::Validator {
+            database,
+            collection,
+            validator,
+            level,
+            action,
+        } => {
+            check_name(&database, "database")?;
+            check_name(&collection, "collection")?;
+            let validator = document(Some(validator), "validator")?.unwrap_or_default();
+            client
+                .database(&database)
+                .run_command(doc! {
+                    "collMod": &collection,
+                    "validator": validator,
+                    "validationLevel": level,
+                    "validationAction": action,
+                })
                 .await
                 .map_err(errors::driver)?;
         }

@@ -17,6 +17,7 @@ import { CodeLanguage, CodeMark, bodyLanguage } from './code-language';
     [marks]="marks()"
     [readonly]="locked()"
     [size]="size()"
+    [words]="words()"
     label="Request body"
     placeholder="Write here"
   />`,
@@ -27,6 +28,7 @@ class Host {
   readonly marks = signal<CodeMark[]>([]);
   readonly locked = signal(false);
   readonly size = signal<'small' | 'normal' | 'large'>('normal');
+  readonly words = signal<string[]>([]);
 }
 
 describe('CodeEditor', () => {
@@ -119,6 +121,28 @@ describe('CodeEditor', () => {
     host.size.set('large');
     await fixture.whenStable();
     expect(element.classList.contains('large')).toBe(true);
+  });
+
+  it('suggests the words it is given, field paths with their dots', async () => {
+    host.language.set('javascript');
+    host.words.set(['customer.address.city', 'customer.name', 'status']);
+    host.text.set('');
+    await fixture.whenStable();
+    await parser('Script');
+    const suggest = async (text: string) => {
+      view().dispatch({
+        changes: { from: 0, to: view().state.doc.length, insert: text },
+        selection: { anchor: text.length },
+      });
+      startCompletion(view());
+      await vi.waitFor(() => expect(completionStatus(view().state)).not.toBe('pending'));
+      return currentCompletions(view().state).map((option) => option.label);
+    };
+    expect(await suggest('{ customer.add')).toContain('customer.address.city');
+    expect(await suggest('{ stat')).toContain('status');
+    host.words.set([]);
+    await fixture.whenStable();
+    expect(await suggest('{ stat')).not.toContain('status');
   });
 
   it('suggests the pm and nx API in scripts, with how each member is used', async () => {

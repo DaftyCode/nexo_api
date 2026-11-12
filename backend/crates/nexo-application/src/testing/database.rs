@@ -142,9 +142,10 @@ impl DocumentDatabase for Fake {
     async fn change(
         &self,
         connection: DatabaseConnection,
-        _: ports::CollectionChange,
+        change: ports::CollectionChange,
     ) -> Result<()> {
         self.connections.lock().unwrap().push(connection);
+        self.changes.lock().unwrap().push(change);
         Ok(())
     }
     async fn indexes(

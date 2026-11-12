@@ -31,6 +31,9 @@ import { MongoExplorerSidebar } from './mongo-explorer-sidebar';
 import { MongoTransfer } from './mongo-transfer';
 import { MongoAggregations } from './mongo-aggregations';
 import { AggregationEditor } from './mongo-aggregations/editor';
+import { MongoSchema } from './mongo-schema';
+import { SchemaExplorer } from './mongo-schema/explorer';
+import { fieldNames } from '../domain/mongo-schema';
 import { MongoTransfers } from './mongo-transfer/transfers';
 import { MONGO, TRANSFER_FILES } from '../composition/providers';
 import { WorkspaceDocument } from '../domain/models';
@@ -48,7 +51,8 @@ import {
 import type { QueryTarget } from '../application/mongo-use-cases';
 
 /** The views of a collection. */
-export type ExplorerTab = 'documents' | 'aggregations' | 'indexes' | 'explain' | 'profiler';
+export type ExplorerTab =
+  'documents' | 'aggregations' | 'schema' | 'indexes' | 'explain' | 'profiler';
 
 interface QueryModel extends QueryForm {
   /** Name and folder to save the query with. */
@@ -58,6 +62,8 @@ interface QueryModel extends QueryForm {
 }
 
 export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
+/** Documents of the page whose fields are suggested. */
+const SUGGESTED = 50;
 
 /**
  * Browses a saved connection: its databases and collections, and `find` queries on one of
@@ -74,6 +80,7 @@ export const PAGE_SIZES = ['20', '50', '100', '500', '1000'];
     MongoExplorerDocuments,
     MongoTransfer,
     MongoAggregations,
+    MongoSchema,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-explorer',
@@ -117,8 +124,8 @@ export class MongoExplorer {
   /** The views a collection has: a view has no indexes of its own. */
   protected readonly tabs = computed<ExplorerTab[]>(() =>
     this.target()?.kind === 'view'
-      ? ['documents', 'aggregations', 'explain', 'profiler']
-      : ['documents', 'aggregations', 'indexes', 'explain', 'profiler'],
+      ? ['documents', 'aggregations', 'schema', 'explain', 'profiler']
+      : ['documents', 'aggregations', 'schema', 'indexes', 'explain', 'profiler'],
   );
   readonly color = computed(() => connectionValue(this.connection().value).color ?? '');
   /** A read-only connection shows no write: the backend refuses them anyway. */
@@ -130,6 +137,11 @@ export class MongoExplorer {
   readonly explains = new MongoExplains(this);
   readonly transfers = new MongoTransfers(this, inject(TRANSFER_FILES));
   readonly aggregations = new AggregationEditor(this, inject(Injector));
+  readonly schema = new SchemaExplorer(this, inject(Injector), inject(TRANSFER_FILES));
+  /** Field paths suggested in the filter and the stages: the schema's, then the page's. */
+  readonly fieldNames = computed(() =>
+    fieldNames(this.schema.report(), this.pager.current()?.documents.slice(0, SUGGESTED) ?? []),
+  );
   readonly writes = new MongoWrites({
     state: this.state,
     cases: () => this.mongo(),
@@ -197,6 +209,7 @@ export class MongoExplorer {
     if (changed) {
       this.pager.reset();
       this.aggregations.runner.reset();
+      this.schema.reset();
       this.browser.stats.set(undefined);
       if (collection.kind !== 'view') void this.browser.loadStats();
     }

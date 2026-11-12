@@ -98,6 +98,8 @@ operations!(
         MongoImport => "mongo.import",
         MongoAggregate => "mongo.aggregate",
         MongoAggregateWrite => "mongo.aggregate.write",
+        MongoSchema => "mongo.schema",
+        MongoCollectionValidator => "mongo.collection.validator",
     }
 );
 impl Operation {
@@ -134,6 +136,8 @@ impl Operation {
                 | Self::MongoImport
                 | Self::MongoAggregate
                 | Self::MongoAggregateWrite
+                | Self::MongoSchema
+                | Self::MongoCollectionValidator
         )
     }
     /// Database operations that change data or the server's settings: refused on a
@@ -156,6 +160,7 @@ impl Operation {
                 | Self::MongoProfileSet
                 | Self::MongoImport
                 | Self::MongoAggregateWrite
+                | Self::MongoCollectionValidator
         )
     }
     /// Operations whose data belongs to a workspace and need one.
@@ -183,6 +188,7 @@ impl Operation {
                 | Self::MongoIndexHide
                 | Self::MongoIndexDrop
                 | Self::MongoProfileSet
+                | Self::MongoCollectionValidator
         )
     }
 }

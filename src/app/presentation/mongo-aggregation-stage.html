@@ -63,6 +63,7 @@
     size="small"
     language="javascript"
     [formField]="field().body"
+    [words]="editor().explorer.fieldNames()"
     [label]="'mongo.stage.value' | transloco: { v0: label() }"
   />
   @if (problem(); as problem) {

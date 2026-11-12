@@ -7,6 +7,7 @@ mod kind;
 pub use kind::DocumentKind;
 
 pub mod hosts;
+pub mod schema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;

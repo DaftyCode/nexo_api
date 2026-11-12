@@ -64,6 +64,10 @@
   padding: 1px 5px;
   white-space: nowrap;
 }
+.mongo-badge.danger {
+  color: var(--red);
+  border-color: var(--red);
+}
 .mongo-section {
   margin: 18px 0 6px;
   font-size: 11px;

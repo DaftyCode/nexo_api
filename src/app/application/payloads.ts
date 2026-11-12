@@ -555,6 +555,28 @@ export interface MongoAggregateWritePayload {
   maxTimeMS?: number;
 }
 
+export interface MongoSchemaPayload {
+  connection: MongoConnection;
+  id: string;
+  database: string;
+  collection: string;
+  workspace?: string;
+  size?: number;
+  filter?: object;
+}
+
+export interface MongoCollectionValidatorPayload {
+  connection: MongoConnection;
+  connectionId: string;
+  database: string;
+  collection: string;
+  validator: object;
+  confirm: string;
+  workspace?: string;
+  validationLevel?: 'off' | 'strict' | 'moderate';
+  validationAction?: 'error' | 'warn';
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -631,6 +653,8 @@ export interface OperationPayloads {
   'mongo.import': MongoImportPayload;
   'mongo.aggregate': MongoAggregatePayload;
   'mongo.aggregate.write': MongoAggregateWritePayload;
+  'mongo.schema': MongoSchemaPayload;
+  'mongo.collection.validator': MongoCollectionValidatorPayload;
 }
 
 /** The payload of an operation. */

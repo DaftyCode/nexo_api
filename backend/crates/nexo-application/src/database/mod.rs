@@ -7,6 +7,7 @@ mod aggregate;
 mod connection;
 mod import;
 mod reads;
+mod schema;
 #[cfg(test)]
 mod tests;
 mod writes;

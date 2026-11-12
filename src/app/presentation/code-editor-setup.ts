@@ -1,4 +1,5 @@
 import {
+  CompletionContext,
   autocompletion,
   closeBrackets,
   closeBracketsKeymap,
@@ -126,4 +127,21 @@ export function lineSpan(view: EditorView, line: number) {
   const number = Math.min(Math.max(line, 1), view.state.doc.lines);
   const found = view.state.doc.line(number);
   return { from: found.from, to: found.to };
+}
+
+/**
+ * Suggests `words` (field names, with their dots) while one is typed, besides what the
+ * language suggests.
+ */
+export function wordCompletions(words: readonly string[]): Extension {
+  if (!words.length) return [];
+  const options = words.map((label) => ({ label, type: 'property' }));
+  // One source per list: CodeMirror tells sources apart by identity, and a new one each time
+  // it asks would keep the completion pending.
+  const source = (context: CompletionContext) => {
+    const word = context.matchBefore(/[\w$.]+/);
+    if (!word || (word.from === word.to && !context.explicit)) return null;
+    return { from: word.from, options, validFor: /^[\w$.]*$/ };
+  };
+  return EditorState.languageData.of(() => [{ autocomplete: source }]);
 }

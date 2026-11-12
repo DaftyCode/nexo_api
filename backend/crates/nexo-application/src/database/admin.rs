@@ -4,7 +4,7 @@ use super::{confirmed, read};
 use crate::{
     Application,
     operations::Operation,
-    payloads,
+    payloads::{self, ValidationAction, ValidationLevel},
     ports::{CollectionChange, DatabaseConnection, IndexChange},
 };
 use nexo_domain::{Error, Result};
@@ -105,6 +105,24 @@ impl Application {
                 confirmed(Some(&p.confirm), &p.database, "database")?;
                 CollectionChange::DropDatabase {
                     database: p.database,
+                }
+            }
+            Operation::MongoCollectionValidator => {
+                let p: payloads::MongoCollectionValidatorPayload = read(payload)?;
+                confirmed(Some(&p.confirm), &p.collection, "collection")?;
+                CollectionChange::Validator {
+                    database: p.database,
+                    collection: p.collection,
+                    validator: Value::Object(p.validator),
+                    level: match p.validation_level.unwrap_or_default() {
+                        ValidationLevel::Off => "off",
+                        ValidationLevel::Strict => "strict",
+                        ValidationLevel::Moderate => "moderate",
+                    },
+                    action: match p.validation_action.unwrap_or_default() {
+                        ValidationAction::Error => "error",
+                        ValidationAction::Warn => "warn",
+                    },
                 }
             }
             _ => return Err(Error::Validation("Unknown database operation".into())),

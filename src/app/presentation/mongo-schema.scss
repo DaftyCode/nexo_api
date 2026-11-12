@@ -1,0 +1,75 @@
+:host {
+  display: block;
+}
+.mongo-schema-exports {
+  gap: 6px;
+}
+.mongo-schema-anomalies ul {
+  margin: 4px 0 10px;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.mongo-schema-scroll {
+  max-height: 520px;
+  overflow: auto;
+}
+.mongo-schema-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.mongo-schema-table th,
+.mongo-schema-table td {
+  text-align: left;
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.mongo-schema-table th[scope='row'] {
+  font-weight: normal;
+  white-space: nowrap;
+}
+.mongo-schema-table tr.anomaly th[scope='row'] .text-button {
+  color: var(--red);
+}
+.mongo-share {
+  display: inline-block;
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+  vertical-align: middle;
+  overflow: hidden;
+}
+.mongo-share span {
+  display: block;
+  height: 100%;
+  background: var(--accent, var(--muted));
+}
+.mongo-type {
+  display: inline-block;
+  margin: 0 6px 2px 0;
+  padding: 0 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.mongo-schema-detail p {
+  margin: 2px 0;
+}
+.mongo-schema-values {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0;
+  padding: 0;
+}
+.mongo-schema-rules {
+  margin-top: 12px;
+}
+.check {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}

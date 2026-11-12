@@ -64,6 +64,8 @@ export const EXECUTION_OPERATIONS = [
   'mongo.import',
   'mongo.aggregate',
   'mongo.aggregate.write',
+  'mongo.schema',
+  'mongo.collection.validator',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [
