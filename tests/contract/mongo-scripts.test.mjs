@@ -7,7 +7,9 @@ import http from 'node:http';
 import { environment, server, plain, seeded, saveConnection } from './mongo-fixture.mjs';
 
 const database = 'nexo_scripts';
-const address = () => new URL(environment.NEXO_MONGO_PLAIN).host;
+// Read when the module loads, so it must not throw without the servers: the tests skip then.
+const address = () =>
+  environment.NEXO_MONGO_PLAIN ? new URL(environment.NEXO_MONGO_PLAIN).host : '';
 let api;
 let base;
 after(() => api?.close());
