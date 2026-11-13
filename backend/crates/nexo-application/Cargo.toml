@@ -14,5 +14,7 @@ serde_json.workspace = true
 serde_path_to_error = "0.1.20"
 tracing.workspace = true
 uuid.workspace = true
+# Already in the workspace: module files chosen by the person arrive in base64.
+base64.workspace = true
 [dev-dependencies]
 tokio.workspace = true

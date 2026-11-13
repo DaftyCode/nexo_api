@@ -101,6 +101,8 @@ export async function startServer(environment = {}) {
     api,
     execute,
     base,
+    /** The server's data directory. */
+    directory,
     logs: () => logs,
     async stop() {
       child.kill();

@@ -1,5 +1,6 @@
 // End-to-end tests of the built web interface served by the real nexo-server binary.
-// Build first: `npm run build` and `cargo build -p nexo-server`; then `npm run e2e`.
+// Build first: `npm run build` and `cargo build -p nexo-server -p nexo-driver-test` (the test
+// database driver, served as a downloadable module); then `npm run e2e`.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

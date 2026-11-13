@@ -64,18 +64,12 @@ impl Shared {
                 }
             }
         }
-        let directory = self.config.modules_dir.as_ref();
-        let path = directory
-            .map(|directory| {
-                directory.join(format!(
-                    "nexo-driver-{module}{}",
-                    std::env::consts::EXE_SUFFIX
-                ))
-            })
-            .filter(|path| path.is_file())
-            .ok_or_else(|| {
-                DriverError::unsupported(format!("The {module} module is not installed"))
-            })?;
+        // Finding it may mean checking its hash or installing a bundled copy: off the runtime.
+        let executables = self.config.executables.clone();
+        let name = module.to_owned();
+        let path = tokio::task::spawn_blocking(move || executables.executable(&name))
+            .await
+            .map_err(|error| DriverError::internal(error.to_string()))??;
         let answers = Answers {
             module: module.to_owned(),
             network: self.network.clone(),

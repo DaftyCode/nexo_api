@@ -8,6 +8,7 @@ import {
   APPEARANCE,
   DATA,
   INTEGRATION,
+  MODULES,
   MONGO,
   TRANSFER_FILES,
   PROTOCOLS,
@@ -15,6 +16,7 @@ import {
   WORKSPACE,
 } from '../composition/providers';
 import { ReportUseCases } from '../application/report-use-cases';
+import { ModulesUseCases } from '../application/modules-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import { MongoUseCases } from '../application/mongo-use-cases';
@@ -24,6 +26,16 @@ import { WorkspaceUseCases } from '../application/workspace-use-cases';
 import { ApiPort, FilePort } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
 import { TestTransferFiles } from './mongo-transfer';
+
+/** Device preferences kept in memory, for one test. */
+function memoryPreferences() {
+  const stored = new Map<string, string>();
+  return {
+    read: (key: string) => stored.get(key),
+    write: (key: string, value: string) =>
+      void (value ? stored.set(key, value) : stored.delete(key)),
+  };
+}
 
 /** What the fake engine answers to an operation: a value, or a function of the payload. */
 export type FakeResponse = unknown | ((payload: Record<string, unknown>) => unknown);
@@ -147,6 +159,10 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     { provide: INTEGRATION, useValue: new IntegrationUseCases(api) },
     { provide: DATA, useValue: new DataUseCases(api, files.id) },
     { provide: PROTOCOLS, useValue: new ProtocolUseCases(api) },
+    {
+      provide: MODULES,
+      useValue: new ModulesUseCases(api, files, memoryPreferences(), () => Promise.resolve()),
+    },
     { provide: TRANSFER_FILES, useValue: new TestTransferFiles() },
     {
       provide: MONGO,

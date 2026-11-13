@@ -634,6 +634,16 @@ export interface MongoSyncPayload {
   remove?: boolean;
 }
 
+export interface ModulePayload {
+  id: string;
+  workspace?: string;
+}
+
+export interface ModuleFilePayload {
+  content: string;
+  workspace?: string;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -717,6 +727,11 @@ export interface OperationPayloads {
   'mongo.sql': MongoSqlPayload;
   'mongo.compare': MongoComparePayload;
   'mongo.sync': MongoSyncPayload;
+  'modules.list': WorkspacePayload;
+  'modules.install': ModulePayload;
+  'modules.install.file': ModuleFilePayload;
+  'modules.progress': ModulePayload;
+  'modules.remove': ModulePayload;
 }
 
 /** The payload of an operation. */

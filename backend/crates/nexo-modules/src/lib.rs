@@ -9,13 +9,22 @@
 //! - What a driver writes to its log, and the errors it answers, are shown without the
 //!   secrets of its connections.
 //! - A driver stops with Nexo: it ends when its input does, and is killed if it does not.
+//! - A module is installed only when its files have the hashes of the manifest that travels
+//!   inside Nexo, and its driver is checked again before every start.
 //!
 //! The design is in `docs/ARCHITECTURE.md`, section "Database modules".
 
+mod catalog;
 mod connections;
+mod download;
 mod host;
+mod modules;
 mod process;
 mod redact;
 mod resolve;
+mod store;
 
-pub use host::{DriverHost, HostConfig, LogSink};
+pub use catalog::{Manifest, ModuleEntry, executable_name};
+pub use host::{DriverHost, Executables, Folder, HostConfig, LogSink, NoModules};
+pub use modules::Modules;
+pub use store::{ModuleStore, StoreConfig};

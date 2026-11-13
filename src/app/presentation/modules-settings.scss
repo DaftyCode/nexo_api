@@ -1,0 +1,37 @@
+.module-tools {
+  margin: var(--nexo-space-4) 0;
+}
+.module-error {
+  color: var(--nexo-color-danger);
+}
+.module-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.module-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-5) 0;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+}
+.module-row p {
+  margin: var(--nexo-space-1) 0 0;
+}
+.module-state {
+  margin-left: var(--nexo-space-3);
+  padding: 0 var(--nexo-space-3);
+  border-radius: var(--nexo-radius-full);
+  font-size: var(--nexo-font-size-sm);
+  color: var(--nexo-color-text-muted);
+  background: var(--nexo-color-surface-2);
+}
+.module-state[data-state='installed'] {
+  color: var(--nexo-color-success);
+  background: var(--nexo-color-success-soft);
+}
+.module-state[data-state='outdated'] {
+  color: var(--nexo-color-warning);
+  background: var(--nexo-color-warning-soft);
+}

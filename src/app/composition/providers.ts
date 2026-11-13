@@ -11,6 +11,7 @@ import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import type { MongoUseCases } from '../application/mongo-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
+import { ModulesUseCases } from '../application/modules-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
 import type { TransferFilesPort } from '../application/ports';
 import { transferFiles } from '../infrastructure/transfer-files';
@@ -20,6 +21,8 @@ export const INTEGRATION = new InjectionToken<IntegrationUseCases>('Nexo integra
 export const DATA = new InjectionToken<DataUseCases>('Nexo dataset and mock use cases');
 export const PROTOCOLS = new InjectionToken<ProtocolUseCases>('Nexo protocol use cases');
 export const REPORTS = new InjectionToken<ReportUseCases>('Nexo printable reports');
+/** The database modules, downloaded when they are needed. */
+export const MODULES = new InjectionToken<ModulesUseCases>('Nexo database modules');
 /** Loads the MongoDB use cases with the panel, so the first screen does not carry them. */
 export type MongoLoader = () => Promise<MongoUseCases>;
 export const MONGO = new InjectionToken<MongoLoader>('Nexo MongoDB connections');
@@ -43,6 +46,11 @@ export const workspaceProviders = [
     },
   },
   { provide: PROTOCOLS, useFactory: () => new ProtocolUseCases(inject(HttpApi)) },
+  {
+    provide: MODULES,
+    useFactory: () =>
+      new ModulesUseCases(inject(HttpApi), inject(BrowserFiles), inject(BrowserPreferences)),
+  },
   { provide: TRANSFER_FILES, useFactory: transferFiles },
   {
     provide: MONGO,

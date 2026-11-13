@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use nexo_application::ports::NetworkPolicy;
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{protocol::ConnectParams, statements::ExecuteParams};
-use nexo_modules::{DriverHost, HostConfig};
+use nexo_modules::{DriverHost, Folder, HostConfig};
 use std::{
     net::SocketAddr,
     path::PathBuf,
@@ -52,7 +52,7 @@ pub fn fixture_with(change: impl FnOnce(&mut HostConfig)) -> Fixture {
     let log = Log::default();
     let lines = log.clone();
     let mut config = HostConfig {
-        modules_dir: Some(modules_dir()),
+        executables: Arc::new(Folder(modules_dir())),
         log: Arc::new(move |module, level, line| {
             lines
                 .lock()

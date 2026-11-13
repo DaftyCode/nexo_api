@@ -61,6 +61,9 @@ impl Application {
                 "Choose a workspace for this operation".into(),
             ));
         }
+        if operation.is_module() {
+            return self.module(operation, &payload).await;
+        }
         if operation.is_database() {
             return self.database(operation, Value::Object(payload)).await;
         }

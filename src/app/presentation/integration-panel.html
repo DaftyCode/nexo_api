@@ -142,7 +142,10 @@
       }
       @default {
         <div class="button-grid settings-nav">
-          @for (t of ['general', 'vault', 'oauth', 'revisions', 'apis', 'performance']; track t) {
+          @for (
+            t of ['general', 'modules', 'vault', 'oauth', 'revisions', 'apis', 'performance'];
+            track t
+          ) {
             <button class="button" [class.selected]="tab() === t" (click)="tab.set(t)">
               {{ t }}
             </button>
@@ -184,6 +187,9 @@
             <button class="text-button danger" (click)="state.deleteWorkspace()">
               {{ 'Delete workspace' | transloco }}
             </button>
+          }
+          @case ('modules') {
+            <app-modules-settings />
           }
           @case ('vault') {
             <app-vault-secrets [vault]="vault" />

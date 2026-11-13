@@ -1,0 +1,42 @@
+.module-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.module-dialog {
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+}
+.module-dialog h2 {
+  margin-top: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.module-facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--nexo-space-2) var(--nexo-space-6);
+  margin: var(--nexo-space-5) 0;
+}
+.module-facts dt {
+  color: var(--nexo-color-text-muted);
+}
+.module-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.module-progress {
+  width: 100%;
+}
+.module-error {
+  color: var(--nexo-color-danger);
+}
+.module-actions {
+  justify-content: flex-end;
+  gap: var(--nexo-space-4);
+  margin-top: var(--nexo-space-6);
+}

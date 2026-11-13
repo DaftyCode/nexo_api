@@ -87,6 +87,7 @@ mod auth;
 mod common;
 mod git;
 mod http;
+mod modules;
 mod mongo_compare;
 mod mongo_read;
 mod mongo_schema;
@@ -99,6 +100,7 @@ pub use auth::*;
 pub use common::*;
 pub use git::*;
 pub use http::*;
+pub use modules::*;
 pub use mongo_compare::*;
 pub use mongo_read::*;
 pub use mongo_schema::*;
@@ -240,6 +242,11 @@ operation_payloads! {
     MongoSql => MongoSqlPayload,
     MongoCompare => MongoComparePayload,
     MongoSync => MongoSyncPayload,
+    ModulesList => WorkspacePayload,
+    ModulesInstall => ModulePayload,
+    ModulesInstallFile => ModuleFilePayload,
+    ModulesProgress => ModulePayload,
+    ModulesRemove => ModulePayload,
 }
 
 /// Checks the payload of a Git operation.

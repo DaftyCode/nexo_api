@@ -8,12 +8,14 @@ use nexo_domain::{
 use serde_json::Value;
 
 mod database;
+mod modules;
 mod queries;
 mod scripts;
 mod watch;
 mod writes;
 
 pub use database::*;
+pub use modules::*;
 pub use queries::*;
 pub use scripts::*;
 pub use watch::*;

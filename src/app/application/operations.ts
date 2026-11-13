@@ -71,6 +71,11 @@ export const EXECUTION_OPERATIONS = [
   'mongo.sql',
   'mongo.compare',
   'mongo.sync',
+  'modules.list',
+  'modules.install',
+  'modules.install.file',
+  'modules.progress',
+  'modules.remove',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

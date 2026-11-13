@@ -1,0 +1,71 @@
+<div class="module-backdrop">
+  <section
+    class="feature-card module-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="module-download-title"
+    tabindex="-1"
+    (keydown.escape)="close()"
+  >
+    <h2 id="module-download-title">
+      {{ 'modules.download.title' | transloco: { v0: module().name } }}
+    </h2>
+    <p>
+      {{
+        'The connections of this database use its module. Nexo downloads it once and keeps it on this computer.'
+          | transloco
+      }}
+    </p>
+    <dl class="module-facts">
+      <dt>{{ 'Size' | transloco }}</dt>
+      <dd>{{ bytes(module().downloadSize) }}</dd>
+      <dt>{{ 'From' | transloco }}</dt>
+      <dd>
+        @if (module().bundled) {
+          {{ 'The copy that came with Nexo' | transloco }}
+        } @else {
+          {{ 'modules.source' | transloco: { v0: host(), v1: module().version } }}
+        }
+      </dd>
+      <dt>{{ 'Licenses' | transloco }}</dt>
+      <dd>{{ module().licenses.join(' · ') }}</dd>
+    </dl>
+    <p class="muted">
+      {{ 'Nexo checks its SHA-256 before installing it and every time it starts.' | transloco }}
+    </p>
+    @if (progress(); as current) {
+      <progress
+        class="module-progress"
+        max="100"
+        [value]="percent(current)"
+        [attr.aria-label]="'Download progress' | transloco"
+      ></progress>
+      <p class="muted" role="status">
+        @if (current.state === 'downloading') {
+          {{
+            'modules.received'
+              | transloco: { v0: bytes(current.received), v1: bytes(current.total) }
+          }}
+        } @else {
+          {{ 'Checking and installing…' | transloco }}
+        }
+      </p>
+    }
+    @if (error()) {
+      <p class="module-error" role="alert">{{ error() }}</p>
+    }
+    <div class="row module-actions">
+      <button class="button" type="button" [disabled]="busy()" (click)="close()">
+        {{ 'Cancel' | transloco }}
+      </button>
+      <button
+        class="button primary module-confirm"
+        type="button"
+        [disabled]="busy()"
+        (click)="download()"
+      >
+        {{ (error() ? 'Try again' : 'Download') | transloco }}
+      </button>
+    </div>
+  </section>
+</div>

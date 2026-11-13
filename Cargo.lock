@@ -3222,6 +3222,7 @@ name = "nexo-application"
 version = "0.6.0"
 dependencies = [
  "async-trait",
+ "base64 0.23.1",
  "nexo-domain",
  "serde",
  "serde_json",
@@ -3367,13 +3368,17 @@ name = "nexo-modules"
 version = "0.6.0"
 dependencies = [
  "async-trait",
+ "aws-lc-rs",
+ "flate2",
  "nexo-application",
  "nexo-domain",
  "nexo-driver-sdk",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -3405,6 +3410,7 @@ dependencies = [
  "nexo-engine",
  "nexo-http",
  "nexo-infrastructure",
+ "nexo-modules",
  "nexo-mongo",
  "reqwest",
  "serde_json",

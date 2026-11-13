@@ -13,6 +13,8 @@ nexo-infrastructure = { path = "../nexo-infrastructure" }
 nexo-http = { path = "../nexo-http" }
 nexo-engine = { path = "../nexo-engine" }
 nexo-mongo = { path = "../nexo-mongo" }
+# Runs the database drivers; the drivers themselves are separate executables.
+nexo-modules = { path = "../nexo-modules" }
 tokio.workspace = true
 axum.workspace = true
 uuid.workspace = true

@@ -8,6 +8,7 @@ import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { WebSocketServer } from 'ws';
+import { moduleReleases } from './modules-fixture.mjs';
 
 /** A small GraphQL schema, as introspection answers it. */
 const scalar = (name) => ({ kind: 'SCALAR', name, ofType: null });
@@ -70,6 +71,7 @@ export const test = base.extend({
       const listen = await port();
       // Stands for the user's ~/.netrc in the Netrc test.
       const netrc = join(directory, 'netrc');
+      const modules = await moduleReleases(binary, directory);
       await writeFile(netrc, 'machine 127.0.0.1 login e2e-user password e2e-netrc\n');
       const child = spawn(
         binary,
@@ -82,6 +84,7 @@ export const test = base.extend({
             NEXO_MASTER_KEY: 'b'.repeat(64),
             NEXO_NO_BROWSER: '1',
             NEXO_NETRC: netrc,
+            ...modules?.environment,
           },
           stdio: 'ignore',
         },
@@ -247,6 +250,8 @@ export const test = base.extend({
       await use({
         base,
         echo: `http://127.0.0.1:${echo.address().port}`,
+        /** Whether the test database module can be downloaded. */
+        modules: !!modules,
         /**
          * Opens the app with a one-time link. The tests share one server, so tabs reopen only
          * when asked: otherwise each test would start with the tabs the previous one left.
@@ -267,6 +272,7 @@ export const test = base.extend({
       });
       subscriptions.close();
       echo.close();
+      modules?.server.close();
       child.kill();
       await new Promise((r) => (child.exitCode === null ? child.once('exit', r) : r()));
       await rm(directory, { recursive: true, force: true });

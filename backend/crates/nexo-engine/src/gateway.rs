@@ -133,7 +133,13 @@ impl ExecutionGateway for Engine {
             | Operation::MongoCollectionValidator
             | Operation::MongoWatch
             | Operation::MongoCompare
-            | Operation::MongoSync => Err(Error::Validation(format!(
+            | Operation::MongoSync
+            // The application sends these to the database modules.
+            | Operation::ModulesList
+            | Operation::ModulesInstall
+            | Operation::ModulesInstallFile
+            | Operation::ModulesProgress
+            | Operation::ModulesRemove => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

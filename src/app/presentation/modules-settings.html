@@ -1,0 +1,99 @@
+<section class="modules-settings" [attr.aria-label]="'Database modules' | transloco">
+  <h2>{{ 'Database modules' | transloco }}</h2>
+  <p class="muted">
+    {{
+      'Each database engine is a module: Nexo downloads it when you add its first connection, so this computer keeps only the ones you use.'
+        | transloco
+    }}
+  </p>
+  <label class="check">
+    <input
+      type="checkbox"
+      [checked]="autoUpdate()"
+      (change)="setAutoUpdate($any($event.target).checked)"
+    />{{ 'Keep my modules up to date' | transloco }}
+  </label>
+  <div class="row module-tools">
+    <button class="button" type="button" (click)="chooser.click()">
+      {{ 'Install from a file…' | transloco }}
+    </button>
+    <input
+      #chooser
+      type="file"
+      hidden
+      accept=".gz,.exe,application/gzip,application/octet-stream"
+      (change)="installFile($event)"
+    />
+  </div>
+  @if (task.error()) {
+    <p class="module-error" role="alert">{{ task.error() }}</p>
+  }
+  @if (loaded() && !list().length) {
+    <p class="muted">{{ 'This version of Nexo has no database modules yet.' | transloco }}</p>
+  }
+  <ul class="module-list">
+    @for (module of list(); track module.id) {
+      <li class="module-row">
+        <div class="grow">
+          <strong>{{ module.name }}</strong>
+          <span class="module-state" [attr.data-state]="module.state">{{
+            stateLabel(module.state) | transloco
+          }}</span>
+          @if (module.description) {
+            <p class="muted">{{ module.description }}</p>
+          }
+          @if (module.state !== 'development') {
+            <p class="muted">
+              {{
+                'modules.details'
+                  | transloco: { v0: module.version, v1: bytes(module.downloadSize) }
+              }}
+            </p>
+          }
+        </div>
+        @switch (module.state) {
+          @case ('available') {
+            <button
+              class="button primary"
+              type="button"
+              [attr.aria-label]="'modules.install' | transloco: { v0: module.name }"
+              (click)="downloading.set(module)"
+            >
+              {{ 'Install' | transloco }}
+            </button>
+          }
+          @case ('development') {
+            <span class="muted">{{ 'Built from the sources' | transloco }}</span>
+          }
+          @default {
+            @if (module.state === 'outdated') {
+              <button
+                class="button primary"
+                type="button"
+                [attr.aria-label]="'modules.update' | transloco: { v0: module.name }"
+                (click)="downloading.set(module)"
+              >
+                {{ 'Update' | transloco }}
+              </button>
+            }
+            <button
+              class="button"
+              type="button"
+              [attr.aria-label]="'modules.remove' | transloco: { v0: module.name }"
+              (click)="remove(module)"
+            >
+              {{ 'Remove' | transloco }}
+            </button>
+          }
+        }
+      </li>
+    }
+  </ul>
+</section>
+@if (downloading(); as module) {
+  <app-module-download
+    [module]="module"
+    (installed)="installed($event)"
+    (closed)="downloading.set(undefined)"
+  />
+}

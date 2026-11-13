@@ -7,6 +7,7 @@ pub use nexo_http::{Mode, Sessions};
 use nexo_infrastructure::{
     git::GitAdapter, infrastructure as err, sqlite::SqliteStore, vault::desktop_master_key,
 };
+use nexo_modules::{HostConfig, Modules, StoreConfig};
 use nexo_mongo::MongoAdapter;
 use std::{
     path::{Path, PathBuf},
@@ -92,7 +93,14 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         )),
         Arc::new(MongoAdapter::new(&config.data, engine.clone())),
     );
-    let application = Arc::new(application);
+    // Database drivers are downloaded modules, run in their own processes; their network
+    // goes through the engine's egress policy.
+    let modules = Modules::new(
+        StoreConfig::from_env(&config.data),
+        HostConfig::default(),
+        engine.clone(),
+    )?;
+    let application = Arc::new(application.with_modules(Arc::new(modules)));
     // Scripts reach the databases through the application, with its rules (`nx.mongo`).
     let databases: Arc<dyn nexo_application::ports::ScriptDatabase> = application.clone();
     engine.connect_databases(Arc::downgrade(&databases));

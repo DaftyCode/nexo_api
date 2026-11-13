@@ -1,5 +1,6 @@
 // Installs the native package built on this runner and checks what it contains:
-// the application binary is installed and no Node runtime or JavaScript engine ships with it.
+// the application binary is installed and no Node runtime or JavaScript engine ships with it,
+// and no database driver either: those are modules, downloaded when they are needed.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,7 +12,7 @@ const find = (directory, extension) =>
         .filter((name) => name.endsWith(extension))
         .map((name) => join(bundle, directory, name))
     : [];
-const forbidden = /nexo-node|engine\.mjs|runtime-worker\.mjs|node_modules/;
+const forbidden = /nexo-node|engine\.mjs|runtime-worker\.mjs|node_modules|nexo-driver-/;
 function check(files) {
   const leftovers = files.filter((file) => forbidden.test(file));
   if (leftovers.length) throw new Error(`The package still contains:\n${leftovers.join('\n')}`);

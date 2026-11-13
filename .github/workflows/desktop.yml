@@ -73,6 +73,10 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup show active-toolchain
       - run: npm ci --no-audit --no-fund
+      # The database drivers are published apart from the installers, and the app embeds
+      # their manifest: this step sets NEXO_MODULES_MANIFEST for the builds below.
+      - name: Build the database modules
+        run: node tools/package-modules.mjs --out target/modules
       # The engine's contracts on Windows, the Store's platform; CI already runs them on Linux.
       - name: Engine contract tests
         if: runner.os == 'Windows'
@@ -109,6 +113,7 @@ jobs:
             target/release/bundle/deb/*.deb
             target/release/bundle/rpm/*.rpm
             target/release/bundle/appimage/*.AppImage
+            target/modules/*.gz
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: nexo-${{ matrix.name }}
@@ -122,6 +127,8 @@ jobs:
             target/release/bundle/deb/*.deb
             target/release/bundle/rpm/*.rpm
             target/release/bundle/appimage/*.AppImage
+            target/modules/*.gz
+            target/modules/modules-*.json
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
