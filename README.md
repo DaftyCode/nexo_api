@@ -21,15 +21,16 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 
 | Area                | Available features                                                                                                        |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Requests            | HTTP/HTTPS, methods, query parameters, headers and responses; raw, JSON, text form bodies and GraphQL over HTTP.          |
+| Requests            | HTTP/HTTPS, methods, query and path parameters, headers and responses; raw, JSON and form bodies, multipart and binary file uploads, and GraphQL with an explorer and autocompletion. |
 | Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite.                        |
 | HTTP authentication | Every type of Postman, Bruno and Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (all grants, PKCE, sign-in window in the desktop app like Postman's, tokens in the vault, auto-refresh and auto-fetch), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc; inherited from folders and collections. |
 | Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. |
-| Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, cancellation and JSON/JUnit reports from the CLI.  |
-| Protocols           | WebSocket, Socket.IO, MQTT and gRPC clients with a supplied proto.                                                        |
+| Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI. |
+| Protocols           | WebSocket, Socket.IO, MQTT, Kafka, gRPC (with a proto or through reflection) and GraphQL subscriptions over WebSocket or SSE. |
+| MongoDB             | Connections, explorer, queries, document editing with safeguards, indexes, explain, profiler, stage-by-stage aggregations, schema, JSON/CSV import and export, change streams, shell, code generation, SQL and compare/sync. |
 | Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                      |
 | Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
-| Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, local Git and MCP client/server support.                  |
+| Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, cookie manager, API definitions with a linter, Git with remotes and MCP client/server support. |
 | Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references, allowed domains per secret and secret redaction in results.         |
 | Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                       |
 | Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.       |
@@ -38,9 +39,7 @@ Requests leave from your computer. Set `NEXO_EGRESS=deny-private` to refuse priv
 
 ### Workspace layouts
 
-The source includes three layouts, selectable from **Template**: **Aurora** (the default dark workspace), **Studio** (three columns with environment and request context), and **Canvas** (a light workspace with request and response side by side). They share the same collections, environments, variables, history and tools. Switching layouts keeps the active request and saves your preference on that device. Canvas exposes the workspace navigation through **Tools** and **Browse collections**. Classic has been retired.
-
-These layouts will be included in the next desktop release; the published `v0.1.0` installers retain their original interface.
+The source includes three layouts, selectable from **Template**: **Aurora** (the default dark workspace), **Studio** (three columns with environment and request context), and **Canvas** (a light workspace with request and response side by side). They share the same collections, environments, variables, history and tools. Switching layouts keeps the active request and saves your preference on that device. Canvas exposes the workspace navigation through **Tools** and **Browse collections**. Classic has been retired. Every HTTP method has its own colour in all layouts (GET green, POST yellow, PUT blue, PATCH purple, DELETE red); colours and sizes can be changed through [CSS variables](#styles-design-tokens).
 
 ### Interface languages
 
@@ -50,7 +49,7 @@ Translations live in `src/app/infrastructure/i18n/en.json` and `es.json`. Simple
 
 ## Download and install
 
-Versions are distributed through [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Check each release's assets: a platform configured in CI does not automatically mean an installer has been published for it.
+Versions are published on [GitHub Releases](https://github.com/DaftyCode/nexo_api/releases). Check each release's assets: a platform configured in CI does not automatically mean an installer has been published for it.
 
 | Operating system | Architecture                              | Packages configured in CI                           |
 | ---------------- | ----------------------------------------- | --------------------------------------------------- |
@@ -62,44 +61,9 @@ Each build runs on a runner for its operating system. Installers are self-contai
 
 ### Microsoft Store
 
-Publishing in the Microsoft Store is in preparation. The Store signs the package and keeps the app updated, so no code-signing certificate is needed. `npm run desktop:msix` builds the desktop app and packs it as MSIX with `makeappx` from the Windows SDK (`winget install --id Microsoft.WindowsSDK.10.0.26100 --exact` if it is missing). The Store identity comes from Partner Center through `NEXO_MSIX_NAME`, `NEXO_MSIX_PUBLISHER` and `NEXO_MSIX_PUBLISHER_NAME`, which are repository variables in CI. Without them the script produces a local test package.
+[<img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" alt="Get it from Microsoft">](https://apps.microsoft.com/detail/9N6H77VSRDQ4?mode=direct)
 
-### WinGet and enterprise deployment
-
-The pipeline generates WinGet manifests with the proposed identifier `DaftyCode.NexoAPI`, release URLs and SHA-256 hashes calculated from the actual MSI. **Public catalog registration is pending**: a version must be published first, then its manifests submitted to [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs).
-
-After acceptance, the intended command will be:
-
-```powershell
-winget install --exact --id DaftyCode.NexoAPI --source winget
-```
-
-The MSI also lets IT teams deploy the application with their usual management tools. WinGet still uses an installer and follows company policies; it does not bypass execution restrictions or publisher trust requirements. Windows signing and enterprise environment validation are pending.
-
-### Homebrew on macOS
-
-Publishing a release triggers `Update package manager index`, which generates a cask with checksums for Apple Silicon and Intel and adds it to this repository. **The cask becomes available after the first release is published and that workflow succeeds.** Then:
-
-```bash
-brew tap daftycode/nexo https://github.com/DaftyCode/nexo_api
-brew install --cask daftycode/nexo/nexo-api
-```
-
-We use our own tap; inclusion in Homebrew's central catalog is a separate step. CI builds use ad hoc signing on macOS. Apple Developer ID signing and notarization require distribution certificates and credentials, which still need to be configured.
-
-### Linux with APT or DNF
-
-Once published, packages downloaded from a release can be installed using your distribution's package manager:
-
-```bash
-# Debian / Ubuntu, from your download directory:
-sudo apt install ./Nexo*.deb
-
-# Fedora / compatible RPM distributions:
-sudo dnf install ./Nexo*.rpm
-```
-
-IT teams can distribute these packages through their internal repositories. A public APT/YUM repository with its own indexes and signing is pending; `apt install nexo-api` is not yet available from system repositories. Flatpak and other catalogs are on the roadmap.
+Nexo API is in the Microsoft Store: the Store signs the package, installs it and keeps the app updated. On Windows, the button opens the listing directly in the Store app. To build the MSIX package locally, run `npm run desktop:msix` (it needs the Windows SDK).
 
 ## How it works
 
@@ -139,25 +103,43 @@ Presentation calls use cases. HTTP and file handling stay in infrastructure. We 
 
 We follow **SOLID and Clean Code**: clear module responsibilities, small ports, inward dependencies, interchangeable implementations, concrete names and focused functions. Abstractions should solve a real need. `npm run test:architecture` checks layer boundaries.
 
+### Styles: design tokens
+
+Every colour and size in the interface is a `--nexo-*` CSS variable. Style rules only read variables; the values live in one place:
+
+- **Global tokens** (`src/styles/tokens/`): the typography, spacing, size, corner, border, shadow, motion and stacking scales; the semantic palette (backgrounds, surfaces, borders, text, accent, states, code); one token per workspace area (top bar, navigation, tabs, URL bar, panels) and the HTTP method colours.
+- **Theme tokens** (each template's `_theme.scss`): Aurora, Studio and Canvas only redefine values; they do not repeat rules.
+
+They sit in the `nexo-tokens` CSS layer, so any external stylesheet overrides them without `!important`:
+
+```css
+.studio {
+  --nexo-color-accent: #2f81f7;
+  --nexo-space-unit: 2.5px; /* a looser interface */
+}
+```
+
+We want changing a theme to mean changing variables, and anyone to be able to make their own. Loading custom themes from the app is the next step. `npm run test:architecture` rejects literal colours or sizes outside the token files. The full guide is in [src/styles/README.md](src/styles/README.md).
+
 ## Build the desktop app from a clean checkout
 
 Build on the operating system and CPU architecture you want to distribute: the scripts install the pinned Node and Rust toolchains, build the interface and the desktop app, and leave the installers under `target/release/bundle`. [docs/BUILD.md](docs/BUILD.md) explains the one-step install, the build options, manual builds, the local web version and the CLI.
 
 ## Current status and next steps
 
-Tests already cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, unary and streaming gRPC, WebSocket, Socket.IO, MQTT, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
+The current version is **0.6.0**, with the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
 
-Important work remains:
+Next steps:
 
-- Validate the new installers on clean Windows, macOS and Linux machines; signing, notarization, automatic updates and catalog publication.
-- Publish startup, memory and latency benchmarks.
-- Binary file uploads, persistent cookie management and additional authentication helpers.
-- Automatic OAuth browser/callback flows, GraphQL introspection/subscriptions, gRPC reflection and more protocol variants.
-- Runner pause/resume, expanded scripting APIs and comprehensive proxy/mTLS tests.
-- Real-time collaboration, comments, synchronization between installations and scheduled monitoring.
-- Signed APT/YUM repositories and Flatpak distribution.
+- An AI assistant using each user's own API key.
+- SSH tunnels and SOCKS5 proxies, protected environments, restoring tabs on start, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
+- Custom themes from the app, built on the design tokens.
+- Removing the Node left in the development tooling: contract tests and build scripts in Rust.
+- Distribution: WinGet, Homebrew, signed APT/YUM repositories and Flatpak; Windows signing outside the Store and macOS notarization; validating the installers on clean machines.
+- Publishing startup, memory and latency benchmarks.
+- More databases, to be decided.
 
-Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. Socket.IO binary events and MQTT 5 are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
+Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. MQTT 5, Socket.IO 2.x (Engine.IO v3) and Kafka consumer groups, transactions and Schema Registry are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
 
 ## Contributing
 
@@ -183,36 +165,6 @@ chore(packages): update installer manifests
 ```
 
 Each commit should have one clear purpose. Explain the motivation in the body when it is not obvious from the change. Use `!` and `BREAKING CHANGE:` for incompatible contract changes. PRs should preserve backend hexagonal architecture, frontend Clean Architecture and SOLID principles.
-
-### Maintainer review
-
-The default branch is currently `master`. Contributions must use pull requests and require one approval from a code owner; [CODEOWNERS](.github/CODEOWNERS) currently assigns that review to **@DaftyCode**. New commits invalidate previous approvals, review conversations must be resolved, and force pushes and branch deletion are blocked for contributors. The personal repository owner retains an administrator bypass. The rules also cover `main` if that name is used later.
-
-To add maintainers, invite them with write access and add their GitHub usernames to the first ownership pattern. Changes to `CODEOWNERS` and workflows continue to require the owner. Other people may leave reviews, but their approval does not replace the required code-owner approval. Package-index automation submits changes for review instead of pushing to the default branch.
-
-### Checks
-
-```bash
-npm run test:architecture
-npm run lint
-npm test -- --watch=false
-npm run engine:test
-npm run e2e
-npm run test:packages
-npm run backend:test
-npm run backend:clippy
-npm run build
-npm run build:desktop
-npm run test:server
-```
-
-`engine:test` builds `nexo-server` and runs the contract tests against it. `e2e` drives the built interface (`npm run build`) with Playwright and checks accessibility with axe; run `npx playwright install chromium` once. `test:server` requires a release backend build. Reports are generated in `.verification`, outside Git. The local `docs/` directory is also excluded from the repository.
-
-## Publishing a version
-
-Run `Desktop packages` manually from Actions to check all four builds without publishing a release. A `vX.Y.Z` tag matching the project versions creates a **GitHub Release draft** with installers, `SHA256SUMS` and WinGet/Homebrew manifests. After reviewing and publishing the draft, the package index workflow proposes the cask and manifests on a separate branch and opens a PR when repository settings permit it. Otherwise it provides the branch and artifacts for the owner to open the PR. The owner reviews and merges those changes.
-
-Public WinGet registration requires a separate PR to its official catalog. Generating packages and manifests does not mean they have been accepted into a package manager.
 
 ## License
 
