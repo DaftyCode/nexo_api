@@ -1,0 +1,20 @@
+[package]
+name = "nexo-modules"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Database modules of Nexo: starts each driver process and talks to it"
+
+[dependencies]
+nexo-domain = { path = "../nexo-domain" }
+nexo-application = { path = "../nexo-application" }
+# The protocol and its client. Drivers themselves are never dependencies: they are separate
+# executables, found on disk and started when a connection needs them.
+nexo-driver-sdk = { path = "../nexo-driver-sdk" }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+tracing.workspace = true

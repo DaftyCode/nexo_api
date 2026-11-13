@@ -1,0 +1,22 @@
+[package]
+name = "nexo-driver-test"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "A database driver in memory, for the tests of the driver host; never published"
+
+[dependencies]
+# A driver depends on the SDK and on the library of its engine, never on another Nexo crate.
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk" }
+async-trait.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+# The tests of the host live here: Cargo builds this package's executable for them.
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["conformance", "tls"] }
+nexo-modules = { path = "../../crates/nexo-modules" }
+nexo-application = { path = "../../crates/nexo-application" }
+nexo-domain = { path = "../../crates/nexo-domain" }

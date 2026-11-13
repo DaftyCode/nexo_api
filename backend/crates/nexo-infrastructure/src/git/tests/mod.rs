@@ -21,6 +21,16 @@ impl NetworkPolicy for Policy {
             Ok(())
         }
     }
+    /// Git connects by name: nothing here asks for addresses.
+    async fn resolve_destination(
+        &self,
+        host: &str,
+        port: u16,
+    ) -> Result<Vec<std::net::SocketAddr>> {
+        self.check_destination(host, port)
+            .await
+            .map(|()| Vec::new())
+    }
 }
 
 async fn git_available() -> bool {

@@ -77,6 +77,11 @@ pub trait SecretVault: Send + Sync {
 pub trait NetworkPolicy: Send + Sync {
     /// Refuses a destination the egress policy blocks, after resolving it.
     async fn check_destination(&self, host: &str, port: u16) -> Result<()>;
+    /// The addresses of a destination, every one allowed by the egress policy, for adapters
+    /// that then connect to the address and not to the name (database drivers): what was
+    /// checked is what is connected to.
+    async fn resolve_destination(&self, host: &str, port: u16)
+    -> Result<Vec<std::net::SocketAddr>>;
     /// Whether the policy refuses some destinations (`deny-private`). Adapters that cannot
     /// check every address their library connects to are stricter then.
     fn restrictive(&self) -> bool {

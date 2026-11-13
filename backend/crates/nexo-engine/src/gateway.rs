@@ -9,6 +9,13 @@ impl nexo_application::ports::NetworkPolicy for Engine {
             .await
             .map(|_| ())
     }
+    async fn resolve_destination(
+        &self,
+        host: &str,
+        port: u16,
+    ) -> Result<Vec<std::net::SocketAddr>> {
+        self.egress.resolve(host, port, &self.mocks.ports()).await
+    }
     fn restrictive(&self) -> bool {
         matches!(self.egress, Policy::DenyPrivate { .. })
     }

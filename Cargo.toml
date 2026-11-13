@@ -1,5 +1,7 @@
 [workspace]
-members = ["backend/crates/*", "src-tauri"]
+# The database drivers (backend/drivers) are separate executables: nexo-server and the
+# desktop app never depend on them.
+members = ["backend/crates/*", "backend/drivers/*", "src-tauri"]
 default-members = ["backend/crates/nexo-server"]
 resolver = "3"
 

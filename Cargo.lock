@@ -3255,6 +3255,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "nexo-driver-sdk"
+version = "0.6.0"
+dependencies = [
+ "async-trait",
+ "base64 0.23.1",
+ "rustls",
+ "rustls-native-certs",
+ "rustls-pki-types",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "nexo-driver-test"
+version = "0.6.0"
+dependencies = [
+ "async-trait",
+ "nexo-application",
+ "nexo-domain",
+ "nexo-driver-sdk",
+ "nexo-modules",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "nexo-engine"
 version = "0.6.0"
 dependencies = [
@@ -3333,6 +3360,20 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
+]
+
+[[package]]
+name = "nexo-modules"
+version = "0.6.0"
+dependencies = [
+ "async-trait",
+ "nexo-application",
+ "nexo-domain",
+ "nexo-driver-sdk",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
