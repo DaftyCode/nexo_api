@@ -44,8 +44,8 @@ const paths: Record<string, string> = {
   styles: `
     :host {
       display: inline-flex;
-      width: 20px;
-      height: 20px;
+      width: var(--nexo-size-10);
+      height: var(--nexo-size-10);
       flex-shrink: 0;
     }
     svg {

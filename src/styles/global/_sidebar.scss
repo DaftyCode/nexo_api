@@ -1,39 +1,39 @@
 .rail {
-  width: 77px;
+  width: var(--nexo-rail-width);
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
-  background: #181b1f;
-  padding: 9px 7px;
+  border-right: var(--nexo-border-width) solid var(--nexo-color-border);
+  background: var(--nexo-rail-bg);
+  padding: var(--nexo-space-4) var(--nexo-space-3);
   overflow: auto;
 }
 .rail button {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 5px;
+  gap: var(--nexo-space-2);
   width: 100%;
-  padding: 10px 1px;
-  margin: 3px 0;
-  border-radius: 6px;
-  color: var(--muted);
-  font-size: 9px;
+  padding: var(--nexo-space-5) var(--nexo-space-px);
+  margin: var(--nexo-space-1) 0;
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-3xs);
 }
 .rail .rail-icon {
-  font-size: 21px;
-  line-height: 22px;
+  font-size: var(--nexo-font-size-4xl);
+  line-height: var(--nexo-size-11);
 }
 .rail button:hover {
-  background: var(--panel-3);
+  background: var(--nexo-color-surface-3);
 }
 .rail button.active {
-  color: var(--accent);
-  background: #ff825c0d;
+  color: var(--nexo-color-accent);
+  background: var(--nexo-color-accent-soft);
 }
 .sidebar {
-  width: 257px;
+  width: var(--nexo-sidebar-width);
   flex-shrink: 0;
-  border-right: 1px solid var(--border);
-  background: #1a1d22;
+  border-right: var(--nexo-border-width) solid var(--nexo-color-border);
+  background: var(--nexo-sidebar-bg);
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -42,67 +42,67 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 13px 5px;
-  font-size: 12px;
+  padding: var(--nexo-space-6) var(--nexo-space-6) var(--nexo-space-2);
+  font-size: var(--nexo-font-size-sm);
 }
 .sidebar-search {
-  margin: 7px 12px 15px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  margin: var(--nexo-space-3) var(--nexo-space-6) var(--nexo-space-7);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
   display: flex;
   align-items: center;
-  padding-left: 8px;
-  color: var(--dim);
+  padding-left: var(--nexo-space-4);
+  color: var(--nexo-color-text-dim);
 }
 .sidebar-search > span {
-  font-size: 18px;
+  font-size: var(--nexo-font-size-3xl);
 }
 .sidebar-search input {
   width: 100%;
   border: 0;
   background: none;
-  font-size: 11px;
-  padding: 7px;
+  font-size: var(--nexo-font-size-xs);
+  padding: var(--nexo-space-3);
 }
 .sidebar-empty {
   display: flex;
   align-items: center;
   flex-direction: column;
-  gap: 9px;
-  color: var(--muted);
-  padding: 40px 21px;
+  gap: var(--nexo-space-4);
+  color: var(--nexo-color-text-muted);
+  padding: var(--nexo-space-20) var(--nexo-space-10);
   text-align: center;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .sidebar-empty p {
   margin: 0;
 }
 .sidebar-empty strong {
-  color: var(--text);
-  font-size: 12px;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
 }
 .sidebar-empty .empty-folder {
-  font-size: 38px;
-  color: var(--dim);
-  margin-bottom: 8px;
+  font-size: var(--nexo-font-size-display-sm);
+  color: var(--nexo-color-text-dim);
+  margin-bottom: var(--nexo-space-4);
 }
 .sidebar-bottom {
   margin-top: auto;
-  font-size: 9px;
-  color: var(--muted);
-  border-top: 1px solid var(--border);
-  padding: 12px;
+  font-size: var(--nexo-font-size-3xs);
+  color: var(--nexo-color-text-muted);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: var(--nexo-space-6);
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--nexo-space-3);
 }
 .collection {
-  padding: 0 7px 10px;
+  padding: 0 var(--nexo-space-3) var(--nexo-space-5);
 }
 .collection-title {
   display: flex;
   align-items: center;
-  height: 34px;
+  height: var(--nexo-size-17);
   position: relative;
 }
 .tree-toggle {
@@ -110,20 +110,20 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: var(--nexo-size-11);
+  height: var(--nexo-size-11);
   padding: 0;
-  border-radius: 5px;
-  color: var(--muted);
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-text-muted);
 }
 .tree-toggle:hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--nexo-color-text);
+  background: color-mix(in srgb, var(--nexo-color-text) 8%, transparent);
 }
 .tree-toggle app-studio-icon {
-  width: 14px;
-  height: 14px;
-  transition: transform 0.15s;
+  width: var(--nexo-size-7);
+  height: var(--nexo-size-7);
+  transition: transform var(--nexo-duration-base);
 }
 .tree-toggle[aria-expanded='true'] app-studio-icon {
   transform: rotate(90deg);
@@ -134,13 +134,13 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   text-align: left;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--nexo-font-size-md);
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .folder-name {
-  font-size: 12.5px;
+  font-size: var(--nexo-font-size-sm);
 }
 .collection-name > span,
 .folder-name > span {
@@ -149,18 +149,18 @@
   white-space: nowrap;
 }
 .tree-icon {
-  width: 17px;
-  height: 17px;
-  color: #e3b35c;
+  width: var(--nexo-size-9);
+  height: var(--nexo-size-9);
+  color: var(--nexo-color-folder);
 }
 .tree-icon.collection-icon {
-  color: var(--accent);
+  color: var(--nexo-color-accent);
 }
 .tree-row {
   display: flex;
   align-items: center;
-  min-height: 31px;
-  gap: 7px;
+  min-height: var(--nexo-size-16);
+  gap: var(--nexo-space-3);
 }
 /* Where a dragged item will land: a line before or after a row, or a highlighted folder. */
 .tree-row,
@@ -173,8 +173,8 @@
   position: absolute;
   left: 8px;
   right: 8px;
-  height: 2px;
-  background: var(--accent);
+  height: var(--nexo-size-1);
+  background: var(--nexo-color-accent);
   pointer-events: none;
 }
 .tree-row.drop-before::before {
@@ -185,23 +185,23 @@
 }
 .tree-row.drop-inside,
 .collection-title.drop-inside {
-  outline: 1px dashed var(--accent);
-  outline-offset: -1px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  outline: var(--nexo-border-width) dashed var(--nexo-color-accent);
+  outline-offset: calc(-1 * var(--nexo-border-width));
+  background: color-mix(in srgb, var(--nexo-color-accent) 12%, transparent);
 }
 .tree-row.drop-invalid {
-  outline: 1px dashed var(--red);
-  background: color-mix(in srgb, var(--red) 10%, transparent);
+  outline: var(--nexo-border-width) dashed var(--nexo-color-danger);
+  background: color-mix(in srgb, var(--nexo-color-danger) 10%, transparent);
 }
 .tree-row.drop-invalid::before,
 .tree-row.drop-invalid::after {
-  background: var(--red);
+  background: var(--nexo-color-danger);
 }
 .tree-row:hover {
-  background: #ffffff04;
-  border-radius: 4px;
+  background: var(--nexo-color-hover);
+  border-radius: var(--nexo-radius-sm);
 }
 .tree-row > span {
   flex: 1;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }

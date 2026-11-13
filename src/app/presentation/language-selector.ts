@@ -15,11 +15,11 @@ import { LanguageState } from './language-state';
       flex-shrink: 0;
     }
     select {
-      padding: 7px 24px 7px 9px;
-      font-size: 11px;
-      border-radius: 8px;
-      color: var(--text);
-      background: var(--panel-2);
+      padding: var(--nexo-space-3) var(--nexo-space-12) var(--nexo-space-3) var(--nexo-space-4);
+      font-size: var(--nexo-font-size-xs);
+      border-radius: var(--nexo-radius-lg);
+      color: var(--nexo-color-text);
+      background: var(--nexo-color-surface-2);
       max-width: 110px;
     }
   `,

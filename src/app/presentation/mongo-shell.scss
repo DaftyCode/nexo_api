@@ -5,40 +5,40 @@
   max-height: 460px;
   min-height: 160px;
   overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  margin-bottom: 8px;
-  font-family: var(--mono, monospace);
-  font-size: 12px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  padding: var(--nexo-space-4) var(--nexo-space-5);
+  margin-bottom: var(--nexo-space-4);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-shell-output pre {
-  margin: 2px 0;
+  margin: var(--nexo-space-1) 0;
   white-space: pre-wrap;
   word-break: break-word;
 }
 .mongo-shell-entry + .mongo-shell-entry {
-  border-top: 1px solid var(--border);
-  margin-top: 6px;
-  padding-top: 6px;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  margin-top: var(--nexo-space-3);
+  padding-top: var(--nexo-space-3);
 }
 .mongo-shell-command {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .mongo-shell-confirm {
-  border: 1px solid var(--red);
-  border-radius: 6px;
-  padding: 6px 10px;
-  margin-bottom: 8px;
+  border: var(--nexo-border-width) solid var(--nexo-color-danger);
+  border-radius: var(--nexo-radius-md);
+  padding: var(--nexo-space-3) var(--nexo-space-5);
+  margin-bottom: var(--nexo-space-4);
 }
 .mongo-shell-history {
   list-style: none;
-  margin: 4px 0;
+  margin: var(--nexo-space-2) 0;
   padding: 0;
   max-height: 200px;
   overflow: auto;
-  font-family: var(--mono, monospace);
-  font-size: 12px;
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-shell-history .text-button {
   max-width: 100%;

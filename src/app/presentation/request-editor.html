@@ -21,10 +21,10 @@
       [formField]="fields.method"
       [attr.aria-label]="'HTTP method' | transloco"
       class="method-select"
-      [class.post]="request().method === 'POST'"
+      [attr.data-method]="request().method"
     >
       @for (method of ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']; track method) {
-        <option [value]="method">{{ method }}</option>
+        <option [value]="method" [attr.data-method]="method">{{ method }}</option>
       }
     </select>
     <input

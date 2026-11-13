@@ -19,64 +19,64 @@
 .api-findings li {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--border);
+  gap: var(--nexo-space-5);
+  padding: var(--nexo-space-2) 0;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .api-findings .message {
   flex: 1;
   overflow-wrap: anywhere;
 }
 .severity {
-  min-width: 64px;
-  font-size: 11px;
+  min-width: var(--nexo-size-32);
+  font-size: var(--nexo-font-size-xs);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .error .severity,
 .breaking > .badge,
 .breaking .badge {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }
 .warning .severity {
-  color: #d29922;
+  color: var(--nexo-color-warning);
 }
 .api-search {
   width: 100%;
-  margin: 8px 0;
+  margin: var(--nexo-space-4) 0;
 }
 .api-tree ul {
-  padding-left: 14px;
+  padding-left: var(--nexo-space-7);
 }
 .api-tree details {
-  padding: 2px 0;
+  padding: var(--nexo-space-1) 0;
 }
 .api-tree summary {
   cursor: pointer;
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: baseline;
 }
 .api-tree h4 {
-  font-size: 11px;
-  margin: 6px 0 2px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-xs);
+  margin: var(--nexo-space-3) 0 var(--nexo-space-1);
+  color: var(--nexo-color-text-muted);
   text-transform: uppercase;
 }
 .tree-label {
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: baseline;
   background: none;
   border: 0;
   color: inherit;
-  padding: 2px 0;
+  padding: var(--nexo-space-1) 0;
   cursor: pointer;
   text-align: left;
   font: inherit;
 }
 .tree-label.path {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .deprecated {
   text-decoration: line-through;
@@ -85,23 +85,23 @@
   align-items: flex-end;
 }
 .api-breaking {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .api-changes li {
-  padding: 3px 0;
+  padding: var(--nexo-space-1) 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: var(--nexo-space-3) var(--nexo-space-5);
   align-items: baseline;
 }
 .api-changes ul {
   width: 100%;
-  padding-left: 18px;
+  padding-left: var(--nexo-space-9);
 }
 .badge {
-  font-size: 10px;
+  font-size: var(--nexo-font-size-2xs);
   text-transform: uppercase;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  padding: 0 4px;
+  border: var(--nexo-border-width) solid currentColor;
+  border-radius: var(--nexo-radius-sm);
+  padding: 0 var(--nexo-space-2);
 }

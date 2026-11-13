@@ -2,7 +2,11 @@
   display: block;
   max-width: 100%;
   max-height: 60vh;
-  margin: 12px;
+  margin: var(--nexo-space-6);
   object-fit: contain;
-  background: repeating-conic-gradient(#8882 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+  background: repeating-conic-gradient(
+      color-mix(in srgb, var(--nexo-color-text-muted) 13%, transparent) 0% 25%,
+      transparent 0% 50%
+    )
+    50% / 16px 16px;
 }

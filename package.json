@@ -14,7 +14,7 @@
     "backend:test": "node tools/cargo.mjs test --locked --workspace --exclude nexo-desktop",
     "desktop:dev": "node tools/tauri.mjs dev",
     "desktop:build": "node tools/tauri.mjs build",
-    "test:architecture": "node tools/check-architecture.mjs && node tools/check-file-size.mjs",
+    "test:architecture": "node tools/check-architecture.mjs && node tools/check-file-size.mjs && node tools/check-style-tokens.mjs",
     "check": "npm run test:architecture && ng build",
     "build:desktop": "ng build --configuration desktop",
     "backend:clippy": "node tools/cargo.mjs clippy --locked --workspace --exclude nexo-desktop --all-targets -- -D warnings",

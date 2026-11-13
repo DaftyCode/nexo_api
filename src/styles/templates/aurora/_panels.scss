@@ -2,134 +2,135 @@
 .studio[data-template='studio'] {
   .response-section {
     /* Aligned with the request content above it. */
-    margin: 0 18px;
-    border: 1px solid #354a77;
-    border-radius: 17px 17px 0 0;
+    margin: 0 var(--nexo-space-9);
+    border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+    border-radius: var(--nexo-radius-3xl) var(--nexo-radius-3xl) 0 0;
     overflow: hidden;
-    background: linear-gradient(135deg, #17203e, #111c37 75%);
+    background: var(--nexo-panel-bg);
     container: response / size;
   }
   .response-toolbar {
-    min-height: 51px;
-    background: #1a264736;
-    border-color: #3c4b76;
+    min-height: var(--nexo-size-26);
+    background: color-mix(in srgb, var(--nexo-color-surface-2) 21%, transparent);
+    border-color: var(--nexo-color-border-strong);
   }
   .response-tabs {
-    gap: 25px;
-    height: 51px;
-    padding: 0 25px;
+    gap: var(--nexo-space-12);
+    height: var(--nexo-size-26);
+    padding: 0 var(--nexo-space-12);
   }
   .response-meta {
-    padding-right: 14px;
-    gap: 10px;
+    padding-right: var(--nexo-space-7);
+    gap: var(--nexo-space-5);
   }
   .response-placeholder {
     position: relative;
     isolation: isolate;
     background: url('/templates/aurora/waves.svg') center bottom / cover no-repeat;
-    gap: 12px;
+    gap: var(--nexo-space-6);
   }
   .response-placeholder > * {
     position: relative;
   }
   .response-art {
     width: 82px;
-    height: 78px;
-    filter: drop-shadow(0 0 20px #587af940);
-    margin-bottom: 2px;
+    height: var(--nexo-size-39);
+    filter: drop-shadow(var(--nexo-response-art-shadow));
+    margin-bottom: var(--nexo-space-1);
   }
   .empty-response h3 {
-    font-size: 18px;
-    color: #f1f2ff;
-    font-weight: 650;
-    letter-spacing: -0.4px;
+    font-size: var(--nexo-font-size-3xl);
+    color: var(--nexo-color-text);
+    font-weight: var(--nexo-font-weight-semibold);
+    letter-spacing: var(--nexo-tracking-snug);
   }
   .empty-response p {
-    font-size: 13px;
-    color: #b2bee0;
+    font-size: var(--nexo-font-size-md);
+    color: var(--nexo-color-text-muted);
   }
   .keyboard-tip {
-    padding: 9px 12px;
-    background: #36416b80;
-    border: 1px solid #55619480;
-    border-radius: 13px;
-    font-size: 11px;
-    color: #ced9f5;
+    padding: var(--nexo-space-4) var(--nexo-space-6);
+    background: color-mix(in srgb, var(--nexo-color-surface-3) 50%, transparent);
+    border: var(--nexo-border-width) solid
+      color-mix(in srgb, var(--nexo-color-border-strong) 50%, transparent);
+    border-radius: var(--nexo-radius-2xl);
+    font-size: var(--nexo-font-size-xs);
+    color: var(--nexo-color-text-soft);
   }
   kbd {
-    color: #e8efff;
-    border-color: #596c9e;
-    background: #293759;
-    border-radius: 5px;
-    padding: 3px 7px;
-    box-shadow: inset 0 1px #ffffff16;
+    color: var(--nexo-color-text);
+    border-color: var(--nexo-color-border-strong);
+    background: var(--nexo-color-surface-3);
+    border-radius: var(--nexo-radius-md);
+    padding: var(--nexo-space-1) var(--nexo-space-3);
+    box-shadow: var(--nexo-shadow-highlight-strong);
   }
   .response-code {
-    color: #d0e4ee;
-    font-size: 13px;
+    color: var(--nexo-response-code-text);
+    font-size: var(--nexo-font-size-md);
   }
   .response-actions {
-    border-color: #2d3d60;
+    border-color: var(--nexo-color-border);
   }
   .assertion {
-    border-color: #2d3d60;
+    border-color: var(--nexo-color-border);
   }
   .statusbar {
-    height: 33px;
-    background: linear-gradient(90deg, #101a31, #1d2650 60%, #15263d);
-    color: #c0ccea;
-    border-color: #35416a;
-    padding: 0 20px;
-    font-size: 10px;
+    height: var(--nexo-size-17);
+    background: var(--nexo-statusbar-bg);
+    color: var(--nexo-color-text-soft);
+    border-color: var(--nexo-color-border);
+    padding: 0 var(--nexo-space-10);
+    font-size: var(--nexo-font-size-2xs);
   }
   .statusbar > button {
-    font-size: 11px;
-    color: #cbd6f2;
+    font-size: var(--nexo-font-size-xs);
+    color: var(--nexo-color-text-soft);
   }
   .statusbar-right {
-    gap: 22px;
+    gap: var(--nexo-space-11);
   }
   .floating-console {
     left: 116px;
     bottom: 33px;
-    background: #101a30;
-    border-color: #445b8c;
+    background: var(--nexo-console-bg);
+    border-color: var(--nexo-color-border-strong);
   }
   .tools-page {
-    background: #111b3040;
+    background: color-mix(in srgb, var(--nexo-color-surface) 25%, transparent);
   }
   .feature-card,
   .auth-card,
   .modal {
-    background: linear-gradient(130deg, #1a2441, #151d37);
-    border-color: #41517a;
-    border-radius: 15px;
+    background: var(--nexo-modal-bg);
+    border-color: var(--nexo-color-border-strong);
+    border-radius: var(--nexo-radius-2xl);
   }
   .data-table th,
   .data-table td {
-    border-color: #314264;
+    border-color: var(--nexo-color-border);
   }
 
   @container response (max-height: 290px) {
     .response-placeholder {
       min-height: 0;
-      padding: 14px;
-      gap: 8px;
+      padding: var(--nexo-space-7);
+      gap: var(--nexo-space-4);
     }
     .response-art {
-      width: 56px;
-      height: 52px;
+      width: var(--nexo-size-28);
+      height: var(--nexo-size-26);
       margin: 0;
     }
     .response-placeholder h3 {
-      font-size: 17px;
+      font-size: var(--nexo-font-size-2xl);
     }
     .response-placeholder p {
-      font-size: 12px;
+      font-size: var(--nexo-font-size-sm);
     }
     .keyboard-tip {
-      margin-top: 3px;
-      padding: 6px 10px;
+      margin-top: var(--nexo-space-1);
+      padding: var(--nexo-space-3) var(--nexo-space-5);
     }
   }
   @container response (max-height: 220px) {

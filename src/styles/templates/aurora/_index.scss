@@ -1,4 +1,5 @@
-// The Aurora and Studio templates, in cascade order.
+// The Aurora and Studio templates, in cascade order: their tokens first.
+@use 'theme';
 @use 'frame';
 @use 'request';
 @use 'panels';

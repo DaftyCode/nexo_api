@@ -3,7 +3,7 @@
 @use './templates/canvas';
 
 .studio {
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--nexo-color-border) transparent;
   scrollbar-width: thin;
 
   * {
@@ -28,7 +28,7 @@
 /* Dividers dragged to resize panels (app-splitter), with the resize cursor of the system. */
 .splitter {
   position: relative;
-  z-index: 6;
+  z-index: var(--nexo-z-splitter);
   flex-shrink: 0;
   touch-action: none;
   outline: none;
@@ -38,31 +38,31 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  border-radius: 2px;
+  border-radius: var(--nexo-radius-xs);
   background: transparent;
-  transition: background-color 0.12s;
+  transition: background-color var(--nexo-duration-fast);
 }
 .splitter.vertical {
-  width: 8px;
-  margin: 0 -4px;
+  width: var(--nexo-size-4);
+  margin: 0 calc(-1 * var(--nexo-space-2));
   align-self: stretch;
   cursor: col-resize;
 }
 .splitter.vertical::after {
-  width: 2px;
+  width: var(--nexo-size-1);
 }
 .splitter.horizontal {
-  height: 8px;
-  margin: -4px 0;
+  height: var(--nexo-size-4);
+  margin: calc(-1 * var(--nexo-space-2)) 0;
   cursor: row-resize;
 }
 .splitter.horizontal::after {
-  height: 2px;
+  height: var(--nexo-size-1);
 }
 .splitter:hover::after,
 .splitter:focus-visible::after,
 .splitter.dragging::after {
-  background: var(--accent);
+  background: var(--nexo-color-accent);
 }
 .studio:has(.splitter.dragging) {
   user-select: none;
@@ -83,7 +83,7 @@
   grid-row: 4;
   grid-column: 2;
   justify-self: start;
-  margin: 0 0 0 -11px;
+  margin: 0 0 0 calc(-1 * var(--nexo-space-5));
 }
 
 /* Sizes chosen by dragging; until then each template keeps its own. */

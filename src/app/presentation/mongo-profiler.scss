@@ -1,12 +1,12 @@
 .mongo-profiler {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 12px;
+  gap: var(--nexo-space-6);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-profiler-bar,
 .mongo-profiler-form {
-  gap: 10px;
+  gap: var(--nexo-space-5);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -15,7 +15,7 @@
   margin: 0;
 }
 .mongo-profiler-bar h3 {
-  font-size: 13px;
+  font-size: var(--nexo-font-size-md);
 }
 .mongo-profiler-form {
   align-items: flex-end;
@@ -27,7 +27,7 @@
   width: 140px;
 }
 .mongo-problem {
-  color: var(--red);
+  color: var(--nexo-color-danger);
   margin: 0;
 }
 .mongo-table {
@@ -38,17 +38,17 @@
 .mongo-table td {
   text-align: left;
   vertical-align: top;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .mongo-table th {
-  color: var(--muted);
-  font-weight: 500;
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-medium);
 }
 .mongo-mono {
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
   overflow-wrap: anywhere;
 }
 .mongo-collscan {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }

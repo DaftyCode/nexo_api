@@ -1,4 +1,5 @@
-// The Canvas template, in cascade order.
+// The Canvas template, in cascade order: its tokens first.
+@use 'theme';
 @use 'frame';
 @use 'request';
 @use 'panels';

@@ -1,0 +1,83 @@
+/*
+ * Aurora theme: a deep blue night with a violet accent. Studio shares it and changes only the
+ * areas it lays out differently. Only tokens here; the rules are in the other files.
+ */
+@layer nexo-tokens {
+  .studio[data-template='aurora'],
+  .studio[data-template='studio'] {
+    color-scheme: dark;
+    --nexo-font-size-body: 13px;
+
+    --nexo-color-sunken: #0c1529;
+    --nexo-color-bg: #0d152a;
+    --nexo-color-chrome: #10192e;
+    --nexo-color-surface: #111b34;
+    --nexo-color-surface-2: #1a2543;
+    --nexo-color-surface-3: #253355;
+    --nexo-color-border-subtle: #293858;
+    --nexo-color-border: #2d3d63;
+    --nexo-color-border-strong: #3c4e7a;
+    --nexo-color-text: #f0f2ff;
+    --nexo-color-text-soft: #cdd8f6;
+    --nexo-color-text-muted: #b1bfdf;
+    --nexo-color-text-dim: #8c9bbf;
+    --nexo-color-text-faint: #66769c;
+    --nexo-color-accent: #b77bff;
+    --nexo-color-accent-hover: #cc9cff;
+    --nexo-color-accent-strong: #9b4dfc;
+    --nexo-color-on-accent: #fff;
+    --nexo-color-accent-soft: color-mix(in srgb, var(--nexo-color-accent) 11%, transparent);
+    --nexo-color-accent-border: #8e64c5;
+    --nexo-color-success: #66e6b0;
+    --nexo-color-info: #84aaff;
+    --nexo-color-danger: #ff8eaa;
+
+    --nexo-shadow-accent: 0 5px 18px #3e24db22;
+    --nexo-shadow-glow: 0 0 8px #af46ff40;
+
+    --nexo-gradient-accent: linear-gradient(120deg, #a641f5 0%, #752cf8 48%, #3930ee 100%);
+    --nexo-gradient-accent-line: linear-gradient(90deg, #b247ff, #7b43f6);
+    --nexo-app-bg: radial-gradient(ellipse at 45% 120%, #30357860, transparent 60%), #0d152a;
+    --nexo-workspace-bg: radial-gradient(ellipse at 75% -20%, #23416a32, transparent 60%);
+    --nexo-topbar-bg: linear-gradient(100deg, #10162e, #0c142a 80%);
+    --nexo-topbar-height: var(--nexo-size-35);
+    --nexo-workspace-bar-height: var(--nexo-size-22);
+    --nexo-avatar-bg: linear-gradient(135deg, #4776ff, #3933e4);
+    --nexo-avatar-text: #fff;
+    --nexo-avatar-border: #637dff;
+    --nexo-nav-active-bg: linear-gradient(160deg, #272075, #4823db);
+    --nexo-nav-active-shadow: inset 0 0 0 1px #6553c270, 0 5px 20px #3423df30;
+    --nexo-connection-glow: 0 0 12px #56e9af30;
+    --nexo-search-bg: linear-gradient(125deg, #1c2745, #182440);
+
+    --nexo-rail-bg: linear-gradient(180deg, #10182f, #0d1529);
+    --nexo-rail-width: 116px;
+    --nexo-rail-active-shadow: inset 0 0 0 1px #c77bff50, 0 0 18px #7c36fa40;
+    --nexo-sidebar-bg: linear-gradient(160deg, #192139 0%, #151c36 52%, #1e2253 100%);
+    --nexo-sidebar-width: 280px;
+    --nexo-art-shadow: 0 8px 22px #682de538;
+
+    --nexo-tabbar-bg: var(--nexo-color-sunken);
+    --nexo-tab-bg: #1b2846;
+    --nexo-tab-active-bg: linear-gradient(180deg, #202e52, #18213c);
+    --nexo-url-bar-bg: linear-gradient(110deg, #1b2b49, #202d50);
+    --nexo-raised-bg: linear-gradient(110deg, #202e50, #1a2544);
+
+    --nexo-panel-bg: linear-gradient(135deg, #17203e, #111c37 75%);
+    --nexo-response-code-text: #d0e4ee;
+    --nexo-response-art-shadow: 0 0 20px #587af940;
+    --nexo-statusbar-bg: linear-gradient(90deg, #101a31, #1d2650 60%, #15263d);
+    --nexo-console-bg: #101a30;
+    --nexo-modal-bg: linear-gradient(130deg, #1a2441, #151d37);
+    --nexo-context-bg: linear-gradient(155deg, #141d32, #151b39 65%, #282459);
+    --nexo-card-bg: linear-gradient(130deg, #202a42, #182239);
+  }
+
+  /* Studio: the navigation and the workspace are floating cards. */
+  .studio[data-template='studio'] {
+    --nexo-navigation-bg: linear-gradient(155deg, #10182e, #111a30 70%, #29205b);
+    --nexo-rail-bg: #11182b60;
+    --nexo-workspace-bg: radial-gradient(ellipse at 50% -30%, #243c6450, transparent 75%), #10182b;
+    --nexo-tabbar-bg: #0c1426;
+  }
+}

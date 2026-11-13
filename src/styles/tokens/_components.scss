@@ -1,0 +1,58 @@
+/*
+ * Component tokens: what each area of the workspace looks like, from the semantic palette. A
+ * template's `_theme.scss` gives an area its own value (a gradient, a width) here instead of in
+ * its rules, so a theme is only a list of tokens.
+ */
+@layer nexo-tokens {
+  :root,
+  .studio {
+    /* Accent fills */
+    --nexo-gradient-accent: var(--nexo-color-accent);
+    --nexo-gradient-accent-line: var(--nexo-color-accent);
+
+    /* Window */
+    --nexo-app-bg: var(--nexo-color-bg);
+    --nexo-workspace-bg: transparent;
+    --nexo-topbar-bg: var(--nexo-color-chrome);
+    --nexo-topbar-height: var(--nexo-size-27);
+    --nexo-workspace-bar-height: var(--nexo-size-25);
+    --nexo-avatar-bg: #40483e;
+    --nexo-avatar-text: #cee2c9;
+    --nexo-avatar-border: #566250;
+    --nexo-nav-active-bg: var(--nexo-color-accent-soft);
+    --nexo-nav-active-shadow: none;
+    --nexo-connection-glow: none;
+
+    /* Navigation */
+    --nexo-rail-bg: var(--nexo-color-chrome);
+    --nexo-rail-width: var(--nexo-size-39);
+    --nexo-sidebar-bg: var(--nexo-color-chrome);
+    --nexo-sidebar-width: 257px;
+    --nexo-rail-active-shadow: none;
+    --nexo-search-bg: var(--nexo-color-surface-2);
+    --nexo-art-shadow: 0 0 0 transparent;
+    --nexo-navigation-bg: var(--nexo-sidebar-bg);
+
+    /* Request */
+    --nexo-tabbar-bg: var(--nexo-color-chrome);
+    --nexo-tab-bg: var(--nexo-color-surface);
+    --nexo-tab-active-bg: var(--nexo-color-surface-2);
+    --nexo-url-bar-bg: var(--nexo-color-surface-2);
+    --nexo-raised-bg: var(--nexo-color-surface);
+
+    /* Response and panels */
+    --nexo-panel-bg: var(--nexo-color-surface);
+    --nexo-response-code-bg: var(--nexo-color-code-bg);
+    --nexo-response-code-text: var(--nexo-color-code-text);
+    --nexo-statusbar-bg: var(--nexo-color-chrome);
+    --nexo-console-bg: var(--nexo-color-sunken);
+    --nexo-modal-bg: var(--nexo-color-surface);
+    --nexo-context-bg: var(--nexo-color-surface);
+    --nexo-card-bg: var(--nexo-color-surface-2);
+    --nexo-response-art-shadow: 0 0 0 transparent;
+
+    /* Printed report */
+    --nexo-report-font: system-ui, sans-serif;
+    --nexo-report-font-mono: ui-monospace, monospace;
+  }
+}

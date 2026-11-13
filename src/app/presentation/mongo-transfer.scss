@@ -1,17 +1,17 @@
 .mongo-transfer .row {
-  gap: 10px;
+  gap: var(--nexo-space-5);
 }
 .mongo-transfer-save {
   align-items: flex-end;
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
-  padding-top: 8px;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  margin-top: var(--nexo-space-6);
+  padding-top: var(--nexo-space-4);
 }
 .mongo-transfer-progress {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 12px 0;
+  gap: var(--nexo-space-3);
+  margin: var(--nexo-space-6) 0;
 }
 .mongo-transfer-progress progress {
   width: 100%;
@@ -19,23 +19,23 @@
 .mongo-transfer-outcome {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--nexo-space-8);
 }
 .mongo-transfer-failures {
   max-height: 200px;
   overflow: auto;
-  margin: 8px 0;
-  padding-left: 18px;
-  font-size: 12px;
+  margin: var(--nexo-space-4) 0;
+  padding-left: var(--nexo-space-9);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-transfer-hint {
-  color: var(--muted);
-  font-size: 12px;
-  margin: 4px 0 8px;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
+  margin: var(--nexo-space-2) 0 var(--nexo-space-4);
 }
 .mongo-transfer-fields {
   list-style: none;
-  margin: 6px 0;
+  margin: var(--nexo-space-3) 0;
   padding: 0;
   max-height: 180px;
   overflow: auto;
@@ -43,14 +43,14 @@
 .mongo-transfer-fields li {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-family: var(--mono, monospace);
-  font-size: 12px;
+  gap: var(--nexo-space-3);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-transfer-preview {
   max-height: 180px;
   overflow: auto;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .mongo-transfer-preview pre {
   margin: 0;
@@ -58,7 +58,7 @@
 }
 .mongo-transfer-columns td,
 .mongo-transfer-columns th {
-  padding: 2px 6px;
+  padding: var(--nexo-space-1) var(--nexo-space-3);
   text-align: left;
 }
 .mongo-transfer-columns input,

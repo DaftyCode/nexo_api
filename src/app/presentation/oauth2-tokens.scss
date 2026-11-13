@@ -6,25 +6,25 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: var(--nexo-space-5);
 }
 .token-row {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px 14px;
+  gap: var(--nexo-space-4) var(--nexo-space-7);
 }
 .token-row .actions {
   margin-left: auto;
   display: flex;
-  gap: 10px;
+  gap: var(--nexo-space-5);
 }
 .token-values {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 6px 12px;
-  margin: 8px 0 0;
-  font-size: 11px;
+  gap: var(--nexo-space-3) var(--nexo-space-6);
+  margin: var(--nexo-space-4) 0 0;
+  font-size: var(--nexo-font-size-xs);
 }
 .token-values dd {
   margin: 0;

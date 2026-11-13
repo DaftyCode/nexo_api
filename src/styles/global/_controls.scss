@@ -1,61 +1,61 @@
 .connection-dot {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: var(--nexo-size-3);
+  height: var(--nexo-size-3);
   border-radius: 100%;
-  background: var(--green);
+  background: var(--nexo-color-success);
   flex-shrink: 0;
 }
 .eyebrow {
   display: flex;
   align-items: center;
-  gap: 10px;
-  letter-spacing: 1.7px;
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 650;
-  margin-bottom: 17px;
+  gap: var(--nexo-space-5);
+  letter-spacing: var(--nexo-tracking-widest);
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-2xs);
+  font-weight: var(--nexo-font-weight-semibold);
+  margin-bottom: var(--nexo-space-8);
 }
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 11px;
-  margin: 16px 0;
+  gap: var(--nexo-space-4);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+  margin: var(--nexo-space-8) 0;
 }
 .field > input,
 .field > textarea,
 .field > select {
-  color: var(--text);
-  font-size: 12px;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
   width: 100%;
 }
 .check-field {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 16px 0;
+  gap: var(--nexo-space-4);
+  margin: var(--nexo-space-8) 0;
 }
 .button-grid {
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   flex-wrap: wrap;
-  margin: 16px 0;
+  margin: var(--nexo-space-8) 0;
 }
 .pill {
-  padding: 4px 10px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--muted);
+  padding: var(--nexo-space-2) var(--nexo-space-5);
+  border: var(--nexo-border-width) solid transparent;
+  border-radius: var(--nexo-radius-sm);
+  color: var(--nexo-color-text-muted);
 }
 .spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid var(--border);
-  border-top-color: var(--accent);
+  width: var(--nexo-size-12);
+  height: var(--nexo-size-12);
+  border: var(--nexo-border-width-strong) solid var(--nexo-color-border);
+  border-top-color: var(--nexo-color-accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin var(--nexo-duration-spin) linear infinite;
 }
 @keyframes spin {
   to {

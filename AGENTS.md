@@ -18,6 +18,7 @@
 - Angular 22 uses Signal Forms, standalone components, signals, OnPush, modern template control flow, and lazy routes. Do not introduce React or NgModules.
 - Use the Rust Book, Cargo Book and Rust API Guidelines as official Rust references. No third-party skill is represented as an official Rust skill.
 - Preserve document revisions, workspace scoping, secret redaction, the egress policy, the script sandbox limits, engine operation allowlists and loopback-only access.
+- Styles read design tokens only (`--nexo-*`, see `src/styles/README.md`): no literal colours or font, spacing, corner, shadow, motion or stacking values outside `src/styles/tokens/` and each template's `_theme.scss` (`tools/check-style-tokens.mjs`, part of `test:architecture`).
 - The interface is client-rendered only (no SSR). Private API responses must not be cached or persisted by the browser.
 - Add adapters through narrow ports; keep vendor packages outside inward layers. Add meaningful contract tests for behavior changes.
 - Every file has at most 300 lines (`tools/check-file-size.mjs`, part of `test:architecture`). Split by responsibility before a file reaches it: a Rust module becomes a folder (`name/mod.rs` with its parts) and its tests go to `tests.rs` or `tests/`; a TypeScript module keeps its path and moves parts to `name/`; a long template becomes child components. Only the owner adds entries to `EXCEPTIONS`, with the reason the file cannot be split.

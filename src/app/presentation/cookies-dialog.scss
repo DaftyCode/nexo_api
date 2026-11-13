@@ -5,62 +5,62 @@
 }
 .cookies-toolbar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: var(--nexo-space-5);
+  margin-bottom: var(--nexo-space-7);
 }
 .cookies-toolbar input {
   flex: 1;
 }
 .cookie-form {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px 14px;
-  margin-bottom: 16px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  padding: var(--nexo-space-6) var(--nexo-space-7);
+  margin-bottom: var(--nexo-space-8);
 }
 .cookie-form h3,
 .cookie-domain h3 {
-  font-size: 13px;
+  font-size: var(--nexo-font-size-md);
   margin: 0;
 }
 .cookie-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px 14px;
-  margin: 10px 0;
+  gap: var(--nexo-space-5) var(--nexo-space-7);
+  margin: var(--nexo-space-5) 0;
 }
 .cookie-flags {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: var(--nexo-space-4) var(--nexo-space-9);
 }
 .field-error {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }
 .cookie-domains {
   display: grid;
-  gap: 16px;
+  gap: var(--nexo-space-8);
 }
 .cookie-domain-heading {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  margin-bottom: 6px;
+  gap: var(--nexo-space-5);
+  margin-bottom: var(--nexo-space-3);
 }
 .cookie-domain-heading .actions {
   margin-left: auto;
   display: flex;
-  gap: 10px;
+  gap: var(--nexo-space-5);
 }
 .cookie-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
 }
 .cookie-table th,
 .cookie-table td {
   text-align: left;
-  padding: 5px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
   vertical-align: top;
 }
 .cookie-table td span + span::before {
@@ -75,8 +75,8 @@
   text-align: right;
 }
 .cookie-table .actions button + button {
-  margin-left: 10px;
+  margin-left: var(--nexo-space-5);
 }
 .cookie-table tr.editing td {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--nexo-color-accent) 14%, transparent);
 }

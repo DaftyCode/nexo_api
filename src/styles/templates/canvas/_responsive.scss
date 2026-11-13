@@ -1,15 +1,15 @@
 .studio[data-template='canvas'] {
   @media (max-width: 1500px) {
     .topbar {
-      gap: 14px;
-      padding: 0 20px;
+      gap: var(--nexo-space-7);
+      padding: 0 var(--nexo-space-10);
     }
     .top-links {
-      padding-left: 12px;
+      padding-left: var(--nexo-space-6);
     }
     .top-link {
-      padding: 0 9px;
-      font-size: 11px;
+      padding: 0 var(--nexo-space-4);
+      font-size: var(--nexo-font-size-xs);
     }
     .top-search kbd {
       display: none;
@@ -18,13 +18,13 @@
       display: none;
     }
     .response-meta {
-      gap: 8px;
-      font-size: 9px;
+      gap: var(--nexo-space-4);
+      font-size: var(--nexo-font-size-3xs);
       right: 17px;
     }
     .response-meta > span:first-child {
-      font-size: 10px;
-      padding: 6px 8px;
+      font-size: var(--nexo-font-size-2xs);
+      padding: var(--nexo-space-3) var(--nexo-space-4);
     }
   }
   @media (max-width: 1200px) {
@@ -32,22 +32,22 @@
       display: none;
     }
     .canvas-intro h1 {
-      font-size: 22px;
+      font-size: var(--nexo-font-size-4xl);
     }
     .section-caption > span {
       display: none;
     }
     .editor-tabs {
-      gap: 17px;
-      margin: 0 18px;
+      gap: var(--nexo-space-8);
+      margin: 0 var(--nexo-space-9);
     }
     .request-content {
-      padding: 17px 18px;
+      padding: var(--nexo-space-8) var(--nexo-space-9);
     }
   }
   @media (max-width: 1050px) {
     .studio-body {
-      padding: 8px 18px 0;
+      padding: var(--nexo-space-4) var(--nexo-space-9) 0;
     }
     .main-workspace {
       grid-template-columns: minmax(0, 1fr);
@@ -66,20 +66,20 @@
       display: none;
     }
     .canvas-intro p {
-      font-size: 11px;
+      font-size: var(--nexo-font-size-xs);
     }
   }
   @media (max-width: 800px) {
     .topbar {
-      height: 60px;
-      padding: 0 12px;
-      gap: 12px;
+      height: var(--nexo-size-30);
+      padding: 0 var(--nexo-space-6);
+      gap: var(--nexo-space-6);
     }
     .aurora-wordmark {
-      font-size: 20px;
+      font-size: var(--nexo-font-size-4xl);
     }
     .aurora-brand-mark {
-      width: 29px;
+      width: var(--nexo-size-15);
     }
     .top-links {
       display: none;
@@ -92,32 +92,32 @@
     }
     .canvas-intro {
       flex-wrap: wrap;
-      gap: 10px;
+      gap: var(--nexo-space-5);
     }
     .canvas-intro h1 {
-      font-size: 22px;
+      font-size: var(--nexo-font-size-4xl);
     }
     .canvas-intro .button {
-      min-height: 30px;
-      padding: 7px 10px;
+      min-height: var(--nexo-size-15);
+      padding: var(--nexo-space-3) var(--nexo-space-5);
     }
     .workspace-bar {
-      padding: 0 18px;
-      gap: 10px;
+      padding: 0 var(--nexo-space-9);
+      gap: var(--nexo-space-5);
     }
     .url-input {
-      font-size: 12px;
-      margin-left: 8px;
-      margin-right: 8px;
-      padding-left: 8px;
+      font-size: var(--nexo-font-size-sm);
+      margin-left: var(--nexo-space-4);
+      margin-right: var(--nexo-space-4);
+      padding-left: var(--nexo-space-4);
     }
     .method-select {
-      width: 80px;
-      font-size: 12px;
+      width: var(--nexo-size-40);
+      font-size: var(--nexo-font-size-sm);
     }
     .url-toolbar .button.primary {
       min-width: 88px;
-      font-size: 12px;
+      font-size: var(--nexo-font-size-sm);
     }
     app-workspace-context {
       overflow-x: auto;

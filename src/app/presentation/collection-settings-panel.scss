@@ -3,27 +3,27 @@
 }
 .settings-content {
   display: grid;
-  gap: 12px;
-  padding: 14px 0;
+  gap: var(--nexo-space-6);
+  padding: var(--nexo-space-7) 0;
 }
 .settings-content .code-editor {
   min-height: 140px;
 }
 .settings-actions {
-  margin-top: 8px;
+  margin-top: var(--nexo-space-4);
 }
 .settings-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-  font-size: 12px;
-  color: var(--muted);
+  gap: var(--nexo-space-4);
+  margin: 0 0 var(--nexo-space-6);
+  font-size: var(--nexo-font-size-sm);
+  color: var(--nexo-color-text-muted);
 }
 .settings-breadcrumb strong {
-  color: var(--text);
+  color: var(--nexo-color-text);
 }
 .unsaved {
-  font-size: 11px;
-  color: #e7b45a;
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-warning);
 }

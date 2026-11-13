@@ -1,23 +1,23 @@
 .oauth2 {
   display: grid;
-  gap: 4px;
+  gap: var(--nexo-space-2);
   max-width: 720px;
 }
 .oauth2 h3 {
-  margin: 18px 0 4px;
-  font-size: 13px;
+  margin: var(--nexo-space-9) 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-md);
 }
 .oauth2 h4 {
-  margin: 8px 0;
-  font-size: 12px;
-  color: var(--muted);
+  margin: var(--nexo-space-4) 0;
+  font-size: var(--nexo-font-size-sm);
+  color: var(--nexo-color-text-muted);
 }
 .row-field {
-  margin: 6px 0;
+  margin: var(--nexo-space-3) 0;
 }
 .token-input {
   display: flex;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   align-items: center;
 }
 .token-input input {
@@ -26,29 +26,29 @@
 }
 .token-status {
   margin: 0;
-  font-size: 11px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
 }
 .token-status.expired {
-  color: #e7b45a;
+  color: var(--nexo-color-warning);
 }
 .advanced {
-  margin: 10px 0;
+  margin: var(--nexo-space-5) 0;
 }
 .advanced summary {
   cursor: pointer;
-  font-size: 12px;
-  margin-bottom: 6px;
+  font-size: var(--nexo-font-size-sm);
+  margin-bottom: var(--nexo-space-3);
 }
 .parameters {
-  margin: 6px 0 10px;
+  margin: var(--nexo-space-3) 0 var(--nexo-space-5);
 }
 .parameter {
   display: grid;
   grid-template-columns: auto 1fr 1fr 150px auto;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: var(--nexo-space-3);
 }
 .parameter input:not([type='checkbox']),
 .parameter select {

@@ -119,7 +119,9 @@
                   <li>
                     <details>
                       <summary>
-                        <span class="method-tag">{{ operation.method.toUpperCase() }}</span>
+                        <span class="method-tag" [attr.data-method]="operation.method">{{
+                          operation.method.toUpperCase()
+                        }}</span>
                         <span [class.deprecated]="operation.deprecated">{{
                           operation.summary || operation.operationId || path.path
                         }}</span>
@@ -231,7 +233,9 @@
         <ul class="api-changes">
           @for (endpoint of result.removed; track endpoint.pointer) {
             <li class="breaking">
-              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <span class="method-tag" [attr.data-method]="endpoint.method">{{
+                endpoint.method.toUpperCase()
+              }}</span>
               <code>{{ endpoint.path }}</code>
               <span>{{ 'Endpoint removed' | transloco }}</span>
               <span class="badge">{{ 'Breaking' | transloco }}</span>
@@ -239,7 +243,9 @@
           }
           @for (endpoint of result.added; track endpoint.pointer) {
             <li>
-              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <span class="method-tag" [attr.data-method]="endpoint.method">{{
+                endpoint.method.toUpperCase()
+              }}</span>
               <code>{{ endpoint.path }}</code>
               <span>{{ 'Endpoint added' | transloco }}</span>
               @if (diffInEditor() && endpoint.line) {
@@ -251,7 +257,9 @@
           }
           @for (endpoint of result.changed; track endpoint.pointer) {
             <li>
-              <span class="method-tag">{{ endpoint.method.toUpperCase() }}</span>
+              <span class="method-tag" [attr.data-method]="endpoint.method">{{
+                endpoint.method.toUpperCase()
+              }}</span>
               <code>{{ endpoint.path }}</code>
               <ul>
                 @for (change of endpoint.changes; track $index) {

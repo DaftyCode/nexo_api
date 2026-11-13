@@ -9,32 +9,32 @@
     margin-left: auto;
   }
   .editor-tabs {
-    gap: 18px;
+    gap: var(--nexo-space-9);
   }
   .response-meta {
-    gap: 8px;
-    font-size: 9px;
+    gap: var(--nexo-space-4);
+    font-size: var(--nexo-font-size-3xs);
   }
   .tools-page {
-    padding: 25px;
+    padding: var(--nexo-space-12);
   }
   .feature-columns {
-    gap: 14px;
+    gap: var(--nexo-space-7);
   }
   .feature-card {
-    padding: 18px;
+    padding: var(--nexo-space-9);
   }
   .site-hero {
-    gap: 30px;
+    gap: var(--nexo-space-14);
   }
   .hero-copy h1 {
-    font-size: 54px;
+    font-size: var(--nexo-font-size-display-md);
   }
   .hero-preview {
     transform: none;
   }
   .site-features {
-    gap: 35px;
+    gap: var(--nexo-space-18);
   }
 }
 @media (max-width: 900px) {
@@ -42,24 +42,24 @@
     width: 190px;
   }
   .rail {
-    width: 63px;
+    width: var(--nexo-size-32);
   }
   .rail button {
-    font-size: 8px;
+    font-size: var(--nexo-font-size-3xs);
   }
   .top-links {
     display: none;
   }
   .topbar {
-    gap: 20px;
+    gap: var(--nexo-space-10);
   }
   .response-toolbar {
     flex-wrap: wrap;
     gap: 0;
-    padding-bottom: 6px;
+    padding-bottom: var(--nexo-space-3);
   }
   .response-meta {
-    padding-left: 21px;
+    padding-left: var(--nexo-space-10);
   }
   .request-title .breadcrumb {
     max-width: 50%;
@@ -76,32 +76,32 @@
     max-width: none;
   }
   .auth-grid {
-    gap: 20px;
+    gap: var(--nexo-space-10);
   }
   .section-caption > span {
     display: none;
   }
   .site-hero {
     grid-template-columns: 1fr;
-    padding-top: 65px;
+    padding-top: var(--nexo-space-32);
   }
   .hero-preview {
     max-width: 560px;
     width: 100%;
   }
   .hero-copy h1 {
-    font-size: 64px;
+    font-size: var(--nexo-font-size-display-lg);
   }
   .site-features {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: var(--nexo-space-10);
   }
   .site-nav {
-    height: 80px;
-    padding: 0 25px;
+    height: var(--nexo-size-40);
+    padding: 0 var(--nexo-space-12);
   }
   .site-footer {
-    margin: 0 25px;
+    margin: 0 var(--nexo-space-12);
   }
   .hero-copy p {
     max-width: 550px;
@@ -115,23 +115,23 @@
     display: none;
   }
   .rail {
-    width: 58px;
-    padding: 6px 3px;
+    width: var(--nexo-size-29);
+    padding: var(--nexo-space-3) var(--nexo-space-1);
   }
   .topbar {
-    height: 47px;
-    padding: 0 12px;
+    height: var(--nexo-size-24);
+    padding: 0 var(--nexo-space-6);
   }
   .workspace-bar {
-    padding: 0 8px;
-    height: 45px;
-    gap: 5px;
+    padding: 0 var(--nexo-space-4);
+    height: var(--nexo-size-23);
+    gap: var(--nexo-space-2);
   }
   .workspace-select {
     width: 140px;
   }
   .workspace-bar .small {
-    padding: 5px 7px;
+    padding: var(--nexo-space-2) var(--nexo-space-3);
   }
   .environment-select {
     min-width: 120px;
@@ -141,58 +141,58 @@
     display: none;
   }
   .request-title {
-    padding: 0 12px;
-    gap: 4px;
+    padding: 0 var(--nexo-space-6);
+    gap: var(--nexo-space-2);
   }
   .request-title .breadcrumb {
-    font-size: 9px;
+    font-size: var(--nexo-font-size-3xs);
   }
   .breadcrumb input {
     max-width: 130px;
   }
   .request-title .button {
-    padding: 6px 8px;
-    font-size: 10px;
+    padding: var(--nexo-space-3) var(--nexo-space-4);
+    font-size: var(--nexo-font-size-2xs);
   }
   .url-toolbar {
-    margin: 0 12px 8px;
+    margin: 0 var(--nexo-space-6) var(--nexo-space-4);
   }
   .method-select {
     width: 85px;
-    padding: 0 6px;
-    font-size: 11px;
+    padding: 0 var(--nexo-space-3);
+    font-size: var(--nexo-font-size-xs);
   }
   .url-toolbar .button {
-    min-width: 60px;
-    padding: 8px;
+    min-width: var(--nexo-size-30);
+    padding: var(--nexo-space-4);
   }
   .url-input {
-    font-size: 11px;
-    padding: 9px;
+    font-size: var(--nexo-font-size-xs);
+    padding: var(--nexo-space-4);
   }
   .editor-tabs {
-    padding: 0 12px;
-    gap: 16px;
+    padding: 0 var(--nexo-space-6);
+    gap: var(--nexo-space-8);
     overflow-x: auto;
   }
   .editor-tabs button {
-    font-size: 10px;
+    font-size: var(--nexo-font-size-2xs);
   }
   .request-content {
-    padding: 12px;
+    padding: var(--nexo-space-6);
     height: 190px;
   }
   .tools-page {
-    padding: 22px 15px;
+    padding: var(--nexo-space-11) var(--nexo-space-7);
   }
   .feature-heading {
     flex-wrap: wrap;
   }
   .feature-heading h1 {
-    font-size: 25px;
+    font-size: var(--nexo-font-size-5xl);
   }
   .feature-heading p {
-    font-size: 11px;
+    font-size: var(--nexo-font-size-xs);
   }
   .feature-card > .row {
     flex-wrap: wrap;
@@ -204,39 +204,39 @@
     grid-template-columns: 1fr;
   }
   .site-hero {
-    padding: 60px 25px;
-    gap: 45px;
+    padding: var(--nexo-space-28) var(--nexo-space-12);
+    gap: var(--nexo-space-22);
   }
   .hero-copy h1 {
-    font-size: 52px;
+    font-size: var(--nexo-font-size-display-md);
   }
   .hero-actions .button {
-    font-size: 11px;
-    padding: 12px;
+    font-size: var(--nexo-font-size-xs);
+    padding: var(--nexo-space-6);
   }
   .site-nav > div {
-    gap: 15px;
-    font-size: 10px;
+    gap: var(--nexo-space-7);
+    font-size: var(--nexo-font-size-2xs);
   }
   .site-nav .button {
-    font-size: 10px;
-    padding: 8px;
+    font-size: var(--nexo-font-size-2xs);
+    padding: var(--nexo-space-4);
   }
   .site-features {
-    padding: 35px 25px;
+    padding: var(--nexo-space-18) var(--nexo-space-12);
   }
   .site-footer {
-    gap: 15px;
+    gap: var(--nexo-space-7);
     flex-wrap: wrap;
   }
   .docs {
-    padding: 50px 25px;
+    padding: var(--nexo-space-24) var(--nexo-space-12);
   }
   .docs h1 {
-    font-size: 36px;
+    font-size: var(--nexo-font-size-display-sm);
   }
   .response-code {
-    font-size: 10px;
+    font-size: var(--nexo-font-size-2xs);
   }
   .request-title .subtle {
     display: none;
@@ -244,16 +244,16 @@
 }
 @media (prefers-reduced-motion: reduce) {
   * {
-    animation-duration: 0.01ms !important;
+    animation-duration: var(--nexo-duration-instant) !important;
     transition: none !important;
   }
 }
 
 /* Errors raised by a tool panel are shown inside that panel. */
 .panel-alert {
-  border: 1px solid #773d45;
-  border-radius: 6px;
-  margin-bottom: 12px;
+  border: var(--nexo-border-width) solid var(--nexo-color-danger-border);
+  border-radius: var(--nexo-radius-md);
+  margin-bottom: var(--nexo-space-6);
 }
 
 /* Printing a report: only its copy (`.print-sheet`, added by BrowserPrinter) is printed. */
@@ -268,7 +268,7 @@
   body.printing {
     height: auto !important;
     overflow: visible !important;
-    background: #fff !important;
+    background: var(--nexo-report-paper) !important;
   }
   body.printing > :not(.print-sheet) {
     display: none !important;

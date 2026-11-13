@@ -1,0 +1,65 @@
+/*
+ * Canvas theme: a light, airy workspace with a violet accent. Only tokens here; the rules are in
+ * the other files. The code editors stay dark, as in the other templates.
+ */
+@layer nexo-tokens {
+  .studio[data-template='canvas'] {
+    color-scheme: light;
+    --nexo-font-size-body: 13px;
+
+    --nexo-color-sunken: #eef1fa;
+    --nexo-color-bg: #f5f7fe;
+    --nexo-color-chrome: #fafbff;
+    --nexo-color-surface: #fff;
+    --nexo-color-surface-2: #f6f7fc;
+    --nexo-color-surface-3: #eef1fa;
+    --nexo-color-border-subtle: #e8ebf5;
+    --nexo-color-border: #e2e7f3;
+    --nexo-color-border-strong: #d5ddec;
+    --nexo-color-text: #202b47;
+    --nexo-color-text-soft: #4b5a7a;
+    --nexo-color-text-muted: #7b88a5;
+    --nexo-color-text-dim: #8996b0;
+    --nexo-color-text-faint: #a3aec4;
+    --nexo-color-accent: #6553f4;
+    --nexo-color-accent-hover: #7a68ff;
+    --nexo-color-accent-strong: #5c4bea;
+    --nexo-color-on-accent: #fff;
+    --nexo-color-accent-soft: #efedff;
+    --nexo-color-accent-border: #c9c1fa;
+    --nexo-color-success: #009c78;
+    --nexo-color-success-soft: #e8f8f1;
+    --nexo-color-info: #536fe0;
+    --nexo-color-danger: #cc4464;
+    --nexo-color-danger-soft: #fceaf0;
+    --nexo-color-warning: #b7791f;
+    /* Hover tints darken on a light theme. */
+    --nexo-color-highlight: #202b47;
+    --nexo-color-folder: #d39a2c;
+    --nexo-color-code-bg: #14171b;
+    --nexo-color-code-text: #c6d5cc;
+    --nexo-method-ink-shade: 50%;
+
+    --nexo-color-shadow: #253763;
+    --nexo-shadow-lg: 0 8px 25px color-mix(in srgb, var(--nexo-color-shadow) 13%, transparent);
+    --nexo-shadow-xl: 8px 12px 55px color-mix(in srgb, var(--nexo-color-shadow) 16%, transparent);
+
+    --nexo-gradient-accent: linear-gradient(120deg, #6f58ff, #4736d6);
+    --nexo-topbar-bg: var(--nexo-color-surface);
+    --nexo-topbar-height: var(--nexo-size-37);
+    --nexo-avatar-bg: #38328d;
+    --nexo-avatar-text: #fff;
+    --nexo-avatar-border: transparent;
+    --nexo-rail-bg: var(--nexo-color-chrome);
+    --nexo-sidebar-bg: var(--nexo-color-surface);
+    --nexo-sidebar-width: 310px;
+    --nexo-tab-bg: var(--nexo-color-surface-2);
+    --nexo-tab-active-bg: var(--nexo-color-surface);
+    --nexo-url-bar-bg: var(--nexo-color-surface);
+    --nexo-raised-bg: var(--nexo-color-surface-2);
+    --nexo-response-code-bg: #182137;
+    --nexo-response-code-text: #cbdcf4;
+    --nexo-statusbar-bg: var(--nexo-color-bg);
+    --nexo-console-bg: var(--nexo-color-surface);
+  }
+}

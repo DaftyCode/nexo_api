@@ -8,129 +8,125 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  background: #e9ebee;
-  border-radius: 8px;
-  padding: 16px;
+  background: var(--nexo-report-bg);
+  border-radius: var(--nexo-radius-lg);
+  padding: var(--nexo-space-8);
 }
 /* The paper: the same on screen and when printed, dark text on white. */
 .report-paper {
-  background: #fff;
-  color: #1d2026;
+  background: var(--nexo-report-paper);
+  color: var(--nexo-report-text);
   max-width: 800px;
   margin: 0 auto;
-  padding: 28px 32px;
-  font:
-    12px/1.45 system-ui,
-    sans-serif;
-  box-shadow: 0 2px 12px #0002;
+  padding: var(--nexo-space-14) var(--nexo-space-16);
+  font: var(--nexo-font-size-sm) / var(--nexo-line-height-tight) var(--nexo-report-font);
+  box-shadow: var(--nexo-shadow-sm);
 }
 .report-header {
-  border-bottom: 2px solid #1d2026;
-  margin-bottom: 14px;
-  padding-bottom: 8px;
+  border-bottom: var(--nexo-border-width-strong) solid var(--nexo-report-text);
+  margin-bottom: var(--nexo-space-7);
+  padding-bottom: var(--nexo-space-4);
 }
 .report-brand {
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: var(--nexo-font-size-2xs);
+  letter-spacing: var(--nexo-tracking-caps);
   text-transform: uppercase;
-  color: #5b6270;
+  color: var(--nexo-report-text-muted);
 }
 .report-header h1 {
-  font-size: 20px;
-  margin: 2px 0;
+  font-size: var(--nexo-font-size-4xl);
+  margin: var(--nexo-space-1) 0;
 }
 .report-header p {
   margin: 0;
-  color: #5b6270;
+  color: var(--nexo-report-text-muted);
 }
 .report-paper h2 {
-  font-size: 14px;
-  margin: 16px 0 6px;
+  font-size: var(--nexo-font-size-lg);
+  margin: var(--nexo-space-8) 0 var(--nexo-space-3);
   break-after: avoid;
 }
 .report-paper h3,
 .report-paper h4 {
-  font-size: 12px;
-  margin: 10px 0 4px;
+  font-size: var(--nexo-font-size-sm);
+  margin: var(--nexo-space-5) 0 var(--nexo-space-2);
   break-after: avoid;
 }
 .report-facts {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 2px 14px;
-  margin: 0 0 10px;
+  gap: var(--nexo-space-1) var(--nexo-space-7);
+  margin: 0 0 var(--nexo-space-5);
 }
 .report-facts dt {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .report-facts dd {
   margin: 0;
 }
 .report-block {
-  border: 1px solid #d5d9e0;
-  border-left: 4px solid #2f9e5b;
-  border-radius: 4px;
-  padding: 6px 10px;
-  margin: 10px 0;
+  border: var(--nexo-border-width) solid var(--nexo-report-border);
+  border-left: var(--nexo-border-width-accent) solid var(--nexo-report-passed-line);
+  border-radius: var(--nexo-radius-sm);
+  padding: var(--nexo-space-3) var(--nexo-space-5);
+  margin: var(--nexo-space-5) 0;
   break-inside: avoid;
 }
 .report-block.failed {
-  border-left-color: #c9383a;
+  border-left-color: var(--nexo-report-failed-line);
 }
 .report-status {
   display: inline-block;
-  min-width: 34px;
-  font-family: ui-monospace, monospace;
+  min-width: var(--nexo-size-17);
+  font-family: var(--nexo-report-font-mono);
 }
 .report-url {
-  margin: 2px 0;
-  font-family: ui-monospace, monospace;
+  margin: var(--nexo-space-1) 0;
+  font-family: var(--nexo-report-font-mono);
   overflow-wrap: anywhere;
 }
 .report-meta,
 .report-description {
-  color: #5b6270;
-  margin: 2px 0;
+  color: var(--nexo-report-text-muted);
+  margin: var(--nexo-space-1) 0;
   white-space: pre-wrap;
 }
 .report-test {
-  margin: 2px 0;
-  color: #1f7a45;
+  margin: var(--nexo-space-1) 0;
+  color: var(--nexo-report-passed);
 }
 .report-test.failed,
 .report-failed {
-  color: #b42325;
+  color: var(--nexo-report-failed);
 }
 .report-table {
   border-collapse: collapse;
   width: 100%;
-  margin: 4px 0;
+  margin: var(--nexo-space-2) 0;
 }
 .report-table th,
 .report-table td {
-  border-bottom: 1px solid #e3e6eb;
-  padding: 2px 6px;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-report-border-subtle);
+  padding: var(--nexo-space-1) var(--nexo-space-3);
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
 }
 .report-table th {
   width: 30%;
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .report-paper pre {
-  background: #f4f5f7;
-  border: 1px solid #e3e6eb;
-  padding: 6px 8px;
-  margin: 4px 0;
-  font:
-    11px/1.4 ui-monospace,
-    monospace;
+  background: var(--nexo-report-code-bg);
+  border: var(--nexo-border-width) solid var(--nexo-report-border-subtle);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  margin: var(--nexo-space-2) 0;
+  font: var(--nexo-font-size-xs) / var(--nexo-line-height-tight) var(--nexo-report-font-mono);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .report-folder {
-  border-bottom: 1px solid #d5d9e0;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-report-border);
 }
 @media print {
   .report-paper {

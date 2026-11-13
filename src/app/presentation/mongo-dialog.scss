@@ -1,11 +1,11 @@
 .mongo-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: var(--nexo-z-dropdown);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgb(0 0 0 / 45%);
+  background: var(--nexo-color-backdrop);
 }
 .mongo-dialog {
   width: min(720px, 92vw);
@@ -14,26 +14,26 @@
 }
 .mongo-dialog h2 {
   margin-top: 0;
-  font-size: 16px;
+  font-size: var(--nexo-font-size-2xl);
 }
 .mongo-warning {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }
 .mongo-options {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  margin: 10px 0;
-  padding: 8px 12px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  margin: var(--nexo-space-5) 0;
+  padding: var(--nexo-space-4) var(--nexo-space-6);
 }
 .mongo-options .row {
-  gap: 10px;
+  gap: var(--nexo-space-5);
 }
 .mongo-problem {
-  color: var(--red);
-  font-size: 12px;
+  color: var(--nexo-color-danger);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-dialog-actions {
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 12px;
+  gap: var(--nexo-space-4);
+  margin-top: var(--nexo-space-6);
 }

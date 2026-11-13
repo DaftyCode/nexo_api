@@ -2,15 +2,15 @@
 .studio[data-template='studio'] {
   @media (max-width: 1250px) {
     .topbar {
-      gap: 14px;
-      padding: 0 16px;
+      gap: var(--nexo-space-7);
+      padding: 0 var(--nexo-space-8);
     }
     .top-links {
-      padding-left: 13px;
+      padding-left: var(--nexo-space-6);
     }
     .top-link {
-      padding: 0 10px;
-      font-size: 12px;
+      padding: 0 var(--nexo-space-5);
+      font-size: var(--nexo-font-size-sm);
     }
     .top-search kbd {
       display: none;
@@ -25,76 +25,76 @@
       width: 244px;
     }
     .sidebar-empty {
-      padding: 30px 18px;
+      padding: var(--nexo-space-14) var(--nexo-space-9);
     }
     .sidebar-empty strong {
-      font-size: 16px;
+      font-size: var(--nexo-font-size-2xl);
     }
     .floating-console {
       left: 102px;
     }
     .editor-tabs {
-      gap: 18px;
+      gap: var(--nexo-space-9);
     }
     .response-tabs {
-      gap: 18px;
+      gap: var(--nexo-space-9);
     }
     .response-meta {
-      font-size: 10.5px;
-      gap: 6px;
+      font-size: var(--nexo-font-size-2xs);
+      gap: var(--nexo-space-3);
     }
   }
   @media (max-height: 830px) {
     .rail {
-      padding-top: 8px;
+      padding-top: var(--nexo-space-4);
     }
     .rail button {
-      min-height: 54px;
-      padding: 7px 2px;
-      gap: 5px;
-      font-size: 10px;
+      min-height: var(--nexo-size-27);
+      padding: var(--nexo-space-3) var(--nexo-space-1);
+      gap: var(--nexo-space-2);
+      font-size: var(--nexo-font-size-2xs);
     }
     .rail-vector {
-      width: 21px;
-      height: 21px;
+      width: var(--nexo-size-11);
+      height: var(--nexo-size-11);
     }
     .rail button:last-child {
-      margin-top: 8px;
-      padding-top: 10px;
+      margin-top: var(--nexo-space-4);
+      padding-top: var(--nexo-space-5);
     }
     .sidebar-empty {
-      padding-top: 28px;
+      padding-top: var(--nexo-space-14);
     }
     .request-title {
-      height: 54px;
+      height: var(--nexo-size-27);
     }
     .request-content {
       height: 182px;
     }
     .empty-response {
       min-height: 170px;
-      padding: 18px;
+      padding: var(--nexo-space-9);
     }
     .response-art {
-      width: 62px;
-      height: 58px;
+      width: var(--nexo-size-31);
+      height: var(--nexo-size-29);
     }
   }
   @media (max-width: 800px) {
     .topbar {
-      height: 60px;
-      gap: 12px;
-      padding: 0 12px;
+      height: var(--nexo-size-30);
+      gap: var(--nexo-space-6);
+      padding: 0 var(--nexo-space-6);
       flex-wrap: nowrap;
     }
     .brand .aurora-wordmark {
-      font-size: 21px;
+      font-size: var(--nexo-font-size-4xl);
     }
     .aurora-brand-mark {
-      width: 32px;
+      width: var(--nexo-size-16);
     }
     .aurora-wordmark > span {
-      font-size: 12px;
+      font-size: var(--nexo-font-size-sm);
     }
     .top-links {
       display: none;
@@ -107,87 +107,87 @@
       display: none;
     }
     .rail {
-      width: 76px;
-      padding: 7px 5px;
+      width: var(--nexo-size-38);
+      padding: var(--nexo-space-3) var(--nexo-space-2);
     }
     .rail button {
-      font-size: 9px;
-      min-height: 58px;
+      font-size: var(--nexo-font-size-3xs);
+      min-height: var(--nexo-size-29);
     }
     .sidebar {
       width: 205px;
     }
     .sidebar-heading {
-      font-size: 15px;
-      padding: 15px 13px 9px;
+      font-size: var(--nexo-font-size-xl);
+      padding: var(--nexo-space-7) var(--nexo-space-6) var(--nexo-space-4);
     }
     .sidebar-search {
-      margin: 8px 11px;
+      margin: var(--nexo-space-4) var(--nexo-space-5);
     }
     .sidebar-empty {
-      padding: 22px 13px;
-      font-size: 11px;
-      gap: 12px;
+      padding: var(--nexo-space-11) var(--nexo-space-6);
+      font-size: var(--nexo-font-size-xs);
+      gap: var(--nexo-space-6);
     }
     .sidebar-empty p {
-      font-size: 11px;
+      font-size: var(--nexo-font-size-xs);
     }
     .sidebar-empty .button {
-      font-size: 11px;
+      font-size: var(--nexo-font-size-xs);
     }
     .collection-art {
       width: 85px;
       height: 95px;
     }
     .request-title {
-      padding: 0 14px;
+      padding: 0 var(--nexo-space-7);
     }
     .url-toolbar {
-      margin-left: 14px;
-      margin-right: 14px;
+      margin-left: var(--nexo-space-7);
+      margin-right: var(--nexo-space-7);
     }
     .method-select {
       width: 83px;
-      font-size: 12px;
+      font-size: var(--nexo-font-size-sm);
     }
     .url-toolbar .button.primary {
-      min-width: 75px;
-      font-size: 12px;
+      min-width: var(--nexo-size-38);
+      font-size: var(--nexo-font-size-sm);
     }
     .request-content {
-      padding: 12px 14px;
+      padding: var(--nexo-space-6) var(--nexo-space-7);
     }
     .editor-tabs {
-      padding: 0 14px;
-      gap: 17px;
+      padding: 0 var(--nexo-space-7);
+      gap: var(--nexo-space-8);
     }
     .editor-tabs button {
-      font-size: 11px;
+      font-size: var(--nexo-font-size-xs);
     }
     .editor-tabs app-studio-icon {
-      width: 16px;
-      height: 16px;
+      width: var(--nexo-size-8);
+      height: var(--nexo-size-8);
     }
     .section-caption > span {
       display: none;
     }
     .response-section {
-      margin: 0 10px;
+      margin: 0 var(--nexo-space-5);
     }
     .response-tabs {
-      padding: 0 14px;
-      gap: 16px;
+      padding: 0 var(--nexo-space-7);
+      gap: var(--nexo-space-8);
     }
     .response-meta {
       display: flex;
-      padding: 0 14px 8px;
+      padding: 0 var(--nexo-space-7) var(--nexo-space-4);
     }
     .response-toolbar {
       flex-wrap: wrap;
       gap: 0;
     }
     .empty-response h3 {
-      font-size: 16px;
+      font-size: var(--nexo-font-size-2xl);
       text-align: center;
     }
     .floating-console {

@@ -1,4 +1,9 @@
-// Global styles, in cascade order: each part by the area of the interface it styles.
+// Global styles, in cascade order. The design tokens come first: every other part reads them.
+@use './styles/tokens/scale';
+@use './styles/tokens/palette';
+@use './styles/tokens/components';
+@use './styles/tokens/methods';
+// Each part by the area of the interface it styles.
 @use './styles/global/base';
 @use './styles/global/controls';
 @use './styles/global/topbar';

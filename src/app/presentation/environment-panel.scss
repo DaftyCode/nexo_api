@@ -1,32 +1,32 @@
 .list-label {
   display: block;
-  margin: 14px 10px 4px;
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  margin: var(--nexo-space-7) var(--nexo-space-5) var(--nexo-space-2);
+  font-size: var(--nexo-font-size-2xs);
+  letter-spacing: var(--nexo-tracking-caps);
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .environment-status {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 12px 0;
-  padding: 8px 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--muted);
+  gap: var(--nexo-space-5);
+  margin: var(--nexo-space-6) 0;
+  padding: var(--nexo-space-4) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  font-size: var(--nexo-font-size-sm);
+  color: var(--nexo-color-text-muted);
 }
 .environment-status.active {
   color: inherit;
-  border-color: #27b39166;
+  border-color: color-mix(in srgb, var(--nexo-color-scope-environment) 40%, transparent);
 }
 .unsaved {
-  margin: 8px 0 0;
-  font-size: 11px;
-  color: #e7b45a;
+  margin: var(--nexo-space-4) 0 0;
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-warning);
 }
 h2 {
-  margin: 0 0 4px;
-  font-size: 15px;
+  margin: 0 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-xl);
 }

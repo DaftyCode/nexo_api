@@ -4,7 +4,7 @@
   align-items: center;
   min-width: 0;
   height: 100%;
-  border-left: 1px solid var(--border);
+  border-left: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .kv-cell > input {
   flex: 1;
@@ -12,21 +12,21 @@
   border: 0;
   border-radius: 0;
   background: none;
-  height: 33px;
-  padding: 6px 9px;
-  font-size: 11px;
+  height: var(--nexo-size-17);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
 }
 .kv-cell > select {
   border: 0;
   background: none;
-  font-size: 10px;
-  color: var(--muted);
-  padding: 0 6px;
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  padding: 0 var(--nexo-space-3);
 }
 .kv-file {
-  gap: 8px;
-  padding: 0 9px;
-  font-size: 11px;
+  gap: var(--nexo-space-4);
+  padding: 0 var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
 }
 .kv-file label {
   position: relative;
@@ -41,8 +41,8 @@
   cursor: pointer;
 }
 .kv-file label:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring);
+  outline-offset: var(--nexo-focus-ring-width);
 }
 .kv-file-names,
 .kv-file-missing {
@@ -52,9 +52,9 @@
   min-width: 0;
 }
 .kv-file-missing {
-  color: #e0b252;
+  color: var(--nexo-color-warning);
 }
 .kv-file small {
-  color: var(--dim);
+  color: var(--nexo-color-text-dim);
   white-space: nowrap;
 }

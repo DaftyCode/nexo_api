@@ -1,0 +1,109 @@
+/*
+ * Global design tokens: the sizes every template shares. A template's theme may redefine any
+ * of them; a user stylesheet overrides them on `.studio` (see src/styles/README.md).
+ *
+ * They are declared on `.studio` too, so a value derived from another token (the spacing steps
+ * from `--nexo-space-unit`) follows an override made there.
+ */
+@layer nexo-tokens {
+  :root,
+  .studio {
+    /* Typography */
+    --nexo-font-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --nexo-font-mono: 'Cascadia Code', 'SFMono-Regular', Consolas, ui-monospace, monospace;
+    --nexo-font-size-body: 12px;
+    --nexo-font-size-3xs: 9px;
+    --nexo-font-size-2xs: 10px;
+    --nexo-font-size-xs: 11px;
+    --nexo-font-size-sm: 12px;
+    --nexo-font-size-md: 13px;
+    --nexo-font-size-lg: 14px;
+    --nexo-font-size-xl: 15px;
+    --nexo-font-size-2xl: 16px;
+    --nexo-font-size-3xl: 18px;
+    --nexo-font-size-4xl: 21px;
+    --nexo-font-size-5xl: 25px;
+    --nexo-font-size-6xl: 28px;
+    --nexo-font-size-display-sm: 42px;
+    --nexo-font-size-display-md: 54px;
+    --nexo-font-size-display-lg: 64px;
+    --nexo-font-weight-regular: 400;
+    --nexo-font-weight-medium: 500;
+    --nexo-font-weight-semibold: 600;
+    --nexo-font-weight-bold: 700;
+    --nexo-font-weight-heavy: 800;
+    --nexo-line-height-none: 1;
+    --nexo-line-height-tight: 1.4;
+    --nexo-line-height-normal: 1.55;
+    --nexo-line-height-relaxed: 1.7;
+    --nexo-line-height-loose: 1.85;
+    --nexo-tracking-tightest: -3px;
+    --nexo-tracking-tighter: -2px;
+    --nexo-tracking-tight: -1px;
+    --nexo-tracking-snug: -0.4px;
+    --nexo-tracking-normal: 0;
+    --nexo-tracking-wide: 0.4px;
+    --nexo-tracking-wider: 1px;
+    --nexo-tracking-widest: 2px;
+    --nexo-tracking-caps: 0.06em;
+
+    /* Spacing: padding, margin and gap. Step N is N units; one unit is 2px. */
+    --nexo-space-unit: 2px;
+    --nexo-space-px: 1px;
+    @each $step
+      in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 22, 24, 28, 32, 40, 48, 56)
+    {
+      --nexo-space-#{$step}: calc(var(--nexo-space-unit) * #{$step});
+    }
+
+    /* Element sizes (icons, controls, dots) up to 80px. Step N is N units; one unit is 2px. */
+    --nexo-size-unit: 2px;
+    @for $step from 1 through 40 {
+      --nexo-size-#{$step}: calc(var(--nexo-size-unit) * #{$step});
+    }
+
+    /* Corners */
+    --nexo-radius-xs: 2px;
+    --nexo-radius-sm: 4px;
+    --nexo-radius-md: 6px;
+    --nexo-radius-lg: 8px;
+    --nexo-radius-xl: 11px;
+    --nexo-radius-2xl: 14px;
+    --nexo-radius-3xl: 17px;
+    --nexo-radius-full: 999px;
+
+    /* Lines */
+    --nexo-border-width: 1px;
+    --nexo-border-width-strong: 2px;
+    --nexo-border-width-accent: 4px;
+    --nexo-border-width-accent: 4px;
+    --nexo-focus-ring-width: 2px;
+    --nexo-focus-ring-offset: 3px;
+
+    /* Motion */
+    --nexo-duration-fast: 0.12s;
+    --nexo-duration-base: 0.15s;
+    --nexo-duration-slow: 0.3s;
+    --nexo-duration-spin: 0.8s;
+    /* Reduced motion: short enough to skip, long enough to still fire the end events. */
+    --nexo-duration-instant: 0.01ms;
+    --nexo-duration-spin: 0.8s;
+    /* Reduced motion: short enough to skip, long enough to still fire the end events. */
+    --nexo-duration-instant: 0.01ms;
+
+    /* Opacity */
+    --nexo-opacity-disabled: 0.45;
+    --nexo-opacity-muted: 0.6;
+    --nexo-opacity-soft: 0.75;
+    --nexo-opacity-faint: 0.35;
+
+    /* Stacking */
+    --nexo-z-raised: 1;
+    --nexo-z-splitter: 6;
+    --nexo-z-sticky: 20;
+    --nexo-z-dropdown: 50;
+    --nexo-z-popover: 60;
+    --nexo-z-modal: 100;
+    --nexo-z-toast: 200;
+  }
+}

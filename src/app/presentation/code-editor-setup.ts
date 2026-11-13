@@ -25,50 +25,76 @@ import {
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
 
-/** Colours of the app's dark code editors. */
+/** Colours of the code editors, from the theme's syntax tokens. */
 export const highlight = HighlightStyle.define([
-  { tag: tags.keyword, color: '#ff7b72' },
-  { tag: [tags.propertyName, tags.attributeName], color: '#c6d5cc' },
-  { tag: [tags.variableName, tags.special(tags.variableName)], color: '#79c0ff' },
-  { tag: [tags.typeName, tags.className, tags.tagName], color: '#d2a8ff' },
-  { tag: [tags.string, tags.special(tags.string)], color: '#a5d6ff' },
-  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: '#79c0ff' },
-  { tag: tags.comment, color: '#8b949e', fontStyle: 'italic' },
-  { tag: tags.punctuation, color: '#8b949e' },
+  { tag: tags.keyword, color: 'var(--nexo-color-syntax-keyword)' },
+  { tag: [tags.propertyName, tags.attributeName], color: 'var(--nexo-color-code-text)' },
+  {
+    tag: [tags.variableName, tags.special(tags.variableName)],
+    color: 'var(--nexo-color-syntax-variable)',
+  },
+  { tag: [tags.typeName, tags.className, tags.tagName], color: 'var(--nexo-color-syntax-type)' },
+  { tag: [tags.string, tags.special(tags.string)], color: 'var(--nexo-color-syntax-string)' },
+  { tag: [tags.number, tags.bool, tags.null, tags.atom], color: 'var(--nexo-color-syntax-number)' },
+  { tag: tags.comment, color: 'var(--nexo-color-syntax-comment)', fontStyle: 'italic' },
+  { tag: tags.punctuation, color: 'var(--nexo-color-syntax-comment)' },
 ]);
 
 /** The look of the code editors, as the `.code-editor` text areas had. */
 export const theme = EditorView.theme(
   {
     '&': {
-      background: '#14171b',
-      color: '#c6d5cc',
-      border: '1px solid var(--border)',
-      borderRadius: '5px',
-      fontSize: '11px',
+      background: 'var(--nexo-color-code-bg)',
+      color: 'var(--nexo-color-code-text)',
+      border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
+      borderRadius: 'var(--nexo-radius-md)',
+      fontSize: 'var(--nexo-font-size-xs)',
       height: '100%',
     },
-    '&.cm-focused': { outline: '2px solid var(--accent)', outlineOffset: '-1px' },
-    '.cm-scroller': { fontFamily: 'var(--mono)', lineHeight: '1.8', overflow: 'auto' },
-    '.cm-content': { caretColor: '#c6d5cc', padding: '10px 0' },
-    '.cm-gutters': { background: '#14171b', color: '#8b949e', border: 'none' },
-    '.cm-activeLine, .cm-activeLineGutter': { background: '#ffffff08' },
-    '.cm-placeholder': { color: '#8b949e' },
-    '.cm-selectionMatch': { background: '#ffffff14' },
-    '.cm-searchMatch': { background: '#d2992240', outline: '1px solid #d2992280' },
-    '.cm-panels': { background: 'var(--panel)', color: 'var(--text)' },
-    '.cm-panel.cm-search input, .cm-panel.cm-search button': { fontSize: '11px' },
+    '&.cm-focused': {
+      outline: 'var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring)',
+      outlineOffset: 'calc(-1 * var(--nexo-border-width))',
+    },
+    '.cm-scroller': {
+      fontFamily: 'var(--nexo-font-mono)',
+      lineHeight: 'var(--nexo-line-height-loose)',
+      overflow: 'auto',
+    },
+    '.cm-content': { caretColor: 'var(--nexo-color-code-text)', padding: 'var(--nexo-space-5) 0' },
+    '.cm-gutters': {
+      background: 'var(--nexo-color-code-bg)',
+      color: 'var(--nexo-color-syntax-comment)',
+      border: 'none',
+    },
+    '.cm-activeLine, .cm-activeLineGutter': { background: 'var(--nexo-color-hover)' },
+    '.cm-placeholder': { color: 'var(--nexo-color-syntax-comment)' },
+    '.cm-selectionMatch': {
+      background: 'color-mix(in srgb, var(--nexo-color-highlight) 8%, transparent)',
+    },
+    '.cm-searchMatch': {
+      background: 'color-mix(in srgb, var(--nexo-color-warning) 25%, transparent)',
+      outline:
+        'var(--nexo-border-width) solid color-mix(in srgb, var(--nexo-color-warning) 50%, transparent)',
+    },
+    '.cm-panels': { background: 'var(--nexo-color-surface)', color: 'var(--nexo-color-text)' },
+    '.cm-panel.cm-search input, .cm-panel.cm-search button': {
+      fontSize: 'var(--nexo-font-size-xs)',
+    },
     '.cm-tooltip': {
-      background: 'var(--panel)',
-      color: 'var(--text)',
-      border: '1px solid var(--border)',
+      background: 'var(--nexo-color-surface)',
+      color: 'var(--nexo-color-text)',
+      border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
     },
     '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-      background: 'color-mix(in srgb, var(--accent) 35%, transparent)',
-      color: 'var(--text)',
+      background: 'color-mix(in srgb, var(--nexo-color-accent) 35%, transparent)',
+      color: 'var(--nexo-color-text)',
     },
-    '.cm-completionDetail': { color: 'var(--muted)', fontStyle: 'normal', marginLeft: '1em' },
-    '.cm-completionInfo': { maxWidth: '320px', padding: '6px 8px' },
+    '.cm-completionDetail': {
+      color: 'var(--nexo-color-text-muted)',
+      fontStyle: 'normal',
+      marginLeft: '1em',
+    },
+    '.cm-completionInfo': { maxWidth: '320px', padding: 'var(--nexo-space-3) var(--nexo-space-4)' },
   },
   { dark: true },
 );

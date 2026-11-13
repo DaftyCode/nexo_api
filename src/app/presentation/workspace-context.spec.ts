@@ -107,6 +107,10 @@ describe('Workspace context', () => {
         'GET',
         'HTTP',
       ]);
+      // The method colour of every template keys on this attribute.
+      expect(
+        rows.map((row) => row.querySelector('.method-tag')?.getAttribute('data-method')),
+      ).toEqual(['POST', 'DELETE', 'GET', 'HTTP']);
       expect(root.querySelector('.context-status.danger')?.textContent).toBe('404');
       expect(root.textContent).toContain('Open a saved request to see its collection.');
       expect(root.textContent).toContain('Select an environment with variables.');

@@ -3,50 +3,50 @@
   min-width: 0;
 }
 .mongo-selection {
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-bottom: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-selected code {
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
 }
 .bson-type {
-  font-size: 10px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0 4px;
-  margin-left: 6px;
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
+  padding: 0 var(--nexo-space-2);
+  margin-left: var(--nexo-space-3);
   white-space: nowrap;
 }
 .mongo-steps {
   display: flex;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   align-items: center;
-  margin-bottom: 6px;
-  font-size: 12px;
+  margin-bottom: var(--nexo-space-3);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-table-wrap {
   overflow: auto;
   max-height: 60vh;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
 }
 .mongo-table-wrap:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
+  outline: var(--nexo-focus-ring-width) solid var(--nexo-color-accent);
+  outline-offset: calc(-1 * var(--nexo-focus-ring-width));
 }
 .mongo-table {
   border-collapse: collapse;
-  font-size: 12px;
-  font-family: var(--mono, monospace);
+  font-size: var(--nexo-font-size-sm);
+  font-family: var(--nexo-font-mono);
   min-width: 100%;
 }
 .mongo-table th,
 .mongo-table td {
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-right: var(--nexo-border-width) solid var(--nexo-color-border);
   padding: 0;
   text-align: left;
   white-space: nowrap;
@@ -57,21 +57,21 @@
 .mongo-table thead th {
   position: sticky;
   top: 0;
-  background: var(--panel);
-  padding: 6px 8px;
-  font-weight: 600;
-  z-index: 1;
+  background: var(--nexo-color-surface);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  font-weight: var(--nexo-font-weight-semibold);
+  z-index: var(--nexo-z-raised);
 }
 .mongo-column {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--nexo-space-2);
   align-items: center;
 }
 .mongo-row-number,
 .mongo-cell {
   display: block;
   width: 100%;
-  padding: 5px 8px;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -79,67 +79,67 @@
   text-overflow: ellipsis;
 }
 .mongo-row-number {
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .mongo-cell.selected,
 tr.selected .mongo-row-number,
 .mongo-tree-row.selected {
-  background: var(--selection, rgb(80 140 255 / 18%));
+  background: var(--nexo-color-selection);
 }
 .bson-string {
-  color: var(--string, #3fa36b);
+  color: var(--nexo-color-data-string);
 }
 .bson-int32,
 .bson-int64,
 .bson-double,
 .bson-decimal128 {
-  color: var(--number, #c27b1e);
+  color: var(--nexo-color-data-number);
 }
 .bson-objectid,
 .bson-uuid {
-  color: var(--accent);
+  color: var(--nexo-color-accent);
 }
 .bson-date,
 .bson-timestamp {
-  color: var(--date, #a35fd1);
+  color: var(--nexo-color-data-date);
 }
 .bson-null,
 .bson-undefined,
 .bson-document,
 .bson-array {
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .mongo-tree {
   list-style: none;
   margin: 0;
   padding: 0;
-  font-family: var(--mono, monospace);
-  font-size: 12px;
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
   max-height: 60vh;
   overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 6px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
 }
 .mongo-tree-row {
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
   width: 100%;
-  padding: 4px 8px;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
   color: inherit;
   font: inherit;
   text-align: left;
 }
 .mongo-tree-row:hover,
 .mongo-cell:hover {
-  background: var(--hover, rgb(255 255 255 / 6%));
+  background: var(--nexo-color-hover);
 }
 .mongo-twisty {
-  width: 10px;
-  color: var(--muted);
+  width: var(--nexo-size-5);
+  color: var(--nexo-color-text-muted);
 }
 .mongo-key {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .mongo-tree-row .grow {
   overflow: hidden;

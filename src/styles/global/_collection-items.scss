@@ -1,11 +1,11 @@
 .request-leaf {
   display: flex;
-  gap: 9px;
+  gap: var(--nexo-space-4);
   align-items: center;
   width: 100%;
-  padding: 7px 3px;
+  padding: var(--nexo-space-3) var(--nexo-space-1);
   text-align: left;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
   min-width: 0;
 }
 .request-leaf > span:last-child {
@@ -14,27 +14,21 @@
   white-space: nowrap;
 }
 .method-tag {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--green);
-  font-weight: 600;
-  min-width: 32px;
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-3xs);
+  color: var(--nexo-method-ink, var(--nexo-color-success));
+  font-weight: var(--nexo-font-weight-semibold);
+  min-width: var(--nexo-size-16);
   text-align: left;
   flex-shrink: 0;
 }
-.method-tag.post {
-  color: #e6bd6d;
-}
-.method-tag.delete {
-  color: var(--red);
-}
 .add-request {
-  color: var(--dim);
-  font-size: 10px;
-  padding: 8px 20px;
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-2xs);
+  padding: var(--nexo-space-4) var(--nexo-space-10);
 }
 .add-request:hover {
-  color: var(--accent);
+  color: var(--nexo-color-accent);
 }
 .collection-menu {
   position: relative;
@@ -42,9 +36,9 @@
 .collection-menu summary {
   cursor: pointer;
   list-style: none;
-  font-size: 20px;
-  color: var(--muted);
-  padding: 2px 6px;
+  font-size: var(--nexo-font-size-4xl);
+  color: var(--nexo-color-text-muted);
+  padding: var(--nexo-space-1) var(--nexo-space-3);
 }
 /* The sidebar clips its overflow, so the menu is positioned against the window and
    floats over the next panel (Workspace.placeMenu). It stays hidden until placed. */
@@ -53,12 +47,12 @@
   min-width: 170px;
   /* The "Move to" select would otherwise grow to its longest folder name. */
   max-width: 260px;
-  background: var(--panel-3);
-  border: 1px solid var(--border);
-  z-index: 50;
-  border-radius: 5px;
-  box-shadow: 0 10px 35px #0008;
-  padding: 5px;
+  background: var(--nexo-color-surface-3);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  z-index: var(--nexo-z-dropdown);
+  border-radius: var(--nexo-radius-md);
+  box-shadow: var(--nexo-shadow-lg);
+  padding: var(--nexo-space-2);
 }
 .collection-menu:not([data-placed]) > div {
   visibility: hidden;
@@ -67,19 +61,19 @@
   display: block;
   width: 100%;
   text-align: left;
-  padding: 8px;
-  font-size: 11px;
-  border-radius: 3px;
+  padding: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
+  border-radius: var(--nexo-radius-sm);
 }
 .collection-menu button:hover {
-  background: #ffffff0c;
+  background: var(--nexo-color-hover);
 }
 .collection-menu label {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px;
-  font-size: 11px;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
 }
 .collection-menu select {
   width: 100%;
@@ -89,10 +83,10 @@
 .history-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   text-align: left;
-  padding: 12px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-6);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
   overflow: hidden;
 }
 .history-item > span {
@@ -100,9 +94,9 @@
   text-overflow: ellipsis;
   overflow: hidden;
   width: 100%;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .history-item small {
-  font-size: 10px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
 }

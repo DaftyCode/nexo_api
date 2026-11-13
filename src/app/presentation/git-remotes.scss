@@ -1,22 +1,22 @@
 :host {
   display: block;
-  margin-top: 18px;
+  margin-top: var(--nexo-space-9);
 }
 .git-remotes h3 {
-  font-size: 13px;
-  margin: 16px 0 8px;
+  font-size: var(--nexo-font-size-md);
+  margin: var(--nexo-space-8) 0 var(--nexo-space-4);
 }
 .remotes {
   list-style: none;
-  margin: 0 0 10px;
+  margin: 0 0 var(--nexo-space-5);
   padding: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--nexo-space-3);
 }
 .remotes li {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: var(--nexo-space-5);
   min-width: 0;
 }
 .remotes code {
@@ -27,23 +27,23 @@
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
-  gap: 8px 12px;
+  gap: var(--nexo-space-4) var(--nexo-space-6);
 }
 .git-error {
   position: relative;
-  border: 1px solid var(--red);
-  border-radius: 8px;
-  padding: 8px 36px 8px 12px;
-  margin-bottom: 10px;
+  border: var(--nexo-border-width) solid var(--nexo-color-danger);
+  border-radius: var(--nexo-radius-lg);
+  padding: var(--nexo-space-4) var(--nexo-space-18) var(--nexo-space-4) var(--nexo-space-6);
+  margin-bottom: var(--nexo-space-5);
 }
 .git-error p {
   margin: 0;
 }
 .git-error pre {
-  margin: 6px 0 0;
+  margin: var(--nexo-space-3) 0 0;
   white-space: pre-wrap;
-  font-size: 11px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
 }
 .git-error .icon-button {
   position: absolute;

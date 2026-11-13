@@ -41,7 +41,7 @@ export function environmentPreview(
         <strong>{{ 'Recent' | transloco }}</strong>
         @for (entry of recent(); track entry.document.id) {
           <button (click)="state.openHistory(entry.document)">
-            <span class="method-tag" [class.post]="entry.method === 'POST'">{{ entry.method }}</span
+            <span class="method-tag" [attr.data-method]="entry.method">{{ entry.method }}</span
             ><span>{{ entry.document.name }}</span>
           </button>
         } @empty {
@@ -115,9 +115,7 @@ export function environmentPreview(
           </div>
           @for (entry of recent(); track entry.document.id) {
             <button class="context-history-row" (click)="state.openHistory(entry.document)">
-              <span class="method-tag" [class.post]="entry.method === 'POST'">{{
-                entry.method
-              }}</span>
+              <span class="method-tag" [attr.data-method]="entry.method">{{ entry.method }}</span>
               <span class="context-history-name">{{ entry.document.name }}</span>
               @if (entry.status) {
                 <span class="context-status" [class.danger]="entry.status >= 400">{{

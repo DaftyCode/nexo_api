@@ -5,91 +5,91 @@
 }
 .context-panel {
   width: 100%;
-  padding: 14px 12px;
+  padding: var(--nexo-space-7) var(--nexo-space-6);
   overflow-y: auto;
-  background: linear-gradient(155deg, #141d32, #151b39 65%, #282459);
-  border: 1px solid #324164;
-  border-radius: 18px;
+  background: var(--nexo-context-bg);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-3xl);
 }
 .context-card {
   display: block;
-  margin-bottom: 12px;
-  padding: 15px 14px;
-  border: 1px solid #3b4a6b;
-  background: linear-gradient(130deg, #202a42, #182239);
-  border-radius: 13px;
-  box-shadow: inset 0 1px #ffffff05;
+  margin-bottom: var(--nexo-space-6);
+  padding: var(--nexo-space-7) var(--nexo-space-7);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+  background: var(--nexo-card-bg);
+  border-radius: var(--nexo-radius-2xl);
+  box-shadow: var(--nexo-shadow-highlight);
 }
 h2 {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin: 0 0 13px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.15px;
+  gap: var(--nexo-space-4);
+  margin: 0 0 var(--nexo-space-6);
+  font-size: var(--nexo-font-size-md);
+  font-weight: var(--nexo-font-weight-semibold);
+  letter-spacing: var(--nexo-tracking-normal);
 }
 h2 app-studio-icon {
-  width: 21px;
-  height: 21px;
-  color: #dfe4ff;
+  width: var(--nexo-size-11);
+  height: var(--nexo-size-11);
+  color: var(--nexo-color-text);
 }
 .context-environment {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--nexo-space-3);
 }
 .context-environment > select {
   min-width: 0;
   width: 100%;
-  background: #263251;
-  padding: 8px;
-  font-size: 11px;
-  border-color: #52648b;
-  border-radius: 7px;
+  background: var(--nexo-color-surface-3);
+  padding: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
+  border-color: var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-lg);
 }
 .context-environment .connection-dot {
-  width: 7px;
+  width: var(--nexo-size-4);
 }
 .context-environment .icon-button {
-  width: 24px;
+  width: var(--nexo-size-12);
 }
 .context-collection-name {
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
   display: block;
-  margin: 3px 0 7px;
+  margin: var(--nexo-space-1) 0 var(--nexo-space-3);
   overflow-wrap: anywhere;
 }
 .context-collection-name::before {
   content: '▱';
-  color: #b287ff;
-  font-size: 19px;
-  margin-right: 7px;
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-3xl);
+  margin-right: var(--nexo-space-3);
 }
 .context-empty {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.8;
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
+  line-height: var(--nexo-line-height-loose);
   margin: 0;
 }
 .context-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 7px;
+  gap: var(--nexo-space-3);
 }
 .context-heading > .text-button {
-  padding: 3px 0;
-  font-size: 10px;
+  padding: var(--nexo-space-1) 0;
+  font-size: var(--nexo-font-size-2xs);
 }
 .context-history-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   width: 100%;
-  min-height: 36px;
+  min-height: var(--nexo-size-18);
   text-align: left;
-  border-bottom: 1px solid #33415e;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
 }
 .context-history-row:last-child {
   border: 0;
@@ -99,89 +99,89 @@ h2 app-studio-icon {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .context-history-row small {
-  font-size: 9px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-3xs);
+  color: var(--nexo-color-text-muted);
 }
 .context-status {
-  color: #9af2b8;
-  background: #1e6d3d70;
-  border-radius: 5px;
-  padding: 3px 4px;
-  font-size: 10px;
+  color: var(--nexo-color-success);
+  background: color-mix(in srgb, var(--nexo-color-success) 25%, transparent);
+  border-radius: var(--nexo-radius-md);
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  font-size: var(--nexo-font-size-2xs);
 }
 .context-status.danger {
-  color: var(--red);
-  background: #74314955;
+  color: var(--nexo-color-danger);
+  background: color-mix(in srgb, var(--nexo-color-danger) 25%, transparent);
 }
 .context-variable-list {
-  border: 1px solid #384763;
-  border-radius: 8px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
   overflow: hidden;
 }
 .context-variable {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-  border-bottom: 1px solid #354260;
-  font-size: 10px;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  font-size: var(--nexo-font-size-2xs);
 }
 .context-variable:last-child {
   border: 0;
 }
 .context-variable > span,
 .context-variable > code {
-  padding: 9px 7px;
+  padding: var(--nexo-space-4) var(--nexo-space-3);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .context-variable > code {
-  border-left: 1px solid #354260;
-  color: #b9c8ed;
-  font-size: 10px;
+  border-left: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-2xs);
 }
 .context-variable .masked {
-  letter-spacing: 1px;
+  letter-spacing: var(--nexo-tracking-wider);
 }
 .context-privacy {
-  color: #8f9fbe;
-  font-size: 9px;
-  margin: 9px 0 0;
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-3xs);
+  margin: var(--nexo-space-4) 0 0;
 }
 .context-docs > span {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
 }
 .context-docs:hover {
-  border-color: #956af0;
+  border-color: var(--nexo-color-accent-strong);
 }
 .recent-strip {
   display: flex;
   align-items: center;
   width: 100%;
-  gap: 14px;
-  padding: 13px 0 5px;
-  border-top: 1px solid #e3e8f4;
+  gap: var(--nexo-space-7);
+  padding: var(--nexo-space-6) 0 var(--nexo-space-2);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
 }
 .recent-strip > strong {
-  font-size: 12px;
-  color: #7d89a3;
+  font-size: var(--nexo-font-size-sm);
+  color: var(--nexo-color-text-muted);
 }
 .recent-strip > button {
   display: flex;
   align-items: center;
-  gap: 10px;
-  border: 1px solid #e0e5f0;
-  border-radius: 11px;
-  background: #fff;
-  color: #435372;
-  padding: 9px 13px;
+  gap: var(--nexo-space-5);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-xl);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text-soft);
+  padding: var(--nexo-space-4) var(--nexo-space-6);
   min-width: 0;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .recent-strip > button > span:last-child {
   white-space: nowrap;
@@ -190,20 +190,19 @@ h2 app-studio-icon {
   max-width: 190px;
 }
 .recent-strip .method-tag {
-  background: #e8f7f0;
-  color: #009976;
-  padding: 4px 9px;
-  border-radius: 7px;
-  font-size: 9px;
+  background: color-mix(in srgb, var(--nexo-method-color) 22%, transparent);
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-lg);
+  font-size: var(--nexo-font-size-3xs);
 }
 .recent-strip .recent-view-all {
   margin-left: auto;
-  background: #eeecff;
-  color: #6551ea;
+  background: var(--nexo-color-accent-soft);
+  color: var(--nexo-color-accent);
   border-color: transparent;
   white-space: nowrap;
 }
 .recent-strip .context-empty {
-  color: #8490aa;
-  font-size: 11px;
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-xs);
 }

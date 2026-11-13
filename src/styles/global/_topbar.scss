@@ -1,43 +1,43 @@
 .topbar {
-  height: 54px;
+  height: var(--nexo-topbar-height);
   display: flex;
   align-items: center;
-  gap: 33px;
-  border-bottom: 1px solid var(--border);
-  padding: 0 20px;
-  background: #181a1e;
+  gap: var(--nexo-space-16);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: 0 var(--nexo-space-10);
+  background: var(--nexo-topbar-bg);
   flex-shrink: 0;
 }
 .topbar .brand {
-  font-size: 23px;
+  font-size: var(--nexo-font-size-5xl);
 }
 .topbar .brand-mark {
-  width: 29px;
-  height: 29px;
-  font-size: 25px;
+  width: var(--nexo-size-15);
+  height: var(--nexo-size-15);
+  font-size: var(--nexo-font-size-5xl);
 }
 .top-links {
   display: flex;
   align-items: center;
   height: 100%;
-  gap: 24px;
+  gap: var(--nexo-space-12);
 }
 .top-link {
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
   height: 100%;
   display: flex;
   align-items: center;
   position: relative;
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
 }
 .top-link.active {
-  color: var(--text);
+  color: var(--nexo-color-text);
 }
 .top-link.active:after {
   position: absolute;
   content: '';
-  height: 2px;
-  background: var(--accent);
+  height: var(--nexo-size-1);
+  background: var(--nexo-color-accent);
   bottom: 0;
   left: 0;
   right: 0;
@@ -46,18 +46,18 @@
   margin: auto;
   width: 330px;
   max-width: 30vw;
-  border: 1px solid #30333a;
-  background: #22252b;
-  border-radius: 6px;
-  padding: 7px 10px;
-  color: var(--dim);
-  font-size: 11px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  background: var(--nexo-color-surface-2);
+  border-radius: var(--nexo-radius-md);
+  padding: var(--nexo-space-3) var(--nexo-space-5);
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-xs);
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--nexo-space-4);
 }
 .top-search > span {
-  font-size: 18px;
+  font-size: var(--nexo-font-size-3xl);
 }
 .top-search kbd {
   margin-left: auto;
@@ -65,58 +65,58 @@
 .top-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 11px;
+  gap: var(--nexo-space-4);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
 }
 .avatar {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: #40483e;
-  color: #cee2c9;
-  border: 1px solid #566250;
+  width: var(--nexo-size-13);
+  height: var(--nexo-size-13);
+  background: var(--nexo-avatar-bg);
+  color: var(--nexo-avatar-text);
+  border: var(--nexo-border-width) solid var(--nexo-avatar-border);
   border-radius: 50%;
-  font-size: 10px;
-  margin-left: 14px;
+  font-size: var(--nexo-font-size-2xs);
+  margin-left: var(--nexo-space-7);
 }
 .workspace-bar {
-  height: 49px;
+  height: var(--nexo-workspace-bar-height);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 0 16px 0 20px;
-  border-bottom: 1px solid var(--border);
-  background: var(--panel);
+  gap: var(--nexo-space-10);
+  padding: 0 var(--nexo-space-8) 0 var(--nexo-space-10);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+  background: var(--nexo-color-surface);
   flex-shrink: 0;
 }
 .workspace-icon {
-  color: #b6bbc5;
-  font-size: 19px;
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-3xl);
 }
 .workspace-select {
   background: none;
   border: 0;
-  padding: 5px 22px 5px 3px;
-  font-weight: 600;
+  padding: var(--nexo-space-2) var(--nexo-space-11) var(--nexo-space-2) var(--nexo-space-1);
+  font-weight: var(--nexo-font-weight-semibold);
   max-width: 220px;
 }
 .vertical-divider {
-  height: 18px;
-  background: var(--border);
-  width: 1px;
-  margin: 0 2px;
+  height: var(--nexo-size-9);
+  background: var(--nexo-color-border);
+  width: var(--nexo-size-1);
+  margin: 0 var(--nexo-space-1);
 }
 .environment-select {
   background: transparent;
   min-width: 180px;
   border: 0;
-  border-left: 1px solid var(--border);
+  border-left: var(--nexo-border-width) solid var(--nexo-color-border);
   border-radius: 0;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .studio-body {
   display: flex;

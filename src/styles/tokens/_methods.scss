@@ -1,0 +1,53 @@
+/*
+ * HTTP method colours, shared by every template. Mark an element with `data-method="GET"`
+ * (any case) and style it with:
+ *   --nexo-method-color  the method colour itself (badge text on dark templates, tints);
+ *   --nexo-method-ink    the colour for text, darkened on light templates for contrast.
+ */
+@layer nexo-tokens {
+  :root,
+  .studio {
+    --nexo-method-get: #6bdd9a;
+    --nexo-method-post: #ffe47e;
+    --nexo-method-put: #74aef6;
+    --nexo-method-patch: #c0a8e1;
+    --nexo-method-delete: #f79a8e;
+    --nexo-method-options: #f2a7d4;
+    --nexo-method-other: var(--nexo-color-text-muted);
+    /* Share of the ink base mixed into the text colour: none on dark templates. */
+    --nexo-method-ink-base: #000;
+    --nexo-method-ink-shade: 0%;
+  }
+
+  [data-method] {
+    --nexo-method-color: var(--nexo-method-other);
+    --nexo-method-ink: color-mix(
+      in srgb,
+      var(--nexo-method-color),
+      var(--nexo-method-ink-base) var(--nexo-method-ink-shade)
+    );
+  }
+  [data-method='get' i],
+  [data-method='head' i] {
+    --nexo-method-color: var(--nexo-method-get);
+  }
+  [data-method='post' i] {
+    --nexo-method-color: var(--nexo-method-post);
+  }
+  [data-method='put' i] {
+    --nexo-method-color: var(--nexo-method-put);
+  }
+  [data-method='patch' i] {
+    --nexo-method-color: var(--nexo-method-patch);
+  }
+  [data-method='delete' i] {
+    --nexo-method-color: var(--nexo-method-delete);
+  }
+  [data-method='options' i] {
+    --nexo-method-color: var(--nexo-method-options);
+  }
+}
+
+.method-select option[data-method] {
+  color: var(--nexo-method-ink);
+}

@@ -1,33 +1,33 @@
 .mongo-indexes {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  font-size: 12px;
+  gap: var(--nexo-space-6);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-indexes-bar,
 .mongo-index-checks,
 .mongo-index-actions {
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
   flex-wrap: wrap;
 }
 .mongo-index-form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
 }
 .mongo-index-form input {
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
 }
 .mongo-index-help {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .mongo-index-options {
-  gap: 10px;
+  gap: var(--nexo-space-5);
   align-items: flex-end;
 }
 .mongo-index-ttl {
@@ -37,7 +37,7 @@
   justify-content: flex-end;
 }
 .mongo-problem {
-  color: var(--red);
+  color: var(--nexo-color-danger);
   margin: 0;
 }
 .mongo-table {
@@ -48,33 +48,33 @@
 .mongo-table td {
   text-align: left;
   vertical-align: top;
-  padding: 6px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .mongo-table th {
-  color: var(--muted);
-  font-weight: 500;
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-medium);
 }
 .mongo-mono {
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
   overflow-wrap: anywhere;
 }
 .mongo-badge {
   display: inline-block;
-  margin: 0 4px 2px 0;
-  font-size: 10px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
+  margin: 0 var(--nexo-space-2) var(--nexo-space-1) 0;
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
+  padding: var(--nexo-space-px) var(--nexo-space-2);
   white-space: nowrap;
 }
 .mongo-hidden-index td {
-  opacity: 0.6;
+  opacity: var(--nexo-opacity-muted);
 }
 .mongo-index-row-actions {
   white-space: nowrap;
 }
 .mongo-index-row-actions .danger {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }

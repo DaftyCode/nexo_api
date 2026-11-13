@@ -2,12 +2,12 @@
   display: block;
 }
 .mongo-schema-exports {
-  gap: 6px;
+  gap: var(--nexo-space-3);
 }
 .mongo-schema-anomalies ul {
-  margin: 4px 0 10px;
-  padding-left: 18px;
-  font-size: 12px;
+  margin: var(--nexo-space-2) 0 var(--nexo-space-5);
+  padding-left: var(--nexo-space-9);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-schema-scroll {
   max-height: 520px;
@@ -16,60 +16,60 @@
 .mongo-schema-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-schema-table th,
 .mongo-schema-table td {
   text-align: left;
-  padding: 4px 6px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
   vertical-align: top;
 }
 .mongo-schema-table th[scope='row'] {
-  font-weight: normal;
+  font-weight: var(--nexo-font-weight-regular);
   white-space: nowrap;
 }
 .mongo-schema-table tr.anomaly th[scope='row'] .text-button {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }
 .mongo-share {
   display: inline-block;
-  width: 60px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--border);
+  width: var(--nexo-size-30);
+  height: var(--nexo-size-3);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-border);
   vertical-align: middle;
   overflow: hidden;
 }
 .mongo-share span {
   display: block;
   height: 100%;
-  background: var(--accent, var(--muted));
+  background: var(--nexo-color-accent, var(--nexo-color-text-muted));
 }
 .mongo-type {
   display: inline-block;
-  margin: 0 6px 2px 0;
-  padding: 0 5px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  margin: 0 var(--nexo-space-3) var(--nexo-space-1) 0;
+  padding: 0 var(--nexo-space-2);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
   white-space: nowrap;
 }
 .mongo-schema-detail p {
-  margin: 2px 0;
+  margin: var(--nexo-space-1) 0;
 }
 .mongo-schema-values {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
-  margin: 4px 0;
+  gap: var(--nexo-space-2) var(--nexo-space-6);
+  margin: var(--nexo-space-2) 0;
   padding: 0;
 }
 .mongo-schema-rules {
-  margin-top: 12px;
+  margin-top: var(--nexo-space-6);
 }
 .check {
   display: inline-flex;
-  gap: 4px;
+  gap: var(--nexo-space-2);
   align-items: center;
 }

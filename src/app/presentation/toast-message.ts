@@ -47,55 +47,55 @@ import { WorkspaceState } from './workspace-state';
       position: fixed;
       right: 20px;
       bottom: 44px;
-      z-index: 200;
+      z-index: var(--nexo-z-toast);
       display: flex;
       align-items: flex-start;
-      gap: 10px;
+      gap: var(--nexo-space-5);
       width: min(380px, calc(100vw - 40px));
-      padding: 12px 10px 12px 14px;
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--blue);
-      border-radius: 8px;
-      box-shadow: 0 12px 40px #0008;
+      padding: var(--nexo-space-6) var(--nexo-space-5) var(--nexo-space-6) var(--nexo-space-7);
+      background: var(--nexo-color-surface);
+      color: var(--nexo-color-text);
+      border: var(--nexo-border-width) solid var(--nexo-color-border);
+      border-left: var(--nexo-border-width-accent) solid var(--nexo-color-info);
+      border-radius: var(--nexo-radius-lg);
+      box-shadow: var(--nexo-shadow-lg);
     }
     .toast.success {
-      border-left-color: var(--green);
+      border-left-color: var(--nexo-color-success);
     }
     .toast.error {
-      border-left-color: var(--red);
+      border-left-color: var(--nexo-color-danger);
     }
     .toast-icon {
       flex: none;
       display: grid;
       place-items: center;
-      width: 22px;
-      height: 22px;
+      width: var(--nexo-size-11);
+      height: var(--nexo-size-11);
       border-radius: 50%;
-      font-weight: 700;
-      font-size: 12px;
-      color: #fff;
-      background: var(--blue);
+      font-weight: var(--nexo-font-weight-bold);
+      font-size: var(--nexo-font-size-sm);
+      color: var(--nexo-color-on-status);
+      background: var(--nexo-color-info);
     }
     .success .toast-icon {
-      background: var(--green);
+      background: var(--nexo-color-success);
     }
     .error .toast-icon {
-      background: var(--red);
+      background: var(--nexo-color-danger);
     }
     .toast-text {
       flex: 1;
       min-width: 0;
     }
     .toast-text p {
-      margin: 4px 0 0;
-      color: var(--muted);
+      margin: var(--nexo-space-2) 0 0;
+      color: var(--nexo-color-text-muted);
       overflow-wrap: anywhere;
     }
     .toast-detail {
-      font-family: var(--mono);
-      font-size: 11px;
+      font-family: var(--nexo-font-mono);
+      font-size: var(--nexo-font-size-xs);
     }
   `,
 })

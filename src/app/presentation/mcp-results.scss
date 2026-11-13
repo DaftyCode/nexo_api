@@ -2,10 +2,10 @@
   display: block;
 }
 h3 {
-  font-size: 13px;
-  margin: 14px 0 6px;
+  font-size: var(--nexo-font-size-md);
+  margin: var(--nexo-space-7) 0 var(--nexo-space-3);
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: baseline;
 }
 .mcp-item {
@@ -13,18 +13,18 @@ h3 {
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 6px 12px;
-  padding: 6px 0;
-  border-bottom: 1px solid var(--border);
+  gap: var(--nexo-space-3) var(--nexo-space-6);
+  padding: var(--nexo-space-3) 0;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .mcp-item > div {
   display: grid;
-  gap: 2px;
+  gap: var(--nexo-space-1);
   min-width: 0;
 }
 .mcp-uri {
   overflow-wrap: anywhere;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .mcp-prompt .field {
   min-width: 160px;

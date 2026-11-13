@@ -1,6 +1,6 @@
 .mongo-explorer {
   display: flex;
-  gap: 16px;
+  gap: var(--nexo-space-8);
   align-items: flex-start;
 }
 .mongo-sidebar {
@@ -15,36 +15,36 @@
   padding: 0;
 }
 .mongo-sidebar ul ul {
-  padding-left: 14px;
+  padding-left: var(--nexo-space-7);
 }
 .mongo-connection-name {
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
-  font-size: 14px;
-  margin: 8px 0;
+  font-size: var(--nexo-font-size-lg);
+  margin: var(--nexo-space-4) 0;
 }
 .mongo-color {
-  width: 9px;
-  height: 9px;
+  width: var(--nexo-size-5);
+  height: var(--nexo-size-5);
   border-radius: 50%;
-  border: 1px solid var(--border);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .mongo-tree-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   width: 100%;
-  padding: 5px 6px;
-  border-radius: 5px;
-  color: var(--text);
-  font-size: 12px;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
   text-align: left;
   overflow: hidden;
 }
 .mongo-tree-item:hover,
 .mongo-tree-item.selected {
-  background: var(--hover, rgb(255 255 255 / 6%));
+  background: var(--nexo-color-hover);
 }
 .mongo-tree-item .grow,
 .mongo-history {
@@ -54,39 +54,39 @@
 }
 .mongo-history {
   display: block;
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
 }
 .mongo-badge {
-  font-size: 10px;
-  color: var(--muted);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
+  padding: var(--nexo-space-px) var(--nexo-space-2);
   white-space: nowrap;
 }
 .mongo-badge.danger {
-  color: var(--red);
-  border-color: var(--red);
+  color: var(--nexo-color-danger);
+  border-color: var(--nexo-color-danger);
 }
 .mongo-section {
-  margin: 18px 0 6px;
-  font-size: 11px;
-  color: var(--muted);
+  margin: var(--nexo-space-9) 0 var(--nexo-space-3);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--nexo-tracking-caps);
 }
 .mongo-folder {
-  margin: 8px 0 4px;
-  font-size: 11px;
-  color: var(--muted);
+  margin: var(--nexo-space-4) 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
 }
 .mongo-saved {
-  gap: 4px;
+  gap: var(--nexo-space-2);
   align-items: center;
 }
 .mongo-empty {
-  padding: 4px 6px;
-  font-size: 12px;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-query {
   flex: 1;
@@ -95,59 +95,59 @@
 .mongo-target {
   align-items: flex-start;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--nexo-space-6);
 }
 .mongo-target h2 {
   display: flex;
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
   margin: 0;
-  font-size: 15px;
+  font-size: var(--nexo-font-size-xl);
 }
 .mongo-stats {
   display: flex;
-  gap: 18px;
+  gap: var(--nexo-space-9);
   margin: 0;
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-stats dt {
-  color: var(--muted);
-  font-size: 10px;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-2xs);
   text-transform: uppercase;
 }
 .mongo-stats dd {
   margin: 0;
 }
 .mongo-bar {
-  margin: 12px 0;
+  margin: var(--nexo-space-6) 0;
 }
 .mongo-filter {
-  margin-bottom: 8px;
+  margin-bottom: var(--nexo-space-4);
 }
 .mongo-inline {
-  gap: 10px;
+  gap: var(--nexo-space-5);
   align-items: flex-end;
 }
 .mongo-inline input,
 .mongo-save-name input {
-  font-family: var(--mono, monospace);
+  font-family: var(--nexo-font-mono);
 }
 .mongo-number {
   width: 90px;
 }
 .mongo-problem {
-  color: var(--red);
-  font-size: 12px;
+  color: var(--nexo-color-danger);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-actions,
 .mongo-results-bar {
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
   flex-wrap: wrap;
 }
 .mongo-results-bar {
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-bottom: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-results-bar .field,
 .mongo-actions .field {
@@ -155,7 +155,7 @@
 }
 .mongo-views {
   display: flex;
-  gap: 4px;
+  gap: var(--nexo-space-2);
 }
 /* Labels beside their control, so the bars stay one line high. */
 .mongo-format,
@@ -164,7 +164,7 @@
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   white-space: nowrap;
 }
 .mongo-format select,
@@ -175,58 +175,58 @@
   width: 180px;
 }
 .mongo-write-bar {
-  gap: 8px;
+  gap: var(--nexo-space-4);
   align-items: center;
   flex-wrap: wrap;
-  margin-top: 10px;
+  margin-top: var(--nexo-space-5);
 }
 .mongo-more {
   position: relative;
-  font-size: 12px;
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-more summary {
   cursor: pointer;
-  padding: 4px 8px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
 }
 .mongo-menu {
   position: absolute;
   right: 0;
-  z-index: 5;
+  z-index: var(--nexo-z-splitter);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: var(--nexo-space-2);
   min-width: 180px;
-  padding: 8px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+  padding: var(--nexo-space-4);
+  background: var(--nexo-color-surface);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  box-shadow: var(--nexo-shadow-md);
 }
 .mongo-menu .danger {
-  color: var(--red);
+  color: var(--nexo-color-danger);
 }
 .mongo-tabs {
   padding: 0;
-  margin: 10px 0 12px;
-  height: 34px;
+  margin: var(--nexo-space-5) 0 var(--nexo-space-6);
+  height: var(--nexo-size-17);
 }
 .mongo-explain-bar {
-  margin-bottom: 12px;
-  font-size: 12px;
+  margin-bottom: var(--nexo-space-6);
+  font-size: var(--nexo-font-size-sm);
 }
 .mongo-blocks {
-  border-left: 2px solid var(--border);
-  padding: 4px 0 4px 10px;
-  margin: 6px 0;
+  border-left: var(--nexo-border-width-strong) solid var(--nexo-color-border);
+  padding: var(--nexo-space-2) 0 var(--nexo-space-2) var(--nexo-space-5);
+  margin: var(--nexo-space-3) 0;
 }
 .mongo-blocks-items {
   list-style: none;
-  margin: 4px 0;
+  margin: var(--nexo-space-2) 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--nexo-space-2);
 }

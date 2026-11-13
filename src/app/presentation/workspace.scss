@@ -1,7 +1,7 @@
 .shortcut-list {
   display: grid;
   grid-template-columns: max-content 1fr;
-  gap: 8px 16px;
+  gap: var(--nexo-space-4) var(--nexo-space-8);
   dd {
     margin: 0;
   }

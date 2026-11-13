@@ -4,26 +4,26 @@
   height: auto;
   max-height: clamp(213px, 45vh, 560px);
   overflow: auto;
-  padding: 13px 21px 16px;
+  padding: var(--nexo-space-6) var(--nexo-space-10) var(--nexo-space-8);
 }
 .section-caption {
-  font-size: 10px;
+  font-size: var(--nexo-font-size-2xs);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: var(--muted);
-  margin: 0 0 12px;
+  color: var(--nexo-color-text-muted);
+  margin: 0 0 var(--nexo-space-6);
 }
 .section-caption > span {
-  font-size: 9px;
-  color: var(--dim);
+  font-size: var(--nexo-font-size-3xs);
+  color: var(--nexo-color-text-dim);
 }
 .section-caption code {
-  color: #b6aa7b;
+  color: var(--nexo-color-code-inline);
 }
 .kv-table {
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
   overflow: hidden;
 }
 .kv-head,
@@ -33,17 +33,17 @@
   align-items: center;
 }
 .kv-head {
-  height: 27px;
-  font-size: 10px;
-  color: var(--muted);
-  background: #1b1e24;
+  height: var(--nexo-size-14);
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  background: var(--nexo-color-surface);
 }
 .kv-head > span:not(:first-child) {
-  padding: 0 9px;
+  padding: 0 var(--nexo-space-4);
 }
 .kv-row {
-  border-top: 1px solid var(--border);
-  min-height: 34px;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  min-height: var(--nexo-size-17);
 }
 .kv-row > input[type='checkbox'] {
   margin: auto;
@@ -52,52 +52,52 @@
   border: 0;
   border-radius: 0;
   background: none;
-  height: 33px;
-  padding: 6px 9px;
-  font-size: 11px;
-  border-left: 1px solid var(--border);
+  height: var(--nexo-size-17);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
+  border-left: var(--nexo-border-width) solid var(--nexo-color-border);
   width: 100%;
 }
 .kv-row > .kv-key {
-  padding: 6px 9px;
-  font-size: 11px;
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  font-size: var(--nexo-font-size-xs);
   overflow-wrap: anywhere;
 }
 .kv-row > .icon-button {
-  font-size: 15px;
-  opacity: 0.55;
+  font-size: var(--nexo-font-size-xl);
+  opacity: var(--nexo-opacity-muted);
 }
 .kv-add {
-  font-size: 10px;
-  padding: 7px 10px;
+  font-size: var(--nexo-font-size-2xs);
+  padding: var(--nexo-space-3) var(--nexo-space-5);
 }
 .body-options {
   display: flex;
-  gap: 15px;
+  gap: var(--nexo-space-7);
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--nexo-space-5);
 }
 .body-options label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 10px;
-  color: var(--muted);
+  gap: var(--nexo-space-4);
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
 }
 .body-options select {
-  padding: 5px 8px;
-  font-size: 10px;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  font-size: var(--nexo-font-size-2xs);
 }
 .code-editor {
-  background: #14171b;
-  color: #c6d5cc;
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
   display: block;
   width: 100%;
   min-height: 175px;
-  padding: 14px 16px;
-  border: 1px solid var(--border);
-  font: 11px/1.8 var(--mono);
-  border-radius: 5px;
+  padding: var(--nexo-space-7) var(--nexo-space-8);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  font: var(--nexo-font-size-xs) / var(--nexo-line-height-loose) var(--nexo-font-mono);
+  border-radius: var(--nexo-radius-md);
   tab-size: 2;
   resize: vertical;
 }
@@ -107,30 +107,30 @@
 .auth-grid {
   display: grid;
   grid-template-columns: minmax(200px, 1fr) 1.4fr;
-  gap: 40px;
+  gap: var(--nexo-space-20);
 }
 .auth-grid .field:first-child {
   margin-top: 0;
 }
 .auth-grid .muted {
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
   max-width: 330px;
 }
 .empty-inline {
-  padding: 24px;
-  color: var(--muted);
-  font-size: 12px;
+  padding: var(--nexo-space-12);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
 }
 .settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 35px;
+  gap: 0 var(--nexo-space-18);
 }
 .editor-hint {
-  color: var(--dim);
-  font-size: 10px;
-  margin-top: 12px;
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-2xs);
+  margin-top: var(--nexo-space-6);
 }
 .editor-hint code {
-  color: #a8b9a7;
+  color: var(--nexo-color-code-text);
 }

@@ -3,7 +3,7 @@
   flex-direction: column;
   height: 100%;
   min-height: 150px;
-  border-top: 1px solid #3c424c;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-strong);
 }
 .main-workspace app-response-view {
   flex: 1;
@@ -14,61 +14,62 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  min-height: 41px;
-  gap: 12px;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+  min-height: var(--nexo-size-21);
+  gap: var(--nexo-space-6);
 }
 .response-tabs {
   border: 0;
   padding-right: 0;
-  gap: 20px;
+  gap: var(--nexo-space-10);
 }
 .response-meta {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: 11.5px;
-  padding-right: 20px;
+  gap: var(--nexo-space-7);
+  font-size: var(--nexo-font-size-xs);
+  padding-right: var(--nexo-space-10);
   white-space: nowrap;
 }
 .response-meta > span:first-child {
-  font-weight: 600;
+  font-weight: var(--nexo-font-weight-semibold);
 }
 .response-meta > span:not(:first-child) {
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .response-actions {
   display: flex;
-  gap: 6px;
+  gap: var(--nexo-space-3);
   align-items: center;
-  padding: 10px 20px;
-  border-bottom: 1px solid #262b32;
-  min-height: 38px;
+  padding: var(--nexo-space-5) var(--nexo-space-10);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  min-height: var(--nexo-size-19);
 }
 .response-actions > .muted {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .response-actions .pill {
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: var(--nexo-space-2) var(--nexo-space-6);
+  font-size: var(--nexo-font-size-sm);
 }
 /* Errors and warnings of a response, set apart from the body. */
 .response-section .alert {
-  margin: 12px 20px 2px;
-  padding: 10px 14px;
-  border: 1px solid color-mix(in srgb, #f0b44c 45%, transparent);
-  border-left-width: 3px;
-  border-radius: 8px;
-  background: color-mix(in srgb, #f0b44c 10%, transparent);
-  font-size: 12.5px;
-  line-height: 1.55;
+  margin: var(--nexo-space-6) var(--nexo-space-10) var(--nexo-space-1);
+  padding: var(--nexo-space-5) var(--nexo-space-7);
+  border: var(--nexo-border-width) solid
+    color-mix(in srgb, var(--nexo-color-warning) 45%, transparent);
+  border-left-width: var(--nexo-border-width-accent);
+  border-radius: var(--nexo-radius-lg);
+  background: color-mix(in srgb, var(--nexo-color-warning) 10%, transparent);
+  font-size: var(--nexo-font-size-sm);
+  line-height: var(--nexo-line-height-normal);
   overflow-wrap: anywhere;
 }
 .response-section .alert.error {
-  border-color: color-mix(in srgb, var(--red) 55%, transparent);
-  background: color-mix(in srgb, var(--red) 10%, transparent);
-  color: var(--text);
+  border-color: color-mix(in srgb, var(--nexo-color-danger) 55%, transparent);
+  background: color-mix(in srgb, var(--nexo-color-danger) 10%, transparent);
+  color: var(--nexo-color-text);
 }
 /* Below the response tabs: one area that scrolls. A flex item does not shrink below its
    content unless told (min-height: 0), so without it a long body was cut off. */
@@ -81,19 +82,19 @@
 }
 /* Pretty, Raw and Download stay in sight while the body scrolls. */
 .response-content:focus-visible {
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--nexo-focus-ring-width));
 }
 .response-content > .response-actions {
   position: sticky;
   top: 0;
-  z-index: 1;
-  background: var(--panel);
+  z-index: var(--nexo-z-raised);
+  background: var(--nexo-color-surface);
 }
 .response-code {
-  font: 12.5px/1.75 var(--mono);
-  color: #bdcfc2;
+  font: var(--nexo-font-size-sm) / var(--nexo-line-height-relaxed) var(--nexo-font-mono);
+  color: var(--nexo-response-code-text);
   margin: 0;
-  padding: 15px 22px;
+  padding: var(--nexo-space-7) var(--nexo-space-11);
   flex: 1 0 auto;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -103,79 +104,79 @@
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 9px;
+  gap: var(--nexo-space-4);
   min-height: 210px;
   flex: 1;
-  color: var(--dim);
-  padding: 28px;
+  color: var(--nexo-color-text-dim);
+  padding: var(--nexo-space-14);
 }
 .empty-response > svg {
-  margin-bottom: 8px;
-  color: #636d76;
+  margin-bottom: var(--nexo-space-4);
+  color: var(--nexo-color-text-faint);
 }
 .empty-response h3 {
-  color: #b3b9c1;
+  color: var(--nexo-color-text-soft);
   margin: 0;
 }
 .empty-response p {
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
   margin: 0;
-  color: var(--dim);
+  color: var(--nexo-color-text-dim);
 }
 .keyboard-tip {
-  font-size: 10px;
-  margin-top: 10px;
-  color: var(--dim);
+  font-size: var(--nexo-font-size-2xs);
+  margin-top: var(--nexo-space-5);
+  color: var(--nexo-color-text-dim);
 }
 .status-pill {
   display: inline-flex;
-  font: 9px var(--mono);
-  padding: 4px 6px;
-  color: var(--green);
-  background: #6bd5a110;
-  border-radius: 3px;
+  font: var(--nexo-font-size-3xs) var(--nexo-font-mono);
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  color: var(--nexo-color-success);
+  background: var(--nexo-color-success-soft);
+  border-radius: var(--nexo-radius-sm);
 }
 .status-pill.failed {
-  color: var(--red);
-  background: #ff828a12;
+  color: var(--nexo-color-danger);
+  background: var(--nexo-color-danger-soft);
 }
 .assertion {
   display: flex;
-  gap: 12px;
-  padding: 11px 20px;
-  border-bottom: 1px solid #292e35;
+  gap: var(--nexo-space-6);
+  padding: var(--nexo-space-5) var(--nexo-space-10);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
   align-items: flex-start;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .assertion p {
-  margin: 7px 0 0;
+  margin: var(--nexo-space-3) 0 0;
 }
 .console-line {
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--border);
+  padding: var(--nexo-space-5) var(--nexo-space-10);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
   margin: 0;
-  font-size: 11px;
+  font-size: var(--nexo-font-size-xs);
 }
 .statusbar {
-  height: 26px;
+  height: var(--nexo-size-13);
   display: flex;
   align-items: center;
-  gap: 25px;
-  border-top: 1px solid var(--border);
-  padding: 0 12px;
-  color: var(--dim);
-  font-size: 9px;
-  background: #191c21;
+  gap: var(--nexo-space-12);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: 0 var(--nexo-space-6);
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-3xs);
+  background: var(--nexo-statusbar-bg);
   flex-shrink: 0;
 }
 .statusbar > button {
-  font-size: 10px;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
 }
 .statusbar-right {
   margin-left: auto;
   display: flex;
-  gap: 22px;
+  gap: var(--nexo-space-11);
 }
 .floating-console {
   position: fixed;
@@ -184,23 +185,23 @@
   right: 0;
   height: 210px;
   overflow: auto;
-  border-top: 1px solid var(--border);
-  background: #171a1f;
-  box-shadow: 0 -10px 40px #0004;
-  padding: 10px 20px;
-  z-index: 20;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  background: var(--nexo-console-bg);
+  box-shadow: var(--nexo-shadow-up);
+  padding: var(--nexo-space-5) var(--nexo-space-10);
+  z-index: var(--nexo-z-sticky);
 }
 .floating-console pre {
-  color: var(--muted);
-  font-size: 11px;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
 }
 .global-alert {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #40262a;
-  color: #ffc0c5;
-  border-bottom: 1px solid #773d45;
-  padding: 6px 20px;
-  font-size: 11px;
+  background: var(--nexo-color-danger-surface);
+  color: var(--nexo-color-danger-text);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-danger-border);
+  padding: var(--nexo-space-3) var(--nexo-space-10);
+  font-size: var(--nexo-font-size-xs);
 }

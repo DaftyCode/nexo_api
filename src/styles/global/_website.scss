@@ -1,92 +1,92 @@
 .website {
-  background: #16191c;
+  background: var(--nexo-color-bg);
   min-height: 100vh;
 }
 .site-nav {
   max-width: 1240px;
   margin: auto;
   height: 100px;
-  padding: 0 40px;
+  padding: 0 var(--nexo-space-20);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ffffff0c;
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
 }
 .site-nav > div {
   display: flex;
   align-items: center;
-  gap: 35px;
-  font-size: 12px;
+  gap: var(--nexo-space-18);
+  font-size: var(--nexo-font-size-sm);
 }
 .site-nav .brand-mark {
-  width: 35px;
-  height: 35px;
+  width: var(--nexo-size-18);
+  height: var(--nexo-size-18);
 }
 .site-hero {
   max-width: 1240px;
   margin: auto;
   min-height: 650px;
-  padding: 105px 40px 95px;
+  padding: var(--nexo-space-56) var(--nexo-space-20) var(--nexo-space-48);
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 75px;
+  gap: var(--nexo-space-40);
   align-items: center;
 }
 .hero-copy h1 {
-  font-size: 64px;
-  line-height: 1.07;
-  font-weight: 550;
-  letter-spacing: -3.5px;
-  margin: 23px 0;
+  font-size: var(--nexo-font-size-display-lg);
+  line-height: var(--nexo-line-height-none);
+  font-weight: var(--nexo-font-weight-medium);
+  letter-spacing: var(--nexo-tracking-tightest);
+  margin: var(--nexo-space-11) 0;
 }
 .hero-copy h1 em {
   font-style: normal;
-  color: var(--accent);
+  color: var(--nexo-color-accent);
 }
 .hero-copy p {
-  color: var(--muted);
-  font-size: 15px;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xl);
   max-width: 440px;
-  line-height: 1.9;
-  margin-bottom: 26px;
+  line-height: var(--nexo-line-height-loose);
+  margin-bottom: var(--nexo-space-12);
 }
 .hero-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--nexo-space-6);
 }
 .hero-protocols {
-  font: 10px var(--mono);
-  color: var(--dim);
-  margin-top: 28px;
+  font: var(--nexo-font-size-2xs) var(--nexo-font-mono);
+  color: var(--nexo-color-text-dim);
+  margin-top: var(--nexo-space-14);
   display: flex;
-  gap: 10px;
+  gap: var(--nexo-space-5);
   flex-wrap: wrap;
 }
 .hero-protocols span {
-  color: #4a5059;
+  color: var(--nexo-color-text-faint);
 }
 .hero-preview {
-  border: 1px solid #3d434a;
-  border-radius: 10px;
-  background: #1c2025;
-  box-shadow: 0 35px 100px #0006;
+  border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-xl);
+  background: var(--nexo-color-surface);
+  box-shadow: var(--nexo-shadow-xl);
   overflow: hidden;
   transform: perspective(1400px) rotateY(-4deg);
 }
 .preview-top {
-  padding: 16px;
+  padding: var(--nexo-space-8);
   display: flex;
   align-items: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 11px;
-  color: var(--muted);
+  gap: var(--nexo-space-6);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
 }
 .preview-top .brand-mark {
-  width: 23px;
-  height: 23px;
-  font-size: 20px;
-  border-radius: 6px;
+  width: var(--nexo-size-12);
+  height: var(--nexo-size-12);
+  font-size: var(--nexo-font-size-4xl);
+  border-radius: var(--nexo-radius-md);
 }
 .preview-top > .connection-dot {
   margin-left: auto;
@@ -94,134 +94,134 @@
 .preview-url {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 22px 17px 12px;
-  border: 1px solid #434a54;
-  border-radius: 5px;
-  padding-left: 12px;
-  font-size: 11px;
+  gap: var(--nexo-space-6);
+  margin: var(--nexo-space-11) var(--nexo-space-8) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-md);
+  padding-left: var(--nexo-space-6);
+  font-size: var(--nexo-font-size-xs);
 }
 .preview-url b {
-  color: var(--green);
-  font: 10px var(--mono);
+  color: var(--nexo-color-success);
+  font: var(--nexo-font-size-2xs) var(--nexo-font-mono);
 }
 .preview-url code {
   flex: 1;
-  color: #b6bdc8;
-  font-size: 10px;
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-2xs);
 }
 .preview-url .button {
-  border-radius: 0 4px 4px 0;
-  font-size: 11px;
+  border-radius: 0 var(--nexo-radius-sm) var(--nexo-radius-sm) 0;
+  font-size: var(--nexo-font-size-xs);
 }
 .preview-tabs {
   display: flex;
-  gap: 18px;
-  padding: 10px 18px 17px;
-  font-size: 9px;
-  color: var(--accent);
-  border-bottom: 1px solid var(--border);
+  gap: var(--nexo-space-9);
+  padding: var(--nexo-space-5) var(--nexo-space-9) var(--nexo-space-8);
+  font-size: var(--nexo-font-size-3xs);
+  color: var(--nexo-color-accent);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
 }
 .preview-tabs span {
-  color: var(--dim);
+  color: var(--nexo-color-text-dim);
 }
 .preview-response > div {
   display: flex;
   justify-content: space-between;
-  padding: 20px 21px 0;
-  font-size: 9px;
+  padding: var(--nexo-space-10) var(--nexo-space-10) 0;
+  font-size: var(--nexo-font-size-3xs);
 }
 .preview-response > div b {
-  color: var(--green);
-  font-weight: 500;
+  color: var(--nexo-color-success);
+  font-weight: var(--nexo-font-weight-medium);
 }
 .preview-response > div span {
-  color: var(--dim);
+  color: var(--nexo-color-text-dim);
 }
 .preview-response pre {
-  font: 11px/2 var(--mono);
-  padding: 13px 22px;
-  color: #b3cbb8;
+  font: var(--nexo-font-size-xs) / var(--nexo-line-height-loose) var(--nexo-font-mono);
+  padding: var(--nexo-space-6) var(--nexo-space-11);
+  color: var(--nexo-color-code-text);
 }
 .preview-bottom {
-  border-top: 1px solid var(--border);
-  padding: 14px 18px;
-  color: var(--green);
-  font-size: 9px;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: var(--nexo-space-7) var(--nexo-space-9);
+  color: var(--nexo-color-success);
+  font-size: var(--nexo-font-size-3xs);
   display: flex;
   justify-content: space-between;
 }
 .preview-bottom span {
-  color: var(--dim);
+  color: var(--nexo-color-text-dim);
 }
 .site-features {
   max-width: 1240px;
   margin: auto;
-  padding: 55px 40px 90px;
-  border-top: 1px solid var(--border);
+  padding: var(--nexo-space-28) var(--nexo-space-20) var(--nexo-space-48);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 65px;
+  gap: var(--nexo-space-32);
 }
 .site-features article > span {
-  font: 10px var(--mono);
-  color: var(--accent);
+  font: var(--nexo-font-size-2xs) var(--nexo-font-mono);
+  color: var(--nexo-color-accent);
 }
 .site-features h2 {
-  font-size: 23px;
-  line-height: 1.4;
-  font-weight: 500;
-  letter-spacing: -0.6px;
-  margin: 22px 0 13px;
+  font-size: var(--nexo-font-size-5xl);
+  line-height: var(--nexo-line-height-tight);
+  font-weight: var(--nexo-font-weight-medium);
+  letter-spacing: var(--nexo-tracking-snug);
+  margin: var(--nexo-space-11) 0 var(--nexo-space-6);
 }
 .site-features p {
-  font-size: 12px;
-  line-height: 1.9;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-sm);
+  line-height: var(--nexo-line-height-loose);
+  color: var(--nexo-color-text-muted);
 }
 .site-footer {
   max-width: 1160px;
   margin: auto;
-  border-top: 1px solid var(--border);
-  padding: 25px 0 35px;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: var(--nexo-space-12) 0 var(--nexo-space-18);
   display: flex;
   justify-content: space-between;
-  color: var(--dim);
-  font-size: 10px;
+  color: var(--nexo-color-text-dim);
+  font-size: var(--nexo-font-size-2xs);
 }
 .site-footer > span:first-child {
-  color: var(--muted);
+  color: var(--nexo-color-text-muted);
 }
 .docs {
   max-width: 850px;
   margin: auto;
-  padding: 80px 35px;
+  padding: var(--nexo-space-40) var(--nexo-space-18);
 }
 .docs h1 {
-  font-size: 44px;
-  letter-spacing: -2px;
+  font-size: var(--nexo-font-size-display-sm);
+  letter-spacing: var(--nexo-tracking-tighter);
 }
 .docs .lead {
-  font-size: 18px;
-  color: var(--muted);
-  margin-bottom: 60px;
+  font-size: var(--nexo-font-size-3xl);
+  color: var(--nexo-color-text-muted);
+  margin-bottom: var(--nexo-space-28);
 }
 .docs section {
-  margin: 35px 0;
+  margin: var(--nexo-space-18) 0;
 }
 .docs section h2 {
-  font-size: 21px;
+  font-size: var(--nexo-font-size-4xl);
 }
 .docs section p {
-  font-size: 14px;
-  line-height: 1.9;
-  color: var(--muted);
+  font-size: var(--nexo-font-size-lg);
+  line-height: var(--nexo-line-height-loose);
+  color: var(--nexo-color-text-muted);
 }
 .docs section pre {
-  padding: 20px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: #bad0be;
-  font-size: 12px;
+  padding: var(--nexo-space-10);
+  background: var(--nexo-color-surface);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-code-text);
+  font-size: var(--nexo-font-size-sm);
 }

@@ -104,11 +104,9 @@
               class="request-leaf"
               (click)="workspace().state.openItem(collection, entry.item, entry.path)"
             >
-              <span
-                class="method-tag"
-                [class.post]="workspace().tree.method(entry.item) === 'POST'"
-                [class.delete]="workspace().tree.method(entry.item) === 'DELETE'"
-                >{{ workspace().tree.method(entry.item) }}</span
+              <span class="method-tag" [attr.data-method]="workspace().tree.method(entry.item)">{{
+                workspace().tree.method(entry.item)
+              }}</span
               ><span>{{ entry.item.name }}</span>
             </button>
           }

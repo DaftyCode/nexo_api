@@ -40,34 +40,34 @@ import { AppearanceState } from './appearance-state';
     :host {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: var(--nexo-space-3);
       flex-shrink: 0;
     }
     .template-selector {
       display: flex;
       align-items: center;
-      gap: 7px;
-      color: var(--muted);
-      font-size: 11px;
+      gap: var(--nexo-space-3);
+      color: var(--nexo-color-text-muted);
+      font-size: var(--nexo-font-size-xs);
     }
     select {
-      padding: 7px 24px 7px 9px;
-      background: var(--panel-2);
-      border-radius: 8px;
-      font-weight: 600;
-      color: var(--text);
+      padding: var(--nexo-space-3) var(--nexo-space-12) var(--nexo-space-3) var(--nexo-space-4);
+      background: var(--nexo-color-surface-2);
+      border-radius: var(--nexo-radius-lg);
+      font-weight: var(--nexo-font-weight-semibold);
+      color: var(--nexo-color-text);
     }
     .reset-layout {
-      width: 28px;
-      height: 28px;
-      border-radius: 8px;
-      background: var(--panel-2);
-      color: var(--text);
-      font-size: 15px;
-      line-height: 1;
+      width: var(--nexo-size-14);
+      height: var(--nexo-size-14);
+      border-radius: var(--nexo-radius-lg);
+      background: var(--nexo-color-surface-2);
+      color: var(--nexo-color-text);
+      font-size: var(--nexo-font-size-xl);
+      line-height: var(--nexo-line-height-none);
     }
     .reset-layout:disabled {
-      opacity: 0.35;
+      opacity: var(--nexo-opacity-faint);
       cursor: default;
     }
     @media (max-width: 1100px) {

@@ -129,7 +129,7 @@ bash install-web.sh  (macOS / Linux)</pre>
             @for (tab of state.tabs(); track tab.id) {
               <div class="request-tab" [class.active]="state.activeTabId() === tab.id">
                 <button (click)="state.activeTabId.set(tab.id)">
-                  <span class="method-tag" [class.post]="tab.request.method === 'POST'">{{
+                  <span class="method-tag" [attr.data-method]="tab.request.method">{{
                     tab.request.method
                   }}</span
                   ><span>{{ tab.request.name }}</span>

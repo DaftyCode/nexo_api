@@ -1,0 +1,126 @@
+/*
+ * Semantic colour tokens: the default (dark) theme, used by the website and by any template that
+ * does not redefine them. A template's `_theme.scss` overrides the base values; the derived ones
+ * (tints, shadows) follow because they are declared on `.studio` too.
+ */
+@layer nexo-tokens {
+  :root,
+  .studio {
+    color-scheme: dark;
+
+    /* Surfaces, from the deepest to the most raised */
+    --nexo-color-sunken: #14171b;
+    --nexo-color-bg: #16181c;
+    --nexo-color-chrome: #181b1f;
+    --nexo-color-surface: #1b1e23;
+    --nexo-color-surface-2: #20242a;
+    --nexo-color-surface-3: #24282f;
+    --nexo-color-backdrop: #080a0dbb;
+
+    /* Lines */
+    --nexo-color-border-subtle: #262b32;
+    --nexo-color-border: #30343c;
+    --nexo-color-border-strong: #454b58;
+
+    /* Text */
+    --nexo-color-text: #e4e6ea;
+    --nexo-color-text-soft: #b6bbc5;
+    --nexo-color-text-muted: #8e959f;
+    --nexo-color-text-dim: #838d9a; // 4.8:1 on panels (WCAG AA)
+    --nexo-color-text-faint: #636d76;
+
+    /* Brand accent */
+    --nexo-color-accent: #ff825c;
+    --nexo-color-accent-hover: #ff9576;
+    --nexo-color-accent-strong: #ff825c;
+    --nexo-color-on-accent: #20140f;
+    --nexo-color-accent-soft: color-mix(in srgb, var(--nexo-color-accent) 8%, transparent);
+    --nexo-color-accent-border: color-mix(
+      in srgb,
+      var(--nexo-color-accent) 45%,
+      var(--nexo-color-bg)
+    );
+
+    /* Status */
+    --nexo-color-success: #6bd5a1;
+    --nexo-color-info: #7db7ff;
+    --nexo-color-danger: #ff828a;
+    --nexo-color-warning: #e7b45a;
+    --nexo-color-on-status: #fff;
+    --nexo-color-success-soft: color-mix(in srgb, var(--nexo-color-success) 8%, transparent);
+    --nexo-color-danger-soft: color-mix(in srgb, var(--nexo-color-danger) 8%, transparent);
+    --nexo-color-warning-soft: color-mix(in srgb, var(--nexo-color-warning) 10%, transparent);
+    --nexo-color-danger-surface: color-mix(
+      in srgb,
+      var(--nexo-color-danger) 18%,
+      var(--nexo-color-bg)
+    );
+    --nexo-color-danger-border: color-mix(
+      in srgb,
+      var(--nexo-color-danger) 40%,
+      var(--nexo-color-bg)
+    );
+    --nexo-color-danger-text: color-mix(
+      in srgb,
+      var(--nexo-color-danger) 45%,
+      var(--nexo-color-text)
+    );
+
+    /* Interaction */
+    --nexo-color-highlight: #fff;
+    --nexo-color-hover: color-mix(in srgb, var(--nexo-color-highlight) 5%, transparent);
+    --nexo-color-selection: color-mix(in srgb, var(--nexo-color-info) 18%, transparent);
+    --nexo-color-focus-ring: var(--nexo-color-accent);
+    --nexo-color-folder: #e3b35c;
+    --nexo-color-modified: #b39d7b;
+
+    /* Code and data */
+    --nexo-color-code-bg: var(--nexo-color-sunken);
+    --nexo-color-code-text: #c6d5cc;
+    --nexo-color-code-inline: #b6aa7b;
+    --nexo-color-syntax-keyword: #ff7b72;
+    --nexo-color-syntax-variable: #79c0ff;
+    --nexo-color-syntax-type: #d2a8ff;
+    --nexo-color-syntax-string: #a5d6ff;
+    --nexo-color-syntax-number: #79c0ff;
+    --nexo-color-syntax-comment: #8b949e;
+    --nexo-color-data-string: #3fa36b;
+    --nexo-color-data-number: #c27b1e;
+    --nexo-color-data-date: #a35fd1;
+
+    /* Variable scopes */
+    --nexo-color-scope-environment: #27b391;
+    --nexo-color-scope-collection: #7d70e9;
+    --nexo-color-scope-globals: #5aa0e7;
+    --nexo-color-scope-vault: #888;
+
+    /* Shadows */
+    --nexo-color-shadow: #000;
+    --nexo-shadow-sm: 0 2px 12px color-mix(in srgb, var(--nexo-color-shadow) 13%, transparent);
+    --nexo-shadow-md: 0 8px 24px color-mix(in srgb, var(--nexo-color-shadow) 35%, transparent);
+    --nexo-shadow-lg: 0 14px 40px color-mix(in srgb, var(--nexo-color-shadow) 50%, transparent);
+    --nexo-shadow-xl: 0 25px 100px color-mix(in srgb, var(--nexo-color-shadow) 45%, transparent);
+    --nexo-shadow-up: 0 -10px 40px color-mix(in srgb, var(--nexo-color-shadow) 27%, transparent);
+    --nexo-shadow-highlight: inset 0 1px
+      color-mix(in srgb, var(--nexo-color-highlight) 4%, transparent);
+    --nexo-shadow-highlight-strong: inset 0 1px
+      color-mix(in srgb, var(--nexo-color-highlight) 14%, transparent);
+    --nexo-shadow-accent: 0 5px 20px
+      color-mix(in srgb, var(--nexo-color-accent-strong) 18%, transparent);
+    --nexo-shadow-glow: 0 0 18px
+      color-mix(in srgb, var(--nexo-color-accent-strong) 25%, transparent);
+
+    /* The printed report keeps paper colours whatever the theme. */
+    --nexo-report-bg: #e9ebee;
+    --nexo-report-paper: #fff;
+    --nexo-report-text: #1d2026;
+    --nexo-report-text-muted: #5b6270;
+    --nexo-report-border: #d5d9e0;
+    --nexo-report-border-subtle: #e3e6eb;
+    --nexo-report-code-bg: #f4f5f7;
+    --nexo-report-passed: #1f7a45;
+    --nexo-report-passed-line: #2f9e5b;
+    --nexo-report-failed: #b42325;
+    --nexo-report-failed-line: #c9383a;
+  }
+}
