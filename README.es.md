@@ -131,13 +131,14 @@ La versión actual es la **0.6.0**, con el cliente MongoDB completo. Las pruebas
 
 Siguientes pasos:
 
+- Visor y editor de bases de datos como módulos descargables, de modo que Nexo se instala como cliente de APIs y el driver de cada base de datos solo se descarga al crear una conexión de ese tipo: PostgreSQL, MySQL y MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch y Apache Drill, con árbol de conexiones, editor SQL que conserva una pestaña de resultado por consulta, rejilla de datos con edición, editor de estructura, diagramas ER, planes de ejecución y transferencia de datos. MongoDB pasará a ser uno de esos módulos.
 - Asistente de IA con la clave personal de cada usuario.
 - Túnel SSH y proxy SOCKS5, entornos protegidos, ejecuciones programadas, comparar respuestas, exportar a Excel/CSV con datos enmascarados, inferir JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
 - Temas personalizados desde la app, sobre los tokens de diseño.
 - Quitar el Node que queda en las herramientas de desarrollo: pruebas de contrato y scripts de compilación en Rust.
 - Distribución: WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak; firma fuera de la Store en Windows y notarización en macOS; validar los instaladores en máquinas limpias.
 - Publicar mediciones de arranque, memoria y latencia.
-- Más bases de datos, por decidir.
+- Más bases de datos después de esas (se están evaluando DB2, Apache Hive y Apache Ignite).
 
 Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de script, ocho ejecuciones activas y respuestas limitadas para la interfaz. Las cookies se guardan por workspace en la carpeta de datos. Aún no se admiten MQTT 5, Socket.IO 2.x (Engine.IO v3) ni consumer groups, transacciones o Schema Registry en Kafka. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los tipos de autorización desconocidos se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
 

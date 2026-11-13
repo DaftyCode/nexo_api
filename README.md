@@ -131,13 +131,14 @@ The current version is **0.6.0**, with the complete MongoDB client. Tests cover 
 
 Next steps:
 
+- A database viewer and editor as downloadable modules, so Nexo ships as the API client and each database driver is downloaded only when you add a connection for it: PostgreSQL, MySQL and MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch and Apache Drill, with a connection tree, a SQL editor that keeps one result tab per query, a data grid with editing, a structure editor, ER diagrams, execution plans and data transfer. MongoDB will become one of those modules.
 - An AI assistant using each user's own API key.
 - SSH tunnels and SOCKS5 proxies, protected environments, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
 - Custom themes from the app, built on the design tokens.
 - Removing the Node left in the development tooling: contract tests and build scripts in Rust.
 - Distribution: WinGet, Homebrew, signed APT/YUM repositories and Flatpak; Windows signing outside the Store and macOS notarization; validating the installers on clean machines.
 - Publishing startup, memory and latency benchmarks.
-- More databases, to be decided.
+- More databases after those (DB2, Apache Hive and Apache Ignite are being evaluated).
 
 Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. MQTT 5, Socket.IO 2.x (Engine.IO v3) and Kafka consumer groups, transactions and Schema Registry are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
 
