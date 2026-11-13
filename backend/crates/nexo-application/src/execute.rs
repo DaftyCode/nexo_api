@@ -64,6 +64,9 @@ impl Application {
         if operation.is_module() {
             return self.module(operation, &payload).await;
         }
+        if operation.is_datasource() {
+            return self.datasource(operation, Value::Object(payload)).await;
+        }
         if operation.is_database() {
             return self.database(operation, Value::Object(payload)).await;
         }

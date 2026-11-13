@@ -70,8 +70,50 @@ pub(crate) fn redact_error(error: Error, values: &[(String, String)]) -> Error {
         Error::Validation(message) => Error::Validation(redact(message)),
         Error::Unavailable(message) => Error::Unavailable(redact(message)),
         Error::Infrastructure(message) => Error::Infrastructure(redact(message)),
+        Error::Database {
+            code,
+            message,
+            detail,
+        } => Error::Database {
+            code,
+            message: redact(message),
+            detail: detail.map(|detail| redact_value(detail, &redact)),
+        },
         other => other,
     }
+}
+
+/// Applies `redact` to every text of a JSON value.
+pub(crate) fn redact_value(value: Value, redact: &impl Fn(String) -> String) -> Value {
+    match value {
+        Value::String(text) => Value::String(redact(text)),
+        Value::Array(items) => items
+            .into_iter()
+            .map(|item| redact_value(item, redact))
+            .collect(),
+        Value::Object(fields) => fields
+            .into_iter()
+            .map(|(name, value)| (name, redact_value(value, redact)))
+            .collect(),
+        other => other,
+    }
+}
+
+/// Removes secret values (also percent-encoded) from a value before it leaves.
+pub(crate) fn redact_secrets(value: Value, values: &[(String, String)]) -> Value {
+    if values.is_empty() {
+        return value;
+    }
+    redact_value(value, &|mut text: String| {
+        for (_, secret) in values {
+            if secret.chars().count() >= 3 {
+                text = text
+                    .replace(secret.as_str(), "[redacted]")
+                    .replace(&uri_encode(secret), "[redacted]");
+            }
+        }
+        text
+    })
 }
 
 /// Collects `{{vault:name}}` references outside script fields.

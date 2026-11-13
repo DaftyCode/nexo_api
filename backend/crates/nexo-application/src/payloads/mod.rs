@@ -85,6 +85,7 @@ macro_rules! payload {
 
 mod auth;
 mod common;
+mod datasource;
 mod git;
 mod http;
 mod modules;
@@ -98,6 +99,7 @@ mod tests;
 
 pub use auth::*;
 pub use common::*;
+pub use datasource::*;
 pub use git::*;
 pub use http::*;
 pub use modules::*;
@@ -247,6 +249,19 @@ operation_payloads! {
     ModulesInstallFile => ModuleFilePayload,
     ModulesProgress => ModulePayload,
     ModulesRemove => ModulePayload,
+    DbTest => DbTestPayload,
+    DbConnect => DbConnectPayload,
+    DbDisconnect => DbSessionPayload,
+    DbTree => DbObjectPayload,
+    DbDescribe => DbObjectPayload,
+    DbDdl => DbObjectPayload,
+    DbExecute => DbExecutePayload,
+    DbFetch => DbCursorPayload,
+    DbClose => DbCursorPayload,
+    DbCancel => DbCancelPayload,
+    DbTransaction => DbTransactionPayload,
+    DbSplit => DbSplitPayload,
+    DbDialect => DbDriverPayload,
 }
 
 /// Checks the payload of a Git operation.

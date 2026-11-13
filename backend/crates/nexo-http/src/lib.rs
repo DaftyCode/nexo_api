@@ -100,6 +100,19 @@ impl From<Error> for ApiError {
 }
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        if let Error::Database {
+            code,
+            message,
+            detail,
+        } = &self.0
+        {
+            // What the database said, with a code the interface can tell apart.
+            let mut body = json!({"error": message, "code": format!("database.{code}")});
+            if let Some(detail) = detail {
+                body["detail"] = detail.clone();
+            }
+            return (StatusCode::BAD_REQUEST, Json(body)).into_response();
+        }
         let (status, code, message) = match &self.0 {
             Error::Validation(message) => (StatusCode::BAD_REQUEST, "validation", message.clone()),
             Error::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized", self.0.to_string()),
@@ -118,6 +131,7 @@ impl IntoResponse for ApiError {
                     "An internal operation failed".into(),
                 )
             }
+            Error::Database { .. } => unreachable!("answered above"),
         };
         (status, Json(json!({"error":message,"code":code}))).into_response()
     }

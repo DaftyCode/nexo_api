@@ -13,6 +13,25 @@ impl Operation {
                 | Self::ModulesRemove
         )
     }
+    /// Operations on the databases of the modules (`db.*`), not of the engine.
+    pub fn is_datasource(self) -> bool {
+        matches!(
+            self,
+            Self::DbTest
+                | Self::DbConnect
+                | Self::DbDisconnect
+                | Self::DbTree
+                | Self::DbDescribe
+                | Self::DbDdl
+                | Self::DbExecute
+                | Self::DbFetch
+                | Self::DbClose
+                | Self::DbCancel
+                | Self::DbTransaction
+                | Self::DbSplit
+                | Self::DbDialect
+        )
+    }
     /// Operations of the document database adapter (MongoDB), not of the engine.
     pub fn is_database(self) -> bool {
         matches!(
@@ -105,6 +124,7 @@ impl Operation {
                 | Self::MongoCollectionValidator
                 | Self::MongoShell
                 | Self::MongoSync
+                | Self::DbConnect
         )
     }
 }

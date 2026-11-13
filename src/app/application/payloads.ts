@@ -644,6 +644,75 @@ export interface ModuleFilePayload {
   workspace?: string;
 }
 
+export interface DbTestPayload {
+  workspace?: string;
+  connectionId?: string;
+  connection?: Readonly<Record<string, unknown>>;
+  variables?: Readonly<Record<string, string>>;
+}
+
+export interface DbConnectPayload {
+  connectionId: string;
+  session: string;
+  workspace?: string;
+  variables?: Readonly<Record<string, string>>;
+}
+
+export interface DbSessionPayload {
+  session: string;
+  workspace?: string;
+}
+
+export interface DbObjectPayload {
+  session: string;
+  path?: readonly string[];
+  workspace?: string;
+}
+
+export interface DbExecutePayload {
+  session: string;
+  statement: string;
+  sql: string;
+  params?: readonly unknown[];
+  pageRows?: number;
+  maxRows?: number;
+  confirm?: boolean;
+  confirmName?: string;
+  workspace?: string;
+}
+
+export interface DbCursorPayload {
+  session: string;
+  cursor: string;
+  pageRows?: number;
+  workspace?: string;
+}
+
+export interface DbCancelPayload {
+  session: string;
+  statement: string;
+  workspace?: string;
+}
+
+export interface DbTransactionPayload {
+  session: string;
+  action: string;
+  isolation?: string;
+  workspace?: string;
+}
+
+export interface DbSplitPayload {
+  script: string;
+  dialect?: string;
+  offset?: number;
+  workspace?: string;
+}
+
+export interface DbDriverPayload {
+  driver: string;
+  workspace?: string;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -732,6 +801,19 @@ export interface OperationPayloads {
   'modules.install.file': ModuleFilePayload;
   'modules.progress': ModulePayload;
   'modules.remove': ModulePayload;
+  'db.test': DbTestPayload;
+  'db.connect': DbConnectPayload;
+  'db.disconnect': DbSessionPayload;
+  'db.tree': DbObjectPayload;
+  'db.describe': DbObjectPayload;
+  'db.ddl': DbObjectPayload;
+  'db.execute': DbExecutePayload;
+  'db.fetch': DbCursorPayload;
+  'db.close': DbCursorPayload;
+  'db.cancel': DbCancelPayload;
+  'db.transaction': DbTransactionPayload;
+  'db.split': DbSplitPayload;
+  'db.dialect': DbDriverPayload;
 }
 
 /** The payload of an operation. */

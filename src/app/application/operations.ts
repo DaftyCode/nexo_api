@@ -76,6 +76,19 @@ export const EXECUTION_OPERATIONS = [
   'modules.install.file',
   'modules.progress',
   'modules.remove',
+  'db.test',
+  'db.connect',
+  'db.disconnect',
+  'db.tree',
+  'db.describe',
+  'db.ddl',
+  'db.execute',
+  'db.fetch',
+  'db.close',
+  'db.cancel',
+  'db.transaction',
+  'db.split',
+  'db.dialect',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

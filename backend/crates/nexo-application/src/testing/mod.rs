@@ -1,5 +1,6 @@
 //! A fake of every port, recording what the use cases ask of it.
 mod database;
+pub(crate) mod datasources;
 
 pub(crate) use crate::{
     Application, HISTORY_LIMIT,

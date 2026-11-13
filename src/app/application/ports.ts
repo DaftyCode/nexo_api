@@ -3,12 +3,16 @@ import { SecretSummary } from '../domain/secrets';
 import { ExecutionOperation, GitOperation } from './operations';
 import { GitPayload, PayloadOf } from './payloads';
 
-/** A failed backend call with the stable error code the backend reported. */
+/**
+ * A failed backend call with the stable error code the backend reported. A database's error
+ * (`database.syntax`, `database.cancelled`…) brings its `detail`, such as where it failed.
+ */
 export class ApiFailure extends Error {
   constructor(
     message: string,
     readonly code: string,
     readonly status: number,
+    readonly detail?: unknown,
   ) {
     super(message);
     this.name = 'ApiFailure';

@@ -118,5 +118,12 @@ describe('HttpApi', () => {
     ]);
     const plain = await fail(500, null);
     expect([plain?.message, plain?.code]).toEqual(['Request failed (500)', 'http']);
+    // A database's error keeps where it failed, for the editor to mark it.
+    const syntax = await fail(400, {
+      error: 'syntax error at or near "form"',
+      code: 'database.syntax',
+      detail: { position: 10 },
+    });
+    expect([syntax?.code, syntax?.detail]).toEqual(['database.syntax', { position: 10 }]);
   });
 });

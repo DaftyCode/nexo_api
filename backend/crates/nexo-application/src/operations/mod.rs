@@ -110,6 +110,19 @@ operations!(
         ModulesInstallFile => "modules.install.file",
         ModulesProgress => "modules.progress",
         ModulesRemove => "modules.remove",
+        DbTest => "db.test",
+        DbConnect => "db.connect",
+        DbDisconnect => "db.disconnect",
+        DbTree => "db.tree",
+        DbDescribe => "db.describe",
+        DbDdl => "db.ddl",
+        DbExecute => "db.execute",
+        DbFetch => "db.fetch",
+        DbClose => "db.close",
+        DbCancel => "db.cancel",
+        DbTransaction => "db.transaction",
+        DbSplit => "db.split",
+        DbDialect => "db.dialect",
     }
 );
 

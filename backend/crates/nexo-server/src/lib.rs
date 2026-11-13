@@ -95,12 +95,16 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
     );
     // Database drivers are downloaded modules, run in their own processes; their network
     // goes through the engine's egress policy.
-    let modules = Modules::new(
+    let modules = Arc::new(Modules::new(
         StoreConfig::from_env(&config.data),
         HostConfig::default(),
         engine.clone(),
-    )?;
-    let application = Arc::new(application.with_modules(Arc::new(modules)));
+    )?);
+    let application = Arc::new(
+        application
+            .with_modules(modules.clone())
+            .with_datasources(modules),
+    );
     // Scripts reach the databases through the application, with its rules (`nx.mongo`).
     let databases: Arc<dyn nexo_application::ports::ScriptDatabase> = application.clone();
     engine.connect_databases(Arc::downgrade(&databases));

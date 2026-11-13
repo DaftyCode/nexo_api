@@ -1,5 +1,5 @@
 //! Workspaces, their documents and the vault's secrets.
-use crate::{Application, HISTORY_LIMIT, QUERY_HISTORY_LIMIT, database};
+use crate::{Application, HISTORY_LIMIT, QUERY_HISTORY_LIMIT, SQL_HISTORY_LIMIT, database};
 use nexo_domain::{
     Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, SecretSummary,
     Workspace, WorkspaceId, hosts::AllowedHosts,
@@ -112,6 +112,11 @@ impl Application {
                     DocumentKind::DatabaseChange,
                     database::CHANGE_LIMIT,
                 )
+                .await?;
+        }
+        if kind == DocumentKind::SqlHistory {
+            self.workspaces
+                .prune(&workspace, DocumentKind::SqlHistory, SQL_HISTORY_LIMIT)
                 .await?;
         }
         if kind == DocumentKind::QueryHistory {

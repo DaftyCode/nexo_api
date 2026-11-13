@@ -139,7 +139,21 @@ impl ExecutionGateway for Engine {
             | Operation::ModulesInstall
             | Operation::ModulesInstallFile
             | Operation::ModulesProgress
-            | Operation::ModulesRemove => Err(Error::Validation(format!(
+            | Operation::ModulesRemove
+            | Operation::DbTest
+            | Operation::DbConnect
+            | Operation::DbDisconnect
+            | Operation::DbTree
+            | Operation::DbDescribe
+            | Operation::DbDdl
+            | Operation::DbExecute
+            | Operation::DbFetch
+            | Operation::DbClose
+            | Operation::DbCancel
+            | Operation::DbTransaction
+            | Operation::DbSplit
+            | Operation::DbDialect
+            => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),
         }

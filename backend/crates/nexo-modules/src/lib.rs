@@ -16,6 +16,7 @@
 
 mod catalog;
 mod connections;
+mod datasources;
 mod download;
 mod host;
 mod modules;

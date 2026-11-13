@@ -37,7 +37,7 @@ export class HttpApi implements ApiPort {
       );
     } catch (error) {
       if (error instanceof HttpErrorResponse) {
-        const payload = error.error as { error?: string; code?: string } | null;
+        const payload = error.error as { error?: string; code?: string; detail?: unknown } | null;
         if (error.status === 0)
           throw new ApiFailure(
             'Cannot reach the Nexo backend. Start the backend service.',
@@ -48,6 +48,7 @@ export class HttpApi implements ApiPort {
           payload?.error ?? `Request failed (${error.status})`,
           payload?.code ?? 'http',
           error.status,
+          payload?.detail,
         );
       }
       throw error;

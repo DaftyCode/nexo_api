@@ -9,6 +9,7 @@ pub use kind::DocumentKind;
 pub mod diff;
 pub mod hosts;
 pub mod schema;
+pub mod sql;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
@@ -27,6 +28,14 @@ pub enum Error {
     Unavailable(String),
     #[error("{0}")]
     Infrastructure(String),
+    /// A database refused or failed a statement. `code` is stable (`syntax`, `auth`,
+    /// `cancelled`…) and `detail` says more, such as the position of a syntax error.
+    #[error("{message}")]
+    Database {
+        code: String,
+        message: String,
+        detail: Option<Value>,
+    },
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -143,7 +152,11 @@ impl Document {
                 return Err(Error::Validation("A session needs a tab list".into()));
             }
         }
-        if self.kind == DocumentKind::Connection {
+        // Connections of the database modules; the ones without a driver are MongoDB's.
+        let driver = self.value.get("driver").and_then(Value::as_str);
+        if self.kind == DocumentKind::Connection && driver.is_some_and(|d| d != "mongodb") {
+            sql::validate_connection(&self.value)?;
+        } else if self.kind == DocumentKind::Connection {
             let Some(uri) = self.value.get("uri").and_then(Value::as_str) else {
                 return Err(Error::Validation("A connection needs a URI".into()));
             };

@@ -39,13 +39,20 @@ pub enum DocumentKind {
     /// the fields left out, run again by hand.
     #[serde(rename = "mongo-compare")]
     Comparison,
+    /// A saved SQL script: its connection, the database and schema it runs in, and its text.
+    #[serde(rename = "sql-script")]
+    SqlScript,
+    /// A statement that was run on a SQL connection: its text, time, rows and error, never
+    /// its results.
+    #[serde(rename = "sql-history")]
+    SqlHistory,
     /// What a workspace shows when it opens again: its open tabs with their unsaved changes
     /// (the files chosen for them by name only), the active tab, the section shown and the
     /// order of its collections. Never responses.
     Session,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 19] = [
+    pub const ALL: [DocumentKind; 21] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -64,6 +71,8 @@ impl DocumentKind {
         Self::Transfer,
         Self::Aggregation,
         Self::Comparison,
+        Self::SqlScript,
+        Self::SqlHistory,
         Self::Session,
     ];
     pub fn as_str(self) -> &'static str {
@@ -86,6 +95,8 @@ impl DocumentKind {
             Self::Transfer => "mongo-transfer",
             Self::Aggregation => "mongo-aggregation",
             Self::Comparison => "mongo-compare",
+            Self::SqlScript => "sql-script",
+            Self::SqlHistory => "sql-history",
             Self::Session => "session",
         }
     }
@@ -101,13 +112,20 @@ impl DocumentKind {
     pub fn keeps_revisions(self) -> bool {
         !matches!(
             self,
-            Self::History | Self::Run | Self::QueryHistory | Self::DatabaseChange | Self::Session
+            Self::History
+                | Self::Run
+                | Self::QueryHistory
+                | Self::DatabaseChange
+                | Self::SqlHistory
+                | Self::Session
         )
     }
     /// Request history and run reports grow with use, so a workspace lists them without
     /// their values; a query of the history and a database change (whose documents are kept
     /// only while they are small) are listed whole.
     pub fn listed_whole(self) -> bool {
-        !matches!(self, Self::History | Self::Run)
+        // A statement of the SQL history may be a whole script: listed by its name (its first
+        // line) and read when opened.
+        !matches!(self, Self::History | Self::Run | Self::SqlHistory)
     }
 }
