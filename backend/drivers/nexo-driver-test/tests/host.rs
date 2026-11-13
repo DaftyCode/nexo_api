@@ -135,9 +135,12 @@ async fn a_driver_that_dies_fails_its_requests_and_starts_again() {
 async fn refuses_what_is_not_a_module_or_an_open_connection() {
     let fixture = fixture();
     let host = &fixture.host;
-    let missing = host.hello("postgres").await.unwrap_err();
+    let missing = host.hello("no-such-engine").await.unwrap_err();
     assert_eq!(missing.code, ErrorCode::Unsupported);
-    assert_eq!(missing.message, "The postgres module is not installed");
+    assert_eq!(
+        missing.message,
+        "The no-such-engine module is not installed"
+    );
     for name in ["", "../test", "Test", "test.exe"] {
         assert_eq!(
             host.hello(name).await.unwrap_err().code,

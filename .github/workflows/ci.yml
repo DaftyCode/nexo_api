@@ -78,6 +78,10 @@ jobs:
         run: bash tools/kafka-fixture.sh start
       - name: Start MongoDB servers and FerretDB for the MongoDB contract and E2E tests
         run: bash tools/mongo-fixture.sh start
+      - name: Start PostgreSQL servers for the database driver tests
+        run: bash tools/sql-fixture.sh start
+      - name: PostgreSQL driver against real servers
+        run: node tools/cargo.mjs test --locked -p nexo-driver-postgres
       - run: npm run engine:test
       - name: Stop the Kafka broker
         if: always()
@@ -91,6 +95,9 @@ jobs:
       - name: Stop the MongoDB servers
         if: always()
         run: bash tools/mongo-fixture.sh stop
+      - name: Stop the SQL servers
+        if: always()
+        run: bash tools/sql-fixture.sh stop
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:
