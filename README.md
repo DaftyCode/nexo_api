@@ -22,7 +22,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Area                | Available features                                                                                                        |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Requests            | HTTP/HTTPS, methods, query and path parameters, headers and responses; raw, JSON and form bodies, multipart and binary file uploads, and GraphQL with an explorer and autocompletion. |
-| Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite.                        |
+| Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite. Drag tabs, collections, folders, requests (also into another collection) and the sections of the menu; on start, everything keeps your order and tabs reopen with their unsaved changes. |
 | HTTP authentication | Every type of Postman, Bruno and Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (all grants, PKCE, sign-in window in the desktop app like Postman's, tokens in the vault, auto-refresh and auto-fetch), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc; inherited from folders and collections. |
 | Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. |
 | Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI. |
@@ -132,7 +132,7 @@ The current version is **0.6.0**, with the complete MongoDB client. Tests cover 
 Next steps:
 
 - An AI assistant using each user's own API key.
-- SSH tunnels and SOCKS5 proxies, protected environments, restoring tabs on start, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
+- SSH tunnels and SOCKS5 proxies, protected environments, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
 - Custom themes from the app, built on the design tokens.
 - Removing the Node left in the development tooling: contract tests and build scripts in Rust.
 - Distribution: WinGet, Homebrew, signed APT/YUM repositories and Flatpak; Windows signing outside the Store and macOS notarization; validating the installers on clean machines.

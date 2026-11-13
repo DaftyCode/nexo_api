@@ -3,9 +3,13 @@
     <div
       class="collection-title"
       [class.drop-inside]="workspace().tree.hint(collection.id, [])?.position === 'inside'"
-      (dragover)="workspace().tree.dragOver($event, collection, [], true)"
-      (dragleave)="workspace().tree.dropHint.set(undefined)"
-      (drop)="workspace().tree.drop($event, collection, [], true)"
+      draggable="true"
+      (dragstart)="workspace().tree.collectionDrag.start($event, collection.id, collection.name)"
+      (dragend)="workspace().tree.collectionDrag.end()"
+      (dragover)="workspace().tree.titleOver($event, collection)"
+      (dragleave)="workspace().tree.titleLeave()"
+      (drop)="workspace().tree.titleDrop($event, collection)"
+      [attr.data-drop]="workspace().tree.collectionDrag.at(collection.id)"
     >
       <button
         class="tree-toggle"
@@ -38,6 +42,10 @@
             {{ 'Export documentation (PDF)' | transloco }}</button
           ><button (click)="workspace().duplicate(collection)">
             {{ 'Duplicate' | transloco }}</button
+          ><button (click)="workspace().tree.shiftCollection(collection.id, -1)">
+            {{ 'Move up' | transloco }}</button
+          ><button (click)="workspace().tree.shiftCollection(collection.id, 1)">
+            {{ 'Move down' | transloco }}</button
           ><button (click)="workspace().state.section.set('runner')">
             {{ 'Run collection' | transloco }}</button
           ><button class="danger" (click)="workspace().state.remove(collection)">
@@ -110,7 +118,11 @@
               ><span>{{ entry.item.name }}</span>
             </button>
           }
-          <details class="collection-menu item-menu" (toggle)="workspace().menus.toggled($event)">
+          <details
+            #itemMenu
+            class="collection-menu item-menu"
+            (toggle)="workspace().menus.toggled($event)"
+          >
             <summary [attr.aria-label]="'Item actions' | transloco">···</summary>
             <div>
               <button (click)="workspace().rename(collection, entry.path, entry.item.name)">
@@ -134,12 +146,19 @@
                 >{{ 'Move to' | transloco
                 }}<select (change)="workspace().tree.moveTo(collection, entry.path, $event)">
                   <option value=""></option>
-                  <option value="root">{{ collection.name }}</option>
+                  <!-- Only while the menu is open: the names of every collection must not be
+                       read as part of each item of the tree. -->
                   @for (
-                    target of workspace().tree.folderChoices(collection, entry.path);
-                    track target.path.join('.')
+                    group of itemMenu.open
+                      ? workspace().tree.moveTargets(collection, entry.path)
+                      : [];
+                    track group.collection.id
                   ) {
-                    <option [value]="target.path.join('.')">{{ target.name }}</option>
+                    <optgroup [label]="group.collection.name">
+                      @for (target of group.folders; track target.value) {
+                        <option [value]="target.value">{{ target.name }}</option>
+                      }
+                    </optgroup>
                   }
                 </select></label
               ><button

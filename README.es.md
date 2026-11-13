@@ -22,7 +22,7 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 | Área               | Disponible                                                                                                                           |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Peticiones         | HTTP/HTTPS, métodos, parámetros y variables de ruta, cabeceras y respuestas; cuerpos raw, JSON, formularios, archivos en multipart y binario, y GraphQL con explorador y autocompletado. |
-| Organización       | Colecciones y carpetas, pestañas, entornos, variables, historial y documentos persistidos en SQLite.                                 |
+| Organización       | Colecciones y carpetas, pestañas, entornos, variables, historial y documentos persistidos en SQLite. Arrastra pestañas, colecciones, carpetas, peticiones (también a otra colección) y las secciones del menú; al abrir, todo sigue en tu orden y las pestañas vuelven con sus cambios sin guardar. |
 | Autenticación HTTP | Todos los tipos de Postman, Bruno e Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (todos los flujos, PKCE, ventana de inicio de sesión en el escritorio como la de Postman, tokens en el vault, renovación y obtención automáticas), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc; heredada de carpetas y colecciones. |
 | Scripts y pruebas  | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones. |
 | Runner             | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, pausa, cancelación, informes PDF y reportes JSON/JUnit desde CLI. |
@@ -132,7 +132,7 @@ La versión actual es la **0.6.0**, con el cliente MongoDB completo. Las pruebas
 Siguientes pasos:
 
 - Asistente de IA con la clave personal de cada usuario.
-- Túnel SSH y proxy SOCKS5, entornos protegidos, restaurar las pestañas al abrir, ejecuciones programadas, comparar respuestas, exportar a Excel/CSV con datos enmascarados, inferir JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
+- Túnel SSH y proxy SOCKS5, entornos protegidos, ejecuciones programadas, comparar respuestas, exportar a Excel/CSV con datos enmascarados, inferir JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
 - Temas personalizados desde la app, sobre los tokens de diseño.
 - Quitar el Node que queda en las herramientas de desarrollo: pruebas de contrato y scripts de compilación en Rust.
 - Distribución: WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak; firma fuera de la Store en Windows y notarización en macOS; validar los instaladores en máquinas limpias.

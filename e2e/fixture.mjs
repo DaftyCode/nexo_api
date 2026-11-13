@@ -247,7 +247,15 @@ export const test = base.extend({
       await use({
         base,
         echo: `http://127.0.0.1:${echo.address().port}`,
-        async signIn(page) {
+        /**
+         * Opens the app with a one-time link. The tests share one server, so tabs reopen only
+         * when asked: otherwise each test would start with the tabs the previous one left.
+         */
+        async signIn(page, { restoreTabs = false } = {}) {
+          if (!restoreTabs)
+            await page.addInitScript(() =>
+              localStorage.setItem('nexo.preference.session.restoreTabs', 'off'),
+            );
           const response = await fetch(`${base}/api/session/link`, {
             method: 'POST',
             headers: { authorization: `Bearer ${token}` },

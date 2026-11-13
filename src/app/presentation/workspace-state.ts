@@ -1,4 +1,4 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { TranslocoService } from '@jsverse/transloco';
 import { REPORTS, WORKSPACE } from '../composition/providers';
 import { RequestDraft, Run, WorkspaceDocument } from '../domain/models';
@@ -26,6 +26,7 @@ import { TreeStore } from './state/tree-store';
 import { NavigationStore } from './state/navigation-store';
 import { ReportsStore } from './state/reports-store';
 import { SavesStore } from './state/saves-store';
+import { WorkspaceSessionStore } from './state/workspace-session-store';
 
 export { TOAST_DURATION, named, success } from './state/state-context';
 export type { Toast } from './state/state-context';
@@ -78,7 +79,14 @@ export class WorkspaceState {
     this.variableStore,
     this.collectionStore,
   );
-  private readonly session = new SessionStore(this.context, this.store, this.variableStore);
+  /** Tabs, section and collection order, reopened with each workspace and saved as they change. */
+  private readonly opened = new WorkspaceSessionStore(this.context, this.store);
+  private readonly session = new SessionStore(
+    this.context,
+    this.store,
+    this.variableStore,
+    this.opened,
+  );
   private readonly tree = new TreeStore(this.context, this.store, this.collectionStore);
   private readonly oauth2Store = new OAuth2Store(this, this.collectionStore);
   private readonly cookieStore = new CookiesStore(this.context);
@@ -135,6 +143,11 @@ export class WorkspaceState {
     return requestVariables(tab.request).map((name) => resolveVariable(name, scopes));
   });
 
+  constructor() {
+    effect(() => this.opened.changed());
+    globalThis.addEventListener?.('pagehide', () => void this.opened.flush());
+  }
+
   guard = (action: () => Promise<unknown>) => this.status.guard(action);
   /**
    * Runs an action that stores, deletes or downloads something and says in a toast how it
@@ -168,6 +181,10 @@ export class WorkspaceState {
   }
 
   // Tabs.
+  readonly restoresTabs = this.opened.restoresTabs;
+  setRestoresTabs = (restore: boolean) => this.opened.setRestoresTabs(restore);
+  moveTab = (id: string, to: number) => this.tabsStore.move(id, to);
+  moveActiveTab = (offset: -1 | 1) => this.tabsStore.moveActive(offset);
   newTab(request?: RequestDraft, documentId = '', path: number[] = []) {
     this.tabsStore.open(request, documentId, path);
     this.section.set('collections');
@@ -184,6 +201,7 @@ export class WorkspaceState {
   openItem: CollectionsStore['open'] = (...args) => this.collectionStore.open(...args);
   collectionItems = (document: WorkspaceDocument) => this.collectionStore.rows(document);
   createCollection = (name: string) => this.saves.createCollection(name);
+  moveCollection = (id: string, to: number) => this.opened.moveCollection(id, to);
   addRequest: TreeStore['addRequest'] = (...args) => this.tree.addRequest(...args);
   // Collection trees.
   addFolder: TreeStore['addFolder'] = (...args) => this.tree.addFolder(...args);

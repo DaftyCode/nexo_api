@@ -1707,5 +1707,13 @@
   "Comparison saved": "Comparación guardada",
   "Delete this saved comparison?": "¿Borrar esta comparación guardada?",
   "The comparison could not be deleted": "No se pudo borrar la comparación",
-  "Comparison deleted": "Comparación borrada"
+  "Comparison deleted": "Comparación borrada",
+  "When Nexo opens": "Al abrir Nexo",
+  "Reopen the tabs left open, with their unsaved changes": "Volver a abrir las pestañas que quedaron abiertas, con sus cambios sin guardar",
+  "Tabs, the order of collections and the side menu stay as you leave them. Responses are never kept.": "Las pestañas, el orden de las colecciones y el menú lateral quedan como los dejes. Las respuestas no se guardan nunca.",
+  "Reset the side menu order": "Restablecer el orden del menú lateral",
+  "Some tabs were not reopened": "Algunas pestañas no se han vuelto a abrir",
+  "toast.tabsDropped": "Se han cerrado {{v0}} pestañas porque su petición ya no existe.",
+  "Move the active tab": "Mover la pestaña activa",
+  "Move the focused section of the side menu": "Mover la sección del menú lateral que tiene el foco"
 }

@@ -1,12 +1,22 @@
 import { computed, signal } from '@angular/core';
 import { WorkspaceDocument } from '../../domain/models';
 import { VariableRow } from '../../domain/variables';
+import { ordered } from '../../domain/ordering';
 import { StateContext } from './state-context';
 
 /** Documents of the current workspace, kept in sync with saves instead of full reloads. */
 export class DocumentsStore {
   readonly documents = signal<WorkspaceDocument[]>([]);
-  readonly collections = computed(() => this.documents().filter((d) => d.kind === 'collection'));
+  /** The session the workspace was opened with: its tabs and the order of its collections. */
+  readonly session = signal<WorkspaceDocument | undefined>(undefined);
+  /** Collection ids in the order the person dragged them to; new ones go before them. */
+  readonly collectionOrder = signal<readonly string[]>([]);
+  readonly collections = computed(() =>
+    ordered(
+      this.documents().filter((d) => d.kind === 'collection'),
+      this.collectionOrder(),
+    ),
+  );
   readonly environments = computed(() => this.documents().filter((d) => d.kind === 'environment'));
   readonly history = computed(() => this.documents().filter((d) => d.kind === 'history'));
   readonly globalsDocument = computed(() => this.documents().find((d) => d.kind === 'globals'));
@@ -14,7 +24,10 @@ export class DocumentsStore {
   constructor(private readonly context: StateContext) {}
 
   async refresh() {
-    this.documents.set(await this.context.cases.documents(this.context.workspaceId()));
+    const all = await this.context.cases.documents(this.context.workspaceId());
+    // The session is not a resource of the workspace: it says how to show the others.
+    this.session.set(all.find((d) => d.kind === 'session'));
+    this.documents.set(all.filter((d) => d.kind !== 'session'));
   }
   /** Replaces saved documents locally so the UI does not reload the whole workspace. */
   applySaved(saved: WorkspaceDocument[]) {

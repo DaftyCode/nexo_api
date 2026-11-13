@@ -113,6 +113,10 @@ pub struct Document {
     pub value: Value,
 }
 impl Document {
+    /// The id of the session of a workspace: one per workspace, saved over each time.
+    pub fn session_id(workspace: &WorkspaceId) -> String {
+        format!("session-{workspace}")
+    }
     pub fn validate(&self) -> Result<()> {
         if self.name.trim().is_empty() || self.name.len() > 500 {
             return Err(Error::Validation(
@@ -128,6 +132,16 @@ impl Document {
             && !self.value.get("values").is_some_and(Value::is_array)
         {
             return Err(Error::Validation("Variables need a values list".into()));
+        }
+        if self.kind == DocumentKind::Session {
+            if self.id.as_str() != Self::session_id(&self.workspace_id) {
+                return Err(Error::Validation(
+                    "A workspace keeps one session, with the id of the workspace".into(),
+                ));
+            }
+            if !self.value.get("tabs").is_some_and(Value::is_array) {
+                return Err(Error::Validation("A session needs a tab list".into()));
+            }
         }
         if self.kind == DocumentKind::Connection {
             let Some(uri) = self.value.get("uri").and_then(Value::as_str) else {

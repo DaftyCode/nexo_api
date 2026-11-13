@@ -52,4 +52,29 @@ describe('TabsStore', () => {
     tabs.clearResponses();
     expect(tabs.response()).toBeUndefined();
   });
+
+  it('moves tabs by dragging and with the keyboard, and reopens saved ones', () => {
+    const tabs = store();
+    const [a, b, c] = [tabs.open(), tabs.open(), tabs.open()];
+    const order = () => tabs.tabs().map((tab) => tab.id);
+    tabs.move(a, 3);
+    expect(order()).toEqual([b, c, a]);
+    tabs.move(a, 0);
+    expect(order()).toEqual([a, b, c]);
+    // Dropped right after itself: nothing changes.
+    tabs.move(b, 2);
+    expect(order()).toEqual([a, b, c]);
+    tabs.activeId.set(b);
+    tabs.moveActive(1);
+    expect(order()).toEqual([a, c, b]);
+    tabs.moveActive(1);
+    expect(order()).toEqual([a, c, b]);
+    tabs.moveActive(-1);
+    tabs.moveActive(-1);
+    tabs.moveActive(-1);
+    expect(order()).toEqual([b, a, c]);
+    tabs.restore([{ ...tabs.tabs()[0], id: 'r1' }], 'r1');
+    expect(order()).toEqual(['r1']);
+    expect(tabs.active()?.id).toBe('r1');
+  });
 });

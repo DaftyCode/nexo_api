@@ -128,6 +128,42 @@ export class CollectionsStore {
     );
   }
   /**
+   * Moves an item, with everything inside it, to a folder of another collection. The target
+   * is saved first: if saving the source then fails, the item is in both, never in neither.
+   * Open requests follow their items, into the other collection when they moved with it.
+   */
+  async moveBetween(
+    source: WorkspaceDocument,
+    path: readonly number[],
+    target: WorkspaceDocument,
+    folder: readonly number[],
+    index: number,
+  ) {
+    const id = () => this.context.cases.files.id();
+    const from = tree.withIds(asCollection(source.value), id);
+    const into = tree.withIds(asCollection(target.value), id);
+    const followed = this.context.tabs
+      .tabs()
+      .filter((tab) => tab.documentId === source.id)
+      .map((tab) => ({ tab: tab.id, item: tree.itemAt(from, tab.path)?.id }));
+    const moved = tree.moveBetween(from, path, into, folder, index);
+    const saved = await this.context.cases.saveDocument({ ...target, value: moved.target });
+    this.documents.applySaved([saved]);
+    this.documents.applySaved([
+      await this.context.cases.saveDocument({ ...source, value: moved.source }),
+    ]);
+    this.context.tabs.tabs.update((tabs) =>
+      tabs.map((tab) => {
+        const entry = followed.find((f) => f.tab === tab.id);
+        if (!entry?.item) return tab;
+        const left = tree.pathOf(moved.source, entry.item);
+        if (left) return { ...tab, path: left };
+        const there = tree.pathOf(moved.target, entry.item);
+        return there ? { ...tab, documentId: saved.id, path: there } : tab;
+      }),
+    );
+  }
+  /**
    * Saves the active request into its collection, or into a new one, and says what happened:
    * saved, or not saved because the collection changed elsewhere and the person kept that
    * version. Nothing without an open request.

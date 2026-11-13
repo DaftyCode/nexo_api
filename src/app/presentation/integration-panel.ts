@@ -76,6 +76,7 @@ const defaultModel = {
 
 export type IntegrationModel = typeof defaultModel;
 
+import { SessionSettings } from './session-settings';
 @Component({
   imports: [
     TranslocoPipe,
@@ -88,6 +89,7 @@ export type IntegrationModel = typeof defaultModel;
     LoadTest,
     TokenExchange,
     VaultSecrets,
+    SessionSettings,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',

@@ -60,3 +60,13 @@ export function resizePanel(
     size === undefined ? rest : { ...rest, [name]: clampPanel(name, size) };
   return { ...layouts, [template]: layout };
 }
+
+/**
+ * The workspace sections in the order the person dragged them to: known sections only, each
+ * once, and sections added since then at their default place after the others.
+ */
+export function resolveSectionOrder(value: unknown, sections: readonly string[]): string[] {
+  const stored = Array.isArray(value) ? value : [];
+  const kept = [...new Set(stored.filter((id): id is string => sections.includes(id)))];
+  return [...kept, ...sections.filter((id) => !kept.includes(id))];
+}

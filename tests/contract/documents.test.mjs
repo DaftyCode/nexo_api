@@ -58,6 +58,31 @@ test('documents are validated by kind and saves detect conflicts', async () => {
   assert.equal(missing.status, 404);
 });
 
+test('a workspace keeps one session, saved over without revisions', async () => {
+  const value = (active) => ({
+    tabs: [
+      { id: 't1', documentId: 'c1', path: [0] },
+      { id: active, documentId: '', path: [] },
+    ],
+    activeTab: active,
+    collections: ['c1'],
+  });
+  const other = await server.api('PUT', '/documents', document('s1', 'session', value('t2')));
+  assert.equal(other.status, 400, 'a session has the id of its workspace');
+  const first = await server.api(
+    'PUT',
+    '/documents',
+    document('session-local', 'session', value('t2')),
+  );
+  assert.equal(first.status, 200);
+  const second = await server.api('PUT', '/documents', { ...first.body, value: value('t3') });
+  assert.equal(second.body.revision, 2);
+  const listing = await server.api('GET', '/documents?workspace=local&lite=true');
+  const session = listing.body.find((d) => d.kind === 'session');
+  assert.equal(session.value.activeTab, 't3', 'listed with its value, ready to restore');
+  assert.deepEqual((await server.api('GET', '/documents/session-local/revisions')).body, []);
+});
+
 test('every response carries a request id for the logs', async () => {
   const first = await fetch(`${server.base}/health`);
   const second = await fetch(`${server.base}/health`);

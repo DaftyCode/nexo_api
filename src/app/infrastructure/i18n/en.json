@@ -1707,5 +1707,13 @@
   "Comparison saved": "Comparison saved",
   "Delete this saved comparison?": "Delete this saved comparison?",
   "The comparison could not be deleted": "The comparison could not be deleted",
-  "Comparison deleted": "Comparison deleted"
+  "Comparison deleted": "Comparison deleted",
+  "When Nexo opens": "When Nexo opens",
+  "Reopen the tabs left open, with their unsaved changes": "Reopen the tabs left open, with their unsaved changes",
+  "Tabs, the order of collections and the side menu stay as you leave them. Responses are never kept.": "Tabs, the order of collections and the side menu stay as you leave them. Responses are never kept.",
+  "Reset the side menu order": "Reset the side menu order",
+  "Some tabs were not reopened": "Some tabs were not reopened",
+  "toast.tabsDropped": "{{v0}} tabs were closed because their request no longer exists.",
+  "Move the active tab": "Move the active tab",
+  "Move the focused section of the side menu": "Move the focused section of the side menu"
 }

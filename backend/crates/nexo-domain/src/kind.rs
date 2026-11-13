@@ -39,9 +39,13 @@ pub enum DocumentKind {
     /// the fields left out, run again by hand.
     #[serde(rename = "mongo-compare")]
     Comparison,
+    /// What a workspace shows when it opens again: its open tabs with their unsaved changes
+    /// (the files chosen for them by name only), the active tab, the section shown and the
+    /// order of its collections. Never responses.
+    Session,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 18] = [
+    pub const ALL: [DocumentKind; 19] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -60,6 +64,7 @@ impl DocumentKind {
         Self::Transfer,
         Self::Aggregation,
         Self::Comparison,
+        Self::Session,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -81,6 +86,7 @@ impl DocumentKind {
             Self::Transfer => "mongo-transfer",
             Self::Aggregation => "mongo-aggregation",
             Self::Comparison => "mongo-compare",
+            Self::Session => "session",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -90,11 +96,12 @@ impl DocumentKind {
             .ok_or_else(|| Error::Validation("Unknown resource kind".into()))
     }
     /// History entries (of requests and of queries) and run reports never change after they
-    /// are written.
+    /// are written. A session changes with every tab moved or edited: only its last state
+    /// matters.
     pub fn keeps_revisions(self) -> bool {
         !matches!(
             self,
-            Self::History | Self::Run | Self::QueryHistory | Self::DatabaseChange
+            Self::History | Self::Run | Self::QueryHistory | Self::DatabaseChange | Self::Session
         )
     }
     /// Request history and run reports grow with use, so a workspace lists them without

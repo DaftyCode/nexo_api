@@ -78,10 +78,27 @@ export class TreeStore {
       tree.reorderItem(collection, path, offset),
     );
   }
-  moveItem(document: WorkspaceDocument, path: number[], folder: number[]) {
+  /** Moves an item to the end of a folder (`[]` is the root) of its collection or `target`. */
+  moveItem(document: WorkspaceDocument, path: number[], folder: number[], target = document) {
+    if (target.id !== document.id)
+      return this.moveBetween(document, path, target, folder, Number.POSITIVE_INFINITY);
     return this.change(document, 'Item moved', this.itemName(document, path), (tree, collection) =>
       tree.moveInto(collection, path, folder),
     );
+  }
+  /** Moves an item to a folder of another collection, and says so with both names. */
+  private moveBetween(
+    source: WorkspaceDocument,
+    path: number[],
+    target: WorkspaceDocument,
+    folder: number[],
+    index: number,
+  ) {
+    const name = this.itemName(source, path);
+    return this.context.status.announce('The collection could not be saved', async () => {
+      await this.collections.moveBetween(source, path, target, folder, index);
+      return success('Item moved', 'toast.itemIn', { v0: name, v1: target.name });
+    });
   }
   /**
    * Moves an item dropped before, after or inside another one. A folder dropped into itself
@@ -92,8 +109,10 @@ export class TreeStore {
     path: number[],
     over: number[],
     position: DropPosition,
+    target = document,
   ) {
     const { folder, index } = dropPlace(over, position);
+    if (target.id !== document.id) return this.moveBetween(document, path, target, folder, index);
     if (isWithin(folder, path)) {
       this.context.status.tell({ kind: 'info', title: 'A folder cannot be moved into itself' });
       return false;

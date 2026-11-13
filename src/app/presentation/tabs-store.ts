@@ -1,5 +1,6 @@
 import { computed, signal } from '@angular/core';
 import { ExecutionResponse, RequestDraft, RequestTab, newRequest } from '../domain/models';
+import { moveWithin } from '../domain/ordering';
 
 /** Open request tabs, the active one, and the last response of each, as in Postman. */
 export class TabsStore {
@@ -55,5 +56,27 @@ export class TabsStore {
   }
   unsaved() {
     return this.tabs().some((tab) => tab.dirty);
+  }
+  /** Moves a tab to a position counted before the move, as dropping it there does. */
+  move(id: string, to: number) {
+    this.tabs.update((tabs) =>
+      moveWithin(
+        tabs,
+        tabs.findIndex((tab) => tab.id === id),
+        to,
+      ),
+    );
+  }
+  /** Moves the active tab one place to the left (-1) or right (+1). */
+  moveActive(offset: -1 | 1) {
+    const index = this.tabs().findIndex((tab) => tab.id === this.activeId());
+    if (index < 0 || index + offset < 0) return;
+    this.move(this.activeId(), offset < 0 ? index - 1 : index + 2);
+  }
+  /** Shows tabs reopened from a saved session, without responses. */
+  restore(tabs: RequestTab[], activeId: string) {
+    this.tabs.set(tabs);
+    this.clearResponses();
+    this.activeId.set(activeId);
   }
 }

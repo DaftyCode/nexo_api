@@ -19,11 +19,20 @@
     </div>
   }
   <nav class="rail" [attr.aria-label]="'Workspace sections' | transloco">
-    @for (item of workspace().nav; track item.id) {
+    @for (item of workspace().appearance.sections(); track item.id) {
       <button
         [class.active]="workspace().state.section() === item.id"
         (click)="workspace().setSection(item.id)"
         [attr.title]="item.label | transloco"
+        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+        draggable="true"
+        (dragstart)="sectionDrag.start($event, item.id, item.label)"
+        (dragend)="sectionDrag.end()"
+        (dragover)="sectionDrag.over($event, item.id)"
+        (dragleave)="sectionDrag.hint.set(undefined)"
+        (drop)="sectionDrag.drop($event, item.id)"
+        [attr.data-drop]="sectionDrag.at(item.id)"
+        (keydown)="moveSection($event, item.id)"
       >
         <app-studio-icon class="rail-vector" [name]="item.id" />
         <span>{{ item.label | transloco }}</span>

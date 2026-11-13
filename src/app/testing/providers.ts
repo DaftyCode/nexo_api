@@ -176,6 +176,8 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
         saveTemplate() {},
         loadLayout: () => undefined,
         saveLayout() {},
+        loadSections: () => undefined,
+        saveSections() {},
       }),
     },
   ];

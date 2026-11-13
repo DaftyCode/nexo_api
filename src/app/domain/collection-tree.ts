@@ -123,6 +123,25 @@ export function moveTo(
   destination.splice(Math.min(at, destination.length), 0, item);
   return next;
 }
+/**
+ * Moves an item to a position of a folder of another collection (`[]` is its root), as
+ * Postman does when an item is dragged between collections. Returns both collections.
+ */
+export function moveBetween(
+  source: Collection,
+  path: readonly number[],
+  target: Collection,
+  folder: readonly number[],
+  index: number,
+): { source: Collection; target: Collection } {
+  const item = itemAt(source, path);
+  const nextTarget = structuredClone(target);
+  const into = folder.length ? itemAt(nextTarget, folder) : undefined;
+  if (!item || (folder.length && !into?.item)) throw new Error('Item not found');
+  const destination = into?.item ?? nextTarget.item;
+  destination.splice(Math.min(Math.max(index, 0), destination.length), 0, structuredClone(item));
+  return { source: removeItem(source, path), target: nextTarget };
+}
 /** Where a drop puts an item: before or after another one, or inside a folder at its end. */
 export type DropPosition = 'before' | 'after' | 'inside';
 export function dropPlace(

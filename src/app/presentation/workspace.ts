@@ -31,6 +31,7 @@ import { OAuth2TokensDialog } from './oauth2-tokens';
 import { CookiesDialog } from './cookies-dialog';
 import { ReportPreview } from './report-preview';
 import { ToastMessage } from './toast-message';
+import { RequestTabbar } from './request-tabbar';
 
 @Component({
   imports: [
@@ -49,6 +50,7 @@ import { ToastMessage } from './toast-message';
     WorkspaceNavigation,
     WorkspaceTopbar,
     WorkspaceDialogs,
+    RequestTabbar,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-workspace',
@@ -76,19 +78,6 @@ export class Workspace {
     search: '',
   });
   readonly fields = form(this.formModel);
-  readonly nav = [
-    { id: 'collections', icon: '▤', label: 'Collections' },
-    { id: 'environments', icon: '◫', label: 'Environments' },
-    { id: 'history', icon: '◷', label: 'History' },
-    { id: 'runner', icon: '▷', label: 'Runner' },
-    { id: 'realtime', icon: '⇄', label: 'Protocols' },
-    { id: 'mocks', icon: '◇', label: 'Mocks' },
-    { id: 'datasets', icon: '▦', label: 'Datasets' },
-    { id: 'mongo', icon: '⬮', label: 'MongoDB' },
-    { id: 'git', icon: '⑂', label: 'Git' },
-    { id: 'mcp', icon: '⌘', label: 'MCP' },
-    { id: 'settings', icon: '⚙', label: 'Settings' },
-  ];
   readonly tree = new CollectionTreeView(this.state);
   readonly menus = new FloatingMenus(this.host.nativeElement);
   constructor() {
@@ -121,6 +110,11 @@ export class Workspace {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 't' && !editing) {
       event.preventDefault();
       this.state.newTab();
+    }
+    // As in Chrome: Ctrl+Shift+PageUp and PageDown move the active tab.
+    if ((event.ctrlKey || event.metaKey) && event.shiftKey && /^Page(Up|Down)$/.test(event.key)) {
+      event.preventDefault();
+      this.state.moveActiveTab(event.key === 'PageUp' ? -1 : 1);
     }
   }
   /** A panel size as a CSS length, or nothing to keep the template's own. */

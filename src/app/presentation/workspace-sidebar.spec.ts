@@ -72,8 +72,12 @@ describe('Workspace', () => {
       await settle();
       expect(items()[0].name).toBe('List orders');
 
+      // The places to move to are listed while the menu is open.
+      menu(0).setAttribute('open', '');
+      menu(0).dispatchEvent(new Event('toggle'));
+      await settle();
       const move = menu(0).querySelector('select')!;
-      move.value = '2';
+      move.value = [...move.options].find((o) => o.textContent?.trim() === 'Orders')!.value;
       move.dispatchEvent(new Event('change'));
       await settle();
       expect(items().map((item) => item.name)).toEqual(['New request', 'Orders']);
@@ -192,10 +196,23 @@ describe('Workspace', () => {
       await move('B', row('B'), 0.9);
       expect(api.documentsStore.find((d) => d.id === 'shop')!.revision).toBe(saves);
 
-      // Not into another collection, and nothing without a drag.
-      fire(row('A'), 'dragstart');
-      expect(fire(row('Z'), 'dragover', 0.1).defaultPrevented).toBe(false);
-      fire(row('A'), 'dragend');
+      // Into another collection, as in Postman: before its request.
+      const other = () => asCollection(state.collections().find((c) => c.id === 'other')!.value);
+      expect(await move('A', row('Z'), 0.1)).toEqual(['drop-before']);
+      expect(shape()).toEqual([{ Archive: [] }, { Orders: [] }, 'B']);
+      expect(shape(other().item)).toEqual(['A', 'Z']);
+
+      // Collections are dragged by their title, before or after another one.
+      const titles = () => [...root().querySelectorAll<HTMLElement>('.collection-title')];
+      fire(titles()[1], 'dragstart');
+      fire(titles()[0], 'dragover', 0.1);
+      await fixture.whenStable();
+      expect(titles()[0].getAttribute('data-drop')).toBe('before-y');
+      fire(titles()[0], 'drop', 0.1);
+      await settle();
+      expect(state.collections().map((c) => c.id)).toEqual(['other', 'shop']);
+
+      // Nothing without a drag.
       expect(fire(row('B'), 'dragover', 0.1).defaultPrevented).toBe(false);
       expect(fire(row('B'), 'drop', 0.1).defaultPrevented).toBe(false);
       fire(row('A'), 'dragstart');

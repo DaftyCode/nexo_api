@@ -24,6 +24,8 @@ fn document_kinds_round_trip() {
     assert!(DocumentKind::Query.keeps_revisions());
     assert!(DocumentKind::QueryHistory.listed_whole());
     assert!(!DocumentKind::History.listed_whole());
+    assert!(!DocumentKind::Session.keeps_revisions());
+    assert!(DocumentKind::Session.listed_whole());
 }
 #[test]
 fn queries_name_their_database_and_collection() {
@@ -58,6 +60,25 @@ fn collections_need_items() {
                 .is_ok()
         );
     }
+}
+#[test]
+fn a_workspace_keeps_one_session_with_its_tabs() {
+    let session = |id: &str, value| Document {
+        id: DocumentId::parse(id).unwrap(),
+        ..document(DocumentKind::Session, value)
+    };
+    let tabs = serde_json::json!({"tabs": [], "activeTab": "", "collections": []});
+    assert_eq!(
+        Document::session_id(&WorkspaceId::parse("w").unwrap()),
+        "session-w"
+    );
+    assert!(session("session-w", tabs.clone()).validate().is_ok());
+    assert!(session("a", tabs).validate().is_err());
+    assert!(
+        session("session-w", serde_json::json!({}))
+            .validate()
+            .is_err()
+    );
 }
 #[test]
 fn connections_keep_their_password_out_of_the_uri() {

@@ -29,6 +29,7 @@ import {
   createDocument,
 } from './workspace-use-cases/types';
 import { VariableCases } from './workspace-use-cases/variables';
+import { SessionCases } from './workspace-use-cases/sessions';
 
 export type {
   ExecutionContext,
@@ -37,7 +38,7 @@ export type {
   VariableTargets,
   WorkspaceExecuteArgs,
 } from './workspace-use-cases/types';
-export { CookieCases, OAuth2Cases, VariableCases };
+export { CookieCases, OAuth2Cases, SessionCases, VariableCases };
 
 const memoryPreferences = (): PreferencePort => {
   const values = new Map<string, string>();
@@ -55,6 +56,8 @@ export class WorkspaceUseCases {
   readonly oauth2: OAuth2Cases;
   readonly cookies: CookieCases;
   readonly variables: VariableCases;
+  /** The tabs and the order of collections a workspace opens with. */
+  readonly sessions: SessionCases;
 
   constructor(
     private readonly api: ApiPort,
@@ -65,6 +68,7 @@ export class WorkspaceUseCases {
     this.oauth2 = new OAuth2Cases(api, signInWindow);
     this.cookies = new CookieCases(api);
     this.variables = new VariableCases(api, files, preferences);
+    this.sessions = new SessionCases(api, preferences);
   }
 
   // Connection and session.

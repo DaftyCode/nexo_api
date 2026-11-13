@@ -8,6 +8,8 @@ describe('Appearance preferences', () => {
         saveTemplate() {},
         loadLayout: () => undefined,
         saveLayout() {},
+        loadSections: () => undefined,
+        saveSections() {},
       });
       expect(cases.current()).toBe('aurora');
     }
@@ -22,6 +24,8 @@ describe('Appearance preferences', () => {
       },
       loadLayout: () => undefined,
       saveLayout() {},
+      loadSections: () => undefined,
+      saveSections() {},
     };
     const first = new AppearanceUseCases(preferences);
     expect(first.select('studio')).toBe('studio');
@@ -39,6 +43,8 @@ describe('Appearance preferences', () => {
       saveLayout: (value) => {
         stored = JSON.parse(JSON.stringify(value));
       },
+      loadSections: () => undefined,
+      saveSections() {},
     });
     expect(cases.layouts()).toEqual({});
     cases.saveLayouts({ aurora: { sidebar: 320.4, request: 10 }, studio: { context: 5000 } });
@@ -48,5 +54,37 @@ describe('Appearance preferences', () => {
     });
     stored = { aurora: { sidebar: 'wide', split: Infinity }, other: { sidebar: 300 } };
     expect(cases.layouts()).toEqual({});
+  });
+
+  it('keeps the order of the side menu, with new sections after the others', () => {
+    let stored: unknown;
+    const cases = new AppearanceUseCases({
+      loadTemplate: () => 'aurora',
+      saveTemplate() {},
+      loadLayout: () => undefined,
+      saveLayout() {},
+      loadSections: () => stored,
+      saveSections: (order) => {
+        stored = [...order];
+      },
+    });
+    const sections = ['collections', 'history', 'git'];
+    expect(cases.sectionOrder(sections)).toEqual(sections);
+    expect(cases.saveSectionOrder(['git', 'collections', 'history'], sections)).toEqual([
+      'git',
+      'collections',
+      'history',
+    ]);
+    expect(cases.sectionOrder([...sections, 'mongo'])).toEqual([
+      'git',
+      'collections',
+      'history',
+      'mongo',
+    ]);
+    stored = ['gone', 'history', 'history', 42];
+    expect(cases.sectionOrder(sections)).toEqual(['history', 'collections', 'git']);
+    // The default order is stored as no order, so later defaults apply.
+    cases.saveSectionOrder(sections, sections);
+    expect(stored).toEqual([]);
   });
 });

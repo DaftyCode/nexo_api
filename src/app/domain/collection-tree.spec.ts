@@ -4,6 +4,7 @@ import {
   folders,
   isWithin,
   itemAt,
+  moveBetween,
   moveInto,
   moveTo,
   staysInPlace,
@@ -43,6 +44,20 @@ describe('collection tree operations', () => {
     expect(itemAt(nested, [1, 2])?.name).toBe('Sub');
     expect(() => addFolder(collection(), [0], 'X', 'n3')).toThrowError('Choose a folder');
     expect(() => addFolder(collection(), [], ' ', 'n4')).toThrowError('A name is required');
+  });
+  it('moves an item with everything inside it to a folder of another collection', () => {
+    const other: Collection = {
+      info: { name: 'Other', schema: 'x' },
+      item: [{ id: 'o', name: 'Box', item: [{ id: 'z', name: 'Z', request: {} }] }],
+    };
+    const moved = moveBetween(collection(), [1], other, [0], 0);
+    expect(moved.source.item.map((i) => i.id)).toEqual(['a', undefined]);
+    expect(itemAt(moved.target, [0, 0])?.item?.map((i) => i.id)).toEqual(['b', 'g']);
+    expect(itemAt(moved.target, [0, 1])?.id).toBe('z');
+    expect(other.item[0].item).toHaveLength(1);
+    const atRoot = moveBetween(collection(), [0], other, [], Number.POSITIVE_INFINITY);
+    expect(atRoot.target.item.map((i) => i.id)).toEqual(['o', 'a']);
+    expect(() => moveBetween(collection(), [0], other, [0, 0], 0)).toThrowError('Item not found');
   });
   it('renames and removes items without changing the original', () => {
     const original = collection();

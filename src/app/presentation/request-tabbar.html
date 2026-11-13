@@ -1,0 +1,41 @@
+<div class="request-tabbar">
+  @for (tab of state.tabs(); track tab.id) {
+    <div
+      class="request-tab"
+      [class.active]="state.activeTabId() === tab.id"
+      draggable="true"
+      (dragstart)="drag.start($event, tab.id, tab.request.name)"
+      (dragend)="drag.end()"
+      (dragover)="drag.over($event, tab.id)"
+      (dragleave)="drag.hint.set(undefined)"
+      (drop)="drag.drop($event, tab.id)"
+      [attr.data-drop]="drag.at(tab.id)"
+    >
+      <button
+        aria-keyshortcuts="Control+Shift+PageUp Control+Shift+PageDown"
+        (click)="state.activeTabId.set(tab.id)"
+      >
+        <span class="method-tag" [attr.data-method]="tab.request.method">{{
+          tab.request.method
+        }}</span
+        ><span>{{ tab.request.name }}</span>
+        @if (tab.dirty) {
+          <span class="dirty-dot"></span>
+        }</button
+      ><button
+        class="tab-close"
+        [attr.aria-label]="'Close request' | transloco"
+        (click)="state.closeTab(tab.id)"
+      >
+        ×
+      </button>
+    </div>
+  }
+  <button
+    class="icon-button"
+    (click)="state.newTab()"
+    [attr.aria-label]="'New request tab' | transloco"
+  >
+    +
+  </button>
+</div>

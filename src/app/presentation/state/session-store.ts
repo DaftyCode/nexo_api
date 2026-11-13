@@ -4,6 +4,7 @@ import { Health, Workspace } from '../../domain/models';
 import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 import { VariablesStore } from './variables-store';
+import type { WorkspaceSessionStore } from './workspace-session-store';
 
 /** Connection to the local service, the browser session and the local workspaces. */
 export class SessionStore {
@@ -16,6 +17,8 @@ export class SessionStore {
     private readonly context: StateContext,
     private readonly documents: DocumentsStore,
     private readonly variables: VariablesStore,
+    /** Reopens the tabs of each workspace and saves them; without it, a blank tab opens. */
+    private readonly session?: WorkspaceSessionStore,
   ) {}
 
   async initialize() {
@@ -33,6 +36,7 @@ export class SessionStore {
   }
   /** Closes the browser session of the web version. */
   async signOut() {
+    await this.session?.leave();
     await this.context.cases.signOut();
     this.authenticated.set(false);
     this.documents.documents.set([]);
@@ -74,13 +78,14 @@ export class SessionStore {
       !this.context.confirm('Discard unsaved changes in open requests?')
     )
       return;
+    await this.session?.leave();
     workspaceId.set(id);
     tabs.tabs.set([]);
     tabs.clearResponses();
     this.variables.environmentId.set('');
     await this.context.status.guard(() => this.documents.refresh());
     this.variables.restore();
-    this.openBlankTab();
+    if (!this.session?.restore()) this.openBlankTab();
   }
   private async load() {
     const { cases, workspaceId } = this.context;
@@ -90,7 +95,9 @@ export class SessionStore {
     await this.documents.refresh();
     this.variables.validate();
     this.variables.restore();
-    if (!this.context.tabs.tabs().length) this.openBlankTab();
+    const open = this.context.tabs.tabs().length > 0;
+    const reopened = this.session?.restore(!open) ?? false;
+    if (!open && !reopened) this.openBlankTab();
   }
   private openBlankTab() {
     this.context.tabs.open();

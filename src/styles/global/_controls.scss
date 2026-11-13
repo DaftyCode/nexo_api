@@ -68,3 +68,16 @@
   flex-direction: column;
   overflow: hidden;
 }
+/* Where a dragged tab, section or collection will land: a line on that side of its neighbour. */
+[data-drop='before-x'] {
+  box-shadow: inset var(--nexo-size-1) 0 0 var(--nexo-color-accent);
+}
+[data-drop='after-x'] {
+  box-shadow: inset calc(-1 * var(--nexo-size-1)) 0 0 var(--nexo-color-accent);
+}
+[data-drop='before-y'] {
+  box-shadow: inset 0 var(--nexo-size-1) 0 var(--nexo-color-accent);
+}
+[data-drop='after-y'] {
+  box-shadow: inset 0 calc(-1 * var(--nexo-size-1)) 0 var(--nexo-color-accent);
+}
