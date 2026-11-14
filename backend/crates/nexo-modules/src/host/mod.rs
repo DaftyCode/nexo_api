@@ -3,7 +3,7 @@
 mod idle;
 mod shared;
 
-use crate::connections::{Connection, SecretHosts};
+use crate::connections::{Connection, Destination, SecretHosts};
 use idle::close_idle;
 use nexo_application::ports::NetworkPolicy;
 use nexo_driver_sdk::{
@@ -112,8 +112,10 @@ impl DriverHost {
         params: ConnectParams,
         secret_hosts: SecretHosts,
     ) -> Result<ServerInfo> {
-        self.opening(module, &params, secret_hosts, methods::CONNECT, true)
-            .await
+        let (outcome, _) = self
+            .opening(module, &params, secret_hosts, methods::CONNECT, true)
+            .await;
+        outcome
     }
 
     /// Opens a connection, measures it and closes it.
@@ -122,7 +124,7 @@ impl DriverHost {
         module: &str,
         params: ConnectParams,
         secret_hosts: SecretHosts,
-    ) -> Result<TestReport> {
+    ) -> (Result<TestReport>, Vec<Destination>) {
         self.opening(module, &params, secret_hosts, methods::TEST, false)
             .await
     }
@@ -134,9 +136,12 @@ impl DriverHost {
         secret_hosts: SecretHosts,
         method: &str,
         keep: bool,
-    ) -> Result<R> {
+    ) -> (Result<R>, Vec<Destination>) {
         let shared = &self.shared;
-        let process = shared.process(module).await?;
+        let process = match shared.process(module).await {
+            Ok(process) => process,
+            Err(error) => return (Err(error), Vec::new()),
+        };
         process.secrets.add(params.password.as_deref());
         process.secrets.add(params.tls.key_pem.as_deref());
         // Registered first: the driver asks about this connection while it opens it.
@@ -145,13 +150,19 @@ impl DriverHost {
             generation: process.generation,
             secret_hosts,
             last_used: Instant::now(),
+            destinations: Vec::new(),
         };
-        shared.connections.open(&params.connection, connection)?;
-        let outcome = shared.ask(&process, method, params, None).await;
-        if outcome.is_err() || !keep {
-            shared.connections.close(&params.connection);
+        if let Err(error) = shared.connections.open(&params.connection, connection) {
+            return (Err(error), Vec::new());
         }
-        outcome
+        let outcome = shared.ask(&process, method, params, None).await;
+        let mut destinations = Vec::new();
+        if (outcome.is_err() || !keep)
+            && let Some(closed) = shared.connections.close(&params.connection)
+        {
+            destinations = closed.destinations;
+        }
+        (outcome, destinations)
     }
 
     /// Asks the driver of an open connection, within the default time.

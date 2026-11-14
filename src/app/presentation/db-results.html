@@ -1,0 +1,243 @@
+<div class="db-results-strip">
+  <div class="db-results-tabs" role="tablist" [attr.aria-label]="'Results' | transloco">
+    @for (tab of results().tabs(); track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="db-result-tab"
+        [attr.data-result]="tab.id"
+        [attr.aria-selected]="shown() === tab.id"
+        [attr.tabindex]="shown() === tab.id ? 0 : -1"
+        [attr.title]="tab.sql"
+        (click)="show(tab.id)"
+        (keydown)="tabKey($event, tab.id)"
+      >
+        @if (tab.pinned) {
+          <span aria-hidden="true">📌</span>
+          <span class="db-hidden-text">{{ 'Pinned' | transloco }}</span>
+        }
+        {{ title(tab) }}
+      </button>
+    }
+    <button
+      type="button"
+      role="tab"
+      class="db-result-tab"
+      [attr.data-result]="messagesId"
+      [attr.aria-selected]="shown() === messagesId"
+      [attr.tabindex]="shown() === messagesId ? 0 : -1"
+      (click)="show(messagesId)"
+      (keydown)="tabKey($event, messagesId)"
+    >
+      {{ 'Messages' | transloco }} ({{ results().messages().length }})
+    </button>
+  </div>
+  <label class="db-results-max"
+    >{{ 'Most result tabs' | transloco }}
+    <input type="number" [formField]="settingsFields.max" (change)="setMax()"
+  /></label>
+</div>
+
+<div class="db-results-panel" role="tabpanel" [attr.aria-label]="'Result' | transloco">
+  @if (current(); as tab) {
+    <div class="db-result-toolbar" role="toolbar" [attr.aria-label]="'Result' | transloco">
+      <button type="button" class="button small" (click)="runner().rerun(tab)">
+        {{ 'Run again' | transloco }}
+      </button>
+      <button
+        type="button"
+        class="button small subtle"
+        [attr.aria-pressed]="tab.pinned"
+        (click)="results().pin(tab.id)"
+      >
+        {{ (tab.pinned ? 'Unpin' : 'Pin') | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="results().detached.set(tab.id)">
+        {{ 'Detach' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="results().close(isTab(tab.id))">
+        {{ 'Close' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="closeOthers(tab)">
+        {{ 'Close the others' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="closeUnpinned()">
+        {{ 'Close the unpinned' | transloco }}
+      </button>
+      <span class="grow"></span>
+      <label class="db-results-repeat"
+        >{{ 'Every (seconds)' | transloco }}
+        <input type="number" [formField]="settingsFields.seconds"
+      /></label>
+      <button
+        type="button"
+        class="button small subtle"
+        [attr.aria-pressed]="!!repeating(tab)"
+        (click)="toggleRepeat(tab)"
+      >
+        {{ (repeating(tab) ? 'Stop repeating' : 'Repeat') | transloco }}
+      </button>
+    </div>
+    <nav class="editor-tabs db-result-parts" [attr.aria-label]="'Result views' | transloco">
+      @for (p of parts; track p) {
+        <button
+          type="button"
+          [class.active]="part() === p"
+          [attr.aria-current]="part() === p ? 'page' : null"
+          (click)="part.set(p)"
+        >
+          {{ partLabel(p) | transloco }}
+        </button>
+      }
+    </nav>
+    <div class="db-result-body" tabindex="0" role="region" [attr.aria-label]="'Rows' | transloco">
+      @switch (part()) {
+        @case ('rows') {
+          <app-db-result-table [columns]="tab.columns" [rows]="tab.rows" />
+          <div class="db-result-more">
+            <span class="muted">{{ 'db.rows.read' | transloco: { v0: tab.rows.length } }}</span>
+            @if (tab.cursor) {
+              <button type="button" class="button small" (click)="results().more(tab.id)">
+                {{ 'Read more rows' | transloco }}
+              </button>
+            }
+            @if (tab.lost) {
+              <span class="muted">{{ 'db.result.lost' | transloco }}</span>
+            }
+          </div>
+        }
+        @case ('meta') {
+          <table class="db-plain">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'Column' | transloco }}</th>
+                <th scope="col">{{ 'Type' | transloco }}</th>
+                <th scope="col">{{ 'Nullable' | transloco }}</th>
+                <th scope="col">{{ 'Key' | transloco }}</th>
+                <th scope="col">{{ 'Origin' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (column of tab.columns; track $index) {
+                <tr>
+                  <td>{{ column.name }}</td>
+                  <td>{{ column.typeName }}</td>
+                  <td>
+                    {{
+                      column.nullable === undefined
+                        ? '—'
+                        : ((column.nullable ? 'Yes' : 'No') | transloco)
+                    }}
+                  </td>
+                  <td>{{ (column.key ? 'Yes' : 'No') | transloco }}</td>
+                  <td>
+                    {{ column.origin?.table ?? '' }}{{ column.origin?.column ? '.' : ''
+                    }}{{ column.origin?.column ?? '' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @case ('info') {
+          <dl class="db-result-info">
+            <dt>{{ 'Statement' | transloco }}</dt>
+            <dd>
+              <code>{{ tab.sql }}</code>
+            </dd>
+            <dt>{{ 'Started' | transloco }}</dt>
+            <dd>{{ tab.startedAt | date: 'medium' }}</dd>
+            <dt>{{ 'Execution' | transloco }}</dt>
+            <dd>{{ tab.executeMs }} ms</dd>
+            <dt>{{ 'Reading' | transloco }}</dt>
+            <dd>{{ tab.fetchMs }} ms</dd>
+            <dt>{{ 'Rows' | transloco }}</dt>
+            <dd>{{ tab.rows.length }}{{ tab.cursor ? '+' : '' }}</dd>
+          </dl>
+        }
+        @case ('summary') {
+          <table class="db-plain">
+            <thead>
+              <tr>
+                <th scope="col">{{ 'Column' | transloco }}</th>
+                <th scope="col">{{ 'Distinct' | transloco }}</th>
+                <th scope="col">{{ 'Nulls' | transloco }}</th>
+                <th scope="col">{{ 'Minimum' | transloco }}</th>
+                <th scope="col">{{ 'Maximum' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (column of summary(); track $index) {
+                <tr>
+                  <td>{{ column.name }}</td>
+                  <td>{{ column.distinct }}</td>
+                  <td>{{ column.nulls }}</td>
+                  <td>{{ column.min ?? '' }}</td>
+                  <td>{{ column.max ?? '' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    </div>
+  } @else {
+    <div class="db-result-toolbar">
+      <span class="grow"></span>
+      <button type="button" class="button small subtle" (click)="results().clearMessages()">
+        {{ 'Clear' | transloco }}
+      </button>
+    </div>
+    <ol
+      class="db-messages"
+      aria-live="polite"
+      tabindex="0"
+      [attr.aria-label]="'Messages' | transloco"
+    >
+      @for (message of results().messages(); track message.id) {
+        <li [class]="'db-message db-message-' + message.kind">
+          <time>{{ message.at | date: 'mediumTime' }}</time>
+          <span class="grow">{{ message.text | transloco: message.params }}</span>
+          @if (message.offset !== undefined) {
+            <button type="button" class="button small subtle" (click)="goTo.emit(message.offset)">
+              {{ 'db.goToLine' | transloco: { v0: message.line, v1: message.column } }}
+            </button>
+          }
+        </li>
+      } @empty {
+        <li class="muted">{{ 'No messages yet.' | transloco }}</li>
+      }
+    </ol>
+  }
+</div>
+
+@if (detached(); as tab) {
+  <section
+    class="db-floating"
+    role="dialog"
+    aria-modal="false"
+    [attr.aria-label]="title(tab)"
+    [style.left.px]="floating().x"
+    [style.top.px]="floating().y"
+  >
+    <header
+      class="db-floating-head"
+      (pointerdown)="dragStart($event)"
+      (pointermove)="dragMove($event)"
+      (pointerup)="dragEnd()"
+    >
+      <strong class="grow">{{ title(tab) }}</strong>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Attach again' | transloco"
+        (click)="results().detached.set('')"
+      >
+        ×
+      </button>
+    </header>
+    <div class="db-floating-body" tabindex="0" role="region" [attr.aria-label]="'Rows' | transloco">
+      <app-db-result-table [columns]="tab.columns" [rows]="tab.rows" />
+    </div>
+  </section>
+}

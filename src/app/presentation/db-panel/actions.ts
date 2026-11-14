@@ -50,7 +50,8 @@ export class DbActions {
   }
 
   async toggle(row: NavigatorRow) {
-    if (row.type === 'folder') return this.section.tree.toggleFolder(row.key);
+    if (row.type === 'folder' || row.type === 'scripts' || row.type === 'script-group')
+      return this.section.tree.toggleFolder(row.key);
     const document = this.document(row);
     if (!document || !row.expandable) return;
     if (row.expanded) this.section.tree.collapse(row.key);
@@ -70,8 +71,29 @@ export class DbActions {
   }
   async refresh(row: NavigatorRow) {
     const document = this.document(row);
-    if (document && row.type !== 'folder')
+    if (document && (row.type === 'connection' || row.type === 'node'))
       await this.section.tree.refresh(document, row.path ?? []);
+  }
+
+  /** Intro or a double click on a row without children: opens what it is. */
+  open(row: NavigatorRow) {
+    if (row.type === 'script' && row.script) return this.section.openScript(row.script);
+    if (row.type === 'node' && row.node?.actions.includes('open')) this.section.openObject(row);
+  }
+  viewData(row: NavigatorRow) {
+    return this.section.viewData(row);
+  }
+  newScript(row: NavigatorRow) {
+    if (row.connection) this.section.newScript(row.connection);
+  }
+  deleteScript(row: NavigatorRow) {
+    const document = this.section.scripts().find((script) => script.id === row.script);
+    if (!document || !this.section.state.confirm('Delete this script?')) return;
+    void this.task.announce('The script could not be deleted', async () => {
+      await (await this.section.cases()).statements.removeScript(document);
+      await this.section.state.refresh();
+      return named('Script deleted', document.name);
+    });
   }
 
   edit(row: NavigatorRow) {
@@ -159,7 +181,8 @@ export class DbActions {
         await this.section.tree.disconnect(document.id);
         const cases = await this.section.cases();
         await cases.connections.remove(document, this.section.connections());
-        this.section.tabs.closeConnection(document.id);
+        for (const tab of this.section.tabs.tabs())
+          if (tab.connection === document.id) this.section.closeTab(tab.id);
         this.section.bookmarks.update((marks) =>
           marks.filter((mark) => mark.connection !== document.id),
         );

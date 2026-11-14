@@ -93,3 +93,22 @@
   align-items: center;
   gap: var(--nexo-space-4);
 }
+.db-servers h3 {
+  margin: 0 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-servers ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.db-servers li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-1) 0;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-servers li.db-server-blocked {
+  color: var(--nexo-color-danger-text);
+}

@@ -69,6 +69,11 @@ export class DatabaseNavigatorCases {
     return answer.nodes;
   }
 
+  /** What an object is like: properties and sections, as its driver describes them. */
+  describe<T>(workspace: string, session: string, path: readonly string[]): Promise<T> {
+    return this.api.execute<T>('db.describe', { workspace, session, path });
+  }
+
   async ddl(workspace: string, session: string, path: readonly string[]): Promise<string> {
     const answer = await this.api.execute<{ sql: string }>('db.ddl', { workspace, session, path });
     return answer.sql;

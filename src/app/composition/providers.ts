@@ -73,10 +73,11 @@ export const workspaceProviders = [
     provide: DATABASES,
     useFactory: (): DatabaseLoader => {
       const api = inject(HttpApi);
+      const preferences = inject(BrowserPreferences);
       let loaded: Promise<DatabaseUseCases> | undefined;
       return () =>
         (loaded ??= import('../application/database-use-cases').then(
-          ({ DatabaseUseCases }) => new DatabaseUseCases(api),
+          ({ DatabaseUseCases }) => new DatabaseUseCases(api, preferences),
         ));
     },
   },

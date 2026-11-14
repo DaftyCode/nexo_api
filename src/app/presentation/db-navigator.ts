@@ -16,40 +16,8 @@ import { DbBookmark } from '../domain/db/tree';
 import { MongoDialog } from './mongo-dialog';
 import { StudioIcon } from './studio-icon';
 import { DbActions } from './db-panel/actions';
+import { ICONS, MenuAction } from './db-panel/menu';
 import { DbSection } from './db-panel/section';
-
-const ICONS: Record<string, string> = {
-  database: 'databases',
-  schema: 'schema',
-  table: 'table',
-  view: 'view',
-  column: 'column',
-  constraint: 'key',
-  index: 'index',
-  function: 'function',
-  procedure: 'function',
-  aggregate: 'function',
-  sequence: 'sequence',
-  trigger: 'trigger',
-  role: 'role',
-  folder: 'folder',
-};
-
-/** The entries of a row's actions menu. */
-type MenuAction =
-  | 'connect'
-  | 'disconnect'
-  | 'reconnect'
-  | 'edit'
-  | 'rename'
-  | 'duplicate'
-  | 'moveTo'
-  | 'remove'
-  | 'copyName'
-  | 'copyDdl'
-  | 'bookmark'
-  | 'filter'
-  | 'refresh';
 
 /** Where the actions menu of a row is open. */
 interface OpenMenu {
@@ -97,7 +65,9 @@ export class DbNavigator {
   /** The icon of a row, by the class of object the driver says it is. */
   protected icon(row: NavigatorRow) {
     if (row.type === 'connection') return 'databases';
-    if (row.type === 'folder') return 'folder';
+    if (row.type === 'folder' || row.type === 'scripts' || row.type === 'script-group')
+      return 'folder';
+    if (row.type === 'script') return 'code';
     return ICONS[row.node?.kind ?? ''] ?? 'datasets';
   }
   protected tabIndex(row: NavigatorRow) {
@@ -136,6 +106,7 @@ export class DbNavigator {
   protected activate(row: NavigatorRow) {
     this.select(row);
     if (row.expandable) void this.actions.toggle(row);
+    else this.actions.open(row);
   }
 
   /** The keys of a WAI-ARIA tree, and the shortcuts of DBeaver's navigator. */
@@ -181,7 +152,11 @@ export class DbNavigator {
         return void this.actions.refresh(row);
       case 'Delete':
         event.preventDefault();
-        return this.actions.remove(row);
+        return row.type === 'script' ? this.actions.deleteScript(row) : this.actions.remove(row);
+      case ']':
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        return this.actions.newScript(row);
       case 'ContextMenu':
         event.preventDefault();
         return this.openMenuAt(row);

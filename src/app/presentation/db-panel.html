@@ -41,22 +41,58 @@
               [attr.aria-controls]="'db-tabpanel-' + tab.id"
               [id]="'db-tab-' + tab.id"
               [attr.tabindex]="tab.id === tabs.activeId() ? 0 : -1"
+              [attr.title]="title(tab)"
+              [attr.draggable]="true"
+              [attr.data-drop]="drag.at(tab.id)"
               (click)="tabs.activeId.set(tab.id)"
               (keydown)="tabKey($event, tab)"
-              (keydown.delete)="tabs.close(tab.id)"
-              (auxclick)="tabs.close(tab.id)"
+              (keydown.delete)="section.closeTab(tab.id)"
+              (auxclick)="section.closeTab(tab.id)"
+              (dragstart)="drag.start($event, tab.id, title(tab))"
+              (dragover)="drag.over($event, tab.id)"
+              (drop)="drag.drop($event, tab.id)"
+              (dragend)="drag.end()"
             >
-              @if (section.connection(tab.connection); as connection) {
-                {{ connection.name }}
+              <span class="db-tab-kind" aria-hidden="true">{{ kindMark(tab) }}</span>
+              @if (tab.kind === 'connection' && !tab.connection) {
+                {{ 'New connection' | transloco }}
               } @else {
-                {{ tab.title | transloco }}
+                {{ title(tab) }}
+              }
+              @if (dirty(tab)) {
+                <span class="db-tab-dirty" [attr.aria-label]="'Unsaved changes' | transloco"
+                  >●</span
+                >
               }
             </button>
           }
         </div>
+        @if (tabs.active(); as active) {
+          <button
+            type="button"
+            class="icon-button"
+            [attr.aria-label]="'Close the tab' | transloco"
+            [attr.title]="'Close the tab' | transloco"
+            (click)="section.closeTab(active.id)"
+          >
+            ×
+          </button>
+        }
+      }
+      <span class="grow"></span>
+      @if (section.connection(section.active()); as connection) {
+        <button
+          type="button"
+          class="button small"
+          [attr.title]="'New SQL script (Ctrl+])' | transloco"
+          (click)="section.newScript(connection.id)"
+        >
+          {{ '＋ SQL' | transloco }}
+        </button>
       }
     </div>
-    @if (tabs.active(); as tab) {
+    <!-- One instance per tab: another tab of the same kind gets its own editor. -->
+    @for (tab of shownTabs(); track tab.id) {
       <div
         class="db-tabpanel"
         role="tabpanel"
@@ -67,9 +103,15 @@
           @case ('connection') {
             <app-db-connection-editor [tab]="tab" />
           }
+          @case ('sql') {
+            <app-db-sql-tab [tab]="tab" />
+          }
+          @case ('object') {
+            <app-db-object-tab [tab]="tab" />
+          }
         }
       </div>
-    } @else {
+    } @empty {
       <div class="db-welcome">
         <span class="eyebrow">{{ 'YOUR DATA, NEXT TO YOUR API.' | transloco }}</span>
         <h1>{{ 'Databases' | transloco }}</h1>

@@ -8,9 +8,9 @@ import {
   keyPath,
   matchesPatterns,
   nodeKey,
-  readDatabaseSession,
   toggleBookmark,
 } from './tree';
+import { readDatabaseSession, storedDrafts } from './session';
 
 const node = (name: string, extra: Partial<DbNode> = {}): DbNode => ({
   kind: 'table',
@@ -143,6 +143,29 @@ describe('the database navigator', () => {
       active: '',
       bookmarks: [mark],
       simple: true,
+      tabs: [],
+      activeTab: '',
+      drafts: {},
+    });
+  });
+
+  it('keeps the editor tabs and the text of their scripts, not more', () => {
+    const session = readDatabaseSession({
+      tabs: [
+        { id: 's', kind: 'sql', connection: 'a', title: 'Script' },
+        { id: 'o', kind: 'object', connection: 'a', title: 'orders', path: ['shop', 'orders'] },
+        { id: 'x', kind: 'chart' },
+      ],
+      activeTab: 'o',
+      drafts: { s: { text: 'select 1', cursor: 3, dirty: true }, gone: { text: 'x' } },
+    });
+    expect(session.tabs.map((tab) => tab.id)).toEqual(['s', 'o']);
+    expect(session.tabs[1].path).toEqual(['shop', 'orders']);
+    expect(session.activeTab).toBe('o');
+    expect(session.drafts).toEqual({ s: { text: 'select 1', cursor: 3, dirty: true } });
+    // A saved script that did not change reopens from its document.
+    expect(storedDrafts({ s: { text: 'select 1', cursor: 3, script: 'd1' } })).toEqual({
+      s: { text: '', cursor: 3, script: 'd1' },
     });
   });
 });

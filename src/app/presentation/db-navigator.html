@@ -172,6 +172,33 @@
       </button>
     }
     @if (open.row.type === 'node') {
+      @if (open.row.node?.actions?.includes('open')) {
+        <button type="button" role="menuitem" (click)="run('open')">
+          {{ 'Open' | transloco }}
+        </button>
+      }
+      @if (open.row.node?.actions?.includes('data')) {
+        <button type="button" role="menuitem" (click)="run('viewData')">
+          {{ 'View data' | transloco }}
+        </button>
+      }
+    }
+    @if (
+      open.row.type === 'connection' || open.row.type === 'node' || open.row.type === 'script-group'
+    ) {
+      <button type="button" role="menuitem" (click)="run('newScript')">
+        {{ 'New SQL script' | transloco }} <kbd>Ctrl+]</kbd>
+      </button>
+    }
+    @if (open.row.type === 'script') {
+      <button type="button" role="menuitem" (click)="run('open')">
+        {{ 'Open' | transloco }}
+      </button>
+      <button type="button" role="menuitem" class="danger" (click)="run('deleteScript')">
+        {{ 'Delete script' | transloco }}
+      </button>
+    }
+    @if (open.row.type === 'node') {
       <button type="button" role="menuitem" (click)="run('copyName')">
         {{ 'Copy name' | transloco }}
       </button>
@@ -199,7 +226,7 @@
         {{ 'Delete' | transloco }} <kbd>Del</kbd>
       </button>
     }
-    @if (open.row.type === 'folder' || open.row.type === 'error') {
+    @if (open.row.type === 'folder' || open.row.type === 'error' || open.row.type === 'scripts') {
       <button type="button" role="menuitem" (click)="closeMenu()">
         {{ 'Close' | transloco }}
       </button>

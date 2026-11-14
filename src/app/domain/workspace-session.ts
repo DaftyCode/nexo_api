@@ -1,5 +1,5 @@
 import { itemAt, pathOf } from './collection-tree';
-import { DatabaseSession, readDatabaseSession } from './db/tree';
+import { DatabaseSession, readDatabaseSession } from './db/session';
 import {
   RequestDraft,
   RequestTab,

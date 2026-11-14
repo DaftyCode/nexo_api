@@ -21,16 +21,20 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
     .getByRole('navigation', { name: 'Workspace sections' })
     .getByRole('button', { name: 'Databases' })
     .click();
-  await expect(page.getByRole('heading', { name: 'Databases', exact: true })).toBeVisible();
+  await expect(page.getByRole('toolbar', { name: 'Navigator' })).toBeVisible();
   expect(await violations(page)).toEqual([]);
 
   // The engine first: its module is downloaded after asking.
   await page.getByRole('toolbar', { name: 'Navigator' }).getByRole('button').first().click();
   await page.getByRole('button', { name: /^PostgreSQL/ }).click();
+  // The tests of a run share a server: another one may have installed the module already.
   const download = page.getByRole('dialog', { name: 'Download the PostgreSQL module' });
-  await expect(download.getByRole('button', { name: 'Download' })).toBeFocused();
-  await download.getByRole('button', { name: 'Download' }).click();
-  await expect(download).toBeHidden();
+  await expect(download.or(page.getByLabel('Paste a connection URL'))).toBeVisible();
+  if (await download.isVisible()) {
+    await expect(download.getByRole('button', { name: 'Download' })).toBeFocused();
+    await download.getByRole('button', { name: 'Download' }).click();
+    await expect(download).toBeHidden();
+  }
 
   // A pasted URL fills the form; its password goes to the vault.
   const { NEXO_SQL_PG_USER: user, NEXO_SQL_PG_PASSWORD: password } = environment;
@@ -45,6 +49,12 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
   await page.getByRole('button', { name: 'Test connection' }).click();
   const report = page.getByRole('status', { name: 'Connection test' });
   await expect(report).toContainText('PostgreSQL');
+  // Each server the driver reached, and that the egress policy let it through.
+  const servers = page.getByRole('region', { name: 'Servers' });
+  await expect(servers).toContainText(
+    `${environment.NEXO_SQL_PG_HOST}:${environment.NEXO_SQL_PG_PORT}`,
+  );
+  await expect(servers).toContainText('Allowed');
   expect(await violations(page)).toEqual([]);
 
   // A production connection is red in the tree and in its tab.
@@ -101,6 +111,6 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
   await dialog.getByLabel('Type Shop to confirm').fill('Shop');
   await dialog.getByRole('button', { name: 'Delete' }).click();
   await expect(page.locator('.toast').filter({ hasText: 'Connection deleted' })).toBeVisible();
-  await expect(tree).toBeHidden();
+  await expect(shop).toBeHidden();
   expect(await violations(page)).toEqual([]);
 });

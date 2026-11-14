@@ -14,7 +14,7 @@ use nexo_driver_sdk::{
     },
 };
 use serde::Serialize;
-use serde_json::Value;
+use serde_json::{Value, json};
 use std::time::Duration;
 
 /// A driver's error as the application answers it: `database.<code>` with its detail.
@@ -80,8 +80,23 @@ impl DataSources for Modules {
         let session = format!("test-{}", uuid::Uuid::new_v4().simple());
         let (driver, hosts) = (connection.driver.clone(), connection.secret_hosts.clone());
         let params = connect_params(&session, connection)?;
-        let report = self.host().test(&driver, params, hosts).await;
-        to_json(report.map_err(database_error)?)
+        // Each server the driver asked for, and whether the egress policy let it through.
+        let (report, servers) = self.host().test(&driver, params, hosts).await;
+        let servers = to_json(servers)?;
+        match report {
+            Ok(report) => {
+                let mut value = to_json(report)?;
+                value["servers"] = servers;
+                Ok(value)
+            }
+            Err(error) => {
+                let mut detail = error.detail.clone().unwrap_or_else(|| json!({}));
+                if let Some(fields) = detail.as_object_mut() {
+                    fields.insert("servers".into(), servers);
+                }
+                Err(database_error(error.with_detail(detail)))
+            }
+        }
     }
 
     async fn connect(&self, session: &str, connection: SqlConnection) -> Result<Value> {

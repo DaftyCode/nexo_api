@@ -1,0 +1,232 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="db-sql" [class.db-sql-production]="production()">
+  <div class="db-sql-toolbar" role="toolbar" [attr.aria-label]="'SQL editor' | transloco">
+    <span class="db-sql-connection">
+      {{ connection()?.name }}
+      @if (production()) {
+        <span class="db-sql-badge">{{ 'Production' | transloco }}</span>
+      }
+    </span>
+    <label class="db-sql-where"
+      >{{ 'Database' | transloco
+      }}<input
+        [formField]="whereFields.database"
+        list="db-sql-databases"
+        [attr.placeholder]="value().database ?? ''"
+        spellcheck="false"
+        autocomplete="off"
+        (keydown.enter)="useWhere()"
+    /></label>
+    <datalist id="db-sql-databases">
+      @for (name of databases(); track name) {
+        <option [value]="name"></option>
+      }
+    </datalist>
+    @if (profile().schemaStatement) {
+      <label class="db-sql-where"
+        >{{ 'Schema' | transloco
+        }}<input
+          [formField]="whereFields.schema"
+          spellcheck="false"
+          autocomplete="off"
+          (keydown.enter)="useWhere()"
+      /></label>
+    }
+    <button type="button" class="button small subtle" (click)="useWhere()">
+      {{ 'Use' | transloco }}
+    </button>
+    <span class="grow"></span>
+    <button
+      type="button"
+      class="button small primary"
+      [disabled]="!!runner().running()"
+      [attr.title]="'Run the statement at the cursor (Ctrl+Enter)' | transloco"
+      (click)="command('run')"
+    >
+      ▶ {{ 'Run' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!!runner().running()"
+      [attr.title]="'Run in a new result tab (Ctrl+\\)' | transloco"
+      (click)="command('run-new')"
+    >
+      {{ 'New tab' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!!runner().running()"
+      [attr.title]="'Run the script (Alt+X)' | transloco"
+      (click)="command('script')"
+    >
+      {{ 'Script' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!runner().running()"
+      (click)="command('cancel')"
+    >
+      {{ 'Cancel' | transloco }}
+    </button>
+    <label class="check-field db-sql-reuse"
+      ><input
+        type="checkbox"
+        [checked]="runner().reuse()"
+        (change)="runner().reuse.set(!runner().reuse())"
+      />{{ 'Reuse the result tab' | transloco }}</label
+    >
+    @if (runner().transaction(); as transaction) {
+      @if (transaction.autoCommit) {
+        <button type="button" class="button small subtle" (click)="runner().transact('manual')">
+          {{ 'Auto-commit' | transloco }}
+        </button>
+      } @else {
+        <button type="button" class="button small subtle" (click)="runner().transact('auto')">
+          {{ 'Manual commit' | transloco }}
+        </button>
+        <button type="button" class="button small" (click)="runner().transact('commit')">
+          {{ 'Commit' | transloco }}
+        </button>
+        <button type="button" class="button small" (click)="runner().transact('rollback')">
+          {{ 'Rollback' | transloco }}
+        </button>
+      }
+    }
+    <button
+      type="button"
+      class="button small"
+      [attr.title]="'Save the script (Ctrl+S)' | transloco"
+      (click)="save()"
+    >
+      {{ 'Save' | transloco }}
+      @if (draft().dirty) {
+        <span class="db-sql-dirty" [attr.aria-label]="'Unsaved changes' | transloco">●</span>
+      }
+    </button>
+    <button
+      type="button"
+      class="button small subtle"
+      [attr.aria-pressed]="showHistory()"
+      (click)="showHistory.set(!showHistory())"
+    >
+      {{ 'History' | transloco }}
+    </button>
+  </div>
+  <div class="db-sql-body">
+    <div class="db-sql-main">
+      <div
+        class="db-sql-code"
+        [style.height.px]="codeHeight() || null"
+        [class.db-sql-code-sized]="codeHeight() > 0"
+      >
+        <app-db-sql-code
+          [text]="opened().text"
+          [cursor]="opened().cursor"
+          [driver]="value().driver"
+          [words]="words()"
+          [label]="'SQL script' | transloco"
+          (changed)="changed($event)"
+          (moved)="moved($event)"
+          (action)="command($event)"
+        />
+      </div>
+      <app-splitter
+        axis="y"
+        target=".db-sql-code"
+        neighbor="app-db-results"
+        [neighborMin]="120"
+        [label]="'Resize the editor and the results' | transloco"
+        (resized)="codeHeight.set($event)"
+        (restore)="codeHeight.set(0)"
+      />
+      <app-db-results [runner]="runner()" (goTo)="goTo($event)" />
+    </div>
+    @if (showHistory()) {
+      <app-db-history
+        [connection]="tab().connection"
+        (chosen)="useHistory($event)"
+        (closed)="showHistory.set(false)"
+      />
+    }
+  </div>
+  <footer class="db-sql-status" role="status">
+    <span>{{ connection()?.name }}</span>
+    <span>{{ runner().server()?.database ?? draft().database ?? value().database }}</span>
+    <span>{{
+      (runner().status() === 'open' ? 'db.session.open' : 'db.session.closed') | transloco
+    }}</span>
+    @if (runner().transaction(); as transaction) {
+      <span>{{
+        (transaction.autoCommit
+          ? 'Auto-commit'
+          : transaction.open
+            ? 'db.transaction.open'
+            : 'Manual commit'
+        ) | transloco
+      }}</span>
+    }
+    @if (runner().running()) {
+      <span class="db-sql-running">{{ 'Running' | transloco }}…</span>
+    }
+  </footer>
+</div>
+
+@if (dialog(); as open) {
+  <app-mongo-dialog
+    [request]="open.request"
+    (confirmed)="answerDialog($event)"
+    (cancelled)="dialog.set(undefined)"
+  />
+}
+@if (confirmRequest(); as request) {
+  <app-mongo-dialog
+    [request]="request"
+    (confirmed)="confirmAnswer(true)"
+    (cancelled)="confirmAnswer(false)"
+  />
+}
+@if (runner().dialog()?.kind === 'failure') {
+  <div class="db-sql-backdrop">
+    <section
+      class="feature-card db-sql-failure"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-sql-failure-title"
+      (keydown.escape)="failureAnswer('stop')"
+    >
+      <h2 id="db-sql-failure-title">{{ 'A statement failed' | transloco }}</h2>
+      <p>{{ 'db.failure.message' | transloco }}</p>
+      <label class="check-field"
+        ><input type="checkbox" [formField]="failureFields.remember" />{{
+          'Remember my choice' | transloco
+        }}</label
+      >
+      <div class="row db-sql-failure-actions">
+        <button type="button" class="button primary" (click)="failureAnswer('continue')">
+          {{ 'Continue' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="failureAnswer('ignore')">
+          {{ 'Ignore the next failures' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="failureAnswer('stop')">
+          {{ 'Stop' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

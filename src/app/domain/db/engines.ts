@@ -27,6 +27,8 @@ export interface EngineProfile {
   properties: readonly EngineProperty[];
   /** What its form does not offer, said under it: a message key. */
   limits?: string;
+  /** The statement that makes a schema the session's default, with its name quoted. */
+  schemaStatement?: (schema: string) => string;
 }
 
 const ENGINES: Record<string, EngineProfile> = {
@@ -46,6 +48,7 @@ const ENGINES: Record<string, EngineProfile> = {
       { name: 'search_path', description: 'db.property.search_path' },
     ],
     limits: 'db.limits.postgres',
+    schemaStatement: (schema) => `SET search_path TO ${schema}`,
   },
 };
 

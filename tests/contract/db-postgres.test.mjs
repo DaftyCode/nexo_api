@@ -125,3 +125,65 @@ test('a read-only connection is refused by Nexo and by the server', { skip }, as
   assert.equal(sequence.body.code, 'database.permission');
   assert.doesNotMatch(server.logs(), new RegExp(environment.NEXO_SQL_PG_PASSWORD));
 });
+
+const testing = (target, value = {}) =>
+  target.api('POST', '/execute/db.test', {
+    workspace: 'local',
+    connection: {
+      driver: 'postgres',
+      host: environment.NEXO_SQL_PG_HOST,
+      port: Number(environment.NEXO_SQL_PG_PORT),
+      database: environment.NEXO_SQL_PG_DATABASE,
+      user: environment.NEXO_SQL_PG_USER,
+      password: '{{vault:db-password:pg}}',
+      ...value,
+    },
+  });
+
+test(
+  'a test lists each server the driver reached and what the egress policy said',
+  { skip },
+  async () => {
+    const tested = await testing(server);
+    assert.equal(tested.status, 200, JSON.stringify(tested.body));
+    assert.deepEqual(
+      tested.body.servers.map(({ host, port, allowed }) => [host, port, allowed]),
+      [[environment.NEXO_SQL_PG_HOST, Number(environment.NEXO_SQL_PG_PORT), true]],
+    );
+    assert.ok(tested.body.servers[0].addresses.length > 0);
+
+    // The policy that refuses private servers says so for each one, inside the error.
+    const restricted = await startServer({
+      NEXO_MODULES_DIR: resolve(environment.CARGO_TARGET_DIR ?? 'target', 'debug'),
+      NEXO_MODULES_CATALOG: '',
+      NEXO_EGRESS: 'deny-private',
+    });
+    try {
+      await restricted.api('PUT', '/secrets/db-password:pg', {
+        value: environment.NEXO_SQL_PG_PASSWORD,
+      });
+      const refused = await testing(restricted);
+      assert.equal(refused.status, 400, JSON.stringify(refused.body));
+      assert.equal(refused.body.code, 'database.network');
+      const [blocked] = refused.body.detail.servers;
+      assert.equal(blocked.allowed, false);
+      assert.equal(blocked.host, environment.NEXO_SQL_PG_HOST);
+      assert.match(blocked.reason, /egress policy/);
+    } finally {
+      await restricted.stop();
+    }
+  },
+);
+
+test('an editor session opens on another database of the server', { skip }, async () => {
+  const opened = await server.execute('db.connect', {
+    connectionId: 'pg',
+    session: 'editor:other',
+    database: 'postgres',
+    variables: { host: environment.NEXO_SQL_PG_HOST },
+  });
+  assert.equal(opened.database, 'postgres');
+  const current = await run('editor:other', 'SELECT current_database()');
+  assert.deepEqual(current.body.rows, [['postgres']]);
+  await server.execute('db.disconnect', { session: 'editor:other' });
+});

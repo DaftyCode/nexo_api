@@ -654,6 +654,7 @@ export interface DbTestPayload {
 export interface DbConnectPayload {
   connectionId: string;
   session: string;
+  database?: string;
   workspace?: string;
   variables?: Readonly<Record<string, string>>;
 }

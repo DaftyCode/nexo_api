@@ -41,6 +41,8 @@ export async function languageSupport(language: CodeLanguage): Promise<Extension
       return (await import('@codemirror/lang-xml')).xml();
     case 'graphql':
       return (await import('cm6-graphql')).graphqlLanguageSupport();
+    case 'sql':
+      return (await import('@codemirror/lang-sql')).sql();
     default:
       return [];
   }

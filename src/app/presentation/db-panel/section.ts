@@ -8,11 +8,14 @@ import {
   isDbConnection,
   readDbConnection,
 } from '../../domain/db/connection';
-import { navigatorRows } from '../../domain/db/rows';
-import { DbBookmark, QuoteStyle, keyPath, nodeKey } from '../../domain/db/tree';
+import { NavigatorRow, navigatorRows } from '../../domain/db/rows';
+import { SqlDraft, storedDrafts } from '../../domain/db/session';
+import { databaseOf, qualifiedName, readScript } from '../../domain/db/sql';
+import { DbBookmark, DbNode, QuoteStyle, keyPath, nodeKey } from '../../domain/db/tree';
 import { ModuleSummary } from '../../domain/modules';
 import { WorkspaceDocument } from '../../domain/models';
 import { WorkspaceState } from '../workspace-state';
+import { SqlRunner } from './sql-runner';
 import { DbTabsStore } from './tabs-store';
 import { DbTreeStore } from './tree-store';
 
@@ -50,8 +53,16 @@ export class DbSection {
   /** The connection last chosen in the navigator. */
   readonly active = signal('');
   private readonly quotes = signal<Readonly<Record<string, QuoteStyle>>>({});
+  /** The SQL tabs while they are open: sessions, results and messages survive tab changes. */
+  private readonly runners = new Map<string, SqlRunner>();
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
+  /** Saved SQL scripts. */
+  readonly scripts = computed(() =>
+    this.state.documents().filter((document) => document.kind === 'sql-script'),
+  );
+  /** SQL tabs that run their text as soon as they open («View data»). */
+  readonly runOnOpen = signal<ReadonlySet<string>>(new Set());
   readonly folders = computed(() => dbFolders(this.connections()));
   readonly folderNames = computed(() =>
     this.folders()
@@ -70,6 +81,7 @@ export class DbSection {
       status: this.tree.status(),
       simple: this.simple(),
       text: this.text(),
+      scripts: this.scripts(),
     }),
   );
 
@@ -81,6 +93,7 @@ export class DbSection {
       this.bookmarks.set(stored.bookmarks);
       this.simple.set(stored.simple);
       this.active.set(stored.active);
+      this.restoreTabs(stored.tabs, stored.drafts, stored.activeTab);
     }
     effect(() => {
       const session = {
@@ -88,8 +101,121 @@ export class DbSection {
         active: this.active(),
         bookmarks: [...this.bookmarks()],
         simple: this.simple(),
+        tabs: [...this.tabs.tabs()],
+        activeTab: this.tabs.activeId(),
+        drafts: storedDrafts(this.tabs.drafts()),
       };
       untracked(() => this.state.databaseSession.set(session));
+    });
+  }
+
+  /**
+   * The editor tabs of a stored session, without results: a saved script that had not
+   * changed reads its text again from its document; tabs of deleted connections stay closed.
+   */
+  private restoreTabs(
+    tabs: Parameters<DbTabsStore['restore']>[0],
+    drafts: Readonly<Record<string, SqlDraft>>,
+    active: string,
+  ) {
+    const kept = tabs.filter((tab) => !tab.connection || !!this.connection(tab.connection));
+    const texts = Object.fromEntries(
+      Object.entries(drafts).map(([id, draft]) => {
+        const script = draft.script && this.scripts().find((doc) => doc.id === draft.script);
+        if (draft.script && !script) return [id, { ...draft, script: undefined, dirty: true }];
+        return [
+          id,
+          draft.text || !script ? draft : { ...draft, text: readScript(script.value).sql },
+        ];
+      }),
+    );
+    this.tabs.restore(kept, texts, active);
+  }
+
+  /** The runner of a SQL tab, created when the tab is first shown. */
+  runner(tab: string): SqlRunner {
+    let runner = this.runners.get(tab);
+    if (!runner) this.runners.set(tab, (runner = new SqlRunner(this, tab)));
+    return runner;
+  }
+
+  /** Closes an editor tab; a SQL tab closes its session and cursors. */
+  closeTab(id: string) {
+    const runner = this.runners.get(id);
+    this.runners.delete(id);
+    void runner?.dispose();
+    this.tabs.close(id);
+  }
+
+  /** Opens a SQL tab on a connection, with a text and on another database if asked. */
+  newScript(connection: string, options: { text?: string; database?: string; run?: boolean } = {}) {
+    if (!this.connection(connection)) return;
+    this.active.set(connection);
+    const tab = this.tabs.open(
+      { kind: 'sql', connection, title: 'SQL' },
+      {
+        text: options.text ?? '',
+        cursor: options.text?.length ?? 0,
+        dirty: !!options.text,
+        ...(options.database ? { database: options.database } : {}),
+      },
+    );
+    if (options.run) this.runOnOpen.update((set) => new Set([...set, tab.id]));
+  }
+
+  /** Opens a saved script, or shows its tab when it is open. */
+  openScript(id: string) {
+    const document = this.scripts().find((script) => script.id === id);
+    if (!document) return;
+    const value = readScript(document.value);
+    this.tabs.open(
+      { kind: 'sql', connection: value.connectionId, title: document.name },
+      {
+        text: value.sql,
+        cursor: 0,
+        script: id,
+        ...(value.database ? { database: value.database } : {}),
+      },
+    );
+  }
+
+  /** Opens the tab of an object of the tree. */
+  openObject(row: NavigatorRow) {
+    if (!row.connection || !row.path?.length) return;
+    this.tabs.open({
+      kind: 'object',
+      connection: row.connection,
+      title: row.label,
+      path: row.path,
+    });
+  }
+
+  /** The nodes along a path of the tree, as loaded. */
+  nodesAlong(connection: string, path: readonly string[]): DbNode[] {
+    const children = this.tree.children();
+    return path.flatMap((name, depth) => {
+      const parent = nodeKey(connection, path.slice(0, depth));
+      const found = children.get(parent)?.find((node) => node.name === name);
+      return found ? [found] : [];
+    });
+  }
+
+  /**
+   * «View data», as DBeaver's SQL console: a SQL tab with `SELECT *` of the table or view,
+   * run at once, on the database it is in.
+   */
+  async viewData(row: NavigatorRow) {
+    if (!row.connection || !row.path) return;
+    const connection = row.connection;
+    await this.learnQuotes(connection).catch(() => undefined);
+    const nodes = this.nodesAlong(connection, row.path);
+    const name = qualifiedName(nodes, this.quoteStyle(connection));
+    const database = databaseOf(nodes);
+    const own = readDbConnection(this.connection(connection)?.value).database ?? '';
+    this.newScript(connection, {
+      text: `SELECT * FROM ${name}`,
+      ...(database && database !== own ? { database } : {}),
+      run: true,
     });
   }
 

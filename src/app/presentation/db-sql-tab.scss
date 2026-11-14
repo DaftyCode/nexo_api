@@ -1,0 +1,104 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.db-sql {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border-top: var(--nexo-border-width-accent) solid transparent;
+}
+.db-sql.db-sql-production {
+  border-top-color: var(--nexo-color-danger);
+}
+.db-sql-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+}
+.db-sql-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-sql-badge {
+  padding: var(--nexo-space-px) var(--nexo-space-2);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-danger-soft);
+  color: var(--nexo-color-danger-text);
+  font-size: var(--nexo-font-size-2xs);
+}
+.db-sql-where {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
+}
+.db-sql-where input {
+  width: calc(var(--nexo-size-unit) * 32);
+}
+.db-sql-reuse {
+  margin: 0;
+  font-size: var(--nexo-font-size-xs);
+}
+.db-sql-dirty {
+  color: var(--nexo-color-modified);
+}
+.db-sql-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.db-sql-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.db-sql-code {
+  flex: 1;
+  min-height: calc(var(--nexo-size-unit) * 20);
+}
+.db-sql-code.db-sql-code-sized {
+  flex: none;
+}
+app-db-results {
+  flex: 1;
+  min-height: 0;
+}
+.db-sql-status {
+  display: flex;
+  gap: var(--nexo-space-6);
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-sql-running {
+  color: var(--nexo-color-warning);
+}
+.db-sql-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-sql-failure {
+  max-width: calc(var(--nexo-size-unit) * 130);
+}
+.db-sql-failure-actions {
+  gap: var(--nexo-space-4);
+  justify-content: flex-end;
+}

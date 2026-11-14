@@ -1,0 +1,76 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<header class="db-object-head">
+  <div>
+    <span class="eyebrow">{{ description()?.kind ?? node()?.kind }}</span>
+    <h2>{{ description()?.name ?? tab().title }}</h2>
+  </div>
+  <span class="grow"></span>
+  @if (node()?.actions?.includes('data')) {
+    <button type="button" class="button small" (click)="viewData()">
+      {{ 'View data' | transloco }}
+    </button>
+  }
+  <button type="button" class="button small subtle" (click)="load()">
+    {{ 'Refresh' | transloco }}
+  </button>
+</header>
+<nav class="editor-tabs db-object-parts" [attr.aria-label]="'Object views' | transloco">
+  @for (p of parts(); track p) {
+    <button
+      type="button"
+      [class.active]="part() === p"
+      [attr.aria-current]="part() === p ? 'page' : null"
+      (click)="part.set(p)"
+    >
+      {{ partLabel(p) | transloco }}
+    </button>
+  }
+</nav>
+<div class="db-object-body" tabindex="0" role="region" [attr.aria-label]="'Object' | transloco">
+  @if (!description()) {
+    <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+  } @else if (part() === 'properties') {
+    <dl class="db-object-properties">
+      @for (property of description()!.properties; track property.name) {
+        <dt>{{ property.name }}</dt>
+        <dd>{{ text(property.value) }}</dd>
+      } @empty {
+        <dd class="muted">{{ 'No properties' | transloco }}</dd>
+      }
+    </dl>
+  } @else if (part() === 'ddl') {
+    <div class="row db-object-ddl-actions">
+      <button type="button" class="button small" (click)="copyDdl()">
+        {{ 'Copy DDL' | transloco }}
+      </button>
+      <button type="button" class="button small" (click)="openInScript()">
+        {{ 'Open in a script' | transloco }}
+      </button>
+    </div>
+    <app-code-editor
+      size="large"
+      language="sql"
+      [value]="ddl()"
+      [readonly]="true"
+      [label]="'DDL' | transloco"
+    />
+  } @else if (shownSection(); as shown) {
+    @if (shown.rows.length) {
+      <app-db-result-table [columns]="sectionColumns()" [rows]="shown.rows" />
+    } @else {
+      <p class="muted">{{ 'No objects' | transloco }}</p>
+    }
+  }
+</div>

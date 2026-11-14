@@ -10,8 +10,12 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField, form, max, min } from '@angular/forms/signals';
-import type { DbTestReport } from '../application/database-use-cases';
-import { failureCode } from '../application/ports';
+import {
+  testedServers,
+  type DbDestination,
+  type DbTestReport,
+} from '../application/database-use-cases';
+import { ApiFailure, failureCode } from '../application/ports';
 import { readDbConnection } from '../domain/db/connection';
 import { engineProfile } from '../domain/db/engines';
 import {
@@ -62,6 +66,8 @@ export class DbConnectionEditor {
     max(path.timeoutSeconds, 3600);
   });
   protected readonly report = signal<DbTestReport | undefined>(undefined);
+  /** Each server the last test asked to reach, and whether the egress policy let it. */
+  protected readonly servers = signal<readonly DbDestination[]>([]);
   protected readonly notice = signal('');
   protected readonly download = signal<ModuleSummary | undefined>(undefined);
   /** The id the connection is saved with; its vault entries are named after it. */
@@ -152,6 +158,7 @@ export class DbConnectionEditor {
 
   protected test() {
     this.report.set(undefined);
+    this.servers.set([]);
     this.notice.set('');
     void this.task.run(async () => {
       this.check();
@@ -160,15 +167,20 @@ export class DbConnectionEditor {
       const cases = await this.section.cases();
       const typed = typedSecrets(model);
       if (!this.document() && (typed.password || typed.keyPem)) this.unsavedSecrets = true;
-      this.report.set(
-        await cases.connections.test(
+      try {
+        const report = await cases.connections.test(
           this.state.workspaceId(),
           this.id,
           valueOf(model, this.stored()),
           typed,
           this.state.scopes(),
-        ),
-      );
+        );
+        this.report.set(report);
+        this.servers.set(report.servers ?? []);
+      } catch (error) {
+        this.servers.set(testedServers((error as ApiFailure).detail));
+        throw error;
+      }
     });
   }
 
@@ -203,6 +215,7 @@ export class DbConnectionEditor {
       this.unsavedSecrets = false;
       await this.state.refresh();
       this.section.tabs.update(this.tab().id, { connection: saved.id, title: saved.name });
+      this.section.active.set(saved.id);
       this.model.update((form) => ({ ...form, password: '', keyPem: '' }));
       // The navigator connects again with the new settings.
       if (this.section.tree.status()[saved.id] === 'connected')

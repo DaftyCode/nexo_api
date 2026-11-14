@@ -61,3 +61,17 @@
   max-width: calc(var(--nexo-size-unit) * 160);
   padding: var(--nexo-space-10);
 }
+.db-tab-kind {
+  margin-right: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+}
+.db-tab-dirty {
+  margin-left: var(--nexo-space-2);
+  color: var(--nexo-color-modified);
+}
+.db-tab[data-drop^='before'] {
+  border-left: var(--nexo-border-width-accent) solid var(--nexo-color-accent);
+}
+.db-tab[data-drop^='after'] {
+  border-right: var(--nexo-border-width-accent) solid var(--nexo-color-accent);
+}

@@ -1,4 +1,5 @@
 import { DatabaseUseCases, DatabasePorts, connectionVariables } from './database-use-cases';
+import type { StatementPorts } from './database-use-cases/statements';
 import { WorkspaceDocument } from '../domain/models';
 import { VariableScopes } from '../domain/variables';
 
@@ -17,9 +18,15 @@ function fixture(answers: Record<string, unknown> = {}) {
       return { ...document, revision: document.revision + 1 };
     },
     remove: async (document: WorkspaceDocument) => void removed.push(document.id),
+    document: async (id: string) => {
+      calls.push(['document', id]);
+      const value = answers[`document:${id}`];
+      if (!value) throw new Error('Not found');
+      return { id, kind: 'sql-history', value } as unknown as WorkspaceDocument;
+    },
     putSecret: async (name: string, value?: string) => void secrets.set(name, value ?? ''),
     removeSecret: async (name: string) => void secrets.delete(name),
-  } as unknown as DatabasePorts;
+  } as unknown as DatabasePorts & StatementPorts;
   return { cases: new DatabaseUseCases(api), calls, secrets, saved, removed };
 }
 
@@ -141,5 +148,58 @@ describe('database use cases', () => {
     await cases.navigator.hello('w', 'postgres');
     await cases.navigator.hello('w', 'postgres');
     expect(calls.filter(([operation]) => operation === 'db.dialect').length).toBe(1);
+  });
+
+  it('opens an editor session on its database, with manual commits when asked', async () => {
+    const { cases, calls } = fixture({
+      'db.connect': { serverVersion: '18' },
+      'db.transaction': { autoCommit: false, open: false },
+    });
+    const connection = document('a', { driver: 'postgres' });
+    const opened = await cases.statements.open('w', connection, 'editor:t', scopes, {
+      database: 'other',
+      manual: true,
+    });
+    expect(opened.transaction.autoCommit).toBe(false);
+    expect(calls[0][1]).toEqual(
+      expect.objectContaining({ session: 'editor:t', database: 'other' }),
+    );
+    expect(calls[1]).toEqual([
+      'db.transaction',
+      { workspace: 'w', session: 'editor:t', action: 'manual' },
+    ]);
+    await cases.statements.execute('w', 'editor:t', 'run-1', 'drop table x', {
+      confirm: true,
+      confirmName: 'x',
+    });
+    expect(calls[2][1]).toEqual(
+      expect.objectContaining({ statement: 'run-1', confirm: true, confirmName: 'x' }),
+    );
+  });
+
+  it('remembers the most result tabs and what a script does after a failure', () => {
+    const { cases } = fixture();
+    expect(cases.statements.maxResults()).toBe(15);
+    cases.statements.setMaxResults(500);
+    expect(cases.statements.maxResults()).toBe(100);
+    expect(cases.statements.onFailure()).toBe('ask');
+    cases.statements.setOnFailure('stop');
+    expect(cases.statements.onFailure()).toBe('stop');
+  });
+
+  it('reads the history newest first, each entry once', async () => {
+    const { cases, calls } = fixture({
+      'document:h1': { connectionId: 'a', sql: 'select 1', startedAt: 1, durationMs: 1 },
+      'document:h2': { connectionId: 'a', sql: 'select 2', startedAt: 2, durationMs: 1 },
+    });
+    const listed = ['h1', 'h2', 'gone'].map((id, index) => ({
+      ...document(id, null),
+      kind: 'sql-history' as const,
+      updated_at: index,
+    }));
+    const entries = await cases.statements.entries(listed);
+    expect(entries.map((entry) => entry.sql)).toEqual(['select 2', 'select 1']);
+    await cases.statements.entries(listed);
+    expect(calls.filter(([operation]) => operation === 'document')).toHaveLength(3);
   });
 });

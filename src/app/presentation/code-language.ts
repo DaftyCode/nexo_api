@@ -12,6 +12,7 @@ export type CodeLanguage =
   | 'xml'
   | 'html'
   | 'graphql'
+  | 'sql'
   | 'text';
 
 /** A problem shown on a line, such as a finding of the API linter. */

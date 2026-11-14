@@ -22,6 +22,21 @@ export interface TypedDbSecrets {
   keyPem?: string;
 }
 
+/** A server the driver asked to reach while testing, and what the egress policy said. */
+export interface DbDestination {
+  host: string;
+  port: number;
+  allowed: boolean;
+  addresses: string[];
+  reason?: string;
+}
+
+/** The servers a test reached or was refused, also when it failed (`detail.servers`). */
+export function testedServers(detail: unknown): DbDestination[] {
+  const servers = (detail as { servers?: unknown } | undefined)?.servers;
+  return Array.isArray(servers) ? (servers as DbDestination[]) : [];
+}
+
 /** What a server says when a connection is tested. */
 export interface DbTestReport {
   server: {
@@ -32,6 +47,7 @@ export interface DbTestReport {
     tls: boolean;
   };
   pingMs: number;
+  servers?: DbDestination[];
 }
 
 /**

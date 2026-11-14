@@ -17,13 +17,15 @@ payload! {
 }
 
 payload! {
-    /// `db.connect`: opens a session named `session` on a saved connection.
+    /// `db.connect`: opens a session named `session` on a saved connection; `database`
+    /// opens it on another database of the same server.
     closed DbConnectPayload {
         required {
             connection_id "connectionId": String => "string",
             session "session": String => "string",
         }
         optional {
+            database "database": String => "string",
             workspace "workspace": String => "string",
             variables "variables": BTreeMap<String, String> => "Readonly<Record<string, string>>",
         }

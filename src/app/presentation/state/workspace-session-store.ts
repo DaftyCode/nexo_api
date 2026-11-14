@@ -1,5 +1,5 @@
 import { signal } from '@angular/core';
-import { DatabaseSession } from '../../domain/db/tree';
+import { DatabaseSession } from '../../domain/db/session';
 import { moveWithin } from '../../domain/ordering';
 import { sectionIds } from '../workspace/sections';
 import { DocumentsStore } from './documents-store';

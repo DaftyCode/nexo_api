@@ -182,10 +182,13 @@ impl Application {
         }
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
-        let connection = self
+        let mut connection = self
             .resolve_sql_connection(&stored.value, &variables, &mut values)
             .await
             .map_err(|error| redact_error(error, &values))?;
+        if let Some(database) = payload.database.filter(|name| !name.trim().is_empty()) {
+            connection.database = Some(database.trim().to_owned());
+        }
         let session = Session {
             workspace,
             connection: stored.id.clone(),
