@@ -24,6 +24,14 @@
     @case ('datasets') {
       <app-data-panel section="datasets" />
     }
+    @case ('databases') {
+      <!-- Its own chunk, loaded when the section is opened. -->
+      @defer (on immediate) {
+        <app-db-panel />
+      } @placeholder {
+        <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+      }
+    }
     @case ('mongo') {
       <!-- Its own chunk, loaded when the section is opened. -->
       @defer (on immediate) {

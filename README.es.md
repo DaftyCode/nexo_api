@@ -28,6 +28,7 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 | Runner             | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, pausa, cancelación, informes PDF y reportes JSON/JUnit desde CLI. |
 | Protocolos         | WebSocket, Socket.IO, MQTT, Kafka, gRPC (con proto o por reflexión) y subscriptions GraphQL por WebSocket o SSE.                     |
 | MongoDB            | Conexiones, explorador, consultas, edición de documentos con salvaguardas, índices, explain, profiler, agregaciones por etapas, esquema, importar y exportar JSON/CSV, change streams, shell, generación de código, SQL y comparar/sincronizar. |
+| Bases de datos     | Sección «Bases de datos» al estilo de DBeaver: cada motor es un módulo que se descarga al dar de alta su primera conexión (hoy PostgreSQL). Asistente con URL pegada, TLS, ajustes del driver y tipo de conexión (producción en rojo), «Probar conexión», navegador con teclado, filtros, vista simple, marcadores y carpetas. El editor SQL llega a continuación. |
 | Importación        | Colecciones JSON portables, entornos, OpenAPI/Swagger JSON o YAML, HAR y cURL.                                                       |
 | Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                             |
 | Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, gestor de cookies, definiciones de API con linter, Git con remotos y cliente/servidor MCP. |
@@ -131,7 +132,7 @@ La versión actual es la **0.6.0**, con el cliente MongoDB completo. Las pruebas
 
 Siguientes pasos:
 
-- Visor y editor de bases de datos como módulos descargables, de modo que Nexo se instala como cliente de APIs y el driver de cada base de datos solo se descarga al crear una conexión de ese tipo: PostgreSQL, MySQL y MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch y Apache Drill, con árbol de conexiones, editor SQL que conserva una pestaña de resultado por consulta, rejilla de datos con edición, editor de estructura, diagramas ER, planes de ejecución y transferencia de datos. MongoDB pasará a ser uno de esos módulos.
+- Visor y editor de bases de datos como módulos descargables (ya se pueden dar de alta y explorar conexiones de PostgreSQL; lo siguiente es el editor SQL y después SQL Server), de modo que Nexo se instala como cliente de APIs y el driver de cada base de datos solo se descarga al crear una conexión de ese tipo: PostgreSQL, MySQL y MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch y Apache Drill, con árbol de conexiones, editor SQL que conserva una pestaña de resultado por consulta, rejilla de datos con edición, editor de estructura, diagramas ER, planes de ejecución y transferencia de datos. MongoDB pasará a ser uno de esos módulos.
 - Asistente de IA con la clave personal de cada usuario.
 - Túnel SSH y proxy SOCKS5, entornos protegidos, ejecuciones programadas, comparar respuestas, exportar a Excel/CSV con datos enmascarados, inferir JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
 - Temas personalizados desde la app, sobre los tokens de diseño.

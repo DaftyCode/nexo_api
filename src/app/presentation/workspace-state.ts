@@ -124,6 +124,7 @@ export class WorkspaceState {
   readonly tabs = this.tabsStore.tabs;
   readonly activeTabId = this.tabsStore.activeId;
   readonly response = this.tabsStore.response;
+  readonly databaseSession = this.opened.databases; // The database navigator, kept in it.
   readonly active = this.tabsStore.active;
   readonly filter = this.collectionStore.filter;
   readonly trees = this.collectionStore.trees;

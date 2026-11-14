@@ -28,6 +28,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI. |
 | Protocols           | WebSocket, Socket.IO, MQTT, Kafka, gRPC (with a proto or through reflection) and GraphQL subscriptions over WebSocket or SSE. |
 | MongoDB             | Connections, explorer, queries, document editing with safeguards, indexes, explain, profiler, stage-by-stage aggregations, schema, JSON/CSV import and export, change streams, shell, code generation, SQL and compare/sync. |
+| Databases           | A «Databases» section in DBeaver's style: each engine is a module downloaded when its first connection is added (PostgreSQL today). A wizard with a pasted URL, TLS, driver settings and connection type (production in red), «Test connection», a keyboard-driven navigator with filters, a simple view, bookmarks and folders. The SQL editor comes next. |
 | Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                      |
 | Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
 | Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, cookie manager, API definitions with a linter, Git with remotes and MCP client/server support. |
@@ -131,7 +132,7 @@ The current version is **0.6.0**, with the complete MongoDB client. Tests cover 
 
 Next steps:
 
-- A database viewer and editor as downloadable modules, so Nexo ships as the API client and each database driver is downloaded only when you add a connection for it: PostgreSQL, MySQL and MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch and Apache Drill, with a connection tree, a SQL editor that keeps one result tab per query, a data grid with editing, a structure editor, ER diagrams, execution plans and data transfer. MongoDB will become one of those modules.
+- A database viewer and editor as downloadable modules (PostgreSQL connections can already be added and browsed; the SQL editor comes next, then SQL Server), so Nexo ships as the API client and each database driver is downloaded only when you add a connection for it: PostgreSQL, MySQL and MariaDB, SQLite, SQL Server, Oracle, Cassandra, Redis, Elasticsearch and Apache Drill, with a connection tree, a SQL editor that keeps one result tab per query, a data grid with editing, a structure editor, ER diagrams, execution plans and data transfer. MongoDB will become one of those modules.
 - An AI assistant using each user's own API key.
 - SSH tunnels and SOCKS5 proxies, protected environments, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
 - Custom themes from the app, built on the design tokens.

@@ -1,0 +1,130 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+@if (step() === 'engine') {
+  <app-db-engine-gallery (chosen)="choose($event)" />
+  <div class="row db-editor-actions">
+    <button type="button" class="button" (click)="close()">{{ 'Cancel' | transloco }}</button>
+  </div>
+} @else {
+  <form class="db-editor" (submit)="$event.preventDefault(); save()">
+    <header class="db-editor-head">
+      <div>
+        <span class="eyebrow">{{ profile().name }}</span>
+        <h2>
+          {{ (document() ? 'Edit connection' : 'New connection') | transloco }}
+        </h2>
+      </div>
+      @if (model().type === 'production') {
+        <span class="db-production">{{ 'Production' | transloco }}</span>
+      }
+    </header>
+    <div class="row db-url">
+      <label class="field grow"
+        >{{ 'Paste a connection URL' | transloco
+        }}<input
+          [formField]="fields.url"
+          placeholder="postgresql://user:password@localhost:5432/database"
+          spellcheck="false"
+          autocomplete="off"
+          (keydown.enter)="$event.preventDefault(); useUrl()"
+      /></label>
+      <button type="button" class="button" (click)="useUrl()">{{ 'Use URL' | transloco }}</button>
+    </div>
+    <label class="field"
+      >{{ 'Connection name' | transloco }}<input [formField]="fields.name" autocomplete="off"
+    /></label>
+
+    <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">
+      @for (p of pages; track p) {
+        <button
+          type="button"
+          [class.active]="page() === p"
+          [attr.aria-current]="page() === p ? 'page' : null"
+          (click)="page.set(p)"
+        >
+          {{
+            p === 'main'
+              ? ('Main' | transloco)
+              : p === 'tls'
+                ? ('TLS' | transloco)
+                : p === 'properties'
+                  ? ('Driver settings' | transloco)
+                  : ('General' | transloco)
+          }}
+        </button>
+      }
+    </nav>
+    <div class="db-page">
+      <app-db-connection-fields
+        [page]="page()"
+        [fields]="fields"
+        [profile]="profile()"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+        [folders]="section.folderNames()"
+      />
+    </div>
+
+    <div class="db-url-preview">
+      <code>{{ url() }}</code>
+      <button type="button" class="button small subtle" (click)="copyUrl()">
+        {{ 'Copy URL' | transloco }}
+      </button>
+    </div>
+    @if (notice()) {
+      <p class="muted" role="status">{{ notice() | transloco }}</p>
+    }
+    @if (report(); as answer) {
+      <section class="db-report" role="status" [attr.aria-label]="'Connection test' | transloco">
+        <strong>{{ 'Connected' | transloco }}</strong>
+        <dl>
+          <dt>{{ 'Server' | transloco }}</dt>
+          <dd>{{ answer.server.product ?? profile().name }} {{ answer.server.serverVersion }}</dd>
+          @if (answer.server.database) {
+            <dt>{{ 'Database' | transloco }}</dt>
+            <dd>{{ answer.server.database }}</dd>
+          }
+          @if (answer.server.user) {
+            <dt>{{ 'Username' | transloco }}</dt>
+            <dd>{{ answer.server.user }}</dd>
+          }
+          <dt>{{ 'TLS' | transloco }}</dt>
+          <dd>{{ (answer.server.tls ? 'Yes' : 'No') | transloco }}</dd>
+          <dt>{{ 'Time' | transloco }}</dt>
+          <dd>{{ answer.pingMs }} ms</dd>
+        </dl>
+      </section>
+    }
+    <div class="row db-editor-actions">
+      @if (!document()) {
+        <button type="button" class="button" (click)="step.set('engine')">
+          {{ '← Other database' | transloco }}
+        </button>
+      }
+      <span class="grow"></span>
+      <button type="button" class="button" (click)="close()">{{ 'Close' | transloco }}</button>
+      <button type="button" class="button" (click)="test()">
+        {{ 'Test connection' | transloco }}
+      </button>
+      <button type="submit" class="button primary">{{ 'Save' | transloco }}</button>
+    </div>
+  </form>
+}
+@if (download(); as module) {
+  <app-module-download
+    [module]="module"
+    (installed)="start($event)"
+    (closed)="download.set(undefined)"
+  />
+}

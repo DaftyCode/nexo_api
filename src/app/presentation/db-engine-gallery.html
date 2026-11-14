@@ -1,0 +1,46 @@
+<h2>{{ 'Choose the database' | transloco }}</h2>
+<p class="muted">
+  {{
+    'Each database has its module. Nexo downloads it the first time you use it and keeps only the ones you use.'
+      | transloco
+  }}
+</p>
+<label class="field db-gallery-search"
+  >{{ 'Search databases' | transloco
+  }}<input type="search" [formField]="searchFields.text" autocomplete="off" spellcheck="false"
+/></label>
+@if (error()) {
+  <p class="db-gallery-error" role="alert">{{ error() }}</p>
+}
+@if (all() === undefined) {
+  <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+} @else {
+  <ul class="db-gallery" [attr.aria-label]="'Databases' | transloco">
+    @for (module of shown(); track module.id) {
+      <li>
+        <button type="button" class="db-engine" (click)="chosen.emit(module)">
+          <strong>{{ module.name }}</strong>
+          <span class="muted">{{ module.description }}</span>
+          <span class="db-engine-state" [class.ready]="ready(module)">
+            @switch (module.state) {
+              @case ('installed') {
+                {{ 'Installed' | transloco }}
+              }
+              @case ('development') {
+                {{ 'Development copy' | transloco }}
+              }
+              @case ('outdated') {
+                {{ 'Update available' | transloco }}
+              }
+              @default {
+                {{ 'db.download' | transloco: { v0: bytes(module.downloadSize) } }}
+              }
+            }
+          </span>
+        </button>
+      </li>
+    } @empty {
+      <li class="muted">{{ 'No database matches the search.' | transloco }}</li>
+    }
+  </ul>
+}

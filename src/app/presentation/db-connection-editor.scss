@@ -1,0 +1,95 @@
+:host {
+  display: block;
+  padding: var(--nexo-space-8);
+}
+.db-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-4);
+  max-width: calc(var(--nexo-size-unit) * 200);
+}
+.db-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.db-editor-head h2 {
+  margin: 0;
+}
+.db-production {
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-danger-soft);
+  color: var(--nexo-color-danger-text);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-url {
+  align-items: flex-end;
+}
+.db-url .field {
+  margin-bottom: 0;
+}
+.db-port {
+  width: calc(var(--nexo-size-unit) * 32);
+}
+.db-page {
+  padding-top: var(--nexo-space-4);
+}
+.db-param {
+  align-items: flex-end;
+}
+.db-param .icon-button {
+  margin-bottom: var(--nexo-space-4);
+}
+.db-param-help {
+  margin-top: 0;
+  font-size: var(--nexo-font-size-xs);
+}
+.db-colors {
+  display: flex;
+  gap: var(--nexo-space-3);
+  align-items: center;
+  margin-bottom: var(--nexo-space-4);
+}
+.db-swatch {
+  width: var(--nexo-size-9);
+  height: var(--nexo-size-9);
+  border-radius: var(--nexo-radius-full);
+  border: var(--nexo-border-width-strong) solid transparent;
+  padding: 0;
+}
+.db-swatch.none {
+  border: var(--nexo-border-width) dashed var(--nexo-color-text-muted);
+}
+.db-swatch[aria-pressed='true'] {
+  border-color: var(--nexo-color-text);
+}
+.db-url-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+}
+.db-url-preview code {
+  overflow-wrap: anywhere;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-report {
+  padding: var(--nexo-space-5);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-success-soft);
+}
+.db-report dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--nexo-space-2) var(--nexo-space-6);
+  margin: var(--nexo-space-3) 0 0;
+}
+.db-report dd {
+  margin: 0;
+}
+.db-editor-actions {
+  align-items: center;
+  gap: var(--nexo-space-4);
+}

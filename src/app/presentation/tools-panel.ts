@@ -8,6 +8,7 @@ import { DataPanel } from './data-panel';
 import { IntegrationPanel } from './integration-panel';
 import { CollectionSettingsPanel } from './collection-settings-panel';
 import { MongoPanel } from './mongo-panel';
+import { DbPanel } from './db-panel';
 
 /** Names of the sections "Back" can return to. */
 const sectionLabels: Record<string, string> = {
@@ -18,6 +19,7 @@ const sectionLabels: Record<string, string> = {
   realtime: 'Protocols',
   mocks: 'Mocks',
   datasets: 'Datasets',
+  databases: 'Databases',
   mongo: 'MongoDB',
   git: 'Git',
   mcp: 'MCP',
@@ -36,6 +38,7 @@ const sectionLabels: Record<string, string> = {
     IntegrationPanel,
     CollectionSettingsPanel,
     MongoPanel,
+    DbPanel,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-tools-panel',

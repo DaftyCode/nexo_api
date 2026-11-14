@@ -1,4 +1,5 @@
 import { signal } from '@angular/core';
+import { DatabaseSession } from '../../domain/db/tree';
 import { moveWithin } from '../../domain/ordering';
 import { sectionIds } from '../workspace/sections';
 import { DocumentsStore } from './documents-store';
@@ -14,6 +15,8 @@ export const SESSION_SAVE_DELAY = 500;
 export class WorkspaceSessionStore {
   /** Whether tabs reopen with the workspace, on this device. */
   readonly restoresTabs = signal(true);
+  /** The navigator of the database section, kept by the section once it is opened. */
+  readonly databases = signal<DatabaseSession | undefined>(undefined);
   /** Saving starts once the session of a workspace was restored and stops when it is left. */
   private armed = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -39,6 +42,7 @@ export class WorkspaceSessionStore {
     const stored = current ? cases.sessions.stored([current]) : undefined;
     this.revision = stored?.revision ?? 0;
     this.documents.collectionOrder.set(stored?.session.collections ?? []);
+    this.databases.set(stored?.session.databases);
     let reopened = false;
     if (stored && reopenTabs && this.restoresTabs()) {
       const restored = cases.sessions.tabs(stored.session, this.documents.documents(), () =>
@@ -70,6 +74,7 @@ export class WorkspaceSessionStore {
     section();
     this.documents.collectionOrder();
     this.restoresTabs();
+    this.databases();
     if (!this.armed) return;
     clearTimeout(this.timer);
     this.timer = setTimeout(() => void this.flush(), SESSION_SAVE_DELAY);
@@ -88,6 +93,7 @@ export class WorkspaceSessionStore {
     const value = {
       ...cases.sessions.of(tabs.tabs(), tabs.activeId(), order, this.documents.documents()),
       section: section(),
+      ...(this.databases() ? { databases: this.databases() } : {}),
     };
     const text = JSON.stringify(value);
     if (text === this.last) return this.saving;

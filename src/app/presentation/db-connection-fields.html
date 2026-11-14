@@ -1,0 +1,172 @@
+@switch (page()) {
+  @case ('main') {
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Host' | transloco
+        }}<input [formField]="fields().host" spellcheck="false" autocomplete="off"
+      /></label>
+      <label class="field db-port"
+        >{{ 'Port' | transloco
+        }}<input
+          [formField]="fields().port"
+          inputmode="numeric"
+          [attr.placeholder]="profile().defaultPort ?? ''"
+          spellcheck="false"
+          autocomplete="off"
+      /></label>
+    </div>
+    <label class="field"
+      >{{ 'Database' | transloco
+      }}<input [formField]="fields().database" spellcheck="false" autocomplete="off"
+    /></label>
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Username' | transloco
+        }}<input [formField]="fields().user" spellcheck="false" autocomplete="off"
+      /></label>
+      <label class="field grow"
+        >{{ 'Password' | transloco
+        }}<input
+          type="password"
+          [formField]="fields().password"
+          autocomplete="new-password"
+          [attr.placeholder]="passwordStored() ? ('Saved in the vault' | transloco) : ''"
+      /></label>
+    </div>
+    <p class="muted">
+      {{ 'The password goes to the vault.' | transloco }}
+      {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
+    </p>
+    @if (profile().limits; as limits) {
+      <p class="muted">{{ limits | transloco }}</p>
+    }
+  }
+  @case ('tls') {
+    <label class="field"
+      >{{ 'TLS' | transloco }}
+      <select [formField]="fields().tlsMode">
+        @for (mode of tlsModes; track mode) {
+          @if (profile().tlsModes.includes(mode)) {
+            <option [value]="mode">{{ tlsLabel(mode) | transloco }}</option>
+          }
+        }
+      </select>
+    </label>
+    <label class="field"
+      >{{ 'Certificate authority (PEM)' | transloco
+      }}<textarea [formField]="fields().caPem" rows="4" spellcheck="false"></textarea>
+    </label>
+    <label class="field"
+      >{{ 'Client certificate (PEM)' | transloco
+      }}<textarea [formField]="fields().certPem" rows="4" spellcheck="false"></textarea>
+    </label>
+    @if (settings().certPem.trim()) {
+      <label class="field"
+        >{{ 'Client key (PEM)' | transloco
+        }}<textarea
+          [formField]="fields().keyPem"
+          rows="4"
+          spellcheck="false"
+          [attr.placeholder]="keyStored() ? ('Saved in the vault' | transloco) : ''"
+        ></textarea>
+      </label>
+    }
+  }
+  @case ('properties') {
+    @if (profile().properties.length) {
+      <p class="muted">{{ 'Settings this driver accepts.' | transloco }}</p>
+      @for (row of fields().params; track $index; let index = $index) {
+        <div class="row db-param">
+          <label class="field"
+            >{{ 'Setting' | transloco }}
+            <select [formField]="row.name">
+              @for (property of profile().properties; track property.name) {
+                <option [value]="property.name">{{ property.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field grow"
+            >{{ 'Value' | transloco
+            }}<input [formField]="row.value" spellcheck="false" autocomplete="off"
+          /></label>
+          <button
+            type="button"
+            class="icon-button"
+            [attr.aria-label]="'db.param.remove' | transloco: { v0: row.name().value() }"
+            (click)="removeParam(index)"
+          >
+            ×
+          </button>
+        </div>
+        @if (describe(row.name().value()); as description) {
+          <p class="muted db-param-help">{{ description | transloco }}</p>
+        }
+      }
+      @if (unused().length) {
+        <button type="button" class="button small" (click)="addParam()">
+          {{ '+ Add setting' | transloco }}
+        </button>
+      }
+    } @else {
+      <p class="muted">{{ 'This driver takes no extra settings.' | transloco }}</p>
+    }
+  }
+  @case ('general') {
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Folder' | transloco
+        }}<input [formField]="fields().folder" list="db-folders" autocomplete="off"
+      /></label>
+      <datalist id="db-folders">
+        @for (folder of folders(); track folder) {
+          <option [value]="folder"></option>
+        }
+      </datalist>
+      <label class="field grow"
+        >{{ 'Connection type' | transloco }}
+        <select [formField]="fields().type">
+          @for (type of types; track type) {
+            <option [value]="type">{{ typeLabel(type) | transloco }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="db-colors" role="group" [attr.aria-label]="'Color' | transloco">
+      <button
+        type="button"
+        class="db-swatch none"
+        [attr.aria-pressed]="!settings().color"
+        [attr.aria-label]="'No color' | transloco"
+        (click)="setColor('')"
+      ></button>
+      @for (color of colors; track color; let index = $index) {
+        <button
+          type="button"
+          class="db-swatch"
+          [style.background]="color"
+          [attr.aria-pressed]="settings().color === color"
+          [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
+          (click)="setColor(color)"
+        ></button>
+      }
+    </div>
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().readOnly" />{{
+        'Read-only: no writes' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().autoCommit" />{{
+        'Auto-commit: each statement is committed by itself' | transloco
+      }}</label
+    >
+    <label class="field db-port"
+      >{{ 'Statement time limit (seconds, 0 for none)' | transloco
+      }}<input type="number" [formField]="fields().timeoutSeconds"
+    /></label>
+    <label class="field"
+      >{{ 'Description' | transloco
+      }}<textarea [formField]="fields().description" rows="2"></textarea>
+    </label>
+  }
+}

@@ -1,6 +1,7 @@
 import { Signal, computed } from '@angular/core';
 import type { ProtocolUseCases } from '../../application/protocol-use-cases';
 import { WatchPipelineError, watchLabel, watchOptions } from '../../domain/mongo-watch';
+import { isMongoConnection } from '../../domain/mongo';
 import { resolveVariables } from '../../domain/variables';
 import type { ProtocolSettings } from '../protocol-settings';
 import type { WorkspaceState } from '../workspace-state';
@@ -11,9 +12,7 @@ import type { WorkspaceState } from '../workspace-state';
  */
 export class PanelWatch {
   /** The saved MongoDB connections of the workspace. */
-  readonly connections = computed(() =>
-    this.state.documents().filter((document) => document.kind === 'connection'),
-  );
+  readonly connections = computed(() => this.state.documents().filter(isMongoConnection));
   /** The connection and what it watches, where the other protocols have their URL. */
   readonly label = computed(() => {
     const m = this.model();

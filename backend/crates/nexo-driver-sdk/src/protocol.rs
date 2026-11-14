@@ -173,6 +173,10 @@ pub struct TreeNode {
     pub has_children: bool,
     /// What can be done with it: `open`, `data`, `ddl`, `drop`…
     pub actions: Vec<String>,
+    /// An object of the engine itself or an administration folder: the simple view of the
+    /// navigator hides it, as DBeaver's does.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub system: bool,
 }
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TreeNodes {

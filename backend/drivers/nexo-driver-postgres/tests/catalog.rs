@@ -38,6 +38,18 @@ async fn catalog(port: Option<&str>, name: &str) {
         schemas.contains(&"shop".to_owned()) && schemas.contains(&"public".to_owned()),
         "{schemas:?}"
     );
+    // The simple view of the navigator hides the engine's own schemas and administration.
+    let system = |nodes: Vec<nexo_driver_sdk::protocol::TreeNode>| -> Vec<String> {
+        nodes
+            .into_iter()
+            .filter(|node| node.system)
+            .map(|node| node.name)
+            .collect()
+    };
+    let hidden = system(client.tree(&path(name, &["shop", "schemas"])).await.unwrap());
+    assert_eq!(hidden, ["information_schema", "pg_catalog"]);
+    let hidden = system(client.tree(&path(name, &["shop"])).await.unwrap());
+    assert_eq!(hidden, ["roles", "tablespaces"]);
     let shop = |folder: &'static str| ["shop", "schemas", "shop", folder];
     assert_eq!(
         names(&client, name, &shop("tables")).await,

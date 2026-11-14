@@ -252,6 +252,8 @@ export const test = base.extend({
         echo: `http://127.0.0.1:${echo.address().port}`,
         /** Whether the test database module can be downloaded. */
         modules: !!modules,
+        /** The modules the tests can download: `test`, and `postgres` when it is built. */
+        moduleIds: modules?.ids ?? [],
         /**
          * Opens the app with a one-time link. The tests share one server, so tabs reopen only
          * when asked: otherwise each test would start with the tabs the previous one left.
@@ -275,7 +277,9 @@ export const test = base.extend({
       modules?.server.close();
       child.kill();
       await new Promise((r) => (child.exitCode === null ? child.once('exit', r) : r()));
-      await rm(directory, { recursive: true, force: true });
+      // A database driver leaves once the server is gone; on Windows its file stays locked
+      // until then.
+      await rm(directory, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     },
     { scope: 'worker' },
   ],

@@ -163,6 +163,16 @@ export function connectionProblem(form: ConnectionForm): string | undefined {
   return undefined;
 }
 
+/**
+ * Whether a document is a MongoDB connection: the connections of the database modules name
+ * their driver, and MongoDB's do not.
+ */
+export function isMongoConnection(document: { kind: string; value?: unknown }): boolean {
+  if (document.kind !== 'connection') return false;
+  const driver = (document.value as { driver?: unknown } | undefined)?.driver;
+  return driver === undefined || driver === 'mongodb';
+}
+
 /** The connection documents of a workspace, grouped by folder (no folder first), by name. */
 export function connectionFolders<T extends { name: string; value: unknown }>(
   documents: readonly T[],

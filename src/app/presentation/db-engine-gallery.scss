@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+.db-gallery-search {
+  max-width: calc(var(--nexo-size-unit) * 90);
+}
+.db-gallery-error {
+  color: var(--nexo-color-danger-text);
+}
+.db-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--nexo-size-unit) * 60), 1fr));
+  gap: var(--nexo-space-5);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.db-engine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--nexo-space-2);
+  width: 100%;
+  height: 100%;
+  padding: var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text);
+  text-align: left;
+}
+.db-engine:hover,
+.db-engine:focus-visible {
+  border-color: var(--nexo-color-accent-border);
+  background: var(--nexo-color-hover);
+}
+.db-engine .muted {
+  font-size: var(--nexo-font-size-sm);
+}
+.db-engine-state {
+  margin-top: auto;
+  font-size: var(--nexo-font-size-xs);
+  color: var(--nexo-color-text-muted);
+}
+.db-engine-state.ready {
+  color: var(--nexo-color-success);
+}

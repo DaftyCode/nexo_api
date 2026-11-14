@@ -2,7 +2,7 @@ import { Injector, computed, inject, signal } from '@angular/core';
 import type { ExportSource, TransferEnd, TransferOutcome } from '../../application/mongo-use-cases';
 import type { TransferFilesPort } from '../../application/ports';
 import { WorkspaceDocument } from '../../domain/models';
-import { connectionValue } from '../../domain/mongo';
+import { connectionValue, isMongoConnection } from '../../domain/mongo';
 import { buildAggregationOptions, buildPipeline } from '../../domain/mongo-aggregation';
 import { buildQuery } from '../../domain/mongo-query';
 import {
@@ -43,7 +43,7 @@ export class MongoTransfers {
   readonly destinations = computed(() =>
     this.explorer.state
       .documents()
-      .filter((d) => d.kind === 'connection' && !connectionValue(d.value).readOnly),
+      .filter((d) => isMongoConnection(d) && !connectionValue(d.value).readOnly),
   );
 
   /** The dialog's forms are made outside the explorer's constructor. */

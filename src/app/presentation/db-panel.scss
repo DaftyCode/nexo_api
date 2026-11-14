@@ -1,0 +1,63 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.db-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.db-navigator-pane {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: var(--nexo-space-5);
+  border-right: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  overflow: hidden;
+}
+.db-editors {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.db-tabbar {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+}
+.db-tabs {
+  display: flex;
+  gap: var(--nexo-space-1);
+  overflow-x: auto;
+}
+.db-tab {
+  padding: var(--nexo-space-2) var(--nexo-space-5);
+  border-radius: var(--nexo-radius-sm) var(--nexo-radius-sm) 0 0;
+  border-bottom: var(--nexo-border-width-accent) solid transparent;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
+  white-space: nowrap;
+}
+.db-tab[aria-selected='true'] {
+  color: var(--nexo-color-text);
+  border-bottom-color: var(--nexo-color-accent);
+}
+.db-tab.db-tab-production {
+  border-bottom-color: var(--nexo-color-danger);
+  background: var(--nexo-color-danger-soft);
+  color: var(--nexo-color-danger-text);
+}
+.db-tabpanel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.db-welcome {
+  max-width: calc(var(--nexo-size-unit) * 160);
+  padding: var(--nexo-space-10);
+}

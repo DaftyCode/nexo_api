@@ -138,6 +138,7 @@ impl Driver for TestDriver {
             detail: detail.map(Into::into),
             has_children: kind == "table",
             actions: vec!["open".into()],
+            system: false,
         };
         match params.path.as_slice() {
             [] => Ok(vec![

@@ -7,7 +7,7 @@ import type {
   DifferenceKind,
   SyncResult,
 } from '../../application/mongo-use-cases';
-import { connectionValue } from '../../domain/mongo';
+import { connectionValue, isMongoConnection } from '../../domain/mongo';
 import { CompareValue, fieldList } from '../../domain/mongo-compare';
 import { shellToExtendedJson } from '../../domain/mongo-query';
 import { resolveVariables } from '../../domain/variables';
@@ -72,7 +72,7 @@ export class Comparison {
   }
 
   connections() {
-    return this.explorer.state.documents().filter((d) => d.kind === 'connection');
+    return this.explorer.state.documents().filter(isMongoConnection);
   }
   /** The source: the collection shown. */
   source(): CompareSide | undefined {

@@ -1,6 +1,7 @@
 // End-to-end tests of the built web interface served by the real nexo-server binary.
-// Build first: `npm run build` and `cargo build -p nexo-server -p nexo-driver-test` (the test
-// database driver, served as a downloadable module); then `npm run e2e`.
+// Build first: `npm run build` and `cargo build -p nexo-server -p nexo-driver-test
+// -p nexo-driver-postgres` (database drivers, served as downloadable modules); then
+// `npm run e2e`. The database section test needs tools/sql-fixture.sh.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

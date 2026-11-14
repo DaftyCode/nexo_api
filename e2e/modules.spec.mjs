@@ -15,7 +15,9 @@ test('a database module is downloaded after asking, installed and removed', asyn
     .getByRole('button', { name: 'Settings' })
     .click();
   await page.getByRole('button', { name: 'modules', exact: true }).click();
-  const settings = page.getByRole('region', { name: 'Database modules' });
+  const modules = page.getByRole('region', { name: 'Database modules' });
+  // The PostgreSQL module is listed too when its driver is built.
+  const settings = modules.getByRole('listitem').filter({ hasText: 'Test database' });
   await expect(settings.getByText('Test database')).toBeVisible();
   await expect(settings.getByText('Not installed')).toBeVisible();
   expect(await violations(page)).toEqual([]);

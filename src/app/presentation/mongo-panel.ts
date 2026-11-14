@@ -17,6 +17,7 @@ import {
   connectionValue,
   emptyConnectionForm,
   formatMongoUri,
+  isMongoConnection,
   isVaultReference,
   parseMongoUri,
 } from '../domain/mongo';
@@ -88,9 +89,7 @@ export class MongoPanel {
     key: '',
   });
 
-  protected readonly connections = computed(() =>
-    this.state.documents().filter((document) => document.kind === 'connection'),
-  );
+  protected readonly connections = computed(() => this.state.documents().filter(isMongoConnection));
   protected readonly folders = computed(() => connectionFolders(this.connections()));
   protected readonly folderNames = computed(() =>
     this.folders()

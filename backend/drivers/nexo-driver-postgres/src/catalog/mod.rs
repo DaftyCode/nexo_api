@@ -50,6 +50,7 @@ pub(crate) fn node(
         detail,
         has_children: children,
         actions: actions.iter().map(|action| (*action).into()).collect(),
+        system: false,
     }
 }
 

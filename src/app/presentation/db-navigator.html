@@ -1,0 +1,216 @@
+<div class="db-nav-toolbar" role="toolbar" [attr.aria-label]="'Navigator' | transloco">
+  <button type="button" class="button small primary" (click)="section.edit()">
+    {{ '＋ New connection' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="icon-button"
+    [attr.aria-pressed]="!section.simple()"
+    [attr.title]="'Show system objects' | transloco"
+    [attr.aria-label]="'Show system objects' | transloco"
+    (click)="section.simple.set(!section.simple())"
+  >
+    ⚙
+  </button>
+  <button
+    type="button"
+    class="icon-button"
+    [attr.title]="'Collapse all' | transloco"
+    [attr.aria-label]="'Collapse all' | transloco"
+    (click)="collapseAll()"
+  >
+    ⊟
+  </button>
+  <button
+    type="button"
+    class="icon-button"
+    aria-haspopup="menu"
+    [attr.title]="'Actions' | transloco"
+    [attr.aria-label]="'Actions' | transloco"
+    [disabled]="!current()"
+    (click)="$event.stopPropagation(); openMenuAt(current())"
+  >
+    ⋯
+  </button>
+</div>
+<label class="field db-nav-filter"
+  >{{ 'Filter loaded objects' | transloco
+  }}<input type="search" [formField]="filterFields.text" spellcheck="false" autocomplete="off"
+/></label>
+
+@if (section.shownBookmarks().length) {
+  <section class="db-bookmarks" [attr.aria-label]="'Bookmarks' | transloco">
+    <h3>{{ 'Bookmarks' | transloco }}</h3>
+    <ul>
+      @for (bookmark of section.shownBookmarks(); track $index) {
+        <li>
+          <button type="button" class="db-bookmark" (click)="reveal(bookmark)">
+            <span aria-hidden="true">★</span>
+            <span class="grow">{{ bookmark.label }}</span>
+            <span class="muted">{{ section.connection(bookmark.connection)?.name }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
+@if (rows().length) {
+  <ul class="db-tree" role="tree" [attr.aria-label]="'Connections' | transloco">
+    @for (row of rows(); track row.key) {
+      <li
+        role="treeitem"
+        class="db-row"
+        [class]="'db-row db-row-' + row.type + ' db-type-' + (row.kind ?? 'none')"
+        [class.db-active]="row.key === current()?.key"
+        [class.db-drop]="row.key === dropKey()"
+        [attr.data-key]="row.key"
+        [id]="rowId(row)"
+        [attr.aria-level]="row.level"
+        [attr.aria-expanded]="row.expandable ? row.expanded : null"
+        [attr.aria-selected]="row.key === current()?.key"
+        [attr.aria-busy]="row.status === 'connecting' ? true : null"
+        [attr.tabindex]="tabIndex(row)"
+        [attr.draggable]="row.type === 'connection' ? 'true' : null"
+        [style.--db-level]="row.level"
+        (click)="click($event, row)"
+        (keydown)="key($event, row)"
+        (dblclick)="activate(row)"
+        (contextmenu)="contextMenu($event, row)"
+        (dragstart)="dragStart($event, row)"
+        (dragover)="dragOver($event, row)"
+        (dragleave)="dropKey.set('')"
+        (drop)="drop($event, row)"
+        (dragend)="dragEnd()"
+      >
+        <span
+          class="db-twisty"
+          [class.open]="row.expanded"
+          [class.hidden]="!row.expandable"
+          aria-hidden="true"
+          >›</span
+        >
+        @switch (row.type) {
+          @case ('loading') {
+            <span class="db-message muted">{{ 'Loading' | transloco }}…</span>
+          }
+          @case ('empty') {
+            <span class="db-message muted">{{ 'No objects' | transloco }}</span>
+          }
+          @case ('error') {
+            <span class="db-message db-error">{{ row.label }}</span>
+          }
+          @default {
+            <app-studio-icon class="db-icon" [name]="icon(row)" />
+            @if (row.type === 'connection') {
+              <span class="db-status" [class]="'db-status db-status-' + row.status"></span>
+            }
+            <span class="db-label">{{ row.label }}</span>
+            @if (row.type === 'connection') {
+              <span class="db-hidden-text">, {{ statusLabel(row) | transloco }}</span>
+              @if (row.kind === 'production') {
+                <span class="db-badge db-badge-production">{{ 'Production' | transloco }}</span>
+              }
+              @if (row.readOnly) {
+                <span class="db-badge">{{ 'Read-only' | transloco }}</span>
+              }
+            }
+            @if (section.isBookmarked(row.key)) {
+              <span class="db-mark" [attr.title]="'Bookmarked' | transloco">★</span>
+            }
+            @if (row.detail) {
+              <span class="db-detail">{{ row.detail }}</span>
+            }
+          }
+        }
+      </li>
+    }
+  </ul>
+} @else if (section.connections().length) {
+  <p class="muted db-empty">{{ 'Nothing loaded matches the filter.' | transloco }}</p>
+} @else {
+  <p class="muted db-empty">
+    {{ 'No database connections yet. Create one to choose its engine.' | transloco }}
+  </p>
+}
+
+@if (menu(); as open) {
+  <div
+    class="db-menu"
+    role="menu"
+    tabindex="-1"
+    [attr.aria-label]="'db.menu' | transloco: { v0: open.row.label }"
+    [style.left.px]="open.x"
+    [style.top.px]="open.y"
+    (keydown)="menuKey($event)"
+    (click)="$event.stopPropagation()"
+  >
+    @if (open.row.type === 'connection') {
+      @if (open.row.status === 'connected') {
+        <button type="button" role="menuitem" (click)="run('disconnect')">
+          {{ 'Disconnect' | transloco }}
+        </button>
+        <button type="button" role="menuitem" (click)="run('reconnect')">
+          {{ 'Reconnect' | transloco }}
+        </button>
+      } @else {
+        <button type="button" role="menuitem" (click)="run('connect')">
+          {{ 'Connect' | transloco }}
+        </button>
+      }
+      <button type="button" role="menuitem" (click)="run('edit')">
+        {{ 'Edit connection' | transloco }}
+      </button>
+      <button type="button" role="menuitem" (click)="run('rename')">
+        {{ 'Rename' | transloco }} <kbd>F2</kbd>
+      </button>
+      <button type="button" role="menuitem" (click)="run('duplicate')">
+        {{ 'Duplicate' | transloco }}
+      </button>
+      <button type="button" role="menuitem" (click)="run('moveTo')">
+        {{ 'Move to folder' | transloco }}
+      </button>
+    }
+    @if (open.row.type === 'node') {
+      <button type="button" role="menuitem" (click)="run('copyName')">
+        {{ 'Copy name' | transloco }}
+      </button>
+      @if (open.row.node?.actions?.includes('ddl')) {
+        <button type="button" role="menuitem" (click)="run('copyDdl')">
+          {{ 'Copy DDL' | transloco }}
+        </button>
+      }
+    }
+    @if (open.row.type === 'connection' || open.row.type === 'node') {
+      <button type="button" role="menuitem" (click)="run('bookmark')">
+        {{ (section.isBookmarked(open.row.key) ? 'Remove bookmark' : 'Bookmark') | transloco }}
+      </button>
+      @if (open.row.expandable) {
+        <button type="button" role="menuitem" (click)="run('filter')">
+          {{ 'Filter objects' | transloco }}
+        </button>
+        <button type="button" role="menuitem" (click)="run('refresh')">
+          {{ 'Refresh' | transloco }} <kbd>F5</kbd>
+        </button>
+      }
+    }
+    @if (open.row.type === 'connection') {
+      <button type="button" role="menuitem" class="danger" (click)="run('remove')">
+        {{ 'Delete' | transloco }} <kbd>Del</kbd>
+      </button>
+    }
+    @if (open.row.type === 'folder' || open.row.type === 'error') {
+      <button type="button" role="menuitem" (click)="closeMenu()">
+        {{ 'Close' | transloco }}
+      </button>
+    }
+  </div>
+}
+
+@if (actions.dialog(); as dialog) {
+  <app-mongo-dialog
+    [request]="dialog.request"
+    (confirmed)="actions.answer($event)"
+    (cancelled)="actions.dialog.set(undefined)"
+  />
+}

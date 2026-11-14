@@ -1,4 +1,5 @@
 import { itemAt, pathOf } from './collection-tree';
+import { DatabaseSession, readDatabaseSession } from './db/tree';
 import {
   RequestDraft,
   RequestTab,
@@ -20,6 +21,8 @@ export interface WorkspaceSession {
   collections: string[];
   /** The section of the side menu that was open, such as `collections` or `mongo`. */
   section?: string;
+  /** The navigator of the database section: open nodes, the active connection, bookmarks. */
+  databases?: DatabaseSession;
 }
 /** An open tab: the collection item it shows and, when it has unsaved changes, those. */
 export interface SessionTab {
@@ -75,6 +78,9 @@ export function readSession(value: unknown): WorkspaceSession {
     activeTab: typeof stored['activeTab'] === 'string' ? stored['activeTab'] : '',
     collections: strings(stored['collections']),
     ...(typeof stored['section'] === 'string' ? { section: stored['section'] } : {}),
+    ...(stored['databases'] && typeof stored['databases'] === 'object'
+      ? { databases: readDatabaseSession(stored['databases']) }
+      : {}),
   };
 }
 

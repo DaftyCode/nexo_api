@@ -90,7 +90,8 @@ jobs:
       - run: npm run test:server
       - run: npm run build
       - run: npx playwright install --with-deps chromium
-      # The MongoDB explorer E2E test queries the servers' data.
+      # The MongoDB explorer and database section E2E tests query the fixtures' data; the
+      # drivers they download were built by engine:test.
       - run: npm run e2e
       - name: Stop the MongoDB servers
         if: always()

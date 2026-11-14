@@ -1,0 +1,101 @@
+<div class="db-layout">
+  @if (!folded()) {
+    <aside
+      class="db-navigator-pane"
+      [style.width.px]="width()"
+      [attr.aria-label]="'Database navigator' | transloco"
+    >
+      <app-db-navigator />
+    </aside>
+    <app-splitter
+      target=".db-navigator-pane"
+      neighbor=".db-editors"
+      [neighborMin]="320"
+      [label]="'Resize the navigator' | transloco"
+      (resized)="resize($event)"
+      (restore)="width.set(300)"
+    />
+  }
+  <section class="db-editors" [attr.aria-label]="'Database editors' | transloco">
+    <div class="db-tabbar">
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-expanded]="!folded()"
+        [attr.aria-label]="(folded() ? 'Show the navigator' : 'Hide the navigator') | transloco"
+        [attr.title]="(folded() ? 'Show the navigator' : 'Hide the navigator') | transloco"
+        (click)="folded.set(!folded())"
+      >
+        {{ folded() ? '»' : '«' }}
+      </button>
+      @if (tabs.tabs().length) {
+        <div class="db-tabs" role="tablist" [attr.aria-label]="'Open editors' | transloco">
+          @for (tab of tabs.tabs(); track tab.id) {
+            <button
+              type="button"
+              role="tab"
+              class="db-tab"
+              [class.db-tab-production]="production(tab)"
+              [attr.data-tab]="tab.id"
+              [attr.aria-selected]="tab.id === tabs.activeId()"
+              [attr.aria-controls]="'db-tabpanel-' + tab.id"
+              [id]="'db-tab-' + tab.id"
+              [attr.tabindex]="tab.id === tabs.activeId() ? 0 : -1"
+              (click)="tabs.activeId.set(tab.id)"
+              (keydown)="tabKey($event, tab)"
+              (keydown.delete)="tabs.close(tab.id)"
+              (auxclick)="tabs.close(tab.id)"
+            >
+              @if (section.connection(tab.connection); as connection) {
+                {{ connection.name }}
+              } @else {
+                {{ tab.title | transloco }}
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
+    @if (tabs.active(); as tab) {
+      <div
+        class="db-tabpanel"
+        role="tabpanel"
+        [id]="'db-tabpanel-' + tab.id"
+        [attr.aria-labelledby]="'db-tab-' + tab.id"
+      >
+        @switch (tab.kind) {
+          @case ('connection') {
+            <app-db-connection-editor [tab]="tab" />
+          }
+        }
+      </div>
+    } @else {
+      <div class="db-welcome">
+        <span class="eyebrow">{{ 'YOUR DATA, NEXT TO YOUR API.' | transloco }}</span>
+        <h1>{{ 'Databases' | transloco }}</h1>
+        <p>
+          {{
+            'Connect to PostgreSQL and the other databases Nexo has a module for. Each module is downloaded the first time a connection uses it, and passwords stay in the vault.'
+              | transloco
+          }}
+        </p>
+        <button type="button" class="button primary" (click)="section.edit()">
+          {{ '＋ New connection' | transloco }}
+        </button>
+        <p class="muted">
+          {{
+            'Expand a connection in the navigator to connect and browse it. F5 refreshes a node; the menu key or Shift+F10 opens its actions.'
+              | transloco
+          }}
+        </p>
+      </div>
+    }
+  </section>
+</div>
+@if (section.moduleWait(); as wait) {
+  <app-module-download
+    [module]="wait.module"
+    (installed)="wait.done(true)"
+    (closed)="wait.done(false)"
+  />
+}

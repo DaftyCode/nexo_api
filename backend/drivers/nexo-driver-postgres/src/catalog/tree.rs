@@ -66,14 +66,21 @@ pub(crate) async fn children(connection: &PgConnection, path: &[String]) -> Resu
             .collect()
     };
     Ok(match segments.as_slice() {
+        // Roles and tablespaces are administration: the simple view hides them.
         [_] => [("schemas", "Schemas"), ("extensions", "Extensions"), ("roles", "Roles"), ("tablespaces", "Tablespaces")]
             .iter()
-            .map(|(id, label)| node("folder", id, label, None, true, &[]))
+            .map(|(id, label)| TreeNode {
+                system: matches!(*id, "roles" | "tablespaces"),
+                ..node("folder", id, label, None, true, &[])
+            })
             .collect(),
         [_, "schemas"] => listed(query(&client, "SELECT nspname::text, nspname::text, \
             CASE WHEN nspname IN ('pg_catalog', 'information_schema') THEN 'system' END \
             FROM pg_namespace WHERE nspname NOT LIKE 'pg\\_toast%' AND nspname NOT LIKE 'pg\\_temp\\_%' \
-            ORDER BY nspname IN ('pg_catalog', 'information_schema'), nspname", &[]).await?, "schema", true, CODE_ACTIONS),
+            ORDER BY nspname IN ('pg_catalog', 'information_schema'), nspname", &[]).await?, "schema", true, CODE_ACTIONS)
+            .into_iter()
+            .map(|schema| TreeNode { system: schema.detail.is_some(), ..schema })
+            .collect(),
         [_, "extensions"] => listed(query(&client, "SELECT extname::text, extname::text, extversion FROM pg_extension ORDER BY 1", &[]).await?, "extension", false, CODE_ACTIONS),
         [_, "roles"] => listed(query(&client, "SELECT rolname::text, rolname::text, CASE WHEN rolcanlogin THEN 'login' ELSE 'group' END \
             FROM pg_roles WHERE rolname NOT LIKE 'pg\\_%' ORDER BY 1", &[]).await?, "role", false, CODE_ACTIONS),

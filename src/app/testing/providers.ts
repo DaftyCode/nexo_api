@@ -10,6 +10,7 @@ import {
   INTEGRATION,
   MODULES,
   MONGO,
+  DATABASES,
   TRANSFER_FILES,
   PROTOCOLS,
   REPORTS,
@@ -20,6 +21,7 @@ import { ModulesUseCases } from '../application/modules-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import { MongoUseCases } from '../application/mongo-use-cases';
+import { DatabaseUseCases } from '../application/database-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
 import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
@@ -170,6 +172,13 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
         (cases) => () =>
           Promise.resolve(cases)
       )(new MongoUseCases(api, files.id)),
+    },
+    {
+      provide: DATABASES,
+      useValue: (
+        (cases) => () =>
+          Promise.resolve(cases)
+      )(new DatabaseUseCases(api)),
     },
     {
       provide: REPORTS,

@@ -90,6 +90,14 @@ impl ScriptDatabase for Application {
             .documents(&workspace, Some(DocumentKind::Connection))
             .await?
             .into_iter()
+            // Connections of the database modules name their driver; MongoDB's do not.
+            .filter(|document| {
+                document
+                    .value
+                    .get("driver")
+                    .and_then(Value::as_str)
+                    .is_none_or(|driver| driver == "mongodb")
+            })
             .find(|document| {
                 document.id.as_str() == call.connection || document.name == call.connection
             })
