@@ -18,6 +18,9 @@ jobs:
     name: Angular and tooling
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -36,11 +39,21 @@ jobs:
       - run: npm run build:desktop
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+      # A failed job stops the whole run: its result is known, so the other jobs need not
+      # finish. A pull request from a fork has a read-only token and only fails here.
+      - name: Stop the other jobs
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}" || echo "The run could not be cancelled"
 
   rust:
     name: Rust backend
     runs-on: ubuntu-24.04
     timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install Linux build libraries
@@ -56,6 +69,13 @@ jobs:
         run: |
           cargo install cargo-deny --locked
           cargo deny --workspace --exclude nexo-desktop check advisories bans licenses sources
+      # A failed job stops the whole run: its result is known, so the other jobs need not
+      # finish. A pull request from a fork has a read-only token and only fails here.
+      - name: Stop the other jobs
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}" || echo "The run could not be cancelled"
 
   e2e:
     name: Engine contracts, local web service and E2E

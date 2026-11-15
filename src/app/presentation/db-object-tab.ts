@@ -91,10 +91,16 @@ export class DbObjectTab {
   protected readonly parents = computed(() => this.keys('foreign-keys'));
   protected readonly children = computed(() => this.keys('references'));
 
+  /** The object the tab shows: its filter and order change without describing it again. */
+  private readonly object = computed(() => {
+    const { connection, path } = this.tab();
+    return `${connection}\n${(path ?? []).join('\n')}`;
+  });
+
   constructor() {
     effect(() => {
-      const tab = this.tab();
-      untracked(() => void this.load(tab));
+      this.object();
+      untracked(() => void this.load());
     });
   }
 
