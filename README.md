@@ -128,7 +128,7 @@ Build on the operating system and CPU architecture you want to distribute: the s
 
 ## Current status and next steps
 
-The current version is **0.6.0**, with the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
+The current version is **0.7.0**, with PostgreSQL and SQL Server in the «Databases» section and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
 
 Next steps:
 
