@@ -1,29 +1,32 @@
 // Contract tests of the downloadable database modules: listed from the manifest, downloaded
 // from where it says, installed only when the hashes match, from a chosen file too, and
-// removed. The modules are the test driver, served by a local server that stands for the
-// releases; 127.0.0.1 and localhost name it twice, to test a redirection to another host.
+// removed. The modules are a stand-in for a driver, served by a local server that stands
+// for the releases; 127.0.0.1 and localhost name it twice, to test a redirection to another
+// host.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomBytes } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
 import http from 'node:http';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { startServer, until } from './server.mjs';
 import { executableName, hostTarget, moduleEntry } from '../../tools/modules/manifest.mjs';
 
-const driverPath = resolve(
-  process.env.CARGO_TARGET_DIR ?? 'target',
-  'debug',
-  executableName('test'),
-);
+/**
+ * Installing only checks a module's hashes and never runs it here, so the driver is a
+ * stand-in the size of a published one. A debug build would not do: on Linux it carries its
+ * debug information and grows past what a module file may be.
+ */
+const DRIVER_BYTES = 3 * 1024 * 1024;
 let server;
 let releases;
 let folder;
 let driver;
 let asset;
 before(async () => {
-  driver = await readFile(driverPath);
+  driver = randomBytes(DRIVER_BYTES);
   const { version } = JSON.parse(await readFile('package.json', 'utf8'));
   const entry = (id, name) =>
     moduleEntry({ id, name, version, driver, file: `${id}.gz`, licenses: ['MIT', 'Apache-2.0'] });
