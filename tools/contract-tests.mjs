@@ -1,5 +1,5 @@
-// Builds nexo-server and the database drivers its module tests run (the test driver and
-// PostgreSQL's), and runs the contract tests in tests/contract against it.
+// Builds nexo-server and the database drivers its module tests run (the test driver,
+// PostgreSQL's and SQL Server's), and runs the contract tests in tests/contract against it.
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -17,6 +17,8 @@ const build = spawnSync(
     'nexo-driver-test',
     '-p',
     'nexo-driver-postgres',
+    '-p',
+    'nexo-driver-mssql',
   ],
   { stdio: 'inherit' },
 );

@@ -1,0 +1,295 @@
+<div class="grid-toolbar" role="toolbar" [attr.aria-label]="'Grid tools' | transloco">
+  <label class="grid-filter"
+    >{{ 'Filter loaded rows' | transloco
+    }}<input type="search" [formField]="barFields.filter" autocomplete="off" spellcheck="false"
+  /></label>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-pressed]="find.open()"
+    (click)="find.open.set(!find.open())"
+  >
+    {{ 'Find' | transloco }}
+  </button>
+  @if (find.open()) {
+    <label class="grid-filter"
+      >{{ 'Find in results' | transloco
+      }}<input
+        type="search"
+        [formField]="barFields.find"
+        autocomplete="off"
+        spellcheck="false"
+        (keydown.enter)="findNext($any($event).shiftKey)"
+        (keydown.escape)="find.open.set(false)"
+    /></label>
+    <span class="grid-count" role="status">{{
+      'db.grid.found' | transloco: { v0: find.matches().length }
+    }}</span>
+    <button type="button" class="button small subtle" (click)="findNext(true)">
+      {{ 'Previous' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="findNext()">
+      {{ 'Next' | transloco }}
+    </button>
+  }
+  <span class="grow"></span>
+  <label class="grid-filter"
+    >{{ 'Copy as' | transloco }}
+    <select [formField]="barFields.copy">
+      <option value="text">{{ 'Text' | transloco }}</option>
+      <option value="text-headers">{{ 'Text with headers' | transloco }}</option>
+      <option value="json">JSON</option>
+      <option value="csv">CSV</option>
+      <option value="markdown">Markdown</option>
+      <option value="in">IN (…)</option>
+      <option value="insert">INSERT</option>
+    </select>
+  </label>
+  <button type="button" class="button small subtle" (click)="copy(undefined, bar().copy)">
+    {{ 'Copy' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small subtle"
+    aria-haspopup="menu"
+    [disabled]="!active()"
+    (click)="menu.set(true)"
+  >
+    {{ 'Column' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-pressed]="recordView()"
+    (click)="recordView.set(!recordView())"
+  >
+    {{ 'Record' | transloco }}
+  </button>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-pressed]="textView()"
+    (click)="textView.set(!textView())"
+  >
+    {{ 'Text view' | transloco }}
+  </button>
+  @for (kind of ['value', 'meta', 'calc', 'group']; track kind) {
+    <button
+      type="button"
+      class="button small subtle"
+      [attr.aria-pressed]="panel() === kind"
+      (click)="panel.set(panel() === kind ? 'none' : $any(kind))"
+    >
+      {{ 'db.panel.' + kind | transloco }}
+    </button>
+  }
+</div>
+
+<div class="grid-body">
+  <div class="grid-main">
+    @if (recordView()) {
+      <app-grid-record
+        [columns]="columns()"
+        [order]="layout.order()"
+        [row]="active()?.row"
+        [position]="selection().active.row"
+        [count]="layout.shown().length"
+        [values]="rows()"
+        [formats]="format()"
+        (moved)="step($event)"
+      />
+    } @else if (textView()) {
+      <pre class="grid-plain" tabindex="0" [attr.aria-label]="label() | transloco">{{
+        text()
+      }}</pre>
+    } @else {
+      <div
+        #viewport
+        class="grid-viewport"
+        role="grid"
+        tabindex="0"
+        aria-multiselectable="true"
+        [attr.aria-label]="label() | transloco"
+        [attr.aria-rowcount]="layout.shown().length + 1"
+        [attr.aria-colcount]="layout.order().length + 1"
+        [attr.aria-activedescendant]="activeId()"
+        (scroll)="scrolled()"
+        (keydown)="key($event)"
+        (click)="clicked($event)"
+        (dblclick)="panel.set('value')"
+        (contextmenu)="contextMenu($event)"
+      >
+        <div
+          class="grid-canvas"
+          [style.height.px]="layout.totalHeight()"
+          [style.width.px]="layout.totalWidth()"
+        >
+          <div role="rowgroup" class="grid-head">
+            <div role="row" class="grid-row grid-header" aria-rowindex="1">
+              <div role="columnheader" class="grid-rownum" aria-colindex="1">#</div>
+              @for (pin of layout.pinnedLeft(); track pin.column; let k = $index) {
+                <ng-container
+                  *ngTemplateOutlet="
+                    header;
+                    context: { $implicit: pin.column, position: k, left: pin.left }
+                  "
+                />
+              }
+              <div class="grid-spacer" aria-hidden="true" [style.width.px]="layout.spacer()"></div>
+              @for (drawn of layout.drawnColumns(); track drawn.column) {
+                <ng-container
+                  *ngTemplateOutlet="
+                    header;
+                    context: { $implicit: drawn.column, position: drawn.position }
+                  "
+                />
+              }
+            </div>
+          </div>
+          <div role="rowgroup">
+            @for (drawn of layout.drawnRows(); track drawn.row) {
+              <div
+                role="row"
+                class="grid-row"
+                [style.top.px]="layout.headerHeight() + drawn.position * layout.rowHeight()"
+                [attr.aria-rowindex]="drawn.position + 2"
+              >
+                <div
+                  role="rowheader"
+                  class="grid-rownum"
+                  aria-colindex="1"
+                  [attr.data-row]="drawn.position"
+                  data-mode="rows"
+                >
+                  {{ drawn.position + 1 }}
+                </div>
+                @for (pin of layout.pinnedLeft(); track pin.column; let k = $index) {
+                  <ng-container
+                    *ngTemplateOutlet="
+                      body;
+                      context: { $implicit: drawn, column: pin.column, position: k, left: pin.left }
+                    "
+                  />
+                }
+                <div
+                  class="grid-spacer"
+                  aria-hidden="true"
+                  [style.width.px]="layout.spacer()"
+                ></div>
+                @for (column of layout.drawnColumns(); track column.column) {
+                  <ng-container
+                    *ngTemplateOutlet="
+                      body;
+                      context: {
+                        $implicit: drawn,
+                        column: column.column,
+                        position: column.position,
+                      }
+                    "
+                  />
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+    <div class="grid-footer">
+      <span role="status">{{
+        (more() ? 'db.grid.countMore' : 'db.grid.count')
+          | transloco: { v0: layout.shown().length, v1: rows().length }
+      }}</span>
+      @if (more()) {
+        <button
+          type="button"
+          class="button small subtle"
+          [disabled]="loading()"
+          (click)="readAll.emit()"
+        >
+          {{ 'Read all' | transloco }}
+        </button>
+      }
+    </div>
+  </div>
+  @if (panel() !== 'none') {
+    <app-grid-panels
+      [kind]="panel()"
+      [columns]="columns()"
+      [rows]="rows()"
+      [active]="active()"
+      [cells]="selectedCells()"
+      [formats]="format()"
+      [grouping]="grouping()"
+      (closed)="panel.set('none')"
+    />
+  }
+</div>
+
+@if (menu() && active(); as current) {
+  <app-grid-menu
+    [column]="columns()[current.column].name"
+    [pinned]="view().pinned.includes(current.column)"
+    [actions]="cellActions()"
+    (chosen)="menuChosen($event, current.column)"
+    (closed)="closeMenu()"
+  />
+}
+
+<ng-template #header let-column let-position="position" let-left="left">
+  <div
+    role="columnheader"
+    class="grid-cell grid-head-cell"
+    draggable="true"
+    [class.grid-pinned]="left !== undefined"
+    [style.left.px]="left"
+    [style.width.px]="layout.widthOf(column)"
+    [attr.aria-colindex]="position + 2"
+    [attr.aria-sort]="sortOf(column)"
+    [attr.title]="columns()[column].typeName"
+    [attr.data-drop]="pointer.at(column)"
+    (dragstart)="pointer.dragStart($event, column, columns()[column].name)"
+    (dragover)="pointer.dragOver($event, column)"
+    (drop)="pointer.dropOn($event, column)"
+    (dragend)="pointer.dragEnd()"
+  >
+    <button type="button" tabindex="-1" class="grid-sort" (click)="columnTools.sort(column)">
+      {{ columns()[column].name }}
+      @switch (sortOf(column)) {
+        @case ('ascending') {
+          <span aria-hidden="true">▲</span>
+        }
+        @case ('descending') {
+          <span aria-hidden="true">▼</span>
+        }
+      }
+    </button>
+    <span
+      class="grid-resize"
+      aria-hidden="true"
+      (pointerdown)="pointer.resizeStart($event, column)"
+      (pointermove)="pointer.resizeMove($event)"
+      (pointerup)="pointer.resizeEnd()"
+    ></span>
+  </div>
+</ng-template>
+
+<ng-template #body let-drawn let-column="column" let-position="position" let-left="left">
+  @let shown = cell(drawn.row, column);
+  <div
+    role="gridcell"
+    [id]="cellId(drawn.position, position)"
+    [class]="'grid-cell grid-' + shown.kind"
+    [class.grid-pinned]="left !== undefined"
+    [class.grid-selected]="selected(drawn.position, position)"
+    [class.grid-active]="activeId() === cellId(drawn.position, position)"
+    [class.grid-found]="find.has(drawn.position, position)"
+    [style.left.px]="left"
+    [style.width.px]="layout.widthOf(column)"
+    [attr.aria-colindex]="position + 2"
+    [attr.aria-selected]="selected(drawn.position, position)"
+    [attr.data-row]="drawn.position"
+    [attr.data-column]="position"
+  >
+    {{ shown.text }}
+  </div>
+</ng-template>

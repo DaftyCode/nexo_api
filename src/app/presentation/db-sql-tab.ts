@@ -75,12 +75,15 @@ export class DbSqlTab {
         for (const node of nodes) if (node.kind !== 'folder') names.add(node.label.split('(')[0]);
     return [...names];
   });
-  /** Databases of the server the tree loaded, to choose one. */
-  protected readonly databases = computed(() =>
-    (this.section.tree.children().get(nodeKey(this.tab().connection, [])) ?? [])
+  /** Databases of the server the tree loaded, to choose one: at its top, or in a folder. */
+  protected readonly databases = computed(() => {
+    const children = this.section.tree.children();
+    const connection = this.tab().connection;
+    return [[], ['databases']]
+      .flatMap((path) => children.get(nodeKey(connection, path)) ?? [])
       .filter((node) => node.kind === 'database')
-      .map((node) => node.label),
-  );
+      .map((node) => node.label);
+  });
 
   constructor() {
     effect(() => {

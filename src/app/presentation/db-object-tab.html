@@ -16,12 +16,17 @@
     <span class="eyebrow">{{ description()?.kind ?? node()?.kind }}</span>
     <h2>{{ description()?.name ?? tab().title }}</h2>
   </div>
-  <span class="grow"></span>
-  @if (node()?.actions?.includes('data')) {
-    <button type="button" class="button small" (click)="viewData()">
-      {{ 'View data' | transloco }}
-    </button>
+  @if (header().length) {
+    <dl class="db-object-facts">
+      @for (fact of header(); track fact.name) {
+        <div>
+          <dt>{{ fact.name }}</dt>
+          <dd>{{ fact.value }}</dd>
+        </div>
+      }
+    </dl>
   }
+  <span class="grow"></span>
   <button type="button" class="button small subtle" (click)="load()">
     {{ 'Refresh' | transloco }}
   </button>
@@ -41,6 +46,8 @@
 <div class="db-object-body" tabindex="0" role="region" [attr.aria-label]="'Object' | transloco">
   @if (!description()) {
     <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+  } @else if (part() === 'data') {
+    <app-db-table-data [tab]="tab()" [parents]="parents()" [children]="children()" />
   } @else if (part() === 'properties') {
     <dl class="db-object-properties">
       @for (property of description()!.properties; track property.name) {
@@ -68,7 +75,21 @@
     />
   } @else if (shownSection(); as shown) {
     @if (shown.rows.length) {
-      <app-db-result-table [columns]="sectionColumns()" [rows]="shown.rows" />
+      @if (followsKeys()) {
+        <div class="row db-object-ddl-actions">
+          <button type="button" class="button small" (click)="followKey()">
+            {{ 'Open the related table' | transloco }}
+          </button>
+        </div>
+      }
+      <app-data-grid
+        [columns]="sectionColumns()"
+        [rows]="shown.rows"
+        [label]="shown.title"
+        [cellActions]="followsKeys() ? follow : []"
+        (cellAction)="followKey()"
+        (activeRow)="rowChanged($event)"
+      />
     } @else {
       <p class="muted">{{ 'No objects' | transloco }}</p>
     }

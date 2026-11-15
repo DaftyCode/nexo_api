@@ -35,6 +35,21 @@ pub struct ExecuteResult {
     /// What the server said besides the result: warnings, `NOTICE`, `PRINT`.
     pub notices: Vec<Notice>,
     pub elapsed_ms: u64,
+    /// The results after the first one, when a batch or a procedure returns several (SQL
+    /// Server): each one read whole, within the limits.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub results: Vec<ResultSet>,
+}
+
+/// A further result of a statement.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct ResultSet {
+    pub columns: Vec<Column>,
+    pub rows: Vec<Vec<Value>>,
+    /// The result had more rows than were kept.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub truncated: bool,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Notice {

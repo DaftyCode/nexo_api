@@ -11,7 +11,7 @@ export interface ResultColumn {
   kind: string;
   nullable?: boolean;
   key?: boolean;
-  origin?: { table?: string; column?: string };
+  origin?: { schema?: string; table?: string; column?: string };
 }
 
 /** What `db.execute` answers. */
@@ -22,6 +22,15 @@ export interface ExecuteAnswer {
   affected?: number | null;
   notices?: { severity: string; message: string }[];
   elapsedMs: number;
+  /** The results after the first one of a batch or procedure, read whole up to a limit. */
+  results?: FurtherResult[];
+}
+
+/** A further result of a batch: its rows, and whether there were more than these. */
+export interface FurtherResult {
+  columns: ResultColumn[];
+  rows: unknown[][];
+  truncated?: boolean;
 }
 
 export interface ResultTab {

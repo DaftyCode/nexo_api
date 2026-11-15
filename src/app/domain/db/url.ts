@@ -1,10 +1,11 @@
 /**
  * The URLs of the engines (`postgresql://user:password@host:5432/db?sslmode=require`, with an
- * optional `jdbc:` prefix): read into the form, the password taken out of them, and written
+ * optional `jdbc:` prefix; SQL Server's in `url/sqlserver.ts`): read into the form, the password taken out of them, and written
  * back without it. `{{variables}}` may stand anywhere.
  */
 import { TlsMode } from './connection';
 import { EngineProfile, engineOfScheme, engineProfile, tlsModeOf, tlsParameterOf } from './engines';
+import { formatSqlServerUrl, parseSqlServerUrl } from './url/sqlserver';
 
 /** What a URL fills in the form. */
 export interface ParsedUrl {
@@ -67,6 +68,7 @@ export function parseDbUrl(text: string, modules: readonly string[] = []): Parse
   if (!match) throw new Error('Paste a URL such as postgresql://user@host:5432/database');
   const driver = engineOfScheme(match[1], modules);
   if (!driver) throw new Error('Nexo has no module for the database of this URL');
+  if (driver === 'mssql') return parseSqlServerUrl(match[2]);
   const profile = engineProfile(driver);
   let rest = match[2];
   const hash = rest.indexOf('#');
@@ -127,6 +129,7 @@ export interface UrlParts {
 
 /** The URL of a connection, without its password: to copy it or to see what is connected. */
 export function formatDbUrl(parts: UrlParts): string {
+  if (parts.driver === 'mssql') return formatSqlServerUrl(parts);
   const profile = engineProfile(parts.driver);
   const user = parts.user.trim() ? `${encode(parts.user.trim())}@` : '';
   const port = parts.port.trim() ? `:${parts.port.trim()}` : '';

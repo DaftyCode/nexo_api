@@ -11,10 +11,12 @@ import {
 } from '@angular/core';
 import { treeSession } from '../application/database-use-cases';
 import { cellText } from '../domain/db/results';
+import { ForeignKey, foreignKeys } from '../domain/db/table-query';
 import { CodeEditor } from './code-editor';
-import { DbResultTable } from './db-result-table';
+import { DataGrid } from './data-grid/data-grid';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
+import { DbTableData } from './db-table-data';
 import { PanelTask } from './panel-task';
 import { success } from './workspace-state';
 
@@ -26,13 +28,22 @@ interface ObjectDescription {
   sections: { id: string; title: string; columns: string[]; rows: unknown[][] }[];
 }
 
+/** The properties shown in the header, when the driver gives them. */
+const HEADER = ['Kind', 'Owner', 'Estimated rows', 'Size', 'Comment'];
+/** The sections whose rows lead to another table, and where their ends are. */
+const KEYS: Record<string, { schema: string; table: string }> = {
+  'foreign-keys': { schema: 'Referenced schema', table: 'Referenced table' },
+  references: { schema: 'Schema', table: 'Table name' },
+};
+
 /**
- * The tab of an object of the tree, as DBeaver's object editor: its properties, a sub-tab
- * per section its driver describes (columns, constraints, indexes…) and its DDL. Data and
- * the structure editor come with DB-07 and DB-08.
+ * The tab of an object of the tree, as DBeaver's object editor: a header with its main
+ * properties; its properties, a sub-tab per section its driver describes (columns, keys,
+ * indexes…, sortable and filtered as grids); its data from the server for tables and views;
+ * and its DDL. A key leads to the table it points to, or to the one that points to it.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor, DbResultTable],
+  imports: [TranslocoPipe, CodeEditor, DataGrid, DbTableData],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-object-tab',
   templateUrl: './db-object-tab.html',
@@ -46,22 +57,39 @@ export class DbObjectTab {
   protected readonly ddl = signal('');
   protected readonly part = signal('properties');
   protected readonly text = cellText;
+  protected readonly follow = [{ id: 'follow', label: 'Open the related table' }];
+  private sectionRow = 0;
   protected readonly node = computed(() => {
     const tab = this.tab();
     return this.section.nodesAlong(tab.connection, tab.path ?? []).at(-1);
   });
+  /** Tables and views have rows to show. */
+  protected readonly relation = computed(() => {
+    const kind = this.node()?.kind ?? this.description()?.kind ?? '';
+    return kind === 'table' || kind === 'view' || !!this.node()?.actions.includes('data');
+  });
+  protected readonly header = computed(() =>
+    HEADER.flatMap((name) => {
+      const found = this.description()?.properties.find((property) => property.name === name);
+      const value = found ? cellText(found.value) : '';
+      return found && value && value !== 'NULL' ? [{ name, value }] : [];
+    }),
+  );
   protected readonly parts = computed(() => [
     'properties',
+    ...(this.relation() ? ['data'] : []),
     ...(this.description()?.sections ?? []).map((section) => section.id),
-    ...(this.node()?.actions.includes('ddl') ? ['ddl'] : []),
+    ...(this.ddl() ? ['ddl'] : []),
   ]);
   protected readonly shownSection = computed(() =>
     this.description()?.sections.find((section) => section.id === this.part()),
   );
-  /** The columns of the section shown, as the result table takes them. */
+  /** The columns of the section shown, as the grid takes them. */
   protected readonly sectionColumns = computed(() =>
     (this.shownSection()?.columns ?? []).map((name) => ({ name, typeName: '', kind: 'text' })),
   );
+  protected readonly parents = computed(() => this.keys('foreign-keys'));
+  protected readonly children = computed(() => this.keys('references'));
 
   constructor() {
     effect(() => {
@@ -70,10 +98,19 @@ export class DbObjectTab {
     });
   }
 
+  private keys(id: string): ForeignKey[] {
+    const section = this.description()?.sections.find((candidate) => candidate.id === id);
+    return foreignKeys(section, KEYS[id], cellText);
+  }
+
   protected partLabel(part: string) {
     if (part === 'properties') return 'Properties';
+    if (part === 'data') return 'Data';
     if (part === 'ddl') return 'DDL';
     return this.description()?.sections.find((section) => section.id === part)?.title ?? part;
+  }
+  protected followsKeys() {
+    return this.part() in KEYS;
   }
 
   /** Describes the object on the navigator's session, connecting it first if needed. */
@@ -88,11 +125,32 @@ export class DbObjectTab {
       const workspace = this.section.state.workspaceId();
       const session = treeSession(connection.id);
       this.description.set(await cases.navigator.describe(workspace, session, tab.path ?? []));
+      const node = this.node();
       this.ddl.set(
-        this.node()?.actions.includes('ddl')
+        !node || node.actions.includes('ddl')
           ? await cases.navigator.ddl(workspace, session, tab.path ?? []).catch(() => '')
           : '',
       );
+    });
+  }
+
+  protected rowChanged(row: number) {
+    this.sectionRow = row;
+  }
+
+  /** Opens the table a key of the section shown leads to. */
+  protected followKey() {
+    const keys = this.part() === 'foreign-keys' ? this.parents() : this.children();
+    const key = keys[this.sectionRow];
+    const tab = this.tab();
+    const path = tab.path ?? [];
+    if (!key || path.length < 3) return;
+    const target = [...path.slice(0, -3), key.schema || path.at(-3)!, path.at(-2)!, key.table];
+    this.section.tabs.open({
+      kind: 'object',
+      connection: tab.connection,
+      title: key.table,
+      path: target,
     });
   }
 
@@ -104,21 +162,5 @@ export class DbObjectTab {
   }
   protected openInScript() {
     this.section.newScript(this.tab().connection, { text: this.ddl() });
-  }
-  protected viewData() {
-    const tab = this.tab();
-    const node = this.node();
-    if (!node) return;
-    void this.section.viewData({
-      key: '',
-      type: 'node',
-      level: 1,
-      label: node.label,
-      connection: tab.connection,
-      path: tab.path,
-      node,
-      expandable: false,
-      expanded: false,
-    });
   }
 }

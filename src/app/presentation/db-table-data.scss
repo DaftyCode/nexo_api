@@ -1,0 +1,100 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  height: 100%;
+  min-height: 0;
+}
+.db-data-filter {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nexo-space-3);
+}
+.db-data-where {
+  flex: 1;
+  min-width: 0;
+}
+.db-data-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+}
+.db-data-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.db-data-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-px) var(--nexo-space-3);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-full);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-data-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-data-every {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+}
+.db-data-every input {
+  width: calc(var(--nexo-size-unit) * 16);
+}
+.db-data-statement {
+  display: block;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font-size: var(--nexo-font-size-xs);
+  white-space: pre-wrap;
+}
+.db-data-error {
+  color: var(--nexo-color-danger-text);
+}
+.db-data-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: var(--nexo-space-3);
+}
+.db-data-grid {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.db-data-grid app-data-grid {
+  flex: 1;
+}
+.db-data-related {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-4);
+  width: var(--nexo-grid-panel-width);
+  overflow: auto;
+}
+.db-data-related section {
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--nexo-size-unit) * 110);
+}
+.db-data-related h4 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+  font-size: var(--nexo-font-size-sm);
+}

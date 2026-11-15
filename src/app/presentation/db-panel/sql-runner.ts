@@ -1,8 +1,15 @@
 import { signal } from '@angular/core';
 import { ApiFailure } from '../../application/ports';
 import { connectionType, readDbConnection } from '../../domain/db/connection';
-import { ResultTab } from '../../domain/db/results';
-import { Confirmation, SplitStatement, confirmationOf, withVariables } from '../../domain/db/sql';
+import { Group } from '../../domain/db/grid/calc';
+import { FurtherResult, ResultTab, cellText } from '../../domain/db/results';
+import {
+  Confirmation,
+  SplitStatement,
+  confirmationOf,
+  groupQuery,
+  withVariables,
+} from '../../domain/db/sql';
 import { PAGE_ROWS } from './sql-results';
 import { SqlSession } from './sql-session';
 
@@ -179,6 +186,7 @@ export class SqlRunner extends SqlSession {
         };
         if (into) this.results.replace(into.id, tab);
         else this.results.add(tab, this.reuse() && !fresh);
+        this.addFurther(answer.results ?? [], sql, started, answer.elapsedMs, tab.id);
       } else
         this.results.note({
           kind: 'info',
@@ -201,6 +209,37 @@ export class SqlRunner extends SqlSession {
     }
   }
 
+  /** A tab for each further result of a batch (SQL Server), the first one still shown. */
+  private addFurther(
+    further: readonly FurtherResult[],
+    sql: string,
+    started: number,
+    executeMs: number,
+    first: string,
+  ) {
+    for (const [index, set] of further.entries()) {
+      const tab: ResultTab = {
+        id: this.section.state.cases.files.id(),
+        order: ++this.order,
+        sql,
+        pinned: false,
+        columns: set.columns,
+        rows: set.rows,
+        startedAt: started,
+        executeMs,
+        fetchMs: 0,
+      };
+      this.results.add(tab, false);
+      if (set.truncated)
+        this.results.note({
+          kind: 'warning',
+          text: 'db.resultCut',
+          params: { v0: String(index + 2), v1: String(set.rows.length) },
+        });
+    }
+    if (further.length) this.results.active.set(first);
+  }
+
   /** Runs a result's statement again into its own tab. */
   async rerun(tab: ResultTab) {
     const statement: SplitStatement = {
@@ -217,5 +256,22 @@ export class SqlRunner extends SqlSession {
       },
     };
     await this.runStatement(statement, 0, tab.sql, false, tab);
+  }
+
+  /** Groups the rows of a whole table on the server, for the Grouping panel. */
+  async group(table: string, columns: readonly string[]): Promise<Group[]> {
+    if (!(await this.open())) return [];
+    const cases = await this.section.cases();
+    const sql = groupQuery(table, columns, this.section.sqlStyle(this.connection()?.id ?? ''));
+    const run = `${this.tab}-group-${Date.now()}`;
+    const answer = await cases.statements.execute(this.workspace(), this.session, run, sql, {
+      pageRows: 500,
+    });
+    if (answer.cursor)
+      await cases.statements.closeCursor(this.workspace(), this.session, answer.cursor);
+    return answer.rows.map((row) => ({
+      values: row.slice(0, -1).map(cellText),
+      count: Number(cellText(row.at(-1))),
+    }));
   }
 }

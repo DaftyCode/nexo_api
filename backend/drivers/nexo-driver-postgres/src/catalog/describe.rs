@@ -55,13 +55,25 @@ async fn relation(
         WHEN 'c' THEN 'check' WHEN 'x' THEN 'exclusion' END AS \"Type\", pg_get_constraintdef(oid) AS \"Definition\" \
         FROM pg_constraint WHERE conrelid = {RELATION} AND contype IN ('p', 'u', 'c', 'x') ORDER BY 1"
     );
+    // The columns of both ends, in order, so the interface can follow a key without reading
+    // its definition.
+    let ends = "(SELECT string_agg(a.attname, ', ' ORDER BY k.n) FROM unnest(f.conkey) WITH ORDINALITY k(attnum, n) \
+        JOIN pg_attribute a ON a.attrelid = f.conrelid AND a.attnum = k.attnum) AS \"Columns\", \
+        (SELECT string_agg(a.attname, ', ' ORDER BY k.n) FROM unnest(f.confkey) WITH ORDINALITY k(attnum, n) \
+        JOIN pg_attribute a ON a.attrelid = f.confrelid AND a.attnum = k.attnum) AS \"Referenced columns\"";
     let foreign = format!(
-        "SELECT conname::text AS \"Name\", confrelid::regclass::text AS \"References\", \
-        pg_get_constraintdef(oid) AS \"Definition\" FROM pg_constraint WHERE conrelid = {RELATION} AND contype = 'f' ORDER BY 1"
+        "SELECT f.conname::text AS \"Name\", f.confrelid::regclass::text AS \"References\", \
+        pg_get_constraintdef(f.oid) AS \"Definition\", {ends}, rn.nspname::text AS \"Referenced schema\", \
+        rc.relname::text AS \"Referenced table\" FROM pg_constraint f \
+        JOIN pg_class rc ON rc.oid = f.confrelid JOIN pg_namespace rn ON rn.oid = rc.relnamespace \
+        WHERE f.conrelid = {RELATION} AND f.contype = 'f' ORDER BY 1"
     );
     let referenced = format!(
-        "SELECT conname::text AS \"Name\", conrelid::regclass::text AS \"Table\", \
-        pg_get_constraintdef(oid) AS \"Definition\" FROM pg_constraint WHERE confrelid = {RELATION} AND contype = 'f' ORDER BY 2, 1"
+        "SELECT f.conname::text AS \"Name\", f.conrelid::regclass::text AS \"Table\", \
+        pg_get_constraintdef(f.oid) AS \"Definition\", {ends}, cn.nspname::text AS \"Schema\", \
+        cc.relname::text AS \"Table name\" FROM pg_constraint f \
+        JOIN pg_class cc ON cc.oid = f.conrelid JOIN pg_namespace cn ON cn.oid = cc.relnamespace \
+        WHERE f.confrelid = {RELATION} AND f.contype = 'f' ORDER BY 2, 1"
     );
     let indexes = format!(
         "SELECT i.relname::text AS \"Name\", pg_get_indexdef(x.indexrelid) AS \"Definition\", \

@@ -90,21 +90,30 @@
         </button>
       }
     </nav>
-    <div class="db-result-body" tabindex="0" role="region" [attr.aria-label]="'Rows' | transloco">
+    <div
+      class="db-result-body"
+      [class.db-result-grid]="part() === 'rows'"
+      tabindex="0"
+      role="region"
+      [attr.aria-label]="'Rows' | transloco"
+    >
       @switch (part()) {
         @case ('rows') {
-          <app-db-result-table [columns]="tab.columns" [rows]="tab.rows" />
-          <div class="db-result-more">
-            <span class="muted">{{ 'db.rows.read' | transloco: { v0: tab.rows.length } }}</span>
-            @if (tab.cursor) {
-              <button type="button" class="button small" (click)="results().more(tab.id)">
-                {{ 'Read more rows' | transloco }}
-              </button>
-            }
-            @if (tab.lost) {
-              <span class="muted">{{ 'db.result.lost' | transloco }}</span>
-            }
-          </div>
+          <app-data-grid
+            [columns]="tab.columns"
+            [rows]="tab.rows"
+            [more]="!!tab.cursor"
+            [loading]="results().fetching().has(tab.id)"
+            [sql]="sqlStyle()"
+            [grouping]="grouping()"
+            [view]="results().view(tab.id)"
+            (viewChange)="results().setView(tab.id, $event)"
+            (needMore)="results().more(tab.id)"
+            (readAll)="readAll(tab)"
+          />
+          @if (tab.lost) {
+            <p class="muted">{{ 'db.result.lost' | transloco }}</p>
+          }
         }
         @case ('meta') {
           <table class="db-plain">
@@ -237,7 +246,16 @@
       </button>
     </header>
     <div class="db-floating-body" tabindex="0" role="region" [attr.aria-label]="'Rows' | transloco">
-      <app-db-result-table [columns]="tab.columns" [rows]="tab.rows" />
+      <app-data-grid
+        [columns]="tab.columns"
+        [rows]="tab.rows"
+        [more]="!!tab.cursor"
+        [loading]="results().fetching().has(tab.id)"
+        [sql]="sqlStyle()"
+        [view]="results().view(tab.id)"
+        (viewChange)="results().setView(tab.id, $event)"
+        (needMore)="results().more(tab.id)"
+      />
     </div>
   </section>
 }

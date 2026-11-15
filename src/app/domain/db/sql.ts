@@ -87,6 +87,12 @@ export function qualifiedName(nodes: readonly DbNode[], style: QuoteStyle): stri
     .join('.');
 }
 
+/** The rows of a table grouped by some columns, most frequent first, as the Grouping panel asks. */
+export function groupQuery(table: string, columns: readonly string[], style: QuoteStyle): string {
+  const names = columns.map((column) => quoteName(column, style)).join(', ');
+  return `SELECT ${names}, count(*) AS nexo_count FROM ${table} GROUP BY ${names} ORDER BY nexo_count DESC`;
+}
+
 /** The database a path of the tree is in, when the engine has several per server. */
 export function databaseOf(nodes: readonly DbNode[]): string {
   return nodes.find((node) => node.kind === 'database')?.label ?? '';

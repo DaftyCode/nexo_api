@@ -1,5 +1,6 @@
 import { signal } from '@angular/core';
 import type { DatabaseUseCases } from '../../application/database-use-cases';
+import { GridView, emptyView } from '../../domain/db/grid/view';
 import { ResultTab, addResult, closeResults, rerunResult } from '../../domain/db/results';
 
 /** A line of the «Messages» panel: what ran without rows, warnings of the server, errors. */
@@ -29,6 +30,8 @@ export interface ResultsContext {
 
 /** Rows read at a time, for the first page and «read more». */
 export const PAGE_ROWS = 200;
+/** Rows read at a time by «Read all»: the most a driver answers in one page. */
+const ALL_ROWS = 10_000;
 /** The messages kept. */
 const MESSAGES = 200;
 
@@ -42,9 +45,14 @@ export class SqlResults {
   readonly messages = signal<readonly SqlMessage[]>([]);
   /** The result shown in a floating window. */
   readonly detached = signal('');
+  /** How each result's grid is laid out: columns, widths, order, filter. */
+  readonly views = signal<Readonly<Record<string, GridView>>>({});
+  /** Results reading more rows now. */
+  readonly fetching = signal<ReadonlySet<string>>(new Set());
   /** Results run again every so many seconds. */
   readonly repeating = signal<Readonly<Record<string, number>>>({});
   private readonly timers = new Map<string, ReturnType<typeof setInterval>>();
+  private readonly reading = new Map<string, Promise<void>>();
   private counter = 0;
 
   constructor(private readonly context: ResultsContext) {}
@@ -88,10 +96,35 @@ export class SqlResults {
     this.release(closed);
   }
 
-  /** Reads the next page of a result. */
-  async more(id: string) {
+  view(id: string): GridView {
+    return this.views()[id] ?? emptyView();
+  }
+  setView(id: string, view: GridView) {
+    this.views.update((all) => ({ ...all, [id]: view }));
+  }
+
+  /** Reads every row left of a result, page after page. */
+  async readAll(id: string) {
+    while (this.tabs().find((tab) => tab.id === id)?.cursor) {
+      const before = this.tabs().find((tab) => tab.id === id)?.rows.length;
+      await this.more(id, ALL_ROWS);
+      if (this.tabs().find((tab) => tab.id === id)?.rows.length === before) return;
+    }
+  }
+
+  /** Reads the next page of a result; a read already going on is shared, not repeated. */
+  more(id: string, pageRows = PAGE_ROWS): Promise<void> {
+    const running = this.reading.get(id);
+    if (running) return running;
+    const read = this.read(id, pageRows).finally(() => this.reading.delete(id));
+    this.reading.set(id, read);
+    return read;
+  }
+
+  private async read(id: string, pageRows: number) {
     const tab = this.tabs().find((other) => other.id === id);
     if (!tab?.cursor) return;
+    this.fetching.update((set) => new Set([...set, id]));
     const cases = await this.context.cases();
     const started = Date.now();
     try {
@@ -99,7 +132,7 @@ export class SqlResults {
         this.context.workspace(),
         this.context.session,
         tab.cursor,
-        PAGE_ROWS,
+        pageRows,
       );
       this.update(id, (current) => ({
         ...current,
@@ -110,6 +143,8 @@ export class SqlResults {
     } catch {
       // The driver closed it (too many cursors open): the rest needs running it again.
       this.update(id, (current) => ({ ...current, cursor: undefined, lost: true }));
+    } finally {
+      this.fetching.update((set) => new Set([...set].filter((other) => other !== id)));
     }
   }
 
@@ -147,6 +182,12 @@ export class SqlResults {
   }
 
   private release(closed: readonly ResultTab[]) {
+    if (closed.length)
+      this.views.update((all) =>
+        Object.fromEntries(
+          Object.entries(all).filter(([id]) => !closed.some((tab) => tab.id === id)),
+        ),
+      );
     for (const tab of closed) {
       this.repeat(tab.id, 0);
       if (tab.cursor) void this.closeCursor(tab.cursor);

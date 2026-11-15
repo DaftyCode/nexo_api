@@ -62,6 +62,14 @@
   overflow: auto;
   padding: var(--nexo-space-3);
 }
+.db-result-body.db-result-grid {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.db-floating-body app-data-grid {
+  height: 100%;
+}
 .db-result-more {
   display: flex;
   align-items: center;

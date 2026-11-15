@@ -1,0 +1,175 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  position: relative;
+}
+.grid-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-2) 0;
+}
+.grid-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.grid-filter input {
+  width: calc(var(--nexo-size-unit) * 70);
+}
+.grid-count {
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.grid-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.grid-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.grid-viewport {
+  position: relative;
+  flex: 1;
+  min-height: calc(var(--nexo-size-unit) * 60);
+  overflow: auto;
+  border: var(--nexo-border-width) solid var(--nexo-grid-line);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-xs);
+  contain: strict;
+}
+.grid-viewport:focus-visible {
+  outline: var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring);
+}
+.grid-canvas {
+  position: relative;
+}
+.grid-head {
+  position: sticky;
+  top: 0;
+  z-index: var(--nexo-z-raised);
+}
+.grid-row {
+  position: absolute;
+  left: 0;
+  display: flex;
+  height: var(--nexo-grid-row-height);
+}
+.grid-header {
+  position: relative;
+  background: var(--nexo-grid-header-bg);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.grid-rownum {
+  position: sticky;
+  left: 0;
+  z-index: var(--nexo-z-raised);
+  flex: none;
+  width: calc(var(--nexo-size-unit) * 28);
+  padding: 0 var(--nexo-space-3);
+  border-right: var(--nexo-border-width) solid var(--nexo-grid-line);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-grid-line);
+  background: var(--nexo-grid-number-bg);
+  color: var(--nexo-color-text-muted);
+  line-height: var(--nexo-grid-row-height);
+  text-align: right;
+}
+.grid-spacer {
+  flex: none;
+}
+.grid-cell {
+  flex: none;
+  overflow: clip;
+  padding: 0 var(--nexo-space-3);
+  border-right: var(--nexo-border-width) solid var(--nexo-grid-line);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-grid-line);
+  background: var(--nexo-color-surface);
+  line-height: var(--nexo-grid-row-height);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grid-pinned {
+  position: sticky;
+  z-index: var(--nexo-z-raised);
+}
+.grid-head-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0;
+  background: var(--nexo-grid-header-bg);
+}
+.grid-head-cell[data-drop='before'] {
+  border-left: var(--nexo-border-width-accent) solid var(--nexo-color-accent);
+}
+.grid-head-cell[data-drop='after'] {
+  border-right: var(--nexo-border-width-accent) solid var(--nexo-color-accent);
+}
+.grid-sort {
+  flex: 1;
+  min-width: 0;
+  overflow: clip;
+  padding: 0 var(--nexo-space-3);
+  color: var(--nexo-color-text);
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.grid-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--nexo-size-3);
+  cursor: col-resize;
+}
+.grid-null {
+  color: var(--nexo-grid-null);
+  font-style: italic;
+}
+.grid-cell.grid-number {
+  color: var(--nexo-grid-number-text);
+  text-align: right;
+}
+.grid-binary,
+.grid-json {
+  color: var(--nexo-color-text-soft);
+}
+.grid-selected {
+  background: var(--nexo-grid-selection);
+}
+.grid-found {
+  background: var(--nexo-grid-found);
+}
+.grid-active {
+  box-shadow: inset 0 0 0 var(--nexo-border-width-strong) var(--nexo-grid-active);
+}
+.grid-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  padding-top: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.grid-plain {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  overflow: auto;
+  padding: var(--nexo-space-3);
+  border: var(--nexo-border-width) solid var(--nexo-grid-line);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-xs);
+}

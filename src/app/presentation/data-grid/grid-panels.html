@@ -1,0 +1,149 @@
+<aside class="grid-panel" [attr.aria-label]="title() | transloco">
+  <header class="grid-panel-head">
+    <h3>{{ title() | transloco }}</h3>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Close the panel' | transloco"
+      (click)="closed.emit()"
+    >
+      ×
+    </button>
+  </header>
+  <div class="grid-panel-body" tabindex="0" role="region" [attr.aria-label]="title() | transloco">
+    @switch (kind()) {
+      @case ('value') {
+        @if (active(); as current) {
+          <app-value-viewer
+            [value]="current.value"
+            [column]="columns()[current.column]"
+            [formats]="formats()"
+          />
+        } @else {
+          <p class="muted">{{ 'Choose a cell to see its value.' | transloco }}</p>
+        }
+      }
+      @case ('meta') {
+        <table class="grid-panel-table">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Column' | transloco }}</th>
+              <th scope="col">{{ 'Type' | transloco }}</th>
+              <th scope="col">{{ 'Nullable' | transloco }}</th>
+              <th scope="col">{{ 'Origin' | transloco }}</th>
+              <th scope="col">{{ 'Key' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (column of columns(); track $index) {
+              <tr>
+                <td>{{ column.name }}</td>
+                <td>{{ column.typeName }}</td>
+                <td>
+                  {{
+                    column.nullable === undefined
+                      ? '—'
+                      : ((column.nullable ? 'Yes' : 'No') | transloco)
+                  }}
+                </td>
+                <td>
+                  {{ column.origin?.schema ? column.origin.schema + '.' : ''
+                  }}{{ column.origin?.table ?? '' }}{{ column.origin?.column ? '.' : ''
+                  }}{{ column.origin?.column ?? '' }}
+                </td>
+                <td>{{ (column.key ? 'Yes' : 'No') | transloco }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      @case ('calc') {
+        <dl class="grid-panel-figures">
+          <dt>{{ 'Count' | transloco }}</dt>
+          <dd>{{ figures().count }}</dd>
+          <dt>{{ 'Distinct' | transloco }}</dt>
+          <dd>{{ figures().distinct }}</dd>
+          <dt>{{ 'Nulls' | transloco }}</dt>
+          <dd>{{ figures().nulls }}</dd>
+          @if (figures().sum !== undefined) {
+            <dt>{{ 'Sum' | transloco }}</dt>
+            <dd>{{ figures().sum | number: '1.0-6' }}</dd>
+            <dt>{{ 'Average' | transloco }}</dt>
+            <dd>{{ figures().average | number: '1.0-6' }}</dd>
+          }
+          @if (figures().min !== undefined) {
+            <dt>{{ 'Minimum' | transloco }}</dt>
+            <dd>{{ figures().min }}</dd>
+            <dt>{{ 'Maximum' | transloco }}</dt>
+            <dd>{{ figures().max }}</dd>
+          }
+        </dl>
+        <p class="muted">{{ 'Over the selected cells.' | transloco }}</p>
+      }
+      @case ('group') {
+        <div
+          class="grid-panel-drop"
+          role="group"
+          [attr.aria-label]="'Group by' | transloco"
+          (dragover)="$event.preventDefault()"
+          (drop)="dropped($event)"
+        >
+          <p class="muted">
+            {{ 'Drop a column here, or choose the columns to group by.' | transloco }}
+          </p>
+          @for (column of columns(); track $index; let index = $index) {
+            <button
+              type="button"
+              class="button small subtle"
+              [attr.aria-pressed]="groupBy().includes(index)"
+              (click)="toggleGroup(index)"
+            >
+              {{ column.name }}
+            </button>
+          }
+        </div>
+        @if (groupBy().length) {
+          @if (grouping()) {
+            <button
+              type="button"
+              class="button small"
+              [disabled]="busy()"
+              (click)="groupOnServer()"
+            >
+              {{ 'Group the whole table on the server' | transloco }}
+            </button>
+          }
+          <p class="muted">
+            {{
+              (serverGroups() ? 'Grouped on the server.' : 'Grouped over the rows loaded.')
+                | transloco
+            }}
+          </p>
+          @if (error()) {
+            <p class="grid-panel-error" role="alert">{{ error() }}</p>
+          }
+          <table class="grid-panel-table">
+            <thead>
+              <tr>
+                @for (column of groupBy(); track column) {
+                  <th scope="col">{{ columns()[column].name }}</th>
+                }
+                <th scope="col">{{ 'Count' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (group of groups(); track $index) {
+                <tr>
+                  @for (value of group.values; track $index) {
+                    <td>{{ value }}</td>
+                  }
+                  <td>{{ group.count }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      }
+    }
+  </div>
+</aside>

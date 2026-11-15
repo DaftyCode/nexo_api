@@ -9,13 +9,14 @@ import {
   readDbConnection,
 } from '../../domain/db/connection';
 import { NavigatorRow, navigatorRows } from '../../domain/db/rows';
-import { SqlDraft, storedDrafts } from '../../domain/db/session';
+import { SqlDraft, restoredDrafts, storedDrafts } from '../../domain/db/session';
 import { databaseOf, qualifiedName, readScript } from '../../domain/db/sql';
+import { QueryStyle } from '../../domain/db/table-query';
 import { DbBookmark, DbNode, QuoteStyle, keyPath, nodeKey } from '../../domain/db/tree';
 import { ModuleSummary } from '../../domain/modules';
 import { WorkspaceDocument } from '../../domain/models';
 import { WorkspaceState } from '../workspace-state';
-import { SqlRunner } from './sql-runner';
+import { OpenEditors } from './editors';
 import { DbTabsStore } from './tabs-store';
 import { DbTreeStore } from './tree-store';
 
@@ -53,8 +54,8 @@ export class DbSection {
   /** The connection last chosen in the navigator. */
   readonly active = signal('');
   private readonly quotes = signal<Readonly<Record<string, QuoteStyle>>>({});
-  /** The SQL tabs while they are open: sessions, results and messages survive tab changes. */
-  private readonly runners = new Map<string, SqlRunner>();
+  /** What each editor tab keeps open while another one is shown. */
+  readonly editors = new OpenEditors(this);
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
   /** Saved SQL scripts. */
@@ -119,32 +120,27 @@ export class DbSection {
     active: string,
   ) {
     const kept = tabs.filter((tab) => !tab.connection || !!this.connection(tab.connection));
-    const texts = Object.fromEntries(
-      Object.entries(drafts).map(([id, draft]) => {
-        const script = draft.script && this.scripts().find((doc) => doc.id === draft.script);
-        if (draft.script && !script) return [id, { ...draft, script: undefined, dirty: true }];
-        return [
-          id,
-          draft.text || !script ? draft : { ...draft, text: readScript(script.value).sql },
-        ];
-      }),
-    );
-    this.tabs.restore(kept, texts, active);
+    const script = (id: string) => {
+      const found = this.scripts().find((document) => document.id === id);
+      return found && readScript(found.value).sql;
+    };
+    this.tabs.restore(kept, restoredDrafts(drafts, script), active);
   }
 
   /** The runner of a SQL tab, created when the tab is first shown. */
-  runner(tab: string): SqlRunner {
-    let runner = this.runners.get(tab);
-    if (!runner) this.runners.set(tab, (runner = new SqlRunner(this, tab)));
-    return runner;
+  runner(tab: string) {
+    return this.editors.runner(tab);
   }
 
-  /** Closes an editor tab; a SQL tab closes its session and cursors. */
+  /** Closes an editor tab with what it had open: sessions and cursors. */
   closeTab(id: string) {
-    const runner = this.runners.get(id);
-    this.runners.delete(id);
-    void runner?.dispose();
+    this.editors.close(id);
     this.tabs.close(id);
+  }
+
+  /** The driver (module) of a connection. */
+  driverOf(connection: string) {
+    return readDbConnection(this.connection(connection)?.value).driver;
   }
 
   /** Opens a SQL tab on a connection, with a text and on another database if asked. */
@@ -250,6 +246,15 @@ export class DbSection {
     const driver = readDbConnection(this.connection(connection)?.value).driver;
     return this.quotes()[driver] ?? { quoteOpen: '"', quoteClose: '"' };
   }
+  /** How the driver of a connection writes SQL: its quotes and its dialect's name. */
+  sqlStyle(connection: string): QueryStyle {
+    const style = this.quoteStyle(connection) as QuoteStyle & {
+      name?: string;
+      parameters?: string;
+    };
+    return { ...style, name: style.name ?? '' };
+  }
+
   /** Asks the driver of a connection how it quotes names, once. */
   async learnQuotes(connection: string) {
     const driver = readDbConnection(this.connection(connection)?.value).driver;

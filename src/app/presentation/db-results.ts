@@ -1,9 +1,19 @@
 import { DatePipe } from '@angular/common';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
 import { FormField, form, max, min } from '@angular/forms/signals';
 import { ResultTab, resultTitle, summarize } from '../domain/db/results';
-import { DbResultTable } from './db-result-table';
+import { sourceTable } from '../domain/db/grid/copy';
+import { DataGrid } from './data-grid/data-grid';
+import { WorkspaceState } from './workspace-state';
 import type { SqlRunner } from './db-panel/sql-runner';
 
 type Part = 'rows' | 'meta' | 'info' | 'summary';
@@ -16,7 +26,7 @@ const MESSAGES = 'messages';
  * window, read further or repeated; and the messages of what ran without rows.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, DbResultTable, DatePipe],
+  imports: [TranslocoPipe, FormField, DataGrid, DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-results',
   templateUrl: './db-results.html',
@@ -54,6 +64,16 @@ export class DbResults {
       .tabs()
       .find((tab) => tab.id === this.results().detached()),
   );
+  private readonly state = inject(WorkspaceState);
+  /** How the connection writes SQL, to copy as `IN` or `INSERT`. */
+  protected readonly sqlStyle = computed(() => this.runner().sqlStyle());
+  /** Grouping on the server, when the result shown comes from one table. */
+  protected readonly grouping = computed(() => {
+    const tab = this.current();
+    const table = tab && sourceTable(tab.columns, this.sqlStyle());
+    const runner = this.runner();
+    return table ? (columns: readonly string[]) => runner.group(table, columns) : undefined;
+  });
   protected readonly summary = computed(() => {
     const tab = this.current();
     return tab ? summarize(tab.columns, tab.rows) : [];
@@ -88,6 +108,11 @@ export class DbResults {
   }
   protected dragEnd() {
     this.drag = undefined;
+  }
+
+  /** Reads every row left, after saying it may be many. */
+  protected readAll(tab: ResultTab) {
+    if (this.state.confirm('db.readAll.confirm')) void this.results().readAll(tab.id);
   }
 
   protected show(id: string) {

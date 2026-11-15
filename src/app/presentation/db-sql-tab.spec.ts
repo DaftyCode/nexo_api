@@ -96,6 +96,19 @@ describe('DbSqlTab', () => {
         'db.execute': (payload: Record<string, unknown>) => {
           runs++;
           const sql = String(payload['sql']);
+          if (/^exec/i.test(sql))
+            return {
+              columns: [{ name: 'id', typeName: 'int', kind: 'integer' }],
+              rows: [[1]],
+              elapsedMs: 1,
+              results: [
+                {
+                  columns: [{ name: 'total', typeName: 'decimal', kind: 'decimal' }],
+                  rows: [[{ $t: 'decimal', v: '9.99' }]],
+                  truncated: true,
+                },
+              ],
+            };
           if (/^select/i.test(sql))
             return {
               columns: [{ name: 'n', typeName: 'int4', kind: 'integer' }],
@@ -141,6 +154,24 @@ describe('DbSqlTab', () => {
     expect(resultTabs()).toEqual(['1 · select 1', '2 · select 2', 'Messages (1)']);
     await clickButton(fixture, /Messages/);
     expect(root().textContent).toContain('2 rows changed');
+  });
+
+  it('opens a tab for each result of a procedure, the first one shown', async () => {
+    await start();
+    await openScript('exec shop.two_results');
+    await clickButton(fixture, 'Run');
+    await settle();
+    expect(resultTabs()).toEqual([
+      '1 · exec shop.two_results',
+      '2 · exec shop.two_results',
+      'Messages (1)',
+    ]);
+    const selected = root().querySelector(
+      '[aria-label="Results"] [role="tab"][aria-selected="true"]',
+    );
+    expect(selected?.textContent?.trim()).toBe('1 · exec shop.two_results');
+    await clickButton(fixture, /Messages/);
+    expect(root().textContent).toContain('Result 2 shows only its first 1 rows.');
   });
 
   it('asks before a change of every row on production, with manual commits', async () => {

@@ -3,6 +3,8 @@
 #   25432 PostgreSQL 18 (user nexo), with the data of tools/sql-fixture-seed-postgres.sql
 #   25433 PostgreSQL 18 that only takes TLS with a client certificate (a CA made here)
 #   25434 PostgreSQL 14, the oldest supported, with the same data
+#   21433 SQL Server 2022 (user sa), with tools/sql-fixture-seed-mssql.sql and a certificate of
+#         the same CA; only on x86-64, where Microsoft publishes it (elsewhere its tests skip)
 # Prints the NEXO_SQL_* variables the driver and contract tests read, and adds them to
 # $GITHUB_ENV in CI.  Usage: tools/sql-fixture.sh start | stop
 set -euo pipefail
@@ -11,7 +13,10 @@ export MSYS_NO_PATHCONV=1
 
 current=postgres:18
 oldest=postgres:14
-names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old)
+names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql)
+mssql=mcr.microsoft.com/mssql/server:2022-latest
+mssql_password='Nexo-secret-2026'
+case "$(uname -m)" in x86_64 | amd64) with_mssql=true ;; *) with_mssql=false ;; esac
 directory="${NEXO_SQL_FIXTURE_DIR:-${TMPDIR:-/tmp}/nexo-sql-fixture}"
 
 if [[ "${1:-start}" == "stop" ]]; then
@@ -23,6 +28,8 @@ tools="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$directory"
 mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init"
 cp "$tools/sql-fixture-seed-postgres.sql" "$directory/seed/"
+mkdir -p "$directory/mssql"
+cp "$tools/sql-fixture-seed-mssql.sql" "$directory/mssql/seed.sql"
 cd "$directory/certs"
 # A private CA, a server certificate for localhost and a client certificate for user nexo.
 openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=nexo-test-ca" \
@@ -64,6 +71,20 @@ docker run -d --name nexo-sql-pg-tls -p 25433:5432 "${server[@]}" \
   -v "$directory/certs:/certs:ro" -v "$directory/tls-init:/docker-entrypoint-initdb.d:ro" "$current" >/dev/null
 docker run -d --name nexo-sql-pg-old -p 25434:5432 "${server[@]}" \
   -v "$directory/seed:/docker-entrypoint-initdb.d:ro" "$oldest" >/dev/null
+if [[ "$with_mssql" == true ]]; then
+  # SQL Server takes the certificate of the CA made above, and still accepts plain logins.
+  cat > "$directory/mssql/mssql.conf" <<'CONF'
+[network]
+tlscert = /certs/server.crt
+tlskey = /certs/server.key
+tlsprotocols = 1.2
+forceencryption = 0
+CONF
+  docker run -d --name nexo-sql-mssql -p 21433:1433 -e ACCEPT_EULA=Y -e MSSQL_PID=Developer \
+    -e MSSQL_SA_PASSWORD="$mssql_password" -v "$directory/certs:/certs:ro" \
+    -v "$directory/mssql/mssql.conf:/var/opt/mssql/mssql.conf:ro" -v "$directory/mssql:/seed:ro" \
+    "$mssql" >/dev/null
+fi
 
 # Ready once the final server (after the init scripts) answers over TCP.
 ready() { docker exec "$1" psql -h 127.0.0.1 -U nexo -d shop -tAc "$2" >/dev/null 2>&1; }
@@ -78,6 +99,21 @@ for _ in $(seq 1 90); do
   fi
   sleep 2
 done
+# SQL Server answers once it has started; then its data is loaded.
+sqlcmd() {
+  docker exec nexo-sql-mssql /opt/mssql-tools18/bin/sqlcmd -C -b -I -S localhost -U sa \
+    -P "$mssql_password" "$@"
+}
+if [[ "$started" == true && "$with_mssql" == true ]]; then
+  started=false
+  for _ in $(seq 1 90); do
+    if sqlcmd -Q "SELECT 1" >/dev/null 2>&1; then
+      sqlcmd -i /seed/seed.sql >/dev/null && started=true
+      break
+    fi
+    sleep 2
+  done
+fi
 if [[ "$started" != true ]]; then
   for name in "${names[@]}"; do
     echo "== $name: $(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' "$name")" >&2
@@ -97,5 +133,14 @@ NEXO_SQL_PG_DATABASE=shop
 NEXO_SQL_PG_CA=$directory/certs/ca.crt
 NEXO_SQL_PG_CLIENT_CERT=$directory/certs/client.crt
 NEXO_SQL_PG_CLIENT_KEY=$directory/certs/client.pk8"
+if [[ "$with_mssql" == true ]]; then
+  variables="$variables
+NEXO_SQL_MSSQL_HOST=127.0.0.1
+NEXO_SQL_MSSQL_PORT=21433
+NEXO_SQL_MSSQL_USER=sa
+NEXO_SQL_MSSQL_PASSWORD=$mssql_password
+NEXO_SQL_MSSQL_DATABASE=shop
+NEXO_SQL_MSSQL_CA=$directory/certs/ca.crt"
+fi
 echo "$variables"
 if [[ -n "${GITHUB_ENV:-}" ]]; then echo "$variables" >> "$GITHUB_ENV"; fi

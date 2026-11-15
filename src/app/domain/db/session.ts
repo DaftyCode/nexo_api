@@ -2,6 +2,7 @@
  * What the database section keeps in the workspace session: the navigator as it was, and
  * its editor tabs with the unsaved text of each script. Results are never kept.
  */
+import { QuickFilter, TableQuery } from './table-query';
 import { DbBookmark } from './tree';
 
 export type DbTabKind = 'connection' | 'sql' | 'object';
@@ -16,6 +17,8 @@ export interface DbTab {
   title: string;
   /** An object tab: the object's path in the tree. */
   path?: string[];
+  /** An object tab: the filter and order of its «Data» tab. */
+  query?: TableQuery;
 }
 
 /** What a SQL tab holds besides its results. */
@@ -81,8 +84,37 @@ function readTab(item: unknown): DbTab[] {
       connection: text(tab, 'connection'),
       title: text(tab, 'title'),
       ...(kind === 'object' ? { path: strings(tab['path']) } : {}),
+      ...(kind === 'object' && tab['query'] ? { query: readQuery(tab['query']) } : {}),
     },
   ];
+}
+
+const OPERATORS = ['eq', 'ne', 'null', 'notnull', 'contains'];
+
+/** The filter and order of a «Data» tab, as stored. */
+function readQuery(value: unknown): TableQuery {
+  const query = record(value);
+  const quick = (Array.isArray(query['quick']) ? query['quick'] : []).flatMap(
+    (item: unknown): QuickFilter[] => {
+      const filter = record(item);
+      if (typeof filter['column'] !== 'string' || !OPERATORS.includes(String(filter['operator'])))
+        return [];
+      return [
+        {
+          column: filter['column'],
+          operator: filter['operator'] as QuickFilter['operator'],
+          ...('value' in filter ? { value: filter['value'] } : {}),
+        },
+      ];
+    },
+  );
+  const order = (Array.isArray(query['order']) ? query['order'] : []).flatMap((item: unknown) => {
+    const level = record(item);
+    return typeof level['column'] === 'string'
+      ? [{ column: level['column'], descending: level['descending'] === true }]
+      : [];
+  });
+  return { where: text(query, 'where'), quick, order };
 }
 
 function readDraft(item: unknown): SqlDraft {
@@ -140,5 +172,24 @@ export function storedDrafts(drafts: Readonly<Record<string, SqlDraft>>) {
       id,
       draft.script && !draft.dirty ? { ...draft, text: '' } : draft,
     ]),
+  );
+}
+
+/**
+ * The drafts of a stored session, as they open again: a saved script that had not changed
+ * reads its text from its document (`script` gives it); one whose script was deleted keeps
+ * its text, as unsaved.
+ */
+export function restoredDrafts(
+  drafts: Readonly<Record<string, SqlDraft>>,
+  script: (id: string) => string | undefined,
+): Record<string, SqlDraft> {
+  return Object.fromEntries(
+    Object.entries(drafts).map(([id, draft]) => {
+      if (!draft.script) return [id, draft];
+      const text = script(draft.script);
+      if (text === undefined) return [id, { ...draft, script: undefined, dirty: true }];
+      return [id, draft.text ? draft : { ...draft, text }];
+    }),
   );
 }

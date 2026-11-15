@@ -1,4 +1,5 @@
 import { WorkspaceDocument } from '../../domain/models';
+import { GridFormats, readGridFormats } from '../../domain/db/grid/cells';
 import { DEFAULT_MAX_RESULTS, ExecuteAnswer } from '../../domain/db/results';
 import { HistoryEntry, ScriptValue, SplitAnswer, readHistory } from '../../domain/db/sql';
 import { VariableScopes } from '../../domain/variables';
@@ -23,6 +24,7 @@ export type StatementPorts = ExecutionPort &
 
 const MAX_RESULTS = 'db.maxResults';
 const ON_FAILURE = 'db.scriptFailure';
+const GRID_FORMATS = 'db.gridFormats';
 /** The history entries read when the panel opens, newest first. */
 const HISTORY_READ = 200;
 
@@ -82,7 +84,12 @@ export class DatabaseStatementCases {
     session: string,
     statement: string,
     sql: string,
-    options: { pageRows?: number; confirm?: boolean; confirmName?: string } = {},
+    options: {
+      pageRows?: number;
+      params?: unknown[];
+      confirm?: boolean;
+      confirmName?: string;
+    } = {},
   ): Promise<ExecuteAnswer> {
     return this.api.execute<ExecuteAnswer>('db.execute', {
       workspace,
@@ -90,6 +97,7 @@ export class DatabaseStatementCases {
       statement,
       sql,
       ...(options.pageRows ? { pageRows: options.pageRows } : {}),
+      ...(options.params?.length ? { params: options.params } : {}),
       ...(options.confirm ? { confirm: true } : {}),
       ...(options.confirmName ? { confirmName: options.confirmName } : {}),
     });
@@ -182,5 +190,12 @@ export class DatabaseStatementCases {
   }
   setOnFailure(choice: ScriptFailure) {
     this.preferences.write(ON_FAILURE, choice === 'ask' ? '' : choice);
+  }
+  /** How the data grids write `NULL`, decimals and dates. */
+  gridFormats(): GridFormats {
+    return readGridFormats(this.preferences.read(GRID_FORMATS));
+  }
+  setGridFormats(formats: GridFormats) {
+    this.preferences.write(GRID_FORMATS, JSON.stringify(readGridFormats(JSON.stringify(formats))));
   }
 }

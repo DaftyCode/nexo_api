@@ -171,9 +171,15 @@ describe('database use cases', () => {
     await cases.statements.execute('w', 'editor:t', 'run-1', 'drop table x', {
       confirm: true,
       confirmName: 'x',
+      params: ['a'],
     });
     expect(calls[2][1]).toEqual(
-      expect.objectContaining({ statement: 'run-1', confirm: true, confirmName: 'x' }),
+      expect.objectContaining({
+        statement: 'run-1',
+        confirm: true,
+        confirmName: 'x',
+        params: ['a'],
+      }),
     );
   });
 
@@ -185,6 +191,17 @@ describe('database use cases', () => {
     expect(cases.statements.onFailure()).toBe('ask');
     cases.statements.setOnFailure('stop');
     expect(cases.statements.onFailure()).toBe('stop');
+    expect(cases.statements.gridFormats()).toEqual({
+      nullText: 'NULL',
+      decimal: '.',
+      dates: 'iso',
+    });
+    cases.statements.setGridFormats({ nullText: '(null)', decimal: ',', dates: 'local' });
+    expect(cases.statements.gridFormats()).toEqual({
+      nullText: '(null)',
+      decimal: ',',
+      dates: 'local',
+    });
   });
 
   it('reads the history newest first, each entry once', async () => {

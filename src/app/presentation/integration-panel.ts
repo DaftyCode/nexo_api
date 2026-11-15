@@ -78,6 +78,7 @@ export type IntegrationModel = typeof defaultModel;
 
 import { SessionSettings } from './session-settings';
 import { ModulesSettings } from './modules-settings';
+import { GridFormatSettings } from './grid-format-settings';
 @Component({
   imports: [
     TranslocoPipe,
@@ -92,6 +93,7 @@ import { ModulesSettings } from './modules-settings';
     VaultSecrets,
     SessionSettings,
     ModulesSettings,
+    GridFormatSettings,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',

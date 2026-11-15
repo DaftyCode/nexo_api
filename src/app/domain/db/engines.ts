@@ -50,6 +50,23 @@ const ENGINES: Record<string, EngineProfile> = {
     limits: 'db.limits.postgres',
     schemaStatement: (schema) => `SET search_path TO ${schema}`,
   },
+  // SQL Server has no default schema per session (it is the user's): no schema statement.
+  mssql: {
+    id: 'mssql',
+    name: 'SQL Server',
+    defaultPort: 1433,
+    defaultHost: 'localhost',
+    defaultDatabase: 'master',
+    defaultUser: 'sa',
+    schemes: ['sqlserver', 'mssql'],
+    tlsModes: TLS_MODES,
+    properties: [
+      { name: 'application_name', description: 'db.property.program_name' },
+      { name: 'instance', description: 'db.property.instance' },
+      { name: 'strict', description: 'db.property.strict' },
+    ],
+    limits: 'db.limits.mssql',
+  },
 };
 
 /** The profile of an engine; an engine the form does not know gets the common fields. */

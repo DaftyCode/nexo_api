@@ -19,11 +19,18 @@ const DRIVERS = [
     description: 'PostgreSQL and compatible servers',
     licenses: ['MIT OR Apache-2.0'],
   },
+  {
+    id: 'mssql',
+    name: 'SQL Server',
+    description: 'Microsoft SQL Server and Azure SQL Database',
+    licenses: ['MIT OR Apache-2.0'],
+  },
 ];
 
 /**
- * The test database driver (built with `cargo build -p nexo-driver-test`) and the PostgreSQL
- * one (`-p nexo-driver-postgres`) as downloadable modules, served by a local server that
+ * The test database driver (built with `cargo build -p nexo-driver-test`), the PostgreSQL
+ * one (`-p nexo-driver-postgres`) and the SQL Server one (`-p nexo-driver-mssql`) as
+ * downloadable modules, served by a local server that
  * stands for the releases. None when the test driver is not built; `ids` lists those served.
  */
 export async function moduleReleases(serverBinary, directory) {

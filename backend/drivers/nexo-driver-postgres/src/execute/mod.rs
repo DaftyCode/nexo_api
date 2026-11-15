@@ -181,6 +181,7 @@ impl PgConnection {
             affected: None,
             notices: self.notices(),
             elapsed_ms: started.elapsed().as_millis() as u64,
+            results: Vec::new(),
         })
     }
 

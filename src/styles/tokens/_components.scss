@@ -51,6 +51,18 @@
     --nexo-card-bg: var(--nexo-color-surface-2);
     --nexo-response-art-shadow: 0 0 0 transparent;
 
+    /* Data grid of the database section */
+    --nexo-grid-row-height: var(--nexo-size-12);
+    --nexo-grid-header-bg: var(--nexo-color-surface-2);
+    --nexo-grid-number-bg: var(--nexo-color-surface-2);
+    --nexo-grid-line: var(--nexo-color-border-subtle);
+    --nexo-grid-selection: var(--nexo-color-selection);
+    --nexo-grid-active: var(--nexo-color-accent);
+    --nexo-grid-found: var(--nexo-color-warning-soft);
+    --nexo-grid-null: var(--nexo-color-text-muted);
+    --nexo-grid-number-text: var(--nexo-color-data-number);
+    --nexo-grid-panel-width: 320px;
+
     /* Printed report */
     --nexo-report-font: system-ui, sans-serif;
     --nexo-report-font-mono: ui-monospace, monospace;

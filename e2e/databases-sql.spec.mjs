@@ -5,43 +5,9 @@
 // reload without their results.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
+import { addConnection, write } from './databases-helpers.mjs';
 
 const environment = process.env;
-
-/** Creates the fixture's connection from the wizard, downloading the module. */
-async function addConnection(page) {
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'Databases' })
-    .click();
-  await page.getByRole('toolbar', { name: 'Navigator' }).getByRole('button').first().click();
-  await page.getByRole('button', { name: /^PostgreSQL/ }).click();
-  const download = page.getByRole('dialog', { name: 'Download the PostgreSQL module' });
-  await expect(download.or(page.getByLabel('Paste a connection URL'))).toBeVisible();
-  if (await download.isVisible()) {
-    await download.getByRole('button', { name: 'Download' }).click();
-    await expect(download).toBeHidden();
-  }
-  const { NEXO_SQL_PG_USER: user, NEXO_SQL_PG_PASSWORD: password } = environment;
-  await page
-    .getByLabel('Paste a connection URL')
-    .fill(
-      `postgresql://${user}:${password}@${environment.NEXO_SQL_PG_HOST}:${environment.NEXO_SQL_PG_PORT}/${environment.NEXO_SQL_PG_DATABASE}`,
-    );
-  await page.getByRole('button', { name: 'Use URL' }).click();
-  await page.getByLabel('Connection name').fill('Sales');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.locator('.toast').filter({ hasText: 'Connection saved' })).toBeVisible();
-}
-
-/** Replaces the text of the SQL editor, as typing it. */
-async function write(page, text) {
-  const editor = page.locator('.cm-content[aria-label="SQL script"]');
-  await editor.click();
-  await page.keyboard.press('ControlOrMeta+a');
-  await page.keyboard.press('Delete');
-  await page.keyboard.insertText(text);
-}
 
 test('the SQL editor keeps a result tab per query and comes back after a reload', async ({
   page,
@@ -53,7 +19,7 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
   );
   test.skip(!environment.NEXO_SQL_PG_HOST, 'Start the SQL fixture: tools/sql-fixture.sh');
   await nexo.signIn(page);
-  await addConnection(page);
+  await addConnection(page, 'Sales');
 
   await page.getByRole('button', { name: '＋ SQL' }).click();
   await write(
@@ -64,7 +30,7 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
   // The statement at the cursor (the last one).
   await page.keyboard.press('ControlOrMeta+Enter');
   await expect(results.getByRole('tab', { name: /^1 · SELECT 3 AS three/ })).toBeVisible();
-  await expect(page.locator('app-db-result-table')).toContainText('3');
+  await expect(page.locator('app-data-grid')).toContainText('3');
   expect(await violations(page)).toEqual([]);
 
   // The whole script: one tab per query, after the first one.
@@ -156,6 +122,6 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
     .getByRole('navigation', { name: 'Object views' })
     .getByRole('button', { name: 'Columns' })
     .click();
-  await expect(page.locator('app-db-object-tab app-db-result-table')).toContainText('customer');
+  await expect(page.locator('app-db-object-tab app-data-grid')).toContainText('customer');
   expect(await violations(page)).toEqual([]);
 });

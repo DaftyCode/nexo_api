@@ -51,6 +51,11 @@ export abstract class SqlSession {
     return readDbConnection(this.connection()?.value).driver;
   }
 
+  /** How the connection writes SQL, as its driver said. */
+  sqlStyle() {
+    return this.section.sqlStyle(this.connection()?.id ?? '');
+  }
+
   /** Keeps the most result tabs, for this editor and the next ones. */
   async setMaxResults(count: number) {
     this.maxResults = count;
@@ -70,6 +75,7 @@ export abstract class SqlSession {
       }
       const cases = await this.section.cases();
       this.maxResults = cases.statements.maxResults();
+      await this.section.learnQuotes(connection.id).catch(() => undefined);
       const value = readDbConnection(connection.value);
       const { server, transaction } = await cases.statements.open(
         this.workspace(),
