@@ -1,7 +1,10 @@
 //! The children of a node of the tree.
-use super::{COLUMN_TYPE, SCHEMA_FOLDERS, database, node, object, query, text, unknown};
+mod parts;
+
+use super::{SCHEMA_FOLDERS, database, node, query, text, unknown};
 use crate::{connection::MsConnection, session::Rows};
 use nexo_driver_sdk::{Result, protocol::TreeNode};
+use parts::part_sql;
 
 const OPEN: &[&str] = &["open"];
 const RELATION: &[&str] = &["open", "data", "ddl"];
@@ -73,56 +76,6 @@ fn folder_sql(db: &str, folder: &str) -> Option<String> {
             "SELECT CAST(i.object_id AS varchar(12)) + ':' + CAST(i.index_id AS varchar(12)), i.name, o.name \
              FROM {db}.sys.indexes i JOIN {db}.sys.tables o ON o.object_id = i.object_id {in_schema} \
              AND i.name IS NOT NULL ORDER BY i.name"
-        ),
-        _ => return None,
-    })
-}
-
-/// The query that lists a part (`columns`, `indexes`…) of the table or view `@P1`.`@P2`.
-fn part_sql(db: &str, part: &str) -> Option<(String, &'static str, &'static [&'static str])> {
-    let id = object(db);
-    Some(match part {
-        "columns" => (
-            format!(
-                "SELECT c.name, {COLUMN_TYPE} + CASE WHEN c.is_nullable = 0 THEN ' not null' ELSE '' END \
-                 FROM {db}.sys.columns c JOIN {db}.sys.types ty ON ty.user_type_id = c.user_type_id \
-                 WHERE c.object_id = {id} ORDER BY c.column_id"
-            ),
-            "column",
-            OPEN,
-        ),
-        "constraints" => (
-            format!(
-                "SELECT name, LOWER(REPLACE(type_desc, '_', ' ')) FROM {db}.sys.key_constraints WHERE parent_object_id = {id} \
-                 UNION ALL SELECT name, 'check' FROM {db}.sys.check_constraints WHERE parent_object_id = {id} ORDER BY 1"
-            ),
-            "constraint",
-            OPEN,
-        ),
-        "foreign-keys" => (
-            format!(
-                "SELECT f.name, 'references ' + rs.name + '.' + rt.name FROM {db}.sys.foreign_keys f \
-                 JOIN {db}.sys.objects rt ON rt.object_id = f.referenced_object_id \
-                 JOIN {db}.sys.schemas rs ON rs.schema_id = rt.schema_id WHERE f.parent_object_id = {id} ORDER BY f.name"
-            ),
-            "constraint",
-            OPEN,
-        ),
-        "indexes" => (
-            format!(
-                "SELECT CAST(i.object_id AS varchar(12)) + ':' + CAST(i.index_id AS varchar(12)), i.name, \
-                 LOWER(i.type_desc) FROM {db}.sys.indexes i WHERE i.object_id = {id} AND i.name IS NOT NULL ORDER BY i.name"
-            ),
-            "index",
-            CODE,
-        ),
-        "triggers" => (
-            format!(
-                "SELECT name, CASE WHEN is_disabled = 1 THEN 'disabled' END FROM {db}.sys.triggers \
-                 WHERE parent_id = {id} ORDER BY name"
-            ),
-            "trigger",
-            CODE,
         ),
         _ => return None,
     })
@@ -210,7 +163,10 @@ pub(crate) async fn children(connection: &MsConnection, path: &[String]) -> Resu
                 ("constraints", "Constraints"),
                 ("foreign-keys", "Foreign keys"),
                 ("indexes", "Indexes"),
+                ("dependencies", "Dependencies"),
+                ("references", "References"),
                 ("triggers", "Triggers"),
+                ("policies", "Policies"),
             ],
             &[],
         ),
@@ -228,7 +184,11 @@ pub(crate) async fn children(connection: &MsConnection, path: &[String]) -> Resu
         ] => {
             let (sql, kind, actions) = part_sql(&database(db), part).ok_or_else(unknown)?;
             let rows = query(connection, &sql, &[schema, name]).await?;
-            listed(rows, kind, false, actions, *part == "indexes")
+            let labelled = matches!(
+                *part,
+                "indexes" | "dependencies" | "references" | "policies"
+            );
+            listed(rows, kind, false, actions, labelled)
         }
         ["security"] => folders(&[("logins", "Logins"), ("roles", "Server roles")], &[]),
         ["security", folder @ ("logins" | "roles")] => {

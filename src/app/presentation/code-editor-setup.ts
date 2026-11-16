@@ -41,6 +41,14 @@ export const highlight = HighlightStyle.define([
 ]);
 
 /** The look of the code editors, as the `.code-editor` text areas had. */
+/** A line of code inside something that already frames it, such as a statement's condition. */
+const lineTheme = EditorView.theme({
+  '&': { border: 'none', background: 'transparent', fontSize: 'var(--nexo-font-size-md)' },
+  '&.cm-focused': { outline: 'none' },
+  '.cm-content': { padding: 'var(--nexo-space-1) 0' },
+  '.cm-activeLine': { background: 'transparent' },
+});
+
 export const theme = EditorView.theme(
   {
     '&': {
@@ -108,9 +116,11 @@ export function baseExtensions(options: {
   label: string;
   placeholder: string;
   changed: (text: string) => void;
+  /** Without line numbers nor frame: a line of code inside something that frames it. */
+  line?: boolean;
 }): Extension[] {
   return [
-    lineNumbers(),
+    ...(options.line ? [lineTheme] : [lineNumbers()]),
     history(),
     drawSelection(),
     indentOnInput(),

@@ -1,24 +1,65 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--nexo-space-4);
+  gap: var(--nexo-space-5);
   min-height: 0;
   height: 100%;
 }
-.db-nav-toolbar {
+.db-nav-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nexo-space-4);
+}
+.db-nav-head h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-xl);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.db-nav-head .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+}
+.db-nav-head .button app-studio-icon {
+  width: var(--nexo-size-7);
+  height: var(--nexo-size-7);
+}
+.db-nav-search {
   display: flex;
   align-items: center;
   gap: var(--nexo-space-3);
 }
-.db-nav-toolbar .primary {
-  margin-right: auto;
-}
-.db-nav-toolbar .icon-button[aria-pressed='true'] {
-  background: var(--nexo-color-accent-soft);
-  color: var(--nexo-color-accent-strong);
-}
-.db-nav-filter {
+.db-search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  min-width: 0;
   margin: 0;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-sunken);
+  color: var(--nexo-color-text-muted);
+}
+.db-search:focus-within {
+  border-color: var(--nexo-color-accent-border);
+}
+.db-search app-studio-icon,
+.db-nav-options app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}
+.db-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
+  outline: none;
 }
 .db-bookmarks h3 {
   margin: 0 0 var(--nexo-space-2);
@@ -47,108 +88,31 @@
 .db-bookmark:hover {
   background: var(--nexo-color-hover);
 }
+.db-group {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-sm);
+  font-weight: var(--nexo-font-weight-medium);
+  text-align: left;
+}
+.db-chevron,
+.db-twisty app-studio-icon {
+  width: var(--nexo-size-7);
+  height: var(--nexo-size-7);
+  transition: transform var(--nexo-duration-fast);
+}
+.db-chevron.open {
+  transform: rotate(90deg);
+}
 .db-tree {
   flex: 1;
   min-height: 0;
+  margin-top: calc(-1 * var(--nexo-space-3));
   overflow: auto;
   font-size: var(--nexo-font-size-sm);
-}
-.db-row {
-  display: flex;
-  align-items: center;
-  gap: var(--nexo-space-2);
-  padding: var(--nexo-space-1) var(--nexo-space-3);
-  padding-left: calc(var(--nexo-space-6) * var(--db-level, 1));
-  border-radius: var(--nexo-radius-sm);
-  border-left: var(--nexo-border-width-accent) solid transparent;
-  color: var(--nexo-color-text);
-  cursor: default;
-  white-space: nowrap;
-}
-.db-row:hover {
-  background: var(--nexo-color-hover);
-}
-.db-row.db-active {
-  background: var(--nexo-color-selection);
-}
-.db-row:focus-visible {
-  outline: var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring);
-  outline-offset: 0;
-}
-.db-row.db-drop {
-  box-shadow: inset 0 0 0 var(--nexo-border-width) var(--nexo-color-accent);
-}
-.db-row-connection.db-type-production {
-  border-left-color: var(--nexo-color-danger);
-}
-.db-row-connection.db-type-test {
-  border-left-color: var(--nexo-color-warning);
-}
-.db-row-folder {
-  color: var(--nexo-color-text-muted);
-  font-weight: var(--nexo-font-weight-semibold);
-}
-.db-twisty {
-  display: inline-flex;
-  justify-content: center;
-  width: var(--nexo-size-6);
-  color: var(--nexo-color-text-muted);
-  transition: transform var(--nexo-duration-fast);
-}
-.db-twisty.open {
-  transform: rotate(90deg);
-}
-.db-twisty.hidden {
-  visibility: hidden;
-}
-.db-icon {
-  width: var(--nexo-size-8);
-  height: var(--nexo-size-8);
-  color: var(--nexo-color-text-soft);
-}
-.db-row-folder .db-icon {
-  color: var(--nexo-color-folder);
-}
-.db-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.db-detail {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--nexo-color-text-faint);
-  font-size: var(--nexo-font-size-xs);
-}
-.db-status {
-  width: var(--nexo-size-3);
-  height: var(--nexo-size-3);
-  border-radius: var(--nexo-radius-full);
-  flex-shrink: 0;
-  background: var(--nexo-color-text-faint);
-}
-.db-status-connecting {
-  background: var(--nexo-color-warning);
-}
-.db-status-connected {
-  background: var(--nexo-color-success);
-}
-.db-status-error {
-  background: var(--nexo-color-danger);
-}
-.db-badge {
-  font-size: var(--nexo-font-size-2xs);
-  color: var(--nexo-color-text-muted);
-  border: var(--nexo-border-width) solid var(--nexo-color-border);
-  border-radius: var(--nexo-radius-sm);
-  padding: var(--nexo-space-px) var(--nexo-space-2);
-}
-.db-badge-production {
-  color: var(--nexo-color-danger-text);
-  border-color: var(--nexo-color-danger-border);
-  background: var(--nexo-color-danger-soft);
-}
-.db-mark {
-  color: var(--nexo-color-warning);
 }
 .db-message {
   font-size: var(--nexo-font-size-xs);
@@ -167,38 +131,4 @@
 }
 .db-empty {
   padding: var(--nexo-space-4);
-}
-.db-menu {
-  position: fixed;
-  z-index: var(--nexo-z-popover);
-  display: flex;
-  flex-direction: column;
-  min-width: calc(var(--nexo-size-unit) * 48);
-  padding: var(--nexo-space-2);
-  border: var(--nexo-border-width) solid var(--nexo-color-border);
-  border-radius: var(--nexo-radius-md);
-  background: var(--nexo-color-surface);
-  box-shadow: var(--nexo-shadow-lg);
-}
-.db-menu button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--nexo-space-6);
-  padding: var(--nexo-space-2) var(--nexo-space-4);
-  border-radius: var(--nexo-radius-sm);
-  color: var(--nexo-color-text);
-  font-size: var(--nexo-font-size-sm);
-  text-align: left;
-}
-.db-menu button:hover,
-.db-menu button:focus-visible {
-  background: var(--nexo-color-hover);
-}
-.db-menu button.danger {
-  color: var(--nexo-color-danger-text);
-}
-.db-menu kbd {
-  color: var(--nexo-color-text-muted);
-  font-size: var(--nexo-font-size-2xs);
 }

@@ -4,6 +4,7 @@
 // the columns of a table with the keyboard, filtered, bookmarked and deleted.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
+import { folder } from './databases-helpers.mjs';
 
 const environment = process.env;
 
@@ -79,13 +80,13 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
     await expect(item).toHaveAttribute('aria-expanded', 'true');
   };
   await open(database);
-  await open(tree.getByRole('treeitem', { name: 'Schemas', exact: true }));
+  await open(folder(tree, 'Schemas'));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
-  await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
+  await open(folder(tree, 'Tables'));
   const orders = tree.getByRole('treeitem', { name: /^orders/ });
   await orders.click();
   await expect(orders).toHaveAttribute('aria-expanded', 'true');
-  await open(tree.getByRole('treeitem', { name: 'Columns', exact: true }));
+  await open(folder(tree, 'Columns'));
   await expect(tree.getByRole('treeitem', { name: /^total/ })).toBeVisible();
   expect(await violations(page)).toEqual([]);
 

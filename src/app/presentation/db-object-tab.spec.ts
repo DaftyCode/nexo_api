@@ -99,6 +99,14 @@ describe('DbObjectTab', () => {
     await settle();
   };
   const statement = () => root().querySelector('.db-data-statement')?.textContent?.trim();
+  /** Chooses an entry of the menu or popup a button opens. */
+  const choose = async (opener: string, entry: string) => {
+    await clickButton(fixture, opener);
+    await settle();
+    const popup = root().querySelector('[role="menu"], .db-refresh-menu')!;
+    buttons(popup as Element, entry)[0].click();
+    await settle();
+  };
   const shown = () =>
     root().querySelector('[aria-label="Object views"] [aria-current="page"]')?.textContent?.trim();
 
@@ -138,10 +146,12 @@ describe('DbObjectTab', () => {
   });
 
   it('shows its header, properties, sections and DDL, and follows its keys', async () => {
-    expect(root().querySelector('h2')?.textContent).toContain('shop.orders');
+    expect(root().querySelector('.db-object-head h2')?.textContent).toContain('shop.orders');
+    expect(root().querySelector('.db-object-kind')?.textContent).toContain('Table');
     const facts = root().querySelector('.db-object-facts')!.textContent!;
     expect(facts).toContain('nexo');
-    expect(facts).toContain('Estimated rows');
+    expect(facts).toContain('Rows:~3');
+    expect(facts).toContain('Columns:1');
     expect(facts).not.toContain('Comment');
     // A table opens on its data.
     expect(shown()).toBe('Data');
@@ -191,18 +201,12 @@ describe('DbObjectTab', () => {
     // A condition written by hand, then a quick filter from a cell and an order.
     typeCode(root().querySelector('.cm-content[aria-label="Condition (WHERE)"]')!, 'id > 0');
     await settle();
-    await clickButton(fixture, 'Apply the filter');
+    await clickButton(fixture, 'Run (F5)');
     await settle();
     expect(statement()).toBe('SELECT * FROM shop.orders WHERE (id > 0)');
     grid().querySelector<HTMLElement>('[role="gridcell"][data-row="0"][data-column="0"]')!.click();
     await settle();
-    await clickButton(fixture, 'Column', grid().closest('app-data-grid')!);
-    await settle();
-    const item = [...root().querySelectorAll<HTMLElement>('[role="menuitem"]')].find((element) =>
-      element.textContent?.includes('Filter: equal to this value'),
-    )!;
-    item.click();
-    await settle();
+    await choose('Filter by this value', 'Filter: equal to this value');
     expect(statement()).toBe('SELECT * FROM shop.orders WHERE (id > 0) AND status = $1');
     expect(calls('db.execute').at(-1)?.['params']).toEqual(['paid']);
     root().querySelectorAll<HTMLButtonElement>('.grid-sort')[0].click();
@@ -216,10 +220,9 @@ describe('DbObjectTab', () => {
     expect(statement()).toBe('SELECT * FROM shop.orders WHERE (id > 0)');
 
     // The count, more rows and the automatic refresh.
-    await clickButton(fixture, 'Count the rows');
-    await settle();
+    await choose('Refresh options', 'Count the rows');
     expect(root().querySelector('.db-data-toolbar [role="status"]')?.textContent).toContain(
-      '3 rows',
+      'Rows: 2 (of 3)',
     );
     grid().dispatchEvent(
       new KeyboardEvent('keydown', { key: 'ArrowDown', ctrlKey: true, bubbles: true }),
@@ -227,9 +230,10 @@ describe('DbObjectTab', () => {
     await settle();
     // The grid asked for the next page of the cursor.
     expect(calls('db.fetch')[0]).toEqual(expect.objectContaining({ cursor: 'k1' }));
-    await clickButton(fixture, 'Refresh by itself');
-    expect(buttons(root(), 'Stop refreshing')).toHaveLength(1);
-    await clickButton(fixture, 'Stop refreshing');
+    await choose('Refresh options', 'Refresh by itself');
+    await choose('Refresh options', 'Stop refreshing');
+    await clickButton(fixture, 'Refresh options');
+    expect(buttons(root(), 'Refresh by itself')).toHaveLength(1);
 
     // The rows related to the active one, by its keys both ways.
     await clickButton(fixture, 'References');
@@ -250,14 +254,18 @@ describe('DbObjectTab', () => {
     // An error is said; «Clear» goes back to every row; the statement opens in a script.
     typeCode(root().querySelector('.cm-content[aria-label="Condition (WHERE)"]')!, 'boom');
     await settle();
-    await clickButton(fixture, 'Apply the filter');
+    // F5 runs the condition, as the button does.
+    root()
+      .querySelector('app-db-table-data')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'F5', bubbles: true }));
     await settle();
     expect(root().querySelector('.db-data-error')?.textContent).toContain('boom');
     await clickButton(fixture, 'Clear', root().querySelector('.db-data-actions')!);
     await settle();
     expect(statement()).toBe('SELECT * FROM shop.orders');
-    await clickButton(fixture, 'Open in a script', root().querySelector('.db-data-toolbar')!);
+    await clickButton(fixture, 'SQL', root().querySelector('.db-object-tools')!);
     expect(section.tabs.active()?.kind).toBe('sql');
+    expect(section.tabs.draft(section.tabs.activeId()).text).toBe('SELECT * FROM shop.orders');
     section.closeTab('o1');
     await settle();
     expect(calls('db.disconnect').at(-1)).toEqual(

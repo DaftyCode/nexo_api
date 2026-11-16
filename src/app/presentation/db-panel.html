@@ -20,7 +20,7 @@
     <div class="db-tabbar">
       <button
         type="button"
-        class="icon-button"
+        class="icon-button db-fold"
         [attr.aria-expanded]="!folded()"
         [attr.aria-label]="(folded() ? 'Show the navigator' : 'Hide the navigator') | transloco"
         [attr.title]="(folded() ? 'Show the navigator' : 'Hide the navigator') | transloco"
@@ -39,6 +39,7 @@
               [attr.data-tab]="tab.id"
               [attr.aria-selected]="tab.id === tabs.activeId()"
               [attr.aria-controls]="'db-tabpanel-' + tab.id"
+              aria-keyshortcuts="Delete"
               [id]="'db-tab-' + tab.id"
               [attr.tabindex]="tab.id === tabs.activeId() ? 0 : -1"
               [attr.title]="title(tab)"
@@ -53,41 +54,39 @@
               (drop)="drag.drop($event, tab.id)"
               (dragend)="drag.end()"
             >
-              <span class="db-tab-kind" aria-hidden="true">{{ kindMark(tab) }}</span>
-              @if (tab.kind === 'connection' && !tab.connection) {
-                {{ 'New connection' | transloco }}
-              } @else {
-                {{ title(tab) }}
-              }
+              <app-studio-icon class="db-tab-icon" [name]="kindIcon(tab)" />
+              <span class="db-tab-title">
+                @if (tab.kind === 'connection' && !tab.connection) {
+                  {{ 'New connection' | transloco }}
+                } @else if (tab.kind === 'object') {
+                  {{ 'db.tab.object' | transloco: { v0: title(tab) } }}
+                } @else {
+                  {{ title(tab) }}
+                }
+              </span>
               @if (dirty(tab)) {
-                <span class="db-tab-dirty" [attr.aria-label]="'Unsaved changes' | transloco"
-                  >●</span
-                >
+                <span class="db-tab-dirty" [attr.aria-label]="'Unsaved changes' | transloco"></span>
               }
+              <span
+                class="db-tab-close"
+                aria-hidden="true"
+                [attr.title]="'Close the tab' | transloco"
+                (click)="$event.stopPropagation(); section.closeTab(tab.id)"
+                >×</span
+              >
             </button>
           }
         </div>
-        @if (tabs.active(); as active) {
-          <button
-            type="button"
-            class="icon-button"
-            [attr.aria-label]="'Close the tab' | transloco"
-            [attr.title]="'Close the tab' | transloco"
-            (click)="section.closeTab(active.id)"
-          >
-            ×
-          </button>
-        }
       }
-      <span class="grow"></span>
       @if (section.connection(section.active()); as connection) {
         <button
           type="button"
-          class="button small"
+          class="icon-button db-new-tab"
+          [attr.aria-label]="'New SQL script (Ctrl+])' | transloco"
           [attr.title]="'New SQL script (Ctrl+])' | transloco"
           (click)="section.newScript(connection.id)"
         >
-          {{ '＋ SQL' | transloco }}
+          <app-studio-icon name="plus" />
         </button>
       }
     </div>

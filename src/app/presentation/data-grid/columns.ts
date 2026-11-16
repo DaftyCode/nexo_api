@@ -39,6 +39,9 @@ export class GridColumns {
   hide(column: number) {
     this.change((view) => ({ ...view, hidden: [...new Set([...view.hidden, column])] }));
   }
+  show(column: number) {
+    this.change((view) => ({ ...view, hidden: view.hidden.filter((other) => other !== column) }));
+  }
   showAll() {
     this.change((view) => ({ ...view, hidden: [] }));
   }

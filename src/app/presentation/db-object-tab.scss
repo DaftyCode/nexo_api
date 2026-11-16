@@ -3,15 +3,120 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  padding: var(--nexo-space-6);
+  padding: var(--nexo-space-10) var(--nexo-space-10) var(--nexo-space-6);
 }
 .db-object-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--nexo-space-3);
+  gap: var(--nexo-space-4) var(--nexo-space-6);
 }
 .db-object-head h2 {
   margin: 0;
+  font-size: var(--nexo-font-size-4xl);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.db-object-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--nexo-size-20);
+  height: var(--nexo-size-20);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-accent-soft);
+  color: var(--nexo-color-accent-strong);
+}
+.db-object-icon app-studio-icon {
+  width: var(--nexo-size-13);
+  height: var(--nexo-size-13);
+}
+.db-object-kind,
+.db-object-facts > div {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-3) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface-2);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-object-kind {
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-object-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-4);
+  margin: 0 0 0 var(--nexo-space-6);
+}
+.db-object-facts dt {
+  color: var(--nexo-color-text-soft);
+}
+.db-object-facts dd {
+  margin: 0;
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-object-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+}
+.db-object-tools .icon-button,
+.db-object-sql {
+  height: var(--nexo-size-20);
+  min-width: var(--nexo-size-20);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface-2);
+}
+.db-object-tools app-studio-icon {
+  width: var(--nexo-size-9);
+  height: var(--nexo-size-9);
+}
+.db-object-sql {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  padding: 0 var(--nexo-space-6);
+}
+.db-object-parts {
+  display: flex;
+  gap: var(--nexo-space-2);
+  margin-top: var(--nexo-space-8);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  overflow-x: auto;
+}
+.db-object-parts button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-5) var(--nexo-space-6);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-md);
+  white-space: nowrap;
+}
+.db-object-parts button:hover {
+  color: var(--nexo-color-text);
+}
+.db-object-parts button.active {
+  color: var(--nexo-color-text);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-object-parts button.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(-1 * var(--nexo-border-width));
+  height: var(--nexo-size-2);
+  border-radius: var(--nexo-radius-xs);
+  background: var(--nexo-gradient-accent-line);
+}
+.db-object-parts app-studio-icon {
+  width: var(--nexo-size-9);
+  height: var(--nexo-size-9);
 }
 .db-object-body {
   display: flex;
@@ -19,7 +124,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
-  padding-top: var(--nexo-space-4);
+  padding-top: var(--nexo-space-8);
 }
 .db-object-properties {
   display: grid;
@@ -38,19 +143,6 @@
 .db-object-ddl-actions {
   gap: var(--nexo-space-3);
   margin-bottom: var(--nexo-space-3);
-}
-.db-object-facts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--nexo-space-2) var(--nexo-space-8);
-  margin: 0 0 0 var(--nexo-space-8);
-  font-size: var(--nexo-font-size-xs);
-}
-.db-object-facts dt {
-  color: var(--nexo-color-text-muted);
-}
-.db-object-facts dd {
-  margin: 0;
 }
 .db-object-body > app-db-table-data,
 .db-object-body > app-data-grid {

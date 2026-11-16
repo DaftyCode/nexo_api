@@ -4,7 +4,7 @@
 // the rows that point back, in the References panel.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { addConnection } from './databases-helpers.mjs';
+import { addConnection, folder } from './databases-helpers.mjs';
 
 const environment = process.env;
 
@@ -28,9 +28,9 @@ test("an object's tab shows its data from the server and follows its keys", asyn
   };
   await open(tree.getByRole('treeitem', { name: /^Objects/ }));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).first());
-  await open(tree.getByRole('treeitem', { name: 'Schemas', exact: true }));
+  await open(folder(tree, 'Schemas'));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
-  await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
+  await open(folder(tree, 'Tables'));
   // A double click opens a table's tab on its data; with the tab open, it opens the table in the
   // tree.
   const orders = tree.getByRole('treeitem', { name: /^orders/ });
@@ -63,7 +63,7 @@ test("an object's tab shows its data from the server and follows its keys", asyn
   const where = page.locator('.cm-content[aria-label="Condition (WHERE)"]');
   await where.click();
   await page.keyboard.insertText('total > 1');
-  await page.getByRole('button', { name: 'Apply the filter' }).click();
+  await page.getByRole('button', { name: 'Run (F5)' }).click();
   await page.getByRole('button', { name: 'Statement', exact: true }).click();
   const statement = page.locator('.db-data-statement');
   await expect(statement).toHaveText('SELECT * FROM shop.orders WHERE (total > 1)');
@@ -75,14 +75,15 @@ test("an object's tab shows its data from the server and follows its keys", asyn
 
   // A quick filter from a cell goes as a parameter.
   await grid.getByRole('gridcell', { name: 'paid' }).click();
-  await page.getByRole('button', { name: 'Column', exact: true }).click();
+  await page.getByRole('button', { name: 'Filter by this value' }).click();
   await page.getByRole('menuitem', { name: 'Filter: equal to this value' }).click();
   await expect(statement).toHaveText(
     'SELECT * FROM shop.orders WHERE (total > 1) AND status = $1 ORDER BY total ASC',
   );
   await expect(grid.getByRole('gridcell', { name: '9.99' })).toBeHidden();
+  await page.getByRole('button', { name: 'Refresh options' }).click();
   await page.getByRole('button', { name: 'Count the rows' }).click();
-  await expect(page.getByRole('status').filter({ hasText: /^1 rows$/ })).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Rows: 1 (of 1)' })).toBeVisible();
 
   // A foreign key leads to the table it points to, and the rows that point back show.
   await views.getByRole('button', { name: 'Foreign keys' }).click();

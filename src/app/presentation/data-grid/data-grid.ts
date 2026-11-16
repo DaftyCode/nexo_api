@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -16,27 +16,32 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { FormField, form } from '@angular/forms/signals';
 import { GridFormats, formatCell } from '../../domain/db/grid/cells';
-import { CopyFormat, SqlStyle, copyAs } from '../../domain/db/grid/copy';
+import { SqlStyle } from '../../domain/db/grid/copy';
 import {
   GridSelection,
   clickSelection,
   isSelected,
-  moveSelection,
   selectedRange,
   startSelection,
 } from '../../domain/db/grid/selection';
 import { plainText } from '../../domain/db/grid/text';
 import { GridView, emptyView } from '../../domain/db/grid/view';
+import { columnBadge } from '../../domain/db/look';
 import { ResultColumn } from '../../domain/db/results';
+import { StudioIcon } from '../studio-icon';
+import { WorkspaceState } from '../workspace-state';
 import { GridColumns } from './columns';
 import { GridFind } from './find';
+import { GridBar } from './grid-bar';
+import { GridMenu } from './grid-menu';
 import { GridPanels, PanelKind } from './grid-panels';
 import { GridLayout } from './layout';
-import { GridMenu } from './grid-menu';
 import { GridRecord } from './grid-record';
 import { GridFormatsState } from './formats';
+import { gridKey } from './keys';
+import { GridMenus } from './menu-actions';
+import { GridOutput } from './output';
 import { GridPointer } from './pointer';
 import { CellAction, GroupingSource } from './types';
 
@@ -46,16 +51,22 @@ let grids = 0;
 
 /**
  * The data grid of the database section, as DBeaver's: virtualized in rows and columns (only
- * what is in sight is drawn), a WAI-ARIA grid for the keyboard, cells formatted by class,
- * columns resized, fitted, moved, hidden and pinned, order and filter over what was loaded,
- * find, record view, copy in several formats, a plain text view, and side panels.
+ * what is in sight is drawn, and the next page is read on reaching the end), a WAI-ARIA grid
+ * for the keyboard, cells formatted by class, columns resized, fitted, moved, hidden and
+ * pinned, order and filter over what was loaded, find, record view, copy and download in
+ * several formats, a plain text view, full screen, and side panels.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, NgTemplateOutlet, GridPanels, GridMenu, GridRecord],
+  imports: [TranslocoPipe, NgTemplateOutlet, GridBar, GridPanels, GridMenu, GridRecord, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-data-grid',
   templateUrl: './data-grid.html',
-  styleUrl: './data-grid.scss',
+  styleUrls: ['./data-grid.scss', './data-grid/chrome.scss'],
+  host: {
+    '[class.grid-maximized]': 'maximized()',
+    '(document:click)': 'menus.open.set(undefined)',
+    '(keydown.escape)': 'maximized.set(false)',
+  },
 })
 export class DataGrid {
   readonly columns = input.required<readonly ResultColumn[]>();
@@ -69,6 +80,8 @@ export class DataGrid {
   /** The formats of Settings, unless the screen gives others. */
   readonly formats = input<GridFormats | undefined>(undefined);
   private readonly chosen = inject(GridFormatsState);
+  private readonly state = inject(WorkspaceState);
+  private readonly i18n = inject(TranslocoService);
   protected readonly format = computed(() => this.formats() ?? this.chosen.formats());
   readonly grouping = input<GroupingSource | undefined>(undefined);
   readonly cellActions = input<readonly CellAction[]>([]);
@@ -85,17 +98,17 @@ export class DataGrid {
   protected readonly panel = signal<PanelKind>('none');
   protected readonly recordView = signal(false);
   protected readonly textView = signal(false);
-  protected readonly menu = signal(false);
-  protected readonly bar = signal({ filter: '', find: '', copy: 'text' as CopyFormat });
-  protected readonly barFields = form(this.bar);
+  protected readonly maximized = signal(false);
+  protected readonly filterText = signal('');
+  protected readonly findText = signal('');
   protected readonly layout = new GridLayout({
     columns: () => this.columns(),
     rows: () => this.rows(),
     view: () => this.view(),
-    filter: () => this.bar().filter,
+    filter: () => this.filterText(),
   });
   protected readonly find = new GridFind(
-    () => this.bar().find,
+    () => this.findText(),
     () => this.rows(),
     () => this.layout.shown(),
     () => this.layout.order(),
@@ -117,6 +130,14 @@ export class DataGrid {
       ? undefined
       : { row: index, column: at, value: this.rows()[index][at] };
   });
+  protected readonly names = computed(() => this.columns().map((column) => column.name));
+  /** How many rows the selection spans. */
+  protected readonly chosenRows = computed(() => {
+    const rows = this.layout.shown().length;
+    if (!rows) return 0;
+    const range = selectedRange(this.selection(), rows, this.layout.order().length);
+    return range.bottom - range.top + 1;
+  });
   protected readonly text = computed(() =>
     this.textView()
       ? plainText(
@@ -128,6 +149,30 @@ export class DataGrid {
         )
       : '',
   );
+  protected readonly output = new GridOutput({
+    layout: this.layout,
+    selection: () => this.selection(),
+    columns: () => this.columns(),
+    rows: () => this.rows(),
+    sql: () => this.sql(),
+    label: () => this.label(),
+    save: (name, text, type) => void this.state.download(name, text, type),
+  });
+  protected readonly menus = new GridMenus({
+    columns: this.columnTools,
+    layout: this.layout,
+    selection: this.selection,
+    active: () => this.active(),
+    hidden: () => this.view().hidden,
+    panel: this.panel,
+    recordView: this.recordView,
+    textView: this.textView,
+    find: this.find,
+    copy: (format) => this.output.copy(undefined, format),
+    download: (format) => this.output.download(format),
+    cellAction: (action, column, value) => this.cellAction.emit({ action, column, value }),
+    focus: () => this.viewport()?.nativeElement.focus({ preventScroll: true }),
+  });
   private asked = -1;
 
   constructor() {
@@ -161,20 +206,38 @@ export class DataGrid {
   protected cell(row: number, column: number) {
     return formatCell(this.rows()[row]?.[column], this.format());
   }
+  protected badgeOf(column: number) {
+    return columnBadge(this.columns()[column]);
+  }
+  protected number(value: number) {
+    return new Intl.NumberFormat(this.i18n.getActiveLang()).format(value);
+  }
   protected cellId(position: number, column: number) {
     return `${this.id}-${position}-${column}`;
   }
+  /** The active cell's id while it is drawn: the grid names no cell that is not there. */
   protected activeId() {
     const { row, column } = this.selection().active;
-    return this.layout.shown().length ? this.cellId(row, column) : null;
+    const drawn =
+      this.layout.drawnRows().some((drawn) => drawn.position === row) &&
+      (column < this.layout.pinned().length ||
+        this.layout.drawnColumns().some((drawn) => drawn.position === column));
+    return drawn ? this.cellId(row, column) : null;
   }
   protected selected(position: number, column: number) {
     const rows = this.layout.shown().length;
     return isSelected(this.selection(), rows, this.layout.order().length, position, column);
   }
+  /** A row chosen whole, by its number or its `⋯`. */
+  protected rowChosen(position: number) {
+    return this.selection().mode === 'rows' && this.selected(position, 0);
+  }
   protected sortOf(column: number) {
     const sort = this.view().sort;
     return sort?.column !== column ? 'none' : sort.descending ? 'descending' : 'ascending';
+  }
+  protected arrow(column: number) {
+    return { none: '', ascending: '▲', descending: '▼' }[this.sortOf(column)];
   }
 
   protected scrolled() {
@@ -186,66 +249,19 @@ export class DataGrid {
     if (element) this.layout.reveal(element, this.selection().active);
   }
 
-  protected select(
-    position: number,
-    column: number,
-    event: MouseEvent,
-    mode: GridSelection['mode'] = 'cells',
-  ) {
-    const target = { row: position, column };
-    this.selection.set(clickSelection(this.selection(), target, mode, event.shiftKey));
-    this.viewport()?.nativeElement.focus({ preventScroll: true });
-  }
-
   protected key(event: KeyboardEvent) {
-    const ctrl = event.ctrlKey || event.metaKey;
-    const letter = event.key.toLowerCase();
-    if (ctrl && letter === 'c') return this.copy(event, 'text');
-    if (ctrl && letter === 'a') {
-      event.preventDefault();
-      const end = { row: this.layout.shown().length - 1, column: this.layout.order().length - 1 };
-      return this.selection.set({ active: end, anchor: { row: 0, column: 0 }, mode: 'cells' });
-    }
-    if (ctrl && letter === 'f') {
-      event.preventDefault();
-      return this.find.open.set(true);
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      return this.panel.set('value');
-    }
-    if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-      event.preventDefault();
-      return this.menu.set(true);
-    }
-    const moved = moveSelection(this.selection(), event.key, {
-      rows: this.layout.shown().length,
-      columns: this.layout.order().length,
-      page: this.layout.page(),
-      ctrl,
-      extend: event.shiftKey,
+    gridKey(event, {
+      layout: this.layout,
+      selection: this.selection,
+      panel: this.panel,
+      findOpen: this.find.open,
+      copy: (keys) => this.output.copy(keys, 'text'),
+      menu: () => {
+        const cell = this.viewport()?.nativeElement.querySelector('.grid-active');
+        this.menus.under(cell ?? this.viewport()?.nativeElement);
+      },
+      reveal: () => this.reveal(),
     });
-    if (!moved) return;
-    event.preventDefault();
-    this.selection.set(moved);
-    this.reveal();
-  }
-
-  /** The cells of the selection, in the order shown. */
-  protected selectedCells() {
-    const { shown, order } = this.layout;
-    const range = selectedRange(this.selection(), shown().length, order().length);
-    const columns = order().slice(range.left, range.right + 1);
-    const rows = shown()
-      .slice(range.top, range.bottom + 1)
-      .map((index) => columns.map((column) => this.rows()[index][column]));
-    return { columns: columns.map((column) => this.columns()[column]), rows };
-  }
-
-  protected copy(event: Event | undefined, format: CopyFormat) {
-    event?.preventDefault();
-    const text = copyAs(this.selectedCells(), format, this.sql());
-    void globalThis.navigator?.clipboard?.writeText(text);
   }
 
   protected findNext(back = false) {
@@ -268,28 +284,17 @@ export class DataGrid {
     const target = (event.target as HTMLElement).closest<HTMLElement>('[data-row]');
     if (!target) return;
     const mode = target.dataset['mode'] === 'rows' ? 'rows' : 'cells';
-    this.select(Number(target.dataset['row']), Number(target.dataset['column'] ?? 0), event, mode);
+    const at = {
+      row: Number(target.dataset['row']),
+      column: Number(target.dataset['column'] ?? 0),
+    };
+    this.selection.set(clickSelection(this.selection(), at, mode, event.shiftKey));
+    this.viewport()?.nativeElement.focus({ preventScroll: true });
   }
   protected contextMenu(event: MouseEvent) {
     if (!(event.target as HTMLElement).closest('[data-column]')) return;
     event.preventDefault();
     this.clicked(event);
-    this.menu.set(true);
-  }
-
-  /** What the column menu does with the active cell's column. */
-  protected menuChosen(choice: string, column: number) {
-    this.closeMenu();
-    const width = this.layout.widthOf(column);
-    if (this.columnTools.run(choice, column, this.layout.order(), width)) return;
-    if (choice === 'value') return this.panel.set('value');
-    if (choice.startsWith('copy:')) return this.copy(undefined, choice.slice(5) as CopyFormat);
-    const active = this.active();
-    if (active)
-      this.cellAction.emit({ action: choice, column: active.column, value: active.value });
-  }
-  protected closeMenu() {
-    this.menu.set(false);
-    this.viewport()?.nativeElement.focus({ preventScroll: true });
+    this.menus.at(event.clientX, event.clientY);
   }
 }

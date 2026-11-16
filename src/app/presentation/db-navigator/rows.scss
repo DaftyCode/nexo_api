@@ -1,0 +1,202 @@
+/* The rows of the navigator's tree: connections, nodes, folders and scripts. */
+.db-row {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  min-height: var(--nexo-size-15);
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  padding-left: calc(var(--nexo-space-8) * var(--db-level, 1) - var(--nexo-space-6));
+  border-radius: var(--nexo-radius-md);
+  border-left: var(--nexo-border-width-accent) solid transparent;
+  color: var(--nexo-color-text);
+  cursor: default;
+  white-space: nowrap;
+}
+.db-row:hover {
+  background: var(--nexo-color-hover);
+}
+.db-row.db-active {
+  background: var(--nexo-db-chosen);
+  color: var(--nexo-color-on-accent);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-row:focus-visible {
+  outline: var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring);
+  outline-offset: 0;
+}
+.db-row.db-drop {
+  box-shadow: inset 0 0 0 var(--nexo-border-width) var(--nexo-color-accent);
+}
+.db-row-connection {
+  min-height: var(--nexo-size-20);
+}
+.db-row-connection.db-type-production {
+  border-left-color: var(--nexo-color-danger);
+}
+.db-row-connection.db-type-test {
+  border-left-color: var(--nexo-color-warning);
+}
+.db-row-folder,
+.db-row-scripts {
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-row[data-kind='schema'] .db-label,
+.db-row-connection .db-label {
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-twisty {
+  display: inline-flex;
+  flex-shrink: 0;
+  justify-content: center;
+  color: var(--nexo-color-text-muted);
+}
+.db-twisty.open app-studio-icon {
+  transform: rotate(90deg);
+}
+.db-twisty.hidden {
+  visibility: hidden;
+}
+.db-icon {
+  width: var(--nexo-size-9);
+  height: var(--nexo-size-9);
+  color: var(--nexo-color-text-soft);
+}
+.db-row-connection .db-icon {
+  width: var(--nexo-size-12);
+  height: var(--nexo-size-12);
+  color: var(--nexo-color-accent-strong);
+}
+.db-row-folder .db-icon,
+.db-row-scripts .db-icon,
+.db-row-script-group .db-icon,
+.db-row[data-kind='folder'] .db-icon {
+  color: var(--nexo-color-folder);
+}
+.db-row[data-kind='schema'] .db-icon {
+  color: var(--nexo-color-accent-strong);
+}
+.db-row[data-kind='view'] .db-icon,
+.db-row[data-kind='procedure'] .db-icon {
+  color: var(--nexo-color-info);
+}
+.db-row[data-kind='function'] .db-icon,
+.db-row[data-kind='aggregate'] .db-icon,
+.db-row[data-kind='sequence'] .db-icon {
+  color: var(--nexo-color-syntax-keyword);
+}
+.db-row[data-kind='column'] .db-icon,
+.db-row[data-kind='index'] .db-icon {
+  color: var(--nexo-color-syntax-variable);
+}
+.db-row[data-kind='constraint'] .db-icon,
+.db-row[data-kind='trigger'] .db-icon {
+  color: var(--nexo-color-warning);
+}
+.db-row.db-active .db-icon,
+.db-row.db-active .db-twisty {
+  color: inherit;
+}
+/* The name keeps its room; what follows it (a type, a count of rows) is cut first. */
+.db-name {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: baseline;
+  gap: var(--nexo-space-2);
+  min-width: 0;
+}
+.db-connection {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.db-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.db-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+  font-weight: var(--nexo-font-weight-regular);
+}
+.db-count,
+.db-detail,
+.db-size {
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-regular);
+}
+.db-detail,
+.db-size {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--nexo-font-size-xs);
+}
+.db-size {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.db-row.db-active .db-count,
+.db-row.db-active .db-detail,
+.db-row.db-active .db-size,
+.db-row.db-active .db-sub {
+  color: inherit;
+}
+.db-status {
+  width: var(--nexo-size-4);
+  height: var(--nexo-size-4);
+  border-radius: var(--nexo-radius-full);
+  flex-shrink: 0;
+  background: var(--nexo-color-text-faint);
+}
+.db-status-connecting {
+  background: var(--nexo-color-warning);
+}
+.db-status-connected {
+  background: var(--nexo-color-success);
+}
+.db-status-error {
+  background: var(--nexo-color-danger);
+}
+.db-badge {
+  font-size: var(--nexo-font-size-2xs);
+  color: var(--nexo-color-text-muted);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-sm);
+  padding: var(--nexo-space-px) var(--nexo-space-2);
+}
+.db-badge-production {
+  color: var(--nexo-color-danger-text);
+  border-color: var(--nexo-color-danger-border);
+  background: var(--nexo-color-danger-soft);
+}
+.db-mark {
+  color: var(--nexo-color-warning);
+}
+.db-kebab {
+  display: inline-flex;
+  margin-left: auto;
+  justify-content: center;
+  width: var(--nexo-size-9);
+  border-radius: var(--nexo-radius-sm);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-md);
+  font-weight: var(--nexo-font-weight-bold);
+  visibility: hidden;
+}
+.db-row-connection .db-kebab,
+.db-row:hover .db-kebab,
+.db-row.db-active .db-kebab {
+  visibility: visible;
+}
+.db-row.db-active .db-kebab {
+  color: inherit;
+}
+.db-kebab:hover {
+  background: var(--nexo-color-hover);
+}

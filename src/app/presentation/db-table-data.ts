@@ -1,4 +1,4 @@
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -22,7 +22,10 @@ import {
 import { CodeEditor } from './code-editor';
 import { CellAction, DataGrid } from './data-grid/data-grid';
 import { DbSection } from './db-panel/section';
+import { PAGES } from './db-panel/table-data';
 import type { DbTab } from './db-panel/tabs-store';
+import { PopupPlace, placeBy } from './popup-place';
+import { StudioIcon } from './studio-icon';
 
 /** The quick filters a cell offers, and the orders, as DBeaver's. */
 const ACTIONS: readonly CellAction[] = [
@@ -41,22 +44,28 @@ const ACTIONS: readonly CellAction[] = [
  * related by its foreign keys.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid],
+  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-table-data',
   templateUrl: './db-table-data.html',
   styleUrl: './db-table-data.scss',
+  host: { '(keydown)': 'shortcut($event)', '(document:click)': 'refreshMenu.set(undefined)' },
 })
 export class DbTableData {
   readonly tab = input.required<DbTab>();
   /** The keys of the table, from its description: those it has and those pointing to it. */
   readonly parents = input<readonly ForeignKey[]>([]);
   readonly children = input<readonly ForeignKey[]>([]);
+  /** The rows the server estimates the table has, from its description. */
+  readonly estimated = input<number | undefined>(undefined);
   protected readonly section = inject(DbSection);
+  private readonly i18n = inject(TranslocoService);
   protected readonly data = computed(() => this.section.editors.table(this.tab().id));
   protected readonly query = computed(() => this.tab().query ?? emptyTableQuery());
   protected readonly actions = ACTIONS;
-  protected readonly model = signal({ where: '', every: 10 });
+  protected readonly model = signal({ where: '', every: 10, page: '200' });
+  protected readonly pages = PAGES;
+  protected readonly refreshMenu = signal<PopupPlace | undefined>(undefined);
   protected readonly fields = form(this.model, (path) => {
     min(path.every, 1);
     max(path.every, 3600);
@@ -69,6 +78,26 @@ export class DbTableData {
       .map((column) => column.name),
   );
   protected readonly text = cellText;
+  /** The rows of the whole table: counted, else as the server estimates them. */
+  protected readonly total = computed(() => this.data().count() ?? this.estimated());
+  protected readonly estimate = computed(() => {
+    const estimated = this.estimated();
+    return estimated === undefined ? undefined : this.number(estimated);
+  });
+  protected readonly loaded = computed(() => {
+    const loaded = this.number(this.data().rows().length);
+    const total = this.total();
+    return total === undefined
+      ? this.i18n.translate('db.data.rows', { v0: loaded })
+      : this.i18n.translate('db.data.rowsOf', {
+          v0: loaded,
+          v1: `${this.data().count() === undefined ? '~' : ''}${this.number(total)}`,
+        });
+  });
+  protected readonly state = computed(() => {
+    const data = this.data();
+    return data.loading() ? 'Reading the rows' : data.error() ? 'The query failed' : 'Query ready';
+  });
   private activeRow = -1;
   private relating?: ReturnType<typeof setTimeout>;
 
@@ -76,11 +105,41 @@ export class DbTableData {
     effect(() => {
       const tab = this.tab();
       untracked(() => {
-        this.model.update((model) => ({ ...model, where: tab.query?.where ?? '' }));
         const data = this.section.editors.table(tab.id);
+        this.model.update((model) => ({
+          ...model,
+          where: tab.query?.where ?? '',
+          page: String(data.page()),
+        }));
         if (!data.columns().length) void data.load();
       });
     });
+    // Another page size reads the first page again with it.
+    effect(() => {
+      const page = Number(this.model().page);
+      untracked(() => {
+        const data = this.data();
+        if (!PAGES.includes(page) || page === data.page()) return;
+        data.page.set(page);
+        void data.load();
+      });
+    });
+  }
+
+  private number(value: number) {
+    return new Intl.NumberFormat(this.i18n.getActiveLang()).format(value);
+  }
+
+  /** F5 runs the condition, as in DBeaver, instead of reloading the page. */
+  protected shortcut(event: KeyboardEvent) {
+    if (event.key !== 'F5' || event.defaultPrevented) return;
+    event.preventDefault();
+    this.apply();
+  }
+
+  protected toggleRefresh(event: MouseEvent) {
+    if (this.refreshMenu()) return this.refreshMenu.set(undefined);
+    this.refreshMenu.set(placeBy(event.currentTarget as HTMLElement));
   }
 
   /** Keeps the query in the tab (and so in the session) and reads the rows again. */

@@ -70,11 +70,19 @@ export async function languageSupport(language: CodeLanguage): Promise<Extension
     :host(.large) {
       height: 320px;
     }
+    :host(.line) {
+      height: auto;
+      resize: none;
+    }
     .code-host {
       height: 100%;
     }
   `,
-  host: { '[class.small]': "size() === 'small'", '[class.large]': "size() === 'large'" },
+  host: {
+    '[class.small]': "size() === 'small'",
+    '[class.large]': "size() === 'large'",
+    '[class.line]': "size() === 'line'",
+  },
 })
 export class CodeEditor implements FormValueControl<string> {
   readonly value = model('');
@@ -82,7 +90,8 @@ export class CodeEditor implements FormValueControl<string> {
   /** The accessible name of the editing area. */
   readonly label = input('');
   readonly placeholder = input('');
-  readonly size = input<'small' | 'normal' | 'large'>('normal');
+  /** `line` grows with its text, without line numbers nor frame. */
+  readonly size = input<'line' | 'small' | 'normal' | 'large'>('normal');
   readonly readonly = input(false);
   /** Problems to mark, by line. */
   readonly marks = input<readonly CodeMark[]>([]);
@@ -137,6 +146,7 @@ export class CodeEditor implements FormValueControl<string> {
             label: this.label(),
             placeholder: this.placeholder(),
             changed: (text) => this.value.set(text),
+            line: this.size() === 'line',
           }),
           this.languages.of([]),
           this.editable.of(readOnly(this.readonly())),

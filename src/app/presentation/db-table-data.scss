@@ -1,23 +1,78 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: var(--nexo-space-2);
+  gap: var(--nexo-space-5);
   height: 100%;
   min-height: 0;
 }
-.db-data-filter {
+.db-data-query {
   display: flex;
   align-items: flex-start;
-  gap: var(--nexo-space-3);
+  gap: var(--nexo-space-6);
+}
+/* The statement as two numbered lines: the table it reads, and the condition to write. */
+.db-data-sql {
+  display: grid;
+  flex: 1;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: var(--nexo-space-2) var(--nexo-space-8);
+  min-width: 0;
+  padding: var(--nexo-space-4) var(--nexo-space-8);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-md);
+}
+.db-data-sql:focus-within {
+  border-color: var(--nexo-color-accent-border);
+}
+.db-data-number {
+  color: var(--nexo-color-syntax-comment);
+  text-align: right;
+}
+.db-data-sql b {
+  color: var(--nexo-color-syntax-keyword);
+  font-weight: var(--nexo-font-weight-regular);
+}
+.db-data-select {
+  overflow: hidden;
+  font: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-data-more {
+  color: var(--nexo-color-syntax-comment);
 }
 .db-data-where {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nexo-space-4);
+  min-width: 0;
+}
+.db-data-where app-code-editor {
   flex: 1;
   min-width: 0;
 }
 .db-data-actions {
   display: flex;
-  flex-direction: column;
-  gap: var(--nexo-space-2);
+  gap: var(--nexo-space-4);
+}
+.db-data-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  height: var(--nexo-size-20);
+  padding: 0 var(--nexo-space-8);
+}
+.db-data-actions app-studio-icon,
+.db-data-toolbar app-studio-icon,
+.db-data-refresh app-studio-icon,
+.db-data-state app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
 }
 .db-data-chips {
   display: flex;
@@ -40,17 +95,60 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--nexo-space-2);
-  font-size: var(--nexo-font-size-xs);
+  gap: var(--nexo-space-4) var(--nexo-space-8);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-sm);
 }
-.db-data-every {
+.db-data-page {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  margin: 0;
+}
+.db-data-page select {
+  min-width: calc(var(--nexo-size-unit) * 50);
+}
+.db-data-ms {
   display: inline-flex;
   align-items: center;
   gap: var(--nexo-space-2);
-  color: var(--nexo-color-text-muted);
+  padding: var(--nexo-space-1) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-success-soft);
+  color: var(--nexo-color-success);
+  font-size: var(--nexo-font-size-xs);
+  font-weight: var(--nexo-font-weight-semibold);
 }
-.db-data-every input {
-  width: calc(var(--nexo-size-unit) * 16);
+.db-data-refresh {
+  display: inline-flex;
+}
+.db-data-refresh .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.db-data-refresh .button:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.db-data-refresh .button:last-child {
+  border-left: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.db-data-caret {
+  transform: rotate(90deg);
+}
+.db-data-state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.db-data-ok app-studio-icon {
+  color: var(--nexo-color-success);
+}
+.db-refresh-menu input {
+  width: calc(var(--nexo-size-unit) * 24);
 }
 .db-data-statement {
   display: block;
@@ -62,6 +160,7 @@
   white-space: pre-wrap;
 }
 .db-data-error {
+  margin: 0;
   color: var(--nexo-color-danger-text);
 }
 .db-data-body {

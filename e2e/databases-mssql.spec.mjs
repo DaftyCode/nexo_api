@@ -5,7 +5,7 @@
 // the session answers.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { SQL_SERVER, addConnection, write } from './databases-helpers.mjs';
+import { SQL_SERVER, addConnection, folder, newScript, write } from './databases-helpers.mjs';
 
 const environment = process.env;
 
@@ -28,11 +28,11 @@ test('SQL Server connects from its JDBC URL, shows its objects and runs batches'
     await expect(item).toHaveAttribute('aria-expanded', 'true');
   };
   await open(tree.getByRole('treeitem', { name: /^Ventas/ }));
-  await open(tree.getByRole('treeitem', { name: 'Databases', exact: true }));
+  await open(folder(tree, 'Databases'));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).first());
-  await open(tree.getByRole('treeitem', { name: 'Schemas', exact: true }));
+  await open(folder(tree, 'Schemas'));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
-  await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
+  await open(folder(tree, 'Tables'));
   await tree.getByRole('treeitem', { name: /^orders/ }).focus();
   await page.keyboard.press('Shift+F10');
   await page.getByRole('menu').getByRole('menuitem', { name: 'Open' }).click();
@@ -49,14 +49,14 @@ test('SQL Server connects from its JDBC URL, shows its objects and runs batches'
   await expect(grid).toContainText('120.50');
   expect(await violations(page)).toEqual([]);
   await grid.getByRole('gridcell', { name: 'paid' }).click();
-  await page.getByRole('button', { name: 'Column', exact: true }).click();
+  await page.getByRole('button', { name: 'Filter by this value' }).click();
   await page.getByRole('menuitem', { name: 'Filter: equal to this value' }).click();
   await page.getByRole('button', { name: 'Statement', exact: true }).click();
   await expect(page.locator('.db-data-statement')).toContainText('status = @P1');
   await expect(grid.getByRole('gridcell', { name: '9.99' })).toBeHidden();
 
   // A procedure's two results, each in its tab; a cancelled statement, then the next one.
-  await page.getByRole('button', { name: '＋ SQL' }).click();
+  await newScript(page);
   await write(page, 'EXEC shop.two_results');
   await page.keyboard.press('ControlOrMeta+Enter');
   const results = page.getByRole('tablist', { name: 'Results' });

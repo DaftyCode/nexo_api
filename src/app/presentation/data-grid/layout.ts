@@ -12,7 +12,11 @@ import { ResultColumn } from '../../domain/db/results';
 
 /** The width of the column of row numbers, in pixels. */
 export const ROW_NUMBER = 56;
+/** The width of the column of row actions (`⋯`) at the end of every row. */
+export const ROW_END = 32;
 const PADDING = 24;
+/** What a header has besides its name: padding, the type's badge and the menu's ▾. */
+const HEADER = 72;
 
 /** What the layout reads from the grid. */
 export interface LayoutSource {
@@ -38,9 +42,23 @@ export class GridLayout {
   readonly shown = computed(() =>
     shownRows(this.source.rows(), { ...this.source.view(), filter: this.source.filter() }),
   );
-  private readonly defaults = computed(() =>
-    this.source.columns().map((column, index) => this.fitted(column, index)),
-  );
+  /**
+   * The widths of the columns the person did not size: each one fitted to its values, and
+   * all of them widened alike when they leave room in the grid, so the grid is filled.
+   */
+  private readonly defaults = computed(() => {
+    const fitted = this.source.columns().map((column, index) => this.fitted(column, index));
+    const { widths } = this.source.view();
+    const shown = this.order();
+    const loose = shown.filter((column) => widths[column] === undefined);
+    const used = shown.reduce((sum, column) => sum + (widths[column] ?? fitted[column]), 0);
+    const room = this.scroll().width - ROW_NUMBER - ROW_END - 2 - used;
+    const share = loose.reduce((sum, column) => sum + fitted[column], 0);
+    if (room <= 0 || !share) return fitted;
+    return fitted.map((width, column) =>
+      loose.includes(column) ? Math.floor(width + (room * width) / share) : width,
+    );
+  });
   readonly pinned = computed(() =>
     this.order().filter((column) => this.source.view().pinned.includes(column)),
   );
@@ -61,7 +79,7 @@ export class GridLayout {
     () => ROW_NUMBER + this.pinned().reduce((sum, column) => sum + this.widthOf(column), 0),
   );
   readonly totalWidth = computed(
-    () => this.pinnedWidth() + this.freeWidths().reduce((sum, width) => sum + width, 0),
+    () => this.pinnedWidth() + this.freeWidths().reduce((sum, width) => sum + width, 0) + ROW_END,
   );
   readonly totalHeight = computed(
     () => this.headerHeight() + this.shown().length * this.rowHeight(),
@@ -99,7 +117,8 @@ export class GridLayout {
   /** The width a column takes to show its longest loaded value. */
   fitted(column: ResultColumn, index: number) {
     const chars = columnChars(column, this.source.rows(), index);
-    return Math.min(Math.round(chars * this.charWidth()) + PADDING, 360);
+    const header = Math.round(column.name.length * this.charWidth()) + HEADER;
+    return Math.min(Math.max(Math.round(chars * this.charWidth()) + PADDING, header), 360);
   }
 
   /** Reads the sizes of the drawn rows and of the font, once they are on screen. */

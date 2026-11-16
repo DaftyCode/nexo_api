@@ -1,7 +1,10 @@
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  Injector,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -10,14 +13,18 @@ import {
   untracked,
 } from '@angular/core';
 import { treeSession } from '../application/database-use-cases';
+import { nodeIcon, partIcon } from '../domain/db/look';
 import { cellText } from '../domain/db/results';
 import { ForeignKey, foreignKeys } from '../domain/db/table-query';
 import { CodeEditor } from './code-editor';
 import { DataGrid } from './data-grid/data-grid';
+import { menuKeys } from './menu-keys';
+import { PopupPlace, placeBy } from './popup-place';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
 import { DbTableData } from './db-table-data';
 import { PanelTask } from './panel-task';
+import { StudioIcon } from './studio-icon';
 import { success } from './workspace-state';
 
 /** What `db.describe` answers: properties and sections the interface draws as they come. */
@@ -28,8 +35,27 @@ interface ObjectDescription {
   sections: { id: string; title: string; columns: string[]; rows: unknown[][] }[];
 }
 
-/** The properties shown in the header, when the driver gives them. */
-const HEADER = ['Kind', 'Owner', 'Estimated rows', 'Size', 'Comment'];
+/** The properties shown in the header, when the driver gives them, and their names there. */
+const HEADER: Record<string, string> = {
+  'Estimated rows': 'Rows',
+  Size: 'Size',
+  Owner: 'Owner',
+  Comment: 'Comment',
+};
+/** The kinds of object the header names, as the interface translates them. */
+const KINDS: Record<string, string> = {
+  table: 'Table',
+  view: 'View',
+  'materialized view': 'Materialized view',
+  function: 'Function',
+  procedure: 'Procedure',
+  sequence: 'Sequence',
+  schema: 'Schema',
+  database: 'Database',
+  index: 'Index',
+  trigger: 'Trigger',
+  role: 'Role',
+};
 /** The sections whose rows lead to another table, and where their ends are. */
 const KEYS: Record<string, { schema: string; table: string }> = {
   'foreign-keys': { schema: 'Referenced schema', table: 'Referenced table' },
@@ -43,15 +69,19 @@ const KEYS: Record<string, { schema: string; table: string }> = {
  * and its DDL. A key leads to the table it points to, or to the one that points to it.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor, DataGrid, DbTableData],
+  imports: [TranslocoPipe, CodeEditor, DataGrid, DbTableData, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-object-tab',
+  host: { '(document:click)': 'more.set(undefined)' },
   templateUrl: './db-object-tab.html',
   styleUrl: './db-object-tab.scss',
 })
 export class DbObjectTab {
   readonly tab = input.required<DbTab>();
   protected readonly section = inject(DbSection);
+  private readonly i18n = inject(TranslocoService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private readonly injector = inject(Injector);
   protected readonly task = new PanelTask(this.section.state);
   protected readonly description = signal<ObjectDescription | undefined>(undefined);
   protected readonly ddl = signal('');
@@ -67,13 +97,42 @@ export class DbObjectTab {
     const kind = this.node()?.kind ?? this.description()?.kind ?? '';
     return kind === 'table' || kind === 'view' || !!this.node()?.actions.includes('data');
   });
-  protected readonly header = computed(() =>
-    HEADER.flatMap((name) => {
-      const found = this.description()?.properties.find((property) => property.name === name);
+  /** The header's figures: rows, size and columns, then the owner and the comment. */
+  protected readonly facts = computed(() => {
+    const description = this.description();
+    const number = new Intl.NumberFormat(this.i18n.getActiveLang());
+    const facts = Object.entries(HEADER).flatMap(([property, name]) => {
+      const found = description?.properties.find((candidate) => candidate.name === property);
       const value = found ? cellText(found.value) : '';
-      return found && value && value !== 'NULL' ? [{ name, value }] : [];
-    }),
+      if (!found || !value || value === 'NULL' || value.startsWith('-')) return [];
+      const rows = property === 'Estimated rows' && Number.isFinite(Number(value));
+      return [{ name, value: rows ? `~${number.format(Math.round(Number(value)))}` : value }];
+    });
+    const columns = description?.sections.find((section) => section.id === 'columns');
+    const at = facts.findIndex((fact) => fact.name === 'Owner' || fact.name === 'Comment');
+    if (columns)
+      facts.splice(at < 0 ? facts.length : at, 0, {
+        name: 'Columns',
+        value: number.format(columns.rows.length),
+      });
+    return facts;
+  });
+  /** The rows the server estimates the object has, for the «Data» view. */
+  protected readonly estimatedRows = computed(() => {
+    const found = this.description()?.properties.find((p) => p.name === 'Estimated rows');
+    const rows = Number(found ? cellText(found.value) : NaN);
+    return Number.isFinite(rows) && rows >= 0 ? Math.round(rows) : undefined;
+  });
+  protected readonly kindLabel = computed(() => {
+    const kind = this.description()?.kind ?? this.node()?.kind ?? '';
+    return KINDS[kind] ?? kind;
+  });
+  protected readonly headIcon = computed(() =>
+    nodeIcon({ kind: this.description()?.kind ?? this.node()?.kind ?? '', name: '' }),
   );
+  protected readonly icon = partIcon;
+  /** Where the menu of more actions is open. */
+  protected readonly more = signal<PopupPlace | undefined>(undefined);
   /**
    * The view shown, kept in the tab: a table or a view opens on its data, as DBeaver does when
    * its default page is «Data»; any other object on its properties.
@@ -82,8 +141,8 @@ export class DbObjectTab {
     () => this.tab().part ?? (this.relation() ? 'data' : 'properties'),
   );
   protected readonly parts = computed(() => [
-    'properties',
     ...(this.relation() ? ['data'] : []),
+    'properties',
     ...(this.description()?.sections ?? []).map((section) => section.id),
     ...(this.ddl() ? ['ddl'] : []),
   ]);
@@ -178,5 +237,30 @@ export class DbObjectTab {
   }
   protected openInScript() {
     this.section.newScript(this.tab().connection, { text: this.ddl() });
+  }
+  /** A SQL script with the statement of its data for a table or a view, else with its DDL. */
+  protected openSql() {
+    if (!this.relation()) return this.openInScript();
+    const text = this.section.editors.table(this.tab().id).select();
+    this.section.newScript(this.tab().connection, { text });
+  }
+  protected copyName() {
+    void this.task.run(async () => {
+      await globalThis.navigator?.clipboard?.writeText(
+        this.description()?.name ?? this.tab().title,
+      );
+      this.section.state.tell(success('Copied to the clipboard'));
+    });
+  }
+
+  protected toggleMore(event: MouseEvent) {
+    if (this.more()) return this.more.set(undefined);
+    this.more.set(placeBy(event.currentTarget as HTMLElement));
+    afterNextRender(() => this.host.querySelector<HTMLElement>('.db-object-menu button')?.focus(), {
+      injector: this.injector,
+    });
+  }
+  protected moreKey(event: KeyboardEvent) {
+    menuKeys(event, event.currentTarget as HTMLElement, () => this.more.set(undefined));
   }
 }

@@ -1,42 +1,38 @@
-<div class="db-nav-toolbar" role="toolbar" [attr.aria-label]="'Navigator' | transloco">
-  <button type="button" class="button small primary" (click)="section.edit()">
-    {{ '＋ New connection' | transloco }}
-  </button>
+<div class="db-nav-head" role="toolbar" [attr.aria-label]="'Navigator' | transloco">
+  <h2>{{ 'Databases' | transloco }}</h2>
   <button
     type="button"
-    class="icon-button"
-    [attr.aria-pressed]="!section.simple()"
-    [attr.title]="'Show system objects' | transloco"
-    [attr.aria-label]="'Show system objects' | transloco"
-    (click)="section.simple.set(!section.simple())"
+    class="button small primary"
+    [attr.aria-label]="'New connection' | transloco"
+    (click)="section.edit()"
   >
-    ⚙
-  </button>
-  <button
-    type="button"
-    class="icon-button"
-    [attr.title]="'Collapse all' | transloco"
-    [attr.aria-label]="'Collapse all' | transloco"
-    (click)="collapseAll()"
-  >
-    ⊟
-  </button>
-  <button
-    type="button"
-    class="icon-button"
-    aria-haspopup="menu"
-    [attr.title]="'Actions' | transloco"
-    [attr.aria-label]="'Actions' | transloco"
-    [disabled]="!current()"
-    (click)="$event.stopPropagation(); openMenuAt(current())"
-  >
-    ⋯
+    <app-studio-icon name="plus" />{{ 'Connection' | transloco }}
   </button>
 </div>
-<label class="field db-nav-filter"
-  >{{ 'Filter loaded objects' | transloco
-  }}<input type="search" [formField]="filterFields.text" spellcheck="false" autocomplete="off"
-/></label>
+<div class="db-nav-search">
+  <label class="db-search">
+    <app-studio-icon name="search" />
+    <input
+      type="search"
+      [formField]="filterFields.text"
+      [placeholder]="'Find a connection or table…' | transloco"
+      [attr.aria-label]="'Filter loaded objects' | transloco"
+      spellcheck="false"
+      autocomplete="off"
+    />
+  </label>
+  <button
+    type="button"
+    class="icon-button db-nav-options"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="!!options()"
+    [attr.aria-label]="'Navigator options' | transloco"
+    [attr.title]="'Navigator options' | transloco"
+    (click)="$event.stopPropagation(); toggleOptions($event)"
+  >
+    <app-studio-icon name="filter" />
+  </button>
+</div>
 
 @if (section.shownBookmarks().length) {
   <section class="db-bookmarks" [attr.aria-label]="'Bookmarks' | transloco">
@@ -55,16 +51,28 @@
   </section>
 }
 
-@if (rows().length) {
-  <ul class="db-tree" role="tree" [attr.aria-label]="'Connections' | transloco">
+<button
+  type="button"
+  class="db-group"
+  [attr.aria-expanded]="!folded()"
+  aria-controls="db-tree"
+  (click)="folded.set(!folded())"
+>
+  <app-studio-icon class="db-chevron" name="chevron" [class.open]="!folded()" />
+  {{ 'db.connections' | transloco: { v0: section.connections().length } }}
+</button>
+@if (folded()) {
+  <span id="db-tree" hidden></span>
+} @else if (rows().length) {
+  <ul id="db-tree" class="db-tree" role="tree" [attr.aria-label]="'Connections' | transloco">
     @for (row of rows(); track row.key) {
       <li
         role="treeitem"
-        class="db-row"
         [class]="'db-row db-row-' + row.type + ' db-type-' + (row.kind ?? 'none')"
         [class.db-active]="row.key === current()?.key"
         [class.db-drop]="row.key === dropKey()"
         [attr.data-key]="row.key"
+        [attr.data-kind]="row.node?.kind"
         [id]="rowId(row)"
         [attr.aria-level]="row.level"
         [attr.aria-expanded]="row.expandable ? row.expanded : null"
@@ -83,13 +91,9 @@
         (drop)="drop($event, row)"
         (dragend)="dragEnd()"
       >
-        <span
-          class="db-twisty"
-          [class.open]="row.expanded"
-          [class.hidden]="!row.expandable"
-          aria-hidden="true"
-          >›</span
-        >
+        <span class="db-twisty" [class.open]="row.expanded" [class.hidden]="!row.expandable"
+          ><app-studio-icon name="chevron"
+        /></span>
         @switch (row.type) {
           @case ('loading') {
             <span class="db-message muted">{{ 'Loading' | transloco }}…</span>
@@ -100,138 +104,108 @@
           @case ('error') {
             <span class="db-message db-error">{{ row.label }}</span>
           }
-          @default {
-            <app-studio-icon class="db-icon" [name]="icon(row)" />
-            @if (row.type === 'connection') {
-              <span class="db-status" [class]="'db-status db-status-' + row.status"></span>
+          @case ('connection') {
+            <app-studio-icon class="db-icon" name="databases" />
+            <span class="db-connection">
+              <span class="db-label">{{ row.label }}</span>
+              <span class="db-sub"
+                ><span [class]="'db-status db-status-' + row.status"></span>{{ row.detail }}</span
+              >
+            </span>
+            <span class="db-hidden-text">, {{ statusLabel(row) | transloco }}</span>
+            @if (row.kind === 'production') {
+              <span class="db-badge db-badge-production">{{ 'Production' | transloco }}</span>
             }
-            <span class="db-label">{{ row.label }}</span>
-            @if (row.type === 'connection') {
-              <span class="db-hidden-text">, {{ statusLabel(row) | transloco }}</span>
-              @if (row.kind === 'production') {
-                <span class="db-badge db-badge-production">{{ 'Production' | transloco }}</span>
-              }
-              @if (row.readOnly) {
-                <span class="db-badge">{{ 'Read-only' | transloco }}</span>
-              }
-            }
-            @if (section.isBookmarked(row.key)) {
-              <span class="db-mark" [attr.title]="'Bookmarked' | transloco">★</span>
-            }
-            @if (row.detail) {
-              <span class="db-detail">{{ row.detail }}</span>
+            @if (row.readOnly) {
+              <span class="db-badge">{{ 'Read-only' | transloco }}</span>
             }
           }
+          @default {
+            <app-studio-icon class="db-icon" [name]="icon(row)" />
+            <span class="db-name">
+              <span class="db-label">{{
+                row.node?.kind === 'folder' ? (row.label | transloco) : row.label
+              }}</span>
+              @if (count(row) !== undefined) {
+                <span class="db-count">({{ count(row) }})</span>
+              }
+            </span>
+            @if (row.detail; as detail) {
+              @if (rowsOf(detail); as rows) {
+                <span class="db-size" [attr.title]="detail">{{ rows }}</span>
+              } @else {
+                <span class="db-detail">{{ detail }}</span>
+              }
+            }
+          }
+        }
+        @if (section.isBookmarked(row.key)) {
+          <span class="db-mark" [attr.title]="'Bookmarked' | transloco">★</span>
+        }
+        @if (row.type === 'connection' || row.type === 'node') {
+          <button
+            type="button"
+            class="db-kebab"
+            tabindex="-1"
+            aria-hidden="true"
+            (click)="$event.stopPropagation(); openMenuAt(row)"
+          >
+            ⋮
+          </button>
         }
       </li>
     }
   </ul>
 } @else if (section.connections().length) {
-  <p class="muted db-empty">{{ 'Nothing loaded matches the filter.' | transloco }}</p>
+  <p id="db-tree" class="muted db-empty">{{ 'Nothing loaded matches the filter.' | transloco }}</p>
 } @else {
-  <p class="muted db-empty">
+  <p id="db-tree" class="muted db-empty">
     {{ 'No database connections yet. Create one to choose its engine.' | transloco }}
   </p>
 }
 
-@if (menu(); as open) {
+@if (options(); as at) {
   <div
-    class="db-menu"
+    class="popup-menu db-options-menu"
     role="menu"
     tabindex="-1"
-    [attr.aria-label]="'db.menu' | transloco: { v0: open.row.label }"
-    [style.left.px]="open.x"
-    [style.top.px]="open.y"
-    (keydown)="menuKey($event)"
+    [attr.aria-label]="'Navigator options' | transloco"
+    [style.left.px]="at.x"
+    [style.top.px]="at.y"
     (click)="$event.stopPropagation()"
+    (keydown)="optionsKey($event)"
   >
-    @if (open.row.type === 'connection') {
-      @if (open.row.status === 'connected') {
-        <button type="button" role="menuitem" (click)="run('disconnect')">
-          {{ 'Disconnect' | transloco }}
-        </button>
-        <button type="button" role="menuitem" (click)="run('reconnect')">
-          {{ 'Reconnect' | transloco }}
-        </button>
-      } @else {
-        <button type="button" role="menuitem" (click)="run('connect')">
-          {{ 'Connect' | transloco }}
-        </button>
-      }
-      <button type="button" role="menuitem" (click)="run('edit')">
-        {{ 'Edit connection' | transloco }}
-      </button>
-      <button type="button" role="menuitem" (click)="run('rename')">
-        {{ 'Rename' | transloco }} <kbd>F2</kbd>
-      </button>
-      <button type="button" role="menuitem" (click)="run('duplicate')">
-        {{ 'Duplicate' | transloco }}
-      </button>
-      <button type="button" role="menuitem" (click)="run('moveTo')">
-        {{ 'Move to folder' | transloco }}
-      </button>
-    }
-    @if (open.row.type === 'node') {
-      @if (open.row.node?.actions?.includes('open')) {
-        <button type="button" role="menuitem" (click)="run('open')">
-          {{ 'Open' | transloco }}
-        </button>
-      }
-      @if (open.row.node?.actions?.includes('data')) {
-        <button type="button" role="menuitem" (click)="run('viewData')">
-          {{ 'View data' | transloco }}
-        </button>
-      }
-    }
-    @if (
-      open.row.type === 'connection' || open.row.type === 'node' || open.row.type === 'script-group'
-    ) {
-      <button type="button" role="menuitem" (click)="run('newScript')">
-        {{ 'New SQL script' | transloco }} <kbd>Ctrl+]</kbd>
-      </button>
-    }
-    @if (open.row.type === 'script') {
-      <button type="button" role="menuitem" (click)="run('open')">
-        {{ 'Open' | transloco }}
-      </button>
-      <button type="button" role="menuitem" class="danger" (click)="run('deleteScript')">
-        {{ 'Delete script' | transloco }}
-      </button>
-    }
-    @if (open.row.type === 'node') {
-      <button type="button" role="menuitem" (click)="run('copyName')">
-        {{ 'Copy name' | transloco }}
-      </button>
-      @if (open.row.node?.actions?.includes('ddl')) {
-        <button type="button" role="menuitem" (click)="run('copyDdl')">
-          {{ 'Copy DDL' | transloco }}
-        </button>
-      }
-    }
-    @if (open.row.type === 'connection' || open.row.type === 'node') {
-      <button type="button" role="menuitem" (click)="run('bookmark')">
-        {{ (section.isBookmarked(open.row.key) ? 'Remove bookmark' : 'Bookmark') | transloco }}
-      </button>
-      @if (open.row.expandable) {
-        <button type="button" role="menuitem" (click)="run('filter')">
-          {{ 'Filter objects' | transloco }}
-        </button>
-        <button type="button" role="menuitem" (click)="run('refresh')">
-          {{ 'Refresh' | transloco }} <kbd>F5</kbd>
-        </button>
-      }
-    }
-    @if (open.row.type === 'connection') {
-      <button type="button" role="menuitem" class="danger" (click)="run('remove')">
-        {{ 'Delete' | transloco }} <kbd>Del</kbd>
-      </button>
-    }
-    @if (open.row.type === 'folder' || open.row.type === 'error' || open.row.type === 'scripts') {
-      <button type="button" role="menuitem" (click)="closeMenu()">
-        {{ 'Close' | transloco }}
-      </button>
-    }
+    <button
+      type="button"
+      role="menuitemcheckbox"
+      [attr.aria-checked]="!section.simple()"
+      (click)="section.simple.set(!section.simple())"
+    >
+      {{ 'Show system objects' | transloco }}
+    </button>
+    <button type="button" role="menuitem" (click)="collapseAll()">
+      {{ 'Collapse all' | transloco }}
+    </button>
+    <button
+      type="button"
+      role="menuitem"
+      [disabled]="!current()"
+      (click)="options.set(undefined); openMenuAt(current())"
+    >
+      {{ 'Actions' | transloco }} <kbd>Shift+F10</kbd>
+    </button>
   </div>
+}
+
+@if (menu(); as open) {
+  <app-db-row-menu
+    [row]="open.row"
+    [x]="open.x"
+    [y]="open.y"
+    [bottom]="open.bottom"
+    (chosen)="run($event)"
+    (closed)="closeMenu()"
+  />
 }
 
 @if (actions.dialog(); as dialog) {

@@ -5,7 +5,7 @@
 // reload without their results.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { addConnection, write } from './databases-helpers.mjs';
+import { addConnection, folder, newScript, write } from './databases-helpers.mjs';
 
 const environment = process.env;
 
@@ -21,7 +21,7 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
   await nexo.signIn(page);
   await addConnection(page, 'Sales');
 
-  await page.getByRole('button', { name: '＋ SQL' }).click();
+  await newScript(page);
   await write(
     page,
     'SELECT id FROM shop.customers ORDER BY id;\nSELECT count(*) FROM shop.orders;\nSELECT 3 AS three',
@@ -104,9 +104,9 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
   };
   await open(tree.getByRole('treeitem', { name: /^Sales/ }));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).first());
-  await open(tree.getByRole('treeitem', { name: 'Schemas', exact: true }));
+  await open(folder(tree, 'Schemas'));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
-  await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
+  await open(folder(tree, 'Tables'));
   const orders = tree.getByRole('treeitem', { name: /^orders/ });
   await orders.focus();
   await page.keyboard.press('Shift+F10');

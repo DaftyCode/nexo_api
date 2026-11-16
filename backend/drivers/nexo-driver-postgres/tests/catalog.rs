@@ -107,6 +107,27 @@ async fn catalog(port: Option<&str>, name: &str) {
     );
     let events = ["shop", "schemas", "shop", "tables", "events", "partitions"];
     assert_eq!(names(&client, name, &events).await, ["events_2026"]);
+    // What a table lists only to be seen: the views on it, the keys that point to it, its
+    // rules and its policies.
+    assert_eq!(
+        names(&client, name, &part("dependencies")).await,
+        ["open_orders", "totals"]
+    );
+    let customers = ["shop", "schemas", "shop", "tables", "customers"];
+    let of = |part: &'static str| [&customers[..], &[part]].concat();
+    assert_eq!(
+        names(&client, name, &of("references")).await,
+        ["shop.orders"]
+    );
+    assert_eq!(
+        names(&client, name, &of("rules")).await,
+        ["customers_changed"]
+    );
+    assert_eq!(
+        names(&client, name, &of("policies")).await,
+        ["customers_read"]
+    );
+    assert!(names(&client, name, &part("rules")).await.is_empty());
 
     // An object describes itself; a function shows its body.
     let described = client.describe(&path(name, &orders)).await.unwrap();

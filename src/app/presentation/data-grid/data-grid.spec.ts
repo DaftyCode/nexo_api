@@ -64,7 +64,8 @@ describe('DataGrid', () => {
     expect(cells).toBeGreaterThan(0);
     expect(cells).toBeLessThan(1000);
     expect(grid().getAttribute('aria-rowcount')).toBe(String(ROWS + 1));
-    expect(grid().getAttribute('aria-colcount')).toBe(String(COLUMNS + 1));
+    // The row numbers, the columns, and the actions at the end of each row.
+    expect(grid().getAttribute('aria-colcount')).toBe(String(COLUMNS + 2));
     grid().scrollTop = 1_000_000;
     grid().dispatchEvent(new Event('scroll'));
     await settle();

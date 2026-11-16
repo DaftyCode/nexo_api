@@ -1,89 +1,18 @@
-<div class="grid-toolbar" role="toolbar" [attr.aria-label]="'Grid tools' | transloco">
-  <label class="grid-filter"
-    >{{ 'Filter loaded rows' | transloco
-    }}<input type="search" [formField]="barFields.filter" autocomplete="off" spellcheck="false"
-  /></label>
-  <button
-    type="button"
-    class="button small subtle"
-    [attr.aria-pressed]="find.open()"
-    (click)="find.open.set(!find.open())"
-  >
-    {{ 'Find' | transloco }}
-  </button>
-  @if (find.open()) {
-    <label class="grid-filter"
-      >{{ 'Find in results' | transloco
-      }}<input
-        type="search"
-        [formField]="barFields.find"
-        autocomplete="off"
-        spellcheck="false"
-        (keydown.enter)="findNext($any($event).shiftKey)"
-        (keydown.escape)="find.open.set(false)"
-    /></label>
-    <span class="grid-count" role="status">{{
-      'db.grid.found' | transloco: { v0: find.matches().length }
-    }}</span>
-    <button type="button" class="button small subtle" (click)="findNext(true)">
-      {{ 'Previous' | transloco }}
-    </button>
-    <button type="button" class="button small subtle" (click)="findNext()">
-      {{ 'Next' | transloco }}
-    </button>
-  }
-  <span class="grow"></span>
-  <label class="grid-filter"
-    >{{ 'Copy as' | transloco }}
-    <select [formField]="barFields.copy">
-      <option value="text">{{ 'Text' | transloco }}</option>
-      <option value="text-headers">{{ 'Text with headers' | transloco }}</option>
-      <option value="json">JSON</option>
-      <option value="csv">CSV</option>
-      <option value="markdown">Markdown</option>
-      <option value="in">IN (…)</option>
-      <option value="insert">INSERT</option>
-    </select>
-  </label>
-  <button type="button" class="button small subtle" (click)="copy(undefined, bar().copy)">
-    {{ 'Copy' | transloco }}
-  </button>
-  <button
-    type="button"
-    class="button small subtle"
-    aria-haspopup="menu"
-    [disabled]="!active()"
-    (click)="menu.set(true)"
-  >
-    {{ 'Column' | transloco }}
-  </button>
-  <button
-    type="button"
-    class="button small subtle"
-    [attr.aria-pressed]="recordView()"
-    (click)="recordView.set(!recordView())"
-  >
-    {{ 'Record' | transloco }}
-  </button>
-  <button
-    type="button"
-    class="button small subtle"
-    [attr.aria-pressed]="textView()"
-    (click)="textView.set(!textView())"
-  >
-    {{ 'Text view' | transloco }}
-  </button>
-  @for (kind of ['value', 'meta', 'calc', 'group']; track kind) {
-    <button
-      type="button"
-      class="button small subtle"
-      [attr.aria-pressed]="panel() === kind"
-      (click)="panel.set(panel() === kind ? 'none' : $any(kind))"
-    >
-      {{ 'db.panel.' + kind | transloco }}
-    </button>
-  }
-</div>
+<app-grid-bar
+  [(filter)]="filterText"
+  [(find)]="findText"
+  [(finding)]="find.open"
+  [(maximized)]="maximized"
+  [filters]="cellActions().length > 0"
+  [active]="!!active()"
+  [found]="find.matches().length"
+  [away]="recordView() || textView()"
+  (back)="recordView.set(false); textView.set(false)"
+  (menu)="menus.by($event.event, $event.mode)"
+  (next)="findNext($event)"
+>
+  <ng-content select="[gridStart]" ngProjectAs="[gridStart]" />
+</app-grid-bar>
 
 <div class="grid-body">
   <div class="grid-main">
@@ -111,7 +40,7 @@
         aria-multiselectable="true"
         [attr.aria-label]="label() | transloco"
         [attr.aria-rowcount]="layout.shown().length + 1"
-        [attr.aria-colcount]="layout.order().length + 1"
+        [attr.aria-colcount]="layout.order().length + 2"
         [attr.aria-activedescendant]="activeId()"
         (scroll)="scrolled()"
         (keydown)="key($event)"
@@ -144,6 +73,23 @@
                   "
                 />
               }
+              <div
+                role="columnheader"
+                class="grid-row-end"
+                [attr.aria-colindex]="layout.order().length + 2"
+              >
+                <button
+                  type="button"
+                  tabindex="-1"
+                  class="grid-more"
+                  aria-haspopup="menu"
+                  [attr.aria-label]="'Grid tools' | transloco"
+                  [attr.title]="'Grid tools' | transloco"
+                  (click)="menus.by($event, 'tools')"
+                >
+                  ⋯
+                </button>
+              </div>
             </div>
           </div>
           <div role="rowgroup">
@@ -151,6 +97,8 @@
               <div
                 role="row"
                 class="grid-row"
+                [class.grid-row-active]="drawn.position === selection().active.row"
+                [class.grid-row-selected]="rowChosen(drawn.position)"
                 [style.top.px]="layout.headerHeight() + drawn.position * layout.rowHeight()"
                 [attr.aria-rowindex]="drawn.position + 2"
               >
@@ -188,6 +136,22 @@
                     "
                   />
                 }
+                <div
+                  role="gridcell"
+                  class="grid-row-end"
+                  [attr.aria-colindex]="layout.order().length + 2"
+                >
+                  <button
+                    type="button"
+                    tabindex="-1"
+                    class="grid-more"
+                    aria-haspopup="menu"
+                    [attr.aria-label]="'db.grid.rowMenu' | transloco: { v0: drawn.position + 1 }"
+                    (click)="menus.row($event, drawn.position)"
+                  >
+                    ⋯
+                  </button>
+                </div>
               </div>
             }
           </div>
@@ -195,10 +159,31 @@
       </div>
     }
     <div class="grid-footer">
-      <span role="status">{{
-        (more() ? 'db.grid.countMore' : 'db.grid.count')
-          | transloco: { v0: layout.shown().length, v1: rows().length }
-      }}</span>
+      <ng-content select="[gridFooterStart]" />
+      <button
+        type="button"
+        class="button small grid-export"
+        aria-haspopup="menu"
+        (click)="menus.by($event, 'export')"
+      >
+        <app-studio-icon name="download" />{{ 'Export' | transloco }}
+        <app-studio-icon class="grid-caret" name="chevron" />
+      </button>
+      <span class="grid-divider" aria-hidden="true"></span>
+      <ng-content select="[gridFooterStatus]" />
+      <span class="grid-fact" role="status">
+        <app-studio-icon name="databases" />{{
+          (layout.shown().length === rows().length ? 'db.grid.loaded' : 'db.grid.loadedShown')
+            | transloco: { v0: number(layout.shown().length), v1: number(rows().length) }
+        }}
+      </span>
+      <ng-content select="[gridFooterCount]" />
+      <span class="grid-fact">
+        <app-studio-icon name="selection" />{{
+          (chosenRows() === 1 ? 'db.grid.selectedOne' : 'db.grid.selected')
+            | transloco: { v0: chosenRows() }
+        }}
+      </span>
       @if (more()) {
         <button
           type="button"
@@ -217,7 +202,7 @@
       [columns]="columns()"
       [rows]="rows()"
       [active]="active()"
-      [cells]="selectedCells()"
+      [cells]="output.selectedCells()"
       [formats]="format()"
       [grouping]="grouping()"
       (closed)="panel.set('none')"
@@ -225,13 +210,19 @@
   }
 </div>
 
-@if (menu() && active(); as current) {
+@if (menus.open(); as open) {
   <app-grid-menu
-    [column]="columns()[current.column].name"
-    [pinned]="view().pinned.includes(current.column)"
+    [mode]="open.mode"
+    [x]="open.x"
+    [y]="open.y ?? 0"
+    [bottom]="open.bottom"
+    [column]="active() ? columns()[active()!.column].name : ''"
+    [pinned]="!!active() && view().pinned.includes(active()!.column)"
     [actions]="cellActions()"
-    (chosen)="menuChosen($event, current.column)"
-    (closed)="closeMenu()"
+    [names]="names()"
+    [hidden]="view().hidden"
+    (chosen)="menus.chosen($event)"
+    (closed)="menus.close()"
   />
 }
 
@@ -253,15 +244,23 @@
     (dragend)="pointer.dragEnd()"
   >
     <button type="button" tabindex="-1" class="grid-sort" (click)="columnTools.sort(column)">
-      {{ columns()[column].name }}
-      @switch (sortOf(column)) {
-        @case ('ascending') {
-          <span aria-hidden="true">▲</span>
-        }
-        @case ('descending') {
-          <span aria-hidden="true">▼</span>
-        }
+      @let badge = badgeOf(column);
+      @if (badge.icon) {
+        <app-studio-icon [class]="'grid-type grid-type-' + badge.icon" [name]="badge.icon" />
+      } @else {
+        <span class="grid-type grid-glyph" aria-hidden="true">{{ badge.glyph }}</span>
       }
+      <span class="grid-name">{{ columns()[column].name }}</span>
+      <span aria-hidden="true">{{ arrow(column) }}</span>
+    </button>
+    <button
+      type="button"
+      tabindex="-1"
+      class="grid-head-menu"
+      aria-hidden="true"
+      (click)="menus.by($event, 'column', column)"
+    >
+      <app-studio-icon name="chevron" />
     </button>
     <span
       class="grid-resize"

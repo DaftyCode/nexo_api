@@ -81,3 +81,69 @@
 [data-drop='after-y'] {
   box-shadow: inset 0 calc(-1 * var(--nexo-size-1)) 0 var(--nexo-color-accent);
 }
+/* A menu that opens over the page at a point: the actions of a row, the options of a tool. */
+.popup-menu {
+  position: fixed;
+  z-index: var(--nexo-z-popover);
+  display: flex;
+  flex-direction: column;
+  min-width: calc(var(--nexo-size-unit) * 48);
+  max-height: 70vh;
+  overflow: auto;
+  padding: var(--nexo-space-2);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-surface);
+  box-shadow: var(--nexo-shadow-lg);
+}
+.popup-menu > button,
+.popup-menu > label {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-sm);
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
+  text-align: left;
+  white-space: nowrap;
+}
+.popup-menu > button:hover,
+.popup-menu > button:focus-visible,
+.popup-menu > label:hover {
+  background: var(--nexo-color-hover);
+}
+.popup-menu > button:disabled {
+  color: var(--nexo-color-text-faint);
+}
+.popup-menu > button.danger {
+  color: var(--nexo-color-danger-text);
+}
+.popup-menu kbd {
+  margin-left: auto;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-2xs);
+}
+.popup-menu > button[role='menuitemcheckbox']::before {
+  content: '';
+  width: var(--nexo-size-6);
+  text-align: center;
+}
+.popup-menu > button[aria-checked='true']::before {
+  content: '✓';
+  color: var(--nexo-color-accent-strong);
+}
+.popup-menu > hr {
+  width: 100%;
+  margin: var(--nexo-space-2) 0;
+  border: 0;
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+}
+.popup-menu > h4 {
+  margin: var(--nexo-space-2) var(--nexo-space-4) var(--nexo-space-1);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-2xs);
+  font-weight: var(--nexo-font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: var(--nexo-tracking-caps);
+}

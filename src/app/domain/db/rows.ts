@@ -4,6 +4,7 @@
  * loaded nodes, with the nodes that lead to it.
  */
 import { ConnectionType, connectionType, filterAt, readDbConnection } from './connection';
+import { engineProfile } from './engines';
 import { readScript } from './sql';
 import { ConnectionStatus, DbNode, filtered, matchesText, nodeKey, simpleView } from './tree';
 
@@ -175,7 +176,12 @@ export function navigatorRows(snapshot: NavigatorSnapshot): NavigatorRow[] {
         type: 'connection',
         level,
         label: document.name,
-        detail: [value.host, value.database].filter(Boolean).join(' · '),
+        detail: [
+          value.driver ? engineProfile(value.driver).name : '',
+          [value.host, value.port].filter(Boolean).join(':'),
+        ]
+          .filter(Boolean)
+          .join(' · '),
         connection: id,
         path: [],
         ...(folder ? { parent: folder, folder: group.folder } : {}),

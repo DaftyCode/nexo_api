@@ -9,6 +9,7 @@ import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
 import { ModuleDownload } from './module-download';
 import { Splitter } from './splitter';
+import { StudioIcon } from './studio-icon';
 
 /** The narrowest and widest the navigator gets, in pixels. */
 const NAVIGATOR = { min: 200, initial: 300 };
@@ -27,6 +28,7 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbObjectTab,
     ModuleDownload,
     Splitter,
+    StudioIcon,
   ],
   providers: [DbSection],
   host: { '(keydown)': 'shortcut($event)' },
@@ -58,8 +60,8 @@ export class DbPanel {
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
     return script ? script.name : `${connection} · SQL`;
   }
-  protected kindMark(tab: DbTab) {
-    return tab.kind === 'sql' ? '⌨' : tab.kind === 'object' ? '▦' : '⛁';
+  protected kindIcon(tab: DbTab) {
+    return tab.kind === 'sql' ? 'code' : 'databases';
   }
   protected dirty(tab: DbTab) {
     return tab.kind === 'sql' && !!this.tabs.drafts()[tab.id]?.dirty;

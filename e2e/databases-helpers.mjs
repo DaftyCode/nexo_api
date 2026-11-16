@@ -17,6 +17,21 @@ export const SQL_SERVER = {
     `jdbc:sqlserver://${environment.NEXO_SQL_MSSQL_HOST}:${environment.NEXO_SQL_MSSQL_PORT};databaseName=${environment.NEXO_SQL_MSSQL_DATABASE};user=${environment.NEXO_SQL_MSSQL_USER};password=${environment.NEXO_SQL_MSSQL_PASSWORD};encrypt=false`,
 };
 
+/** A folder of the tree, by its label: once open it also says how many objects it holds. */
+export const folder = (tree, label) =>
+  tree.getByRole('treeitem', { name: new RegExp(`^${label}(?: \\(\\d+\\))?$`) });
+
+/** Chooses an entry of one of the grid's tools: the `⋯` at the end of its header. */
+export async function gridTool(page, entry) {
+  await page.getByRole('button', { name: 'Grid tools' }).click();
+  await page.getByRole('menuitem', { name: entry, exact: true }).click();
+}
+
+/** Opens a new SQL script on the connection last chosen, with the tab bar's `+`. */
+export async function newScript(page) {
+  await page.getByRole('button', { name: /^New SQL script/ }).click();
+}
+
 /** Creates a connection to a fixture's server from the wizard, downloading the module. */
 export async function addConnection(page, name, engine = POSTGRES) {
   await page

@@ -146,6 +146,8 @@ describe('DbPanel', () => {
     await press(row('shop'), 'Enter');
     // The simple view hides administration folders.
     expect(rows()).toEqual(['Shop', 'shop', 'Schemas']);
+    await clickButton(fixture, 'Navigator options');
+    await settle();
     await clickButton(fixture, 'Show system objects');
     expect(rows()).toContain('Roles');
     await press(row('shop'), 'ArrowDown');

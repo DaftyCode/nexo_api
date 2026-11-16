@@ -75,7 +75,7 @@ describe('DbSqlTab', () => {
       tab.textContent?.trim(),
     );
   async function openScript(text: string) {
-    await clickButton(fixture, '＋ SQL');
+    await clickButton(fixture, 'New SQL script');
     await settle();
     typeCode(root().querySelector('.cm-content[aria-label="SQL script"]')!, text);
     await settle();

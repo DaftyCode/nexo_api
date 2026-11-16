@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+.grid-toolbar,
+.grid-find {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  padding: var(--nexo-space-3) 0 var(--nexo-space-5);
+}
+.grid-find {
+  padding-top: 0;
+}
+.grid-search {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  width: calc(var(--nexo-size-unit) * 135);
+  max-width: 100%;
+  margin: 0;
+  padding: var(--nexo-space-3) var(--nexo-space-5);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text-muted);
+}
+.grid-search:focus-within {
+  border-color: var(--nexo-color-accent-border);
+}
+.grid-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
+  outline: none;
+}
+.grid-search app-studio-icon,
+.grid-tool app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}
+.grid-tool {
+  width: var(--nexo-size-19);
+  height: var(--nexo-size-19);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface);
+}
+.grid-tool[aria-pressed='true'] {
+  border-color: var(--nexo-color-accent-border);
+  color: var(--nexo-color-accent-strong);
+}
+.grid-count {
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.grid-toolbar > .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.grid-toolbar > .button app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}

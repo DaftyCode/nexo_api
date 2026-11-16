@@ -42,6 +42,9 @@ CREATE TABLE shop.events_2026 PARTITION OF shop.events FOR VALUES FROM ('2026-01
 INSERT INTO shop.customers (email, name) VALUES ('ana@example.com', 'Ana'), ('luis@example.com', 'Luis');
 INSERT INTO shop.orders (customer, status, total) VALUES (1, 'paid', 120.50), (1, 'new', 9.99), (2, 'sent', 0);
 REFRESH MATERIALIZED VIEW shop.totals;
+-- A rule and a policy, for a table's folders in the tree (row security stays off).
+CREATE RULE customers_changed AS ON UPDATE TO shop.customers DO ALSO NOTIFY customers_changed;
+CREATE POLICY customers_read ON shop.customers FOR SELECT USING (true);
 
 CREATE TABLE public.numbers AS SELECT n, 'row ' || n AS label FROM generate_series(1, 100000) AS n;
 ALTER TABLE public.numbers ADD PRIMARY KEY (n);

@@ -62,6 +62,15 @@ describe('the panels and tools of the data grid', () => {
     await settle();
   };
   const panel = () => root().querySelector<HTMLElement>('.grid-panel')!;
+  /** Chooses an entry of a menu of the grid, opened by the button named `opener`. */
+  const choose = async (opener: string, entry: string | RegExp) => {
+    await clickButton(fixture, opener);
+    await settle();
+    buttons(root().querySelector('[role="menu"]')!, entry)[0].click();
+    await settle();
+  };
+  /** An entry of the grid's tools: the `⋯` at the end of its header. */
+  const tool = (entry: string) => choose('Grid tools', entry);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -73,8 +82,7 @@ describe('the panels and tools of the data grid', () => {
   });
 
   it('shows the active value by its class, and the metadata and figures', async () => {
-    await clickButton(fixture, 'Value');
-    await settle();
+    await tool('Value');
     expect(panel().querySelector('.cm-content')?.textContent).toContain('"a": [');
     await press('ArrowRight');
     expect(panel().querySelector('.cm-content')?.textContent).toContain('<b>x</b>');
@@ -92,17 +100,14 @@ describe('the panels and tools of the data grid', () => {
     expect(panel().textContent).toContain('4096');
     await clickButton(fixture, 'Save to a file', panel());
 
-    await clickButton(fixture, 'Metadata');
-    await settle();
+    await tool('Metadata');
     const meta = panel().textContent!;
     expect(meta).toContain('jsonb');
     expect(meta).toContain('shop.items.picture');
     // The figures of the selected cells: a column, from its header.
-    await clickButton(fixture, 'Calc');
-    await settle();
+    await tool('Calc');
     expect(panel().textContent).toContain('Count');
-    await clickButton(fixture, 'Grouping');
-    await settle();
+    await tool('Grouping');
     expect(panel()).toBeTruthy();
     await clickButton(fixture, 'Close the panel', panel());
     await settle();
@@ -115,38 +120,31 @@ describe('the panels and tools of the data grid', () => {
       configurable: true,
       value: { writeText: async (text: string) => void (copied = text) },
     });
-    await clickButton(fixture, 'Find');
-    await settle();
-    const find = root().querySelectorAll<HTMLInputElement>('.grid-toolbar input[type="search"]')[1];
+    await tool('Find');
+    const find = root().querySelector<HTMLInputElement>('.grid-find input')!;
     find.value = 'x';
     find.dispatchEvent(new Event('input'));
     await settle();
-    expect(root().querySelector('.grid-toolbar')?.textContent).toContain('found');
+    expect(root().querySelector('.grid-find')?.textContent).toContain('found');
     find.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     await clickButton(fixture, 'Next');
     await clickButton(fixture, 'Previous');
     find.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle();
 
-    await clickButton(fixture, 'Record');
-    await settle();
+    await tool('Record');
     expect(root().querySelector('.grid-record')?.textContent).toContain('markup');
     await clickButton(fixture, 'Next', root().querySelector('.grid-record')!);
     await clickButton(fixture, 'Previous', root().querySelector('.grid-record')!);
-    await clickButton(fixture, 'Record');
-    await clickButton(fixture, 'Text view');
+    // The record and text views leave the grid, and its bar leads back to it.
+    await clickButton(fixture, 'Back to the grid');
     await settle();
+    await tool('Text view');
     expect(root().querySelector('.grid-plain')?.textContent).toContain('total');
-    await clickButton(fixture, 'Text view');
+    await clickButton(fixture, 'Back to the grid');
     await settle();
 
-    const format = root().querySelector<HTMLSelectElement>('.grid-toolbar select')!;
-    format.value = 'json';
-    format.dispatchEvent(new Event('change'));
-    format.dispatchEvent(new Event('input'));
-    await settle();
-    buttons(root().querySelector('.grid-toolbar')!, /^Copy$/)[0].click();
-    await settle();
+    await choose('Export', /^JSON$/);
     // The selection as JSON: the cell «Find» left active, on its match.
     expect(JSON.parse(copied)).toEqual([{ markup: '<a><b>x</b></a>' }]);
     await clickButton(fixture, 'Read all');

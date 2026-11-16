@@ -132,6 +132,25 @@ async fn the_tree_shows_what_the_server_has() {
         names(&client, name, &part("triggers")).await,
         ["orders_touch"]
     );
+    // What a table lists only to be seen: what uses it and the keys that point to it.
+    assert_eq!(
+        names(&client, name, &part("dependencies")).await,
+        ["open_orders", "order_count", "two_results"]
+    );
+    let customers = [
+        "databases",
+        "shop",
+        "schemas",
+        "shop",
+        "tables",
+        "customers",
+    ];
+    let of = |part: &'static str| [&customers[..], &[part]].concat();
+    assert_eq!(
+        names(&client, name, &of("references")).await,
+        ["shop.orders"]
+    );
+    assert!(names(&client, name, &part("policies")).await.is_empty());
     assert!(
         names(&client, name, &["security", "logins"])
             .await

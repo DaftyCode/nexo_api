@@ -32,7 +32,9 @@ describe('the formats of the data grids', () => {
     }
   };
   const cells = () =>
-    [...root().querySelectorAll('[role="gridcell"]')].map((cell) => cell.textContent?.trim());
+    [...root().querySelectorAll('[role="gridcell"][data-column]')].map((cell) =>
+      cell.textContent?.trim(),
+    );
 
   it('writes values as Settings say, for every grid, and remembers it', async () => {
     await TestBed.configureTestingModule({

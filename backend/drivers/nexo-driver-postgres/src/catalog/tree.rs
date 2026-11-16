@@ -128,10 +128,11 @@ pub(crate) async fn children(connection: &PgConnection, path: &[String]) -> Resu
             AND (t.typtype <> 'c' OR (SELECT relkind FROM pg_class WHERE oid = t.typrelid) = 'c') ORDER BY 1", &[schema]).await?, "type", false, CODE_ACTIONS),
         [_, "schemas", _, "tables" | "foreign-tables", _] => {
             let mut parts = vec![("columns", "Columns"), ("constraints", "Constraints"), ("foreign-keys", "Foreign keys"),
-                ("indexes", "Indexes"), ("triggers", "Triggers")];
+                ("indexes", "Indexes"), ("dependencies", "Dependencies"), ("references", "References")];
             if version >= 100000 {
                 parts.push(("partitions", "Partitions"));
             }
+            parts.extend([("triggers", "Triggers"), ("rules", "Rules"), ("policies", "Policies")]);
             parts.iter().map(|(id, label)| node("folder", id, label, None, true, &[])).collect()
         }
         [_, "schemas", _, "views" | "materialized-views", _] => vec![node("folder", "columns", "Columns", None, true, &[])],
@@ -151,6 +152,20 @@ pub(crate) async fn children(connection: &PgConnection, path: &[String]) -> Resu
                     WHERE tgrelid = {RELATION} AND NOT tgisinternal ORDER BY 1"),
                 "partitions" => format!("SELECT c.relname::text, c.relname::text, pg_get_expr(c.relpartbound, c.oid) \
                     FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid WHERE i.inhparent = {RELATION} ORDER BY 1"),
+                // The views built on the table, through their rewrite rules.
+                "dependencies" => format!("SELECT DISTINCT v.oid::regclass::text, v.relname::text, CASE v.relkind \
+                    WHEN 'm' THEN 'materialized view' ELSE 'view' END FROM pg_depend d JOIN pg_rewrite r ON r.oid = d.objid \
+                    JOIN pg_class v ON v.oid = r.ev_class WHERE d.classid = 'pg_rewrite'::regclass \
+                    AND d.refclassid = 'pg_class'::regclass AND d.refobjid = {RELATION} AND v.oid <> {RELATION} ORDER BY 1"),
+                // The foreign keys of other tables that point to this one.
+                "references" => format!("SELECT c.conrelid::regclass::text || '.' || c.conname, c.conrelid::regclass::text, \
+                    c.conname::text FROM pg_constraint c WHERE c.confrelid = {RELATION} AND c.contype = 'f' ORDER BY 2, 3"),
+                "rules" => format!("SELECT rulename::text, rulename::text, CASE ev_type WHEN '1' THEN 'on select' \
+                    WHEN '2' THEN 'on update' WHEN '3' THEN 'on insert' WHEN '4' THEN 'on delete' END FROM pg_rewrite \
+                    WHERE ev_class = {RELATION} AND rulename <> '_RETURN' ORDER BY 1"),
+                "policies" => format!("SELECT polname::text, polname::text, CASE polcmd WHEN 'r' THEN 'select' \
+                    WHEN 'a' THEN 'insert' WHEN 'w' THEN 'update' WHEN 'd' THEN 'delete' ELSE 'all' END \
+                    || CASE WHEN polpermissive THEN '' ELSE ', restrictive' END FROM pg_policy WHERE polrelid = {RELATION} ORDER BY 1"),
                 _ => return Err(unknown()),
             };
             let kind = match *part {
@@ -158,10 +173,22 @@ pub(crate) async fn children(connection: &PgConnection, path: &[String]) -> Resu
                 "constraints" | "foreign-keys" => "constraint",
                 "indexes" => "index",
                 "triggers" => "trigger",
+                "dependencies" => "dependency",
+                "references" => "reference",
+                "rules" => "rule",
+                "policies" => "policy",
                 _ => "table",
             };
             let children = *part == "partitions";
-            let actions = if children { RELATION_ACTIONS } else { CODE_ACTIONS };
+            // What the table lists only to be seen: its editor is the table's or the other table's.
+            let listed_only = matches!(*part, "dependencies" | "references" | "rules" | "policies");
+            let actions = if children {
+                RELATION_ACTIONS
+            } else if listed_only {
+                &[]
+            } else {
+                CODE_ACTIONS
+            };
             listed(query(&client, &sql, &[schema, table]).await?, kind, children, actions)
         }
         _ => return Err(unknown()),

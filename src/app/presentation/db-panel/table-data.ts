@@ -11,8 +11,10 @@ import {
 import { quoteName } from '../../domain/db/tree';
 import type { DbSection } from './section';
 
-/** Rows read at a time in the «Data» tab, and those shown of each related table. */
-const PAGE = 200;
+/** Rows read at a time in the «Data» tab unless the person picks other, and those shown of
+ * each related table. */
+export const PAGE = 200;
+export const PAGES = [50, 100, 200, 500, 1000];
 const RELATED = 50;
 
 /** The rows of a table related to the active row by one of its foreign keys. */
@@ -40,6 +42,9 @@ export class TableData {
   readonly statement = signal('');
   readonly view = signal<GridView>(emptyView());
   readonly every = signal(0);
+  /** Rows read at a time, and how long the server took to answer the last statement. */
+  readonly page = signal(PAGE);
+  readonly elapsed = signal<number | undefined>(undefined);
   readonly related = signal<readonly RelatedRows[]>([]);
   readonly session: string;
   private opened = false;
@@ -90,7 +95,7 @@ export class TableData {
     return true;
   }
 
-  private async run(sql: string, params: unknown[], pageRows = PAGE) {
+  private async run(sql: string, params: unknown[], pageRows = this.page()) {
     const cases = await this.section.cases();
     return cases.statements.execute(
       this.workspace(),
@@ -102,6 +107,15 @@ export class TableData {
         ...(params.length ? { params } : {}),
       },
     );
+  }
+
+  /** The table as the statement names it, quoted as its engine wants. */
+  table() {
+    return this.source().table;
+  }
+  /** The statement the rows are read with, as the filter and order stand now. */
+  select() {
+    return tableSelect(this.source().table, this.query(), this.style()).sql;
   }
 
   /** Reads the first page again with the filter and order of the tab. */
@@ -118,6 +132,7 @@ export class TableData {
       this.columns.set(answer.columns);
       this.rows.set(answer.rows);
       this.cursor.set(answer.cursor ?? undefined);
+      this.elapsed.set(answer.elapsedMs);
       this.count.set(undefined);
     } catch (error) {
       this.error.set(this.section.state.describe(error));
@@ -132,7 +147,12 @@ export class TableData {
     this.loading.set(true);
     try {
       const cases = await this.section.cases();
-      const page = await cases.statements.fetch(this.workspace(), this.session, cursor, PAGE);
+      const page = await cases.statements.fetch(
+        this.workspace(),
+        this.session,
+        cursor,
+        this.page(),
+      );
       this.rows.update((rows) => [...rows, ...page.rows]);
       this.cursor.set(page.cursor ?? undefined);
     } catch (error) {

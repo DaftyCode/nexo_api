@@ -12,26 +12,88 @@
   </div>
 }
 <header class="db-object-head">
-  <div>
-    <span class="eyebrow">{{ description()?.kind ?? node()?.kind }}</span>
-    <h2>{{ description()?.name ?? tab().title }}</h2>
-  </div>
-  @if (header().length) {
+  <span class="db-object-icon"><app-studio-icon [name]="headIcon()" /></span>
+  <h2>{{ description()?.name ?? tab().title }}</h2>
+  @if (kindLabel(); as kind) {
+    <span class="db-object-kind">{{ kind | transloco }}</span>
+  }
+  @if (facts().length) {
     <dl class="db-object-facts">
-      @for (fact of header(); track fact.name) {
+      @for (fact of facts(); track fact.name) {
         <div>
-          <dt>{{ fact.name }}</dt>
+          <dt>{{ fact.name | transloco }}:</dt>
           <dd>{{ fact.value }}</dd>
         </div>
       }
     </dl>
   }
   <span class="grow"></span>
-  <button type="button" class="button small subtle" (click)="load()">
-    {{ 'Refresh' | transloco }}
-  </button>
+  <div class="db-object-tools">
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Properties' | transloco"
+      [attr.title]="'Properties' | transloco"
+      [attr.aria-pressed]="part() === 'properties'"
+      (click)="show('properties')"
+    >
+      <app-studio-icon name="info" />
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Refresh' | transloco"
+      [attr.title]="'Refresh' | transloco"
+      (click)="load()"
+    >
+      <app-studio-icon name="refresh" />
+    </button>
+    <button
+      type="button"
+      class="button small db-object-sql"
+      [attr.title]="'Open in a SQL script' | transloco"
+      (click)="openSql()"
+    >
+      <app-studio-icon name="code" />SQL
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="!!more()"
+      [attr.aria-label]="'More actions' | transloco"
+      [attr.title]="'More actions' | transloco"
+      (click)="$event.stopPropagation(); toggleMore($event)"
+    >
+      ⋮
+    </button>
+  </div>
 </header>
-<nav class="editor-tabs db-object-parts" [attr.aria-label]="'Object views' | transloco">
+@if (more(); as at) {
+  <div
+    class="popup-menu db-object-menu"
+    role="menu"
+    tabindex="-1"
+    [attr.aria-label]="'More actions' | transloco"
+    [style.left.px]="at.x"
+    [style.top.px]="at.y"
+    (click)="$event.stopPropagation()"
+    (keydown)="moreKey($event)"
+  >
+    <button type="button" role="menuitem" (click)="more.set(undefined); copyName()">
+      {{ 'Copy name' | transloco }}
+    </button>
+    @if (ddl()) {
+      <button type="button" role="menuitem" (click)="more.set(undefined); copyDdl()">
+        {{ 'Copy DDL' | transloco }}
+      </button>
+      <button type="button" role="menuitem" (click)="more.set(undefined); openInScript()">
+        {{ 'Open the DDL in a script' | transloco }}
+      </button>
+    }
+  </div>
+}
+<nav class="db-object-parts" [attr.aria-label]="'Object views' | transloco">
   @for (p of parts(); track p) {
     <button
       type="button"
@@ -39,7 +101,7 @@
       [attr.aria-current]="part() === p ? 'page' : null"
       (click)="show(p)"
     >
-      {{ partLabel(p) | transloco }}
+      <app-studio-icon [name]="icon(p)" />{{ partLabel(p) | transloco }}
     </button>
   }
 </nav>
@@ -47,7 +109,12 @@
   @if (!description()) {
     <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
   } @else if (part() === 'data') {
-    <app-db-table-data [tab]="tab()" [parents]="parents()" [children]="children()" />
+    <app-db-table-data
+      [tab]="tab()"
+      [parents]="parents()"
+      [children]="children()"
+      [estimated]="estimatedRows()"
+    />
   } @else if (part() === 'properties') {
     <dl class="db-object-properties">
       @for (property of description()!.properties; track property.name) {

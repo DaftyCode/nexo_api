@@ -1,21 +1,32 @@
 @let rows = data();
-<div class="db-data-filter">
-  <div class="db-data-where">
-    <app-code-editor
-      size="small"
-      language="sql"
-      [formField]="fields.where"
-      [words]="words()"
-      [label]="'Condition (WHERE)' | transloco"
-      placeholder="id > 10 AND status = 'sent'"
-    />
+<div class="db-data-query">
+  <div class="db-data-sql" role="group" [attr.aria-label]="'Statement' | transloco">
+    <span class="db-data-number" aria-hidden="true">1</span>
+    <code class="db-data-select"
+      ><b>SELECT</b> * <b>FROM</b> {{ rows.table() }}
+      @if (query().quick.length || query().order.length) {
+        <span class="db-data-more" [attr.title]="rows.select()">…</span>
+      }
+    </code>
+    <span class="db-data-number" aria-hidden="true">2</span>
+    <div class="db-data-where">
+      <b aria-hidden="true">WHERE</b>
+      <app-code-editor
+        size="line"
+        language="sql"
+        [formField]="fields.where"
+        [words]="words()"
+        [label]="'Condition (WHERE)' | transloco"
+        placeholder="id > 10 AND status = 'sent'"
+      />
+    </div>
   </div>
   <div class="db-data-actions">
-    <button type="button" class="button small primary" (click)="apply()">
-      {{ 'Apply the filter' | transloco }}
+    <button type="button" class="button primary" aria-keyshortcuts="F5" (click)="apply()">
+      <app-studio-icon name="play" />{{ 'Run (F5)' | transloco }}
     </button>
-    <button type="button" class="button small subtle" (click)="clear()">
-      {{ 'Clear' | transloco }}
+    <button type="button" class="button" (click)="clear()">
+      <app-studio-icon name="trash" />{{ 'Clear' | transloco }}
     </button>
   </div>
 </div>
@@ -53,50 +64,6 @@
     }
   </ul>
 }
-<div class="db-data-toolbar" role="toolbar" [attr.aria-label]="'Data' | transloco">
-  <button type="button" class="button small" (click)="rows.load()">
-    {{ 'Refresh' | transloco }}
-  </button>
-  <button type="button" class="button small subtle" (click)="rows.countRows()">
-    {{ 'Count the rows' | transloco }}
-  </button>
-  @if (rows.count() !== undefined) {
-    <span role="status">{{ 'db.data.count' | transloco: { v0: rows.count() } }}</span>
-  }
-  <label class="db-data-every"
-    >{{ 'Every (seconds)' | transloco }} <input type="number" [formField]="fields.every"
-  /></label>
-  <button
-    type="button"
-    class="button small subtle"
-    [attr.aria-pressed]="!!rows.every()"
-    (click)="toggleEvery()"
-  >
-    {{ (rows.every() ? 'Stop refreshing' : 'Refresh by itself') | transloco }}
-  </button>
-  <span class="grow"></span>
-  <button
-    type="button"
-    class="button small subtle"
-    [attr.aria-pressed]="showStatement()"
-    (click)="showStatement.set(!showStatement())"
-  >
-    {{ 'Statement' | transloco }}
-  </button>
-  <button type="button" class="button small subtle" (click)="openInScript()">
-    {{ 'Open in a script' | transloco }}
-  </button>
-  @if (parents().length || children().length) {
-    <button
-      type="button"
-      class="button small subtle"
-      [attr.aria-pressed]="showRelated()"
-      (click)="toggleRelated()"
-    >
-      {{ 'db.panel.refs' | transloco }}
-    </button>
-  }
-</div>
 @if (showStatement()) {
   <code class="db-data-statement">{{ rows.statement() }}</code>
 }
@@ -117,7 +84,69 @@
       (needMore)="rows.more()"
       (cellAction)="cellAction($event)"
       (activeRow)="rowChanged($event)"
-    />
+    >
+      <div gridStart class="db-data-toolbar" role="group" [attr.aria-label]="'Data' | transloco">
+        <label class="db-data-page"
+          >{{ 'Show:' | transloco }}
+          <select [formField]="fields.page">
+            @for (size of pages; track size) {
+              <option [value]="size">{{ 'db.data.page' | transloco: { v0: size } }}</option>
+            }
+          </select>
+        </label>
+        <span class="db-data-loaded" role="status">{{ loaded() }}</span>
+        @if (rows.elapsed() !== undefined) {
+          <span class="db-data-ms"><app-studio-icon name="trigger" />{{ rows.elapsed() }} ms</span>
+        }
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-pressed]="showStatement()"
+          [attr.aria-label]="'Statement' | transloco"
+          [attr.title]="'Statement' | transloco"
+          (click)="showStatement.set(!showStatement())"
+        >
+          <app-studio-icon name="code" />
+        </button>
+        @if (parents().length || children().length) {
+          <button
+            type="button"
+            class="icon-button"
+            [attr.aria-pressed]="showRelated()"
+            [attr.aria-label]="'db.panel.refs' | transloco"
+            [attr.title]="'db.panel.refs' | transloco"
+            (click)="toggleRelated()"
+          >
+            <app-studio-icon name="reference" />
+          </button>
+        }
+      </div>
+      <span gridFooterStart class="db-data-refresh">
+        <button type="button" class="button small" (click)="rows.load()">
+          <app-studio-icon name="refresh" />{{ 'Refresh' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="button small"
+          aria-haspopup="true"
+          [attr.aria-expanded]="!!refreshMenu()"
+          [attr.aria-label]="'Refresh options' | transloco"
+          (click)="$event.stopPropagation(); toggleRefresh($event)"
+        >
+          <app-studio-icon class="db-data-caret" name="chevron" />
+        </button>
+      </span>
+      <span gridFooterStatus class="db-data-state" [class.db-data-ok]="state() === 'Query ready'">
+        <app-studio-icon [name]="rows.error() ? 'info' : 'check'" />{{ state() | transloco }}
+      </span>
+      @if (estimate(); as estimated) {
+        <span gridFooterCount class="db-data-state">
+          <app-studio-icon name="dependency" />{{
+            'db.data.estimated' | transloco: { v0: estimated }
+          }}
+        </span>
+      }
+    </app-data-grid>
   </div>
   @if (showRelated()) {
     <aside class="db-data-related" [attr.aria-label]="'db.panel.refs' | transloco">
@@ -144,3 +173,29 @@
     </aside>
   }
 </div>
+@if (refreshMenu(); as at) {
+  <div
+    class="popup-menu db-refresh-menu"
+    role="group"
+    [attr.aria-label]="'Refresh options' | transloco"
+    [style.left.px]="at.x"
+    [style.top.px]="at.y"
+    [style.bottom.px]="at.bottom"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="refreshMenu.set(undefined)"
+  >
+    <button type="button" (click)="refreshMenu.set(undefined); rows.countRows()">
+      {{ 'Count the rows' | transloco }}
+    </button>
+    <label
+      >{{ 'Every (seconds)' | transloco }} <input type="number" [formField]="fields.every"
+    /></label>
+    <button
+      type="button"
+      [attr.aria-pressed]="!!rows.every()"
+      (click)="refreshMenu.set(undefined); toggleEvery()"
+    >
+      {{ (rows.every() ? 'Stop refreshing' : 'Refresh by itself') | transloco }}
+    </button>
+  </div>
+}

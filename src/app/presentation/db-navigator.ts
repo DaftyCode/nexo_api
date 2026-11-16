@@ -12,20 +12,22 @@ import {
   signal,
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
+import { compactCount, detailRows, nodeIcon } from '../domain/db/look';
 import { NavigatorRow } from '../domain/db/rows';
 import { DbBookmark } from '../domain/db/tree';
 import { MongoDialog } from './mongo-dialog';
 import { StudioIcon } from './studio-icon';
 import { DbActions } from './db-panel/actions';
-import { ICONS, MenuAction } from './db-panel/menu';
+import { MenuAction } from './db-panel/menu';
 import { RowClicks } from './db-panel/row-clicks';
+import { DbRowMenu } from './db-panel/row-menu';
+import { menuKeys } from './menu-keys';
+import { PopupPlace, placeAt, placeBy } from './popup-place';
 import { DbSection } from './db-panel/section';
 
 /** Where the actions menu of a row is open. */
-interface OpenMenu {
+interface OpenMenu extends PopupPlace {
   row: NavigatorRow;
-  x: number;
-  y: number;
 }
 
 /**
@@ -35,10 +37,10 @@ interface OpenMenu {
  * Enter, F2, F5, Delete, the menu key), with a text filter, bookmarks and two views.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, MongoDialog, StudioIcon],
+  imports: [TranslocoPipe, FormField, MongoDialog, StudioIcon, DbRowMenu],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-navigator',
-  styleUrl: './db-navigator.scss',
+  styleUrls: ['./db-navigator.scss', './db-navigator/rows.scss'],
   templateUrl: './db-navigator.html',
   host: { '(document:click)': 'outside($event)' },
 })
@@ -54,6 +56,10 @@ export class DbNavigator {
   /** The row with the keyboard focus (roving tabindex). */
   protected readonly focusKey = signal('');
   protected readonly menu = signal<OpenMenu | undefined>(undefined);
+  /** Where the menu of the navigator's options is open. */
+  protected readonly options = signal<PopupPlace | undefined>(undefined);
+  /** The connections' list, folded under its heading. */
+  protected readonly folded = signal(false);
   /** The connection being dragged to a folder. */
   protected readonly dragging = signal('');
   protected readonly dropKey = signal('');
@@ -69,11 +75,18 @@ export class DbNavigator {
 
   /** The icon of a row, by the class of object the driver says it is. */
   protected icon(row: NavigatorRow) {
-    if (row.type === 'connection') return 'databases';
-    if (row.type === 'folder' || row.type === 'scripts' || row.type === 'script-group')
-      return 'folder';
     if (row.type === 'script') return 'code';
-    return ICONS[row.node?.kind ?? ''] ?? 'datasets';
+    return row.node ? nodeIcon(row.node) : 'folder';
+  }
+  /** How many objects a folder of the tree holds, once they are loaded. */
+  protected count(row: NavigatorRow) {
+    if (row.node?.kind !== 'folder') return undefined;
+    return this.section.tree.children().get(row.key)?.length;
+  }
+  /** The rows a driver estimates for a table, written short. */
+  protected rowsOf(detail: string) {
+    const rows = detailRows(detail);
+    return rows === undefined ? undefined : compactCount(rows);
   }
   protected tabIndex(row: NavigatorRow) {
     return row.key === this.current()?.key ? 0 : -1;
@@ -109,7 +122,7 @@ export class DbNavigator {
   }
 
   protected doubleClick(event: MouseEvent, row: NavigatorRow) {
-    if ((event.target as HTMLElement).closest('.db-twisty')) return;
+    if ((event.target as HTMLElement).closest('.db-twisty, .db-kebab')) return;
     this.select(row);
     this.clicks.double(row);
   }
@@ -182,19 +195,21 @@ export class DbNavigator {
     if (!row || row.type === 'loading' || row.type === 'empty') return;
     const element = this.host.querySelector<HTMLElement>(`[data-key="${CSS.escape(row.key)}"]`);
     const box = element?.getBoundingClientRect();
-    this.showMenu(row, box ? box.left + box.width / 3 : 0, box ? box.bottom : 0);
+    const left = box ? box.left + box.width / 3 : 0;
+    this.showMenu(row, box ? { ...placeBy(element!), x: placeAt(left, 0).x } : placeAt(0, 0));
   }
 
   protected contextMenu(event: MouseEvent, row: NavigatorRow) {
     if (row.type === 'loading' || row.type === 'empty') return;
     event.preventDefault();
     this.select(row);
-    this.showMenu(row, event.clientX, event.clientY);
+    this.showMenu(row, placeAt(event.clientX, event.clientY));
   }
 
-  private showMenu(row: NavigatorRow, x: number, y: number) {
+  private showMenu(row: NavigatorRow, at: PopupPlace) {
+    this.options.set(undefined);
     this.focusKey.set(row.key);
-    this.menu.set({ row, x, y });
+    this.menu.set({ row, ...at });
     afterNextRender(() => this.host.querySelector<HTMLElement>('.db-menu button')?.focus(), {
       injector: this.injector,
     });
@@ -214,24 +229,26 @@ export class DbNavigator {
     void this.actions[action](open.row);
   }
 
-  protected menuKey(event: KeyboardEvent) {
-    const items = [...this.host.querySelectorAll<HTMLElement>('.db-menu button')];
-    const index = items.indexOf(document.activeElement as HTMLElement);
-    const move = (to: number) => {
-      event.preventDefault();
-      items[(to + items.length) % items.length]?.focus();
-    };
-    if (event.key === 'Escape' || event.key === 'Tab') {
-      event.preventDefault();
-      this.closeMenu();
-    } else if (event.key === 'ArrowDown') move(index + 1);
-    else if (event.key === 'ArrowUp') move(index - 1);
-    else if (event.key === 'Home') move(0);
-    else if (event.key === 'End') move(items.length - 1);
+  /** Opens or closes the navigator's options under their button. */
+  protected toggleOptions(event: MouseEvent) {
+    if (this.options()) return this.options.set(undefined);
+    this.options.set(placeBy(event.currentTarget as HTMLElement));
+    afterNextRender(
+      () => this.host.querySelector<HTMLElement>('.db-options-menu button')?.focus(),
+      { injector: this.injector },
+    );
+  }
+  protected optionsKey(event: KeyboardEvent) {
+    menuKeys(event, event.currentTarget as HTMLElement, () => {
+      this.options.set(undefined);
+      this.host.querySelector<HTMLElement>('.db-nav-options')?.focus();
+    });
   }
 
   protected outside(event: Event) {
-    if (this.menu() && !(event.target as HTMLElement).closest?.('.db-menu')) this.closeMenu(false);
+    const target = event.target as HTMLElement;
+    if (this.menu() && !target.closest?.('.popup-menu')) this.closeMenu(false);
+    if (this.options() && !target.closest?.('.popup-menu')) this.options.set(undefined);
   }
 
   protected async reveal(bookmark: DbBookmark) {
