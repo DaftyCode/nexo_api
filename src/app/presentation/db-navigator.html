@@ -75,7 +75,7 @@
         [style.--db-level]="row.level"
         (click)="click($event, row)"
         (keydown)="key($event, row)"
-        (dblclick)="activate(row)"
+        (dblclick)="doubleClick($event, row)"
         (contextmenu)="contextMenu($event, row)"
         (dragstart)="dragStart($event, row)"
         (dragover)="dragOver($event, row)"

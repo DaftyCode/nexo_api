@@ -19,6 +19,8 @@ export interface DbTab {
   path?: string[];
   /** An object tab: the filter and order of its «Data» tab. */
   query?: TableQuery;
+  /** An object tab: the view it shows (properties, data, a section, DDL), as it was left. */
+  part?: string;
 }
 
 /** What a SQL tab holds besides its results. */
@@ -85,6 +87,7 @@ function readTab(item: unknown): DbTab[] {
       title: text(tab, 'title'),
       ...(kind === 'object' ? { path: strings(tab['path']) } : {}),
       ...(kind === 'object' && tab['query'] ? { query: readQuery(tab['query']) } : {}),
+      ...(kind === 'object' && text(tab, 'part') ? { part: text(tab, 'part') } : {}),
     },
   ];
 }

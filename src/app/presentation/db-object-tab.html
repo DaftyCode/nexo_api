@@ -37,7 +37,7 @@
       type="button"
       [class.active]="part() === p"
       [attr.aria-current]="part() === p ? 'page' : null"
-      (click)="part.set(p)"
+      (click)="show(p)"
     >
       {{ partLabel(p) | transloco }}
     </button>

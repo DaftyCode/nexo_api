@@ -1,5 +1,5 @@
 // End-to-end test of an object's tab against the PostgreSQL fixture (tools/sql-fixture.sh):
-// its header and sections, its DDL, its data filtered and ordered on the server with a
+// opened with a double click, on its data; its header and sections, its DDL, its data filtered and ordered on the server with a
 // quick filter from a cell, the count, a foreign key followed to the table it points to and
 // the rows that point back, in the References panel.
 import { expect, test } from './fixture.mjs';
@@ -31,14 +31,23 @@ test("an object's tab shows its data from the server and follows its keys", asyn
   await open(tree.getByRole('treeitem', { name: 'Schemas', exact: true }));
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
   await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
-  await tree.getByRole('treeitem', { name: /^orders/ }).focus();
-  await page.keyboard.press('Shift+F10');
-  await page.getByRole('menu').getByRole('menuitem', { name: 'Open' }).click();
+  // A double click opens a table's tab on its data; with the tab open, it opens the table in the
+  // tree.
+  const orders = tree.getByRole('treeitem', { name: /^orders/ });
+  await orders.dblclick();
+  await expect(page.getByRole('heading', { name: 'shop.orders' })).toBeVisible();
+  const views = page.getByRole('navigation', { name: 'Object views' });
+  await expect(views.getByRole('button', { name: 'Data', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  await expect(page.getByRole('grid', { name: 'Rows' })).toContainText('120.50');
+  await expect(orders).toHaveAttribute('aria-expanded', 'false');
+  await orders.dblclick();
+  await expect(orders).toHaveAttribute('aria-expanded', 'true');
 
   // The header and the sections, as grids; the DDL.
-  await expect(page.getByRole('heading', { name: 'shop.orders' })).toBeVisible();
   await expect(page.locator('.db-object-facts')).toContainText('Owner');
-  const views = page.getByRole('navigation', { name: 'Object views' });
   await views.getByRole('button', { name: 'Columns' }).click();
   await expect(page.getByRole('grid', { name: 'Columns' })).toContainText('customer');
   await views.getByRole('button', { name: 'DDL' }).click();

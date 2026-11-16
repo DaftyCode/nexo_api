@@ -67,8 +67,8 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
   await expect(shop).toHaveClass(/db-type-production/);
   await expect(page.getByRole('tab', { name: 'Shop' })).toHaveClass(/db-tab-production/);
 
-  // The keyboard opens the connection and walks down to the columns of a table.
-  await shop.click();
+  // The keyboard opens the connection and walks down to a table; a click opens the table.
+  await shop.focus();
   await page.keyboard.press('ArrowRight');
   const database = tree.getByRole('treeitem', { name: 'shop', exact: true }).first();
   await expect(database).toBeVisible();
@@ -83,7 +83,8 @@ test('a PostgreSQL connection downloads its module and is browsed with the keybo
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).nth(1));
   await open(tree.getByRole('treeitem', { name: 'Tables', exact: true }));
   const orders = tree.getByRole('treeitem', { name: /^orders/ });
-  await open(orders);
+  await orders.click();
+  await expect(orders).toHaveAttribute('aria-expanded', 'true');
   await open(tree.getByRole('treeitem', { name: 'Columns', exact: true }));
   await expect(tree.getByRole('treeitem', { name: /^total/ })).toBeVisible();
   expect(await violations(page)).toEqual([]);

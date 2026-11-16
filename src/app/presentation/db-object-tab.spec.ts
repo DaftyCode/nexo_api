@@ -99,6 +99,8 @@ describe('DbObjectTab', () => {
     await settle();
   };
   const statement = () => root().querySelector('.db-data-statement')?.textContent?.trim();
+  const shown = () =>
+    root().querySelector('[aria-label="Object views"] [aria-current="page"]')?.textContent?.trim();
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -141,6 +143,9 @@ describe('DbObjectTab', () => {
     expect(facts).toContain('nexo');
     expect(facts).toContain('Estimated rows');
     expect(facts).not.toContain('Comment');
+    // A table opens on its data.
+    expect(shown()).toBe('Data');
+    await part('Properties');
     expect(root().querySelector('.db-object-properties')?.textContent).toContain('Owner');
     await part('Triggers');
     expect(root().textContent).toContain('No objects');
@@ -161,6 +166,9 @@ describe('DbObjectTab', () => {
     expect(section.tabs.active()?.path).toEqual([...orders.slice(0, -1), 'customers']);
     section.tabs.activeId.set('o1');
     await settle();
+    // Back on its tab, the object shows the view it was left on.
+    expect(shown()).toBe('Foreign keys');
+    expect(section.tabs.tabs()[0].part).toBe('foreign-keys');
     await part('Referenced by');
     await clickButton(fixture, 'Open the related table');
     expect(section.tabs.active()?.path).toEqual([...orders.slice(0, -1), 'lines']);
@@ -171,6 +179,7 @@ describe('DbObjectTab', () => {
     expect(section.tabs.active()?.kind).toBe('sql');
   });
 
+  // A long walk through the tab: with coverage on a busy machine it takes over 5 seconds.
   it('reads its data on the server, filtered, ordered, counted and related', async () => {
     await part('Data');
     expect(calls('db.connect').at(-1)).toEqual(expect.objectContaining({ session: 'object:o1' }));
@@ -254,5 +263,5 @@ describe('DbObjectTab', () => {
     expect(calls('db.disconnect').at(-1)).toEqual(
       expect.objectContaining({ session: 'object:o1' }),
     );
-  });
+  }, 15_000);
 });

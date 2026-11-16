@@ -2,6 +2,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
   Injector,
   afterNextRender,
@@ -17,6 +18,7 @@ import { MongoDialog } from './mongo-dialog';
 import { StudioIcon } from './studio-icon';
 import { DbActions } from './db-panel/actions';
 import { ICONS, MenuAction } from './db-panel/menu';
+import { RowClicks } from './db-panel/row-clicks';
 import { DbSection } from './db-panel/section';
 
 /** Where the actions menu of a row is open. */
@@ -28,7 +30,8 @@ interface OpenMenu {
 
 /**
  * The navigator of the database section, as DBeaver's: folders of connections, each one
- * opened by expanding it, and the tree its driver describes. A tree for the keyboard (arrows,
+ * opened by expanding it, and the tree its driver describes. A click opens or closes a row
+ * and a double click opens a table's tab ({@link RowClicks}). A tree for the keyboard (arrows,
  * Enter, F2, F5, Delete, the menu key), with a text filter, bookmarks and two views.
  */
 @Component({
@@ -42,6 +45,7 @@ interface OpenMenu {
 export class DbNavigator {
   protected readonly section = inject(DbSection);
   protected readonly actions = new DbActions(this.section);
+  private readonly clicks = new RowClicks(this.section, this.actions);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly injector = inject(Injector);
   protected readonly filterModel = signal({ text: '' });
@@ -60,6 +64,7 @@ export class DbNavigator {
 
   constructor() {
     effect(() => this.section.text.set(this.filterModel().text));
+    inject(DestroyRef).onDestroy(() => this.clicks.stop());
   }
 
   /** The icon of a row, by the class of object the driver says it is. */
@@ -97,16 +102,21 @@ export class DbNavigator {
     if (row.connection) this.section.active.set(row.connection);
   }
 
-  /** A click selects a row; on its arrow, it also opens or closes it. */
+  /** A click selects a row and opens or closes it. */
   protected click(event: MouseEvent, row: NavigatorRow) {
-    if ((event.target as HTMLElement).closest('.db-twisty')) this.activate(row);
-    else this.select(row);
+    this.select(row);
+    this.clicks.click(row, !!(event.target as HTMLElement).closest('.db-twisty'), event.detail);
+  }
+
+  protected doubleClick(event: MouseEvent, row: NavigatorRow) {
+    if ((event.target as HTMLElement).closest('.db-twisty')) return;
+    this.select(row);
+    this.clicks.double(row);
   }
 
   protected activate(row: NavigatorRow) {
     this.select(row);
-    if (row.expandable) void this.actions.toggle(row);
-    else this.actions.open(row);
+    this.clicks.activate(row);
   }
 
   /** The keys of a WAI-ARIA tree, and the shortcuts of DBeaver's navigator. */

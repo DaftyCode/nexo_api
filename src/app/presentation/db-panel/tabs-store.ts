@@ -17,17 +17,21 @@ export class DbTabsStore {
   constructor(private readonly id: () => string) {}
 
   /**
-   * Opens a tab, or shows the one already open for the same thing: the editor of a
-   * connection, an object or a saved script. SQL tabs without a script always open anew.
+   * The tab already open for the same thing: the editor of a connection, an object or a saved
+   * script. A SQL tab without a script is never the same as another one.
    */
-  open(tab: Omit<DbTab, 'id'>, draft?: SqlDraft): DbTab {
-    const same = (other: DbTab) => {
+  find(tab: Omit<DbTab, 'id'>, draft?: SqlDraft): DbTab | undefined {
+    return this.tabs().find((other) => {
       if (other.kind !== tab.kind || other.connection !== tab.connection) return false;
       if (tab.kind === 'connection') return !!tab.connection;
       if (tab.kind === 'object') return other.path?.join('/') === tab.path?.join('/');
       return !!draft?.script && this.drafts()[other.id]?.script === draft.script;
-    };
-    const existing = this.tabs().find(same);
+    });
+  }
+
+  /** Opens a tab, or shows the one already open for the same thing. */
+  open(tab: Omit<DbTab, 'id'>, draft?: SqlDraft): DbTab {
+    const existing = this.find(tab, draft);
     if (existing) {
       this.activeId.set(existing.id);
       return existing;

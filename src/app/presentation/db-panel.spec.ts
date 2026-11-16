@@ -3,6 +3,8 @@ import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { buttons, clickButton, fill } from '../testing/controls';
 import { ModuleSummary } from '../domain/modules';
 import { DbPanel } from './db-panel';
+import { DOUBLE_CLICK_MS } from './db-panel/row-clicks';
+import { DbSection } from './db-panel/section';
 import { WorkspaceState } from './workspace-state';
 
 const postgres: ModuleSummary = {
@@ -27,6 +29,18 @@ const tree: Record<string, unknown[]> = {
   'shop/schemas': [
     { kind: 'schema', name: 'public', label: 'public', hasChildren: true, actions: ['ddl'] },
     { kind: 'schema', name: 'archive', label: 'archive', hasChildren: true, actions: ['ddl'] },
+  ],
+  'shop/schemas/public': [
+    {
+      kind: 'table',
+      name: 'orders',
+      label: 'orders',
+      hasChildren: true,
+      actions: ['open', 'data'],
+    },
+  ],
+  'shop/schemas/public/orders': [
+    { kind: 'folder', name: 'columns', label: 'Columns', hasChildren: true, actions: [] },
   ],
 };
 
@@ -67,6 +81,14 @@ describe('DbPanel', () => {
         }),
         'db.dialect': () => ({ dialect: { quoteOpen: '"', quoteClose: '"', keywords: [] } }),
         'db.disconnect': () => ({}),
+        'db.describe': () => ({
+          kind: 'table',
+          name: 'public.orders',
+          properties: [],
+          sections: [],
+        }),
+        'db.ddl': () => ({ sql: '' }),
+        'db.execute': () => ({ columns: [], rows: [], elapsedMs: 1 }),
       }),
       imports: [DbPanel],
     }).compileComponents();
@@ -114,9 +136,7 @@ describe('DbPanel', () => {
     await create();
     await clickButton(fixture, 'Save');
     await settle();
-    const shop = row('Shop');
-    shop.click();
-    await press(shop, 'ArrowRight');
+    await press(row('Shop'), 'ArrowRight');
     expect(operations()).toContain('db.connect');
     expect(api.calls.find((call) => call.operation === 'db.connect')!.payload['session']).toMatch(
       /^tree:/,
@@ -150,6 +170,56 @@ describe('DbPanel', () => {
     expect(state.databaseSession()?.bookmarks).toEqual([
       expect.objectContaining({ label: 'archive', path: ['shop', 'schemas', 'archive'] }),
     ]);
+  });
+
+  it('opens a row with a click, and the tab of a table with a double click', async () => {
+    await create();
+    await clickButton(fixture, 'Save');
+    await settle();
+    const click = async (label: string, detail = 1, on = row(label)) => {
+      on.dispatchEvent(new MouseEvent('click', { detail, bubbles: true }));
+      await settle();
+    };
+    const double = async (label: string) => {
+      await click(label);
+      await click(label, 2);
+      row(label).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await settle();
+    };
+    const wait = async () => {
+      await new Promise((done) => setTimeout(done, DOUBLE_CLICK_MS + 50));
+      await settle();
+    };
+    // A click opens a connection, a database, a folder or a schema at once.
+    for (const label of ['Shop', 'shop', 'Schemas', 'public']) await click(label);
+    expect(rows()).toEqual(['Shop', 'shop', 'Schemas', 'public', 'orders', 'archive']);
+
+    // A double click opens a table's tab, on its data, and leaves the tree as it was.
+    await double('orders');
+    await wait();
+    const section = fixture.debugElement.injector.get(DbSection);
+    expect(section.tabs.active()).toEqual(expect.objectContaining({ kind: 'object' }));
+    expect(section.tabs.active()?.path).toEqual(['shop', 'schemas', 'public', 'orders']);
+    expect(row('orders').getAttribute('aria-expanded')).toBe('false');
+    await settle();
+    expect(root().querySelector('.db-object-parts [aria-current="page"]')?.textContent).toContain(
+      'Data',
+    );
+
+    // With its tab open, a double click opens it in the tree; a click closes it a moment later.
+    await double('orders');
+    expect(rows()).toContain('Columns');
+    await click('orders');
+    expect(rows()).toContain('Columns');
+    await wait();
+    expect(rows()).not.toContain('Columns');
+    expect(section.tabs.tabs().filter((tab) => tab.kind === 'object')).toHaveLength(1);
+
+    // Its arrow opens it at once; Enter on a schema closes it.
+    await click('orders', 1, row('orders').querySelector<HTMLElement>('.db-twisty')!);
+    expect(rows()).toContain('Columns');
+    await press(row('public'), 'Enter');
+    expect(rows()).not.toContain('orders');
   });
 
   it('deletes a connection only once its name is typed', async () => {

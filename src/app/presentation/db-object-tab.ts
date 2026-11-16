@@ -55,7 +55,6 @@ export class DbObjectTab {
   protected readonly task = new PanelTask(this.section.state);
   protected readonly description = signal<ObjectDescription | undefined>(undefined);
   protected readonly ddl = signal('');
-  protected readonly part = signal('properties');
   protected readonly text = cellText;
   protected readonly follow = [{ id: 'follow', label: 'Open the related table' }];
   private sectionRow = 0;
@@ -74,6 +73,13 @@ export class DbObjectTab {
       const value = found ? cellText(found.value) : '';
       return found && value && value !== 'NULL' ? [{ name, value }] : [];
     }),
+  );
+  /**
+   * The view shown, kept in the tab: a table or a view opens on its data, as DBeaver does when
+   * its default page is «Data»; any other object on its properties.
+   */
+  protected readonly part = computed(
+    () => this.tab().part ?? (this.relation() ? 'data' : 'properties'),
   );
   protected readonly parts = computed(() => [
     'properties',
@@ -114,6 +120,10 @@ export class DbObjectTab {
     if (part === 'data') return 'Data';
     if (part === 'ddl') return 'DDL';
     return this.description()?.sections.find((section) => section.id === part)?.title ?? part;
+  }
+  /** Shows a view and keeps it in the tab; the view shown stays as it is (its WHERE text too). */
+  protected show(part: string) {
+    if (part !== this.part()) this.section.tabs.update(this.tab().id, { part });
   }
   protected followsKeys() {
     return this.part() in KEYS;

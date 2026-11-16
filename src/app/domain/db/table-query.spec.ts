@@ -97,7 +97,9 @@ describe("the queries of an object's Data tab", () => {
             quick: [{ column: 'a', operator: 'bad' }],
             order: [{ column: 'id' }],
           },
+          part: 'data',
         },
+        { id: 's', kind: 'sql', connection: 'a', title: 'SQL', part: 'data' },
       ],
     });
     expect(session.tabs[0].query).toEqual({
@@ -105,5 +107,7 @@ describe("the queries of an object's Data tab", () => {
       quick: [],
       order: [{ column: 'id', descending: false }],
     });
+    // The view an object tab shows is kept; other tabs have none.
+    expect(session.tabs.map((tab) => tab.part)).toEqual(['data', undefined]);
   });
 });

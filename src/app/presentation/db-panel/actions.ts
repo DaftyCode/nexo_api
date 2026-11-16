@@ -75,7 +75,7 @@ export class DbActions {
       await this.section.tree.refresh(document, row.path ?? []);
   }
 
-  /** Intro or a double click on a row without children: opens what it is. */
+  /** Opens what a row is: a saved script, or the tab of an object. */
   open(row: NavigatorRow) {
     if (row.type === 'script' && row.script) return this.section.openScript(row.script);
     if (row.type === 'node' && row.node?.actions.includes('open')) this.section.openObject(row);
