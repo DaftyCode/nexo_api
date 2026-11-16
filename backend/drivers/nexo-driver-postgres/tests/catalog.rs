@@ -137,6 +137,21 @@ async fn catalog(port: Option<&str>, name: &str) {
         .find(|section| section.id == "columns")
         .unwrap();
     assert_eq!(columns.rows.len(), 4);
+    // What the Properties view shows of a table besides its name and owner.
+    let named = |name: &str| {
+        described
+            .properties
+            .iter()
+            .find(|p| p.name == name)
+            .cloned()
+    };
+    assert_eq!(
+        named("Persistence").map(|p| p.value),
+        Some(Value::Text("permanent".into()))
+    );
+    for name in ["Object ID", "Table size", "Size"] {
+        assert!(named(name).is_some(), "{name}: {:?}", described.properties);
+    }
     let referenced = client
         .describe(&path(
             name,

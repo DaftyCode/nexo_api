@@ -156,7 +156,17 @@ describe('DbObjectTab', () => {
     // A table opens on its data.
     expect(shown()).toBe('Data');
     await part('Properties');
-    expect(root().querySelector('.db-object-properties')?.textContent).toContain('Owner');
+    // The Properties view: the name in its schema, its figures and its cards.
+    const properties = () => root().querySelector('app-db-object-properties')!;
+    expect(properties().querySelector('.props-title')?.textContent).toContain('Table in schema');
+    expect(properties().querySelector('.props-stats')?.textContent).toContain('nexo');
+    const general = properties().querySelector('[aria-label="General information"]')!.textContent!;
+    expect(general).toContain('shop.orders');
+    expect(general).toContain('—');
+    const storage = properties().querySelector('[aria-label="Storage / Structure"]')!.textContent!;
+    expect(storage).toContain('Columns');
+    await clickButton(fixture, 'Copy', properties());
+    expect(root().querySelector('.props-overview')?.textContent).toContain('1 column');
     await part('Triggers');
     expect(root().textContent).toContain('No objects');
     await part('Columns');

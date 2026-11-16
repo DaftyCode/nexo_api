@@ -22,6 +22,7 @@ import { menuKeys } from './menu-keys';
 import { PopupPlace, placeBy } from './popup-place';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
+import { DbObjectProperties } from './db-object-properties';
 import { DbTableData } from './db-table-data';
 import { PanelTask } from './panel-task';
 import { StudioIcon } from './studio-icon';
@@ -69,7 +70,7 @@ const KEYS: Record<string, { schema: string; table: string }> = {
  * and its DDL. A key leads to the table it points to, or to the one that points to it.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor, DataGrid, DbTableData, StudioIcon],
+  imports: [TranslocoPipe, CodeEditor, DataGrid, DbObjectProperties, DbTableData, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-object-tab',
   host: { '(document:click)': 'more.set(undefined)' },
@@ -85,7 +86,6 @@ export class DbObjectTab {
   protected readonly task = new PanelTask(this.section.state);
   protected readonly description = signal<ObjectDescription | undefined>(undefined);
   protected readonly ddl = signal('');
-  protected readonly text = cellText;
   protected readonly follow = [{ id: 'follow', label: 'Open the related table' }];
   private sectionRow = 0;
   protected readonly node = computed(() => {

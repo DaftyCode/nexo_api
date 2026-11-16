@@ -97,6 +97,7 @@
               <div
                 role="row"
                 class="grid-row"
+                [class.grid-row-odd]="drawn.position % 2 === 1"
                 [class.grid-row-active]="drawn.position === selection().active.row"
                 [class.grid-row-selected]="rowChosen(drawn.position)"
                 [style.top.px]="layout.headerHeight() + drawn.position * layout.rowHeight()"

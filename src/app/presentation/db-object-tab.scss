@@ -126,20 +126,6 @@
   overflow: auto;
   padding-top: var(--nexo-space-8);
 }
-.db-object-properties {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--nexo-space-2) var(--nexo-space-8);
-  margin: 0;
-  font-size: var(--nexo-font-size-sm);
-}
-.db-object-properties dt {
-  color: var(--nexo-color-text-muted);
-}
-.db-object-properties dd {
-  margin: 0;
-  white-space: pre-wrap;
-}
 .db-object-ddl-actions {
   gap: var(--nexo-space-3);
   margin-bottom: var(--nexo-space-3);

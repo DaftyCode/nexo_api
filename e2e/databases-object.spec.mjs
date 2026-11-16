@@ -46,8 +46,14 @@ test("an object's tab shows its data from the server and follows its keys", asyn
   await orders.dblclick();
   await expect(orders).toHaveAttribute('aria-expanded', 'true');
 
-  // The header and the sections, as grids; the DDL.
+  // The header, the properties in cards, the sections as grids, and the DDL.
   await expect(page.locator('.db-object-facts')).toContainText('Owner');
+  await views.getByRole('button', { name: 'Properties' }).click();
+  await expect(page.getByRole('region', { name: 'General information' })).toContainText(
+    'shop.orders',
+  );
+  await expect(page.getByRole('region', { name: 'Object details' })).toContainText('permanent');
+  expect(await violations(page)).toEqual([]);
   await views.getByRole('button', { name: 'Columns' }).click();
   await expect(page.getByRole('grid', { name: 'Columns' })).toContainText('customer');
   await views.getByRole('button', { name: 'DDL' }).click();

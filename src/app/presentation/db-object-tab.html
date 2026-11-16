@@ -116,14 +116,12 @@
       [estimated]="estimatedRows()"
     />
   } @else if (part() === 'properties') {
-    <dl class="db-object-properties">
-      @for (property of description()!.properties; track property.name) {
-        <dt>{{ property.name }}</dt>
-        <dd>{{ text(property.value) }}</dd>
-      } @empty {
-        <dd class="muted">{{ 'No properties' | transloco }}</dd>
-      }
-    </dl>
+    <app-db-object-properties
+      [object]="description()!"
+      [path]="tab().path ?? []"
+      [kind]="kindLabel()"
+      [icon]="headIcon()"
+    />
   } @else if (part() === 'ddl') {
     <div class="row db-object-ddl-actions">
       <button type="button" class="button small" (click)="copyDdl()">

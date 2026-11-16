@@ -78,6 +78,9 @@ async fn relation(
          (SELECT SUM(p.rows) FROM {db}.sys.partitions p WHERE p.object_id = o.object_id AND p.index_id IN (0, 1)) AS [Estimated rows], \
          CAST((SELECT SUM(a.total_pages) * 8 FROM {db}.sys.partitions p JOIN {db}.sys.allocation_units a \
          ON a.container_id = p.partition_id WHERE p.object_id = o.object_id) AS nvarchar(30)) + ' KB' AS Size, \
+         CAST((SELECT SUM(a.data_pages) * 8 FROM {db}.sys.partitions p JOIN {db}.sys.allocation_units a \
+         ON a.container_id = p.partition_id WHERE p.object_id = o.object_id AND p.index_id IN (0, 1)) AS nvarchar(30)) \
+         + ' KB' AS [Table size], o.object_id AS [Object ID], \
          CAST((SELECT TOP 1 e.value FROM {db}.sys.extended_properties e WHERE e.class = 1 AND e.major_id = o.object_id \
          AND e.minor_id = 0 AND e.name = 'MS_Description') AS nvarchar(4000)) AS Comment, m.definition AS Definition \
          FROM {db}.sys.objects o JOIN {db}.sys.schemas s ON s.schema_id = o.schema_id \

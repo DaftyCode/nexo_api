@@ -1,0 +1,237 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-10);
+  padding-bottom: var(--nexo-space-8);
+}
+.props-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-10);
+}
+.props-title {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-8);
+  min-width: 0;
+}
+.props-tile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--nexo-size-unit) * 32);
+  height: calc(var(--nexo-size-unit) * 32);
+  border: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  border-radius: var(--nexo-radius-2xl);
+  background: color-mix(in srgb, var(--nexo-color-accent) 16%, var(--nexo-color-surface));
+  color: var(--nexo-color-accent-strong);
+}
+.props-tile app-studio-icon {
+  width: var(--nexo-size-18);
+  height: var(--nexo-size-18);
+}
+.props-title h3 {
+  margin: 0 0 var(--nexo-space-3);
+  font-size: var(--nexo-font-size-4xl);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.props-title p {
+  margin: 0;
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-md);
+}
+.props-hero code,
+.props-list code {
+  padding: var(--nexo-space-1) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-surface-3);
+  color: var(--nexo-color-text);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
+}
+.props-stats {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.props-stat {
+  display: flex;
+  flex: 1 1 calc(var(--nexo-size-unit) * 80);
+  align-items: center;
+  gap: var(--nexo-space-7);
+  max-width: calc(var(--nexo-size-unit) * 110);
+  padding: var(--nexo-space-8) var(--nexo-space-9);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-xl);
+  background: var(--nexo-color-surface);
+}
+.props-stat app-studio-icon {
+  width: var(--nexo-size-14);
+  height: var(--nexo-size-14);
+  color: var(--nexo-color-accent-strong);
+}
+.props-stat-name {
+  display: block;
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-sm);
+}
+.props-stat strong {
+  font-size: var(--nexo-font-size-2xl);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.props-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(calc(var(--nexo-size-unit) * 150), 1fr));
+  align-items: start;
+  gap: var(--nexo-space-10);
+}
+.props-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-10);
+}
+.props-card {
+  padding: var(--nexo-space-10) var(--nexo-space-12);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-2xl);
+  background: var(--nexo-color-surface);
+}
+.props-wide {
+  grid-column: 1 / -1;
+}
+.props-card h4 {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-6);
+  margin: 0 0 var(--nexo-space-8);
+  font-size: var(--nexo-font-size-2xl);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.props-card h4 app-studio-icon {
+  width: var(--nexo-size-12);
+  height: var(--nexo-size-12);
+  color: var(--nexo-color-accent-strong);
+}
+.props-list {
+  margin: 0;
+}
+.props-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nexo-space-8);
+  min-height: var(--nexo-size-18);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  font-size: var(--nexo-font-size-md);
+}
+.props-list > div:first-child {
+  border-top: 0;
+}
+.props-list dt {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  color: var(--nexo-color-text-soft);
+}
+.props-list dd {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.props-number {
+  font-weight: var(--nexo-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.props-hint {
+  color: var(--nexo-color-text-muted);
+  cursor: help;
+}
+.props-copy {
+  width: var(--nexo-size-12);
+  height: var(--nexo-size-12);
+}
+.props-copy app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}
+.props-overview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background:
+    radial-gradient(
+      circle at 50% 30%,
+      color-mix(in srgb, var(--nexo-color-accent) 14%, transparent),
+      transparent 60%
+    ),
+    var(--nexo-color-surface);
+}
+.props-overview h4 {
+  justify-content: center;
+  margin: var(--nexo-space-6) 0 var(--nexo-space-3);
+}
+.props-overview p {
+  max-width: calc(var(--nexo-size-unit) * 150);
+  margin: 0 0 var(--nexo-space-8);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-md);
+}
+.props-art {
+  width: 100%;
+  max-width: 280px;
+}
+.art-glow {
+  fill: color-mix(in srgb, var(--nexo-color-accent) 18%, transparent);
+}
+.art-screen {
+  fill: color-mix(in srgb, var(--nexo-color-accent) 22%, var(--nexo-color-surface));
+  stroke: var(--nexo-color-accent-border);
+}
+.art-bar {
+  fill: var(--nexo-color-accent);
+}
+.art-line {
+  fill: color-mix(in srgb, var(--nexo-color-accent) 45%, var(--nexo-color-surface));
+}
+.art-cylinder {
+  fill: color-mix(in srgb, var(--nexo-color-accent-strong) 70%, var(--nexo-color-surface));
+}
+.art-top {
+  fill: var(--nexo-color-accent);
+}
+.props-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--nexo-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.props-chips li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  padding: var(--nexo-space-3) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface-2);
+  font-size: var(--nexo-font-size-sm);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.props-chips app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+  color: var(--nexo-color-accent-strong);
+}

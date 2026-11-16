@@ -160,6 +160,14 @@ async fn the_tree_shows_what_the_server_has() {
     // An object describes itself, with both ends of its keys by column.
     let described = client.describe(&path(name, &orders)).await.unwrap();
     assert_eq!(section(&described, "columns").rows.len(), 5);
+    // What the Properties view shows of a table besides its name and owner.
+    for name in ["Object ID", "Table size", "Size", "Created"] {
+        assert!(
+            described.properties.iter().any(|p| p.name == name),
+            "{name}: {:?}",
+            described.properties
+        );
+    }
     let keys = section(&described, "foreign-keys");
     assert_eq!(cell(keys, "Columns"), Value::Text("customer".into()));
     assert_eq!(cell(keys, "Referenced schema"), Value::Text("shop".into()));

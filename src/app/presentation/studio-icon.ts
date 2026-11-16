@@ -67,6 +67,8 @@ const paths: Record<string, string> = {
   toggle: 'M8 7h8a5 5 0 0 1 0 10H8A5 5 0 0 1 8 7Zm8 2.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z',
   binary: 'M6 4v6M4 4h2m-2 6h4M14 4h4v6h-4V4Zm-8 10h4v6H6v-6Zm10 0v6m-2-6h2m-2 6h4',
   play: 'm7 4 13 8-13 8V4Z',
+  copy: 'M9 9h11v11H9V9Zm-4 6H4V4h11v1',
+  tag: 'M3 12V4h8l10 10-8 8L3 12Zm5-4.5v.5',
 };
 
 @Component({

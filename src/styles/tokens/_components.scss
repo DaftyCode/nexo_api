@@ -56,9 +56,10 @@
     --nexo-grid-header-height: var(--nexo-size-19);
     --nexo-grid-header-bg: var(--nexo-color-surface-2);
     --nexo-grid-body-bg: var(--nexo-color-surface);
+    --nexo-grid-stripe: color-mix(in srgb, var(--nexo-color-accent) 8%, var(--nexo-grid-body-bg));
     --nexo-grid-active-row: color-mix(
       in srgb,
-      var(--nexo-color-accent) 14%,
+      var(--nexo-color-accent) 16%,
       var(--nexo-color-surface)
     );
     /* A row chosen in the database section's tree and grids: dark enough for white text. */

@@ -166,6 +166,12 @@
 .grid-json {
   color: var(--nexo-color-text-soft);
 }
+/* Rows striped, so a long row is easy to follow; the active and chosen ones stand out. */
+.grid-row-odd > .grid-cell,
+.grid-row-odd > .grid-rownum,
+.grid-row-odd > .grid-row-end {
+  background: var(--nexo-grid-stripe);
+}
 .grid-row-active > .grid-cell,
 .grid-row-active > .grid-rownum,
 .grid-row-active > .grid-row-end {

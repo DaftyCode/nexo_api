@@ -33,8 +33,12 @@ async fn relation(
         pg_get_userbyid(c.relowner)::text AS \"Owner\", obj_description(c.oid, 'pg_class') AS \"Comment\", \
         CASE WHEN c.reltuples >= 0 THEN c.reltuples::int8 END AS \"Estimated rows\", \
         pg_size_pretty(pg_total_relation_size(c.oid)) AS \"Size\", \
+        pg_size_pretty(pg_relation_size(c.oid)) AS \"Table size\", c.oid::int8 AS \"Object ID\", \
+        CASE c.relpersistence WHEN 'p' THEN 'permanent' WHEN 'u' THEN 'unlogged' WHEN 't' THEN 'temporary' END \
+        AS \"Persistence\", GREATEST(s.last_vacuum, s.last_autovacuum) AS \"Last vacuum\", \
+        GREATEST(s.last_analyze, s.last_autoanalyze) AS \"Last analyze\", \
         CASE WHEN c.relkind IN ('v', 'm') THEN pg_get_viewdef(c.oid, true) END AS \"Definition\" \
-        FROM pg_class c WHERE c.oid = {RELATION}"
+        FROM pg_class c LEFT JOIN pg_stat_all_tables s ON s.relid = c.oid WHERE c.oid = {RELATION}"
     );
     let rows = query(client, &header, &params).await?;
     let row = rows.first().ok_or_else(unknown)?;
