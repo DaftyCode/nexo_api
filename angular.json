@@ -27,6 +27,11 @@
               {
                 "glob": "**/*",
                 "input": "public"
+              },
+              {
+                "glob": "*/icon.svg",
+                "input": "backend/drivers",
+                "output": "engines"
               }
             ],
             "styles": [

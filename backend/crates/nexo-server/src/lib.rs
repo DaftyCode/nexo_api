@@ -95,9 +95,14 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
     );
     // Database drivers are downloaded modules, run in their own processes; their network
     // goes through the engine's egress policy.
+    // A module that opens a file (SQLite) never opens one of Nexo's own data.
+    let host = HostConfig {
+        protected: vec![config.data.clone()],
+        ..HostConfig::default()
+    };
     let modules = Arc::new(Modules::new(
         StoreConfig::from_env(&config.data),
-        HostConfig::default(),
+        host,
         engine.clone(),
     )?);
     let application = Arc::new(

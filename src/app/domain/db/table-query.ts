@@ -49,6 +49,7 @@ function asText(column: string, style: QueryStyle) {
   if (style.name === 'postgresql') return `CAST(${column} AS TEXT)`;
   if (style.name === 'tsql') return `CAST(${column} AS NVARCHAR(MAX))`;
   if (style.name === 'mysql') return `CAST(${column} AS CHAR)`;
+  if (style.name === 'sqlite') return `CAST(${column} AS TEXT)`;
   return `CAST(${column} AS VARCHAR(4000))`;
 }
 
@@ -84,7 +85,9 @@ function conditions(query: TableQuery, style: QueryStyle) {
         break;
       case 'contains': {
         const operator = style.name === 'postgresql' ? 'ILIKE' : 'LIKE';
-        parts.push(`${asText(column, style)} ${operator} ${next()} ESCAPE '\\'`);
+        // MySQL's strings take a backslash as an escape, and its LIKE escapes with one.
+        const escape = style.name === 'mysql' ? '' : ` ESCAPE '\\'`;
+        parts.push(`${asText(column, style)} ${operator} ${next()}${escape}`);
         break;
       }
     }

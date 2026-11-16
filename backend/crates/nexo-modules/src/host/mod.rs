@@ -1,5 +1,6 @@
 //! The host of the driver processes: it starts each one when a connection needs it, sends
 //! it what the application asks, and stops it when nobody uses it.
+mod files;
 mod idle;
 mod shared;
 
@@ -57,6 +58,8 @@ pub struct HostConfig {
     pub request_timeout: Duration,
     pub max_processes: usize,
     pub log: LogSink,
+    /// Folders whose files no module opens as a database: Nexo's data.
+    pub protected: Vec<PathBuf>,
 }
 impl Default for HostConfig {
     fn default() -> Self {
@@ -70,6 +73,7 @@ impl Default for HostConfig {
                 "error" | "warn" => tracing::warn!(target: "nexo::driver", module, "{line}"),
                 _ => tracing::info!(target: "nexo::driver", module, "{line}"),
             }),
+            protected: Vec::new(),
         }
     }
 }
@@ -138,6 +142,9 @@ impl DriverHost {
         keep: bool,
     ) -> (Result<R>, Vec<Destination>) {
         let shared = &self.shared;
+        if let Err(error) = files::check(module, params, &shared.config.protected) {
+            return (Err(error), Vec::new());
+        }
         let process = match shared.process(module).await {
             Ok(process) => process,
             Err(error) => return (Err(error), Vec::new()),

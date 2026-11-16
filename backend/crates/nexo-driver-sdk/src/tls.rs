@@ -110,6 +110,16 @@ pub fn client_config(settings: &TlsSettings) -> Result<Option<Arc<ClientConfig>>
     Ok(Some(Arc::new(config)))
 }
 
+/// The certificate authorities of the system, as DER: for a driver whose client builds its
+/// own TLS configuration from certificates (MySQL's).
+pub fn native_roots() -> Vec<Vec<u8>> {
+    rustls_native_certs::load_native_certs()
+        .certs
+        .into_iter()
+        .map(|certificate| certificate.to_vec())
+        .collect()
+}
+
 fn text(value: &Option<String>) -> Option<&str> {
     value.as_deref().filter(|text| !text.trim().is_empty())
 }

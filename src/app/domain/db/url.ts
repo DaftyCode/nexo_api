@@ -1,11 +1,12 @@
 /**
  * The URLs of the engines (`postgresql://user:password@host:5432/db?sslmode=require`, with an
- * optional `jdbc:` prefix; SQL Server's in `url/sqlserver.ts`): read into the form, the password taken out of them, and written
+ * optional `jdbc:` prefix; SQL Server's in `url/sqlserver.ts`, SQLite's in `url/sqlite.ts`): read into the form, the password taken out of them, and written
  * back without it. `{{variables}}` may stand anywhere.
  */
 import { TlsMode } from './connection';
 import { EngineProfile, engineOfScheme, engineProfile, tlsModeOf, tlsParameterOf } from './engines';
 import { formatSqlServerUrl, parseSqlServerUrl } from './url/sqlserver';
+import { formatSqliteUrl, isSqliteUrl, parseSqliteUrl } from './url/sqlite';
 
 /** What a URL fills in the form. */
 export interface ParsedUrl {
@@ -63,6 +64,7 @@ function hostAndPort(authority: string): { host: string; port: string } {
  * module the form does not know is read by its scheme too.
  */
 export function parseDbUrl(text: string, modules: readonly string[] = []): ParsedUrl {
+  if (isSqliteUrl(text)) return parseSqliteUrl(text);
   const trimmed = text.trim().replace(/^jdbc:/i, '');
   const match = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/i.exec(trimmed);
   if (!match) throw new Error('Paste a URL such as postgresql://user@host:5432/database');
@@ -102,7 +104,8 @@ export function parseDbUrl(text: string, modules: readonly string[] = []): Parse
 
 function readParameter(parsed: ParsedUrl, profile: EngineProfile, name: string, value: string) {
   const lower = name.toLowerCase();
-  if (lower === profile.tlsParameter) {
+  const bare = (text: string) => text.toLowerCase().replace(/[-_]/g, '');
+  if (profile.tlsParameter && bare(name) === bare(profile.tlsParameter)) {
     const mode = tlsModeOf(value);
     if (mode) parsed.tlsMode = mode;
     else parsed.ignored.push(name);
@@ -130,13 +133,14 @@ export interface UrlParts {
 /** The URL of a connection, without its password: to copy it or to see what is connected. */
 export function formatDbUrl(parts: UrlParts): string {
   if (parts.driver === 'mssql') return formatSqlServerUrl(parts);
+  if (parts.driver === 'sqlite') return formatSqliteUrl(parts);
   const profile = engineProfile(parts.driver);
   const user = parts.user.trim() ? `${encode(parts.user.trim())}@` : '';
   const port = parts.port.trim() ? `:${parts.port.trim()}` : '';
   const database = parts.database.trim() ? `/${encode(parts.database.trim())}` : '';
   const query = [
     ...(profile.tlsParameter && parts.tlsMode !== 'disable'
-      ? [[profile.tlsParameter, tlsParameterOf(parts.tlsMode)]]
+      ? [[profile.tlsParameter, tlsParameterOf(parts.tlsMode, profile)]]
       : []),
     ...parts.params
       .filter((param) => param.name.trim() && param.value.trim())

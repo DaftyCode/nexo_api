@@ -1,5 +1,5 @@
 // Builds nexo-server and the database drivers its module tests run (the test driver,
-// PostgreSQL's and SQL Server's), and runs the contract tests in tests/contract against it.
+// PostgreSQL's, SQL Server's, MySQL's and SQLite's), and runs the contract tests in tests/contract against it.
 import { spawnSync } from 'node:child_process';
 import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -19,6 +19,10 @@ const build = spawnSync(
     'nexo-driver-postgres',
     '-p',
     'nexo-driver-mssql',
+    '-p',
+    'nexo-driver-mysql',
+    '-p',
+    'nexo-driver-sqlite',
   ],
   { stdio: 'inherit' },
 );

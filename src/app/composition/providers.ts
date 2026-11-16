@@ -14,8 +14,9 @@ import type { DatabaseUseCases } from '../application/database-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
-import type { TransferFilesPort } from '../application/ports';
+import type { DatabaseFilesPort, TransferFilesPort } from '../application/ports';
 import { transferFiles } from '../infrastructure/transfer-files';
+import { databaseFiles } from '../infrastructure/database-files';
 export const WORKSPACE = new InjectionToken<WorkspaceUseCases>('Nexo workspace use cases');
 export const APPEARANCE = new InjectionToken<AppearanceUseCases>('Nexo appearance use cases');
 export const INTEGRATION = new InjectionToken<IntegrationUseCases>('Nexo integration use cases');
@@ -32,6 +33,8 @@ export type DatabaseLoader = () => Promise<DatabaseUseCases>;
 export const DATABASES = new InjectionToken<DatabaseLoader>('Nexo database connections');
 /** Files of MongoDB imports and exports: chosen in the browser, or in the desktop dialogs. */
 export const TRANSFER_FILES = new InjectionToken<TransferFilesPort>('Nexo transfer files');
+/** The file of a SQLite connection: chosen in the desktop dialog, typed in the web version. */
+export const DATABASE_FILES = new InjectionToken<DatabaseFilesPort>('Nexo database files');
 export const workspaceProviders = [
   HttpApi,
   BrowserFiles,
@@ -56,6 +59,7 @@ export const workspaceProviders = [
       new ModulesUseCases(inject(HttpApi), inject(BrowserFiles), inject(BrowserPreferences)),
   },
   { provide: TRANSFER_FILES, useFactory: transferFiles },
+  { provide: DATABASE_FILES, useFactory: databaseFiles },
   {
     provide: MONGO,
     useFactory: (): MongoLoader => {

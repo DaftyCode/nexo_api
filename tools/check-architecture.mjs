@@ -123,10 +123,18 @@ for (const crate of await directories('backend/crates'))
     if (crate === 'nexo-driver-sdk')
       failures.push(`nexo-driver-sdk: depends on no other Nexo crate (${dependency})`);
   }
-for (const driver of await directories('backend/drivers'))
+for (const driver of await directories('backend/drivers')) {
   for (const dependency of await nexoDependencies(`backend/drivers/${driver}/Cargo.toml`))
     if (dependency !== 'nexo-driver-sdk')
       failures.push(`${driver}: a driver depends only on nexo-driver-sdk, not on ${dependency}`);
+  // A module the release publishes brings its icon: the gallery of engines shows it
+  // (angular.json serves it as engines/<driver>/icon.svg).
+  const manifest = await readFile(`backend/drivers/${driver}/Cargo.toml`, 'utf8');
+  const published = /^\[package\.metadata\.nexo\][^[]*^module\s*=/m.test(manifest);
+  const files = await readdir(`backend/drivers/${driver}`);
+  if (published && !files.includes('icon.svg'))
+    failures.push(`${driver}: a published module brings its icon.svg`);
+}
 for (const dependency of await nexoDependencies('src-tauri/Cargo.toml'))
   if (isDriver(dependency) || dependency === 'nexo-driver-sdk')
     failures.push(`src-tauri: the desktop app never carries a database driver (${dependency})`);

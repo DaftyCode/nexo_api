@@ -124,6 +124,7 @@ export function formUrl(form: DbForm): string {
 export function formProblem(form: DbForm): string {
   if (!form.driver) return 'Choose the database of the connection';
   if (!form.name.trim()) return 'Give the connection a name';
+  if (engineProfile(form.driver).file && !form.database.trim()) return 'Choose the database file';
   if (!form.host.trim() && !form.database.trim())
     return 'A connection needs a server or a database';
   const port = form.port.trim();

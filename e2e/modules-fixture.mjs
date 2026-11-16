@@ -25,12 +25,25 @@ const DRIVERS = [
     description: 'Microsoft SQL Server and Azure SQL Database',
     licenses: ['MIT OR Apache-2.0'],
   },
+  {
+    id: 'mysql',
+    name: 'MySQL',
+    description: 'MySQL, MariaDB and the servers that speak their protocol',
+    licenses: ['MIT OR Apache-2.0'],
+  },
+  {
+    id: 'sqlite',
+    name: 'SQLite',
+    description: 'SQLite databases, in a file of this computer that the person chose',
+    licenses: ['MIT OR Apache-2.0', 'Public Domain'],
+  },
 ];
 
 /**
  * The test database driver (built with `cargo build -p nexo-driver-test`), the PostgreSQL
- * one (`-p nexo-driver-postgres`) and the SQL Server one (`-p nexo-driver-mssql`) as
- * downloadable modules, served by a local server that
+ * one (`-p nexo-driver-postgres`), the SQL Server one (`-p nexo-driver-mssql`), the MySQL
+ * one (`-p nexo-driver-mysql`) and the SQLite one (`-p nexo-driver-sqlite`) as downloadable
+ * modules, served by a local server that
  * stands for the releases. None when the test driver is not built; `ids` lists those served.
  */
 export async function moduleReleases(serverBinary, directory) {

@@ -8,6 +8,11 @@ updates:
     groups:
       angular:
         patterns: ['@angular/*', '@angular-devkit/*']
+    ignore:
+      # Each Angular release fixes the TypeScript it compiles with (Angular 22: >=6.0 <6.1),
+      # so TypeScript moves when Angular does, not before.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
   - package-ecosystem: cargo
     directory: /
     schedule:

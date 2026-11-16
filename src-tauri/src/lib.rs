@@ -3,6 +3,7 @@ use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{Manager, RunEvent};
 
+mod database_files;
 mod sign_in;
 mod transfer;
 
@@ -116,7 +117,8 @@ pub fn run() {
             transfer::transfer_read,
             transfer::transfer_save,
             transfer::transfer_write,
-            transfer::transfer_close
+            transfer::transfer_close,
+            database_files::db_file_choose
         ])
         .build(tauri::generate_context!());
     let application = match application {

@@ -34,7 +34,7 @@
         >{{ 'Paste a connection URL' | transloco
         }}<input
           [formField]="fields.url"
-          placeholder="postgresql://user:password@localhost:5432/database"
+          [placeholder]="urlExample()"
           spellcheck="false"
           autocomplete="off"
           (keydown.enter)="$event.preventDefault(); useUrl()"
@@ -46,7 +46,7 @@
     /></label>
 
     <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">
-      @for (p of pages; track p) {
+      @for (p of pages(); track p) {
         <button
           type="button"
           [class.active]="page() === p"

@@ -11,8 +11,23 @@ import { cellText } from './results';
 
 const postgres = { name: 'postgresql', quoteOpen: '"', quoteClose: '"', parameters: 'numbered' };
 const tsql = { name: 'tsql', quoteOpen: '[', quoteClose: ']', parameters: 'named' };
+const mysql = { name: 'mysql', quoteOpen: '`', quoteClose: '`', parameters: 'question' };
 
 describe("the queries of an object's Data tab", () => {
+  it('writes MySQL with question marks, and a LIKE without an escape it already has', () => {
+    const query = {
+      ...emptyTableQuery(),
+      quick: [
+        { column: 'status', operator: 'eq' as const, value: 'paid' },
+        { column: 'note', operator: 'contains' as const, value: '50%' },
+      ],
+    };
+    expect(tableSelect('`shop`.`orders`', query, mysql)).toEqual({
+      sql: 'SELECT * FROM `shop`.`orders` WHERE status = ? AND CAST(note AS CHAR) LIKE ?',
+      params: ['paid', '%50\\%%'],
+    });
+  });
+
   it('filters by the condition and the quick filters, with the values as parameters', () => {
     const query = {
       where: 'total > 10',

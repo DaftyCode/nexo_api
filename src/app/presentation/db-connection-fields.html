@@ -1,42 +1,64 @@
 @switch (page()) {
   @case ('main') {
-    <div class="row">
-      <label class="field grow"
-        >{{ 'Host' | transloco
-        }}<input [formField]="fields().host" spellcheck="false" autocomplete="off"
+    @if (profile().file) {
+      <div class="row db-file">
+        <label class="field grow"
+          >{{ 'Database file' | transloco
+          }}<input
+            [formField]="fields().database"
+            [attr.placeholder]="'db.file.placeholder' | transloco"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+        @if (files.available) {
+          <button type="button" class="button" (click)="chooseFile(false)">
+            {{ 'Open…' | transloco }}
+          </button>
+          <button type="button" class="button" (click)="chooseFile(true)">
+            {{ 'New file…' | transloco }}
+          </button>
+        }
+      </div>
+      <p class="muted">{{ 'db.file.help' | transloco }}</p>
+    } @else {
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Host' | transloco
+          }}<input [formField]="fields().host" spellcheck="false" autocomplete="off"
+        /></label>
+        <label class="field db-port"
+          >{{ 'Port' | transloco
+          }}<input
+            [formField]="fields().port"
+            inputmode="numeric"
+            [attr.placeholder]="profile().defaultPort ?? ''"
+            spellcheck="false"
+            autocomplete="off"
+        /></label>
+      </div>
+      <label class="field"
+        >{{ 'Database' | transloco
+        }}<input [formField]="fields().database" spellcheck="false" autocomplete="off"
       /></label>
-      <label class="field db-port"
-        >{{ 'Port' | transloco
-        }}<input
-          [formField]="fields().port"
-          inputmode="numeric"
-          [attr.placeholder]="profile().defaultPort ?? ''"
-          spellcheck="false"
-          autocomplete="off"
-      /></label>
-    </div>
-    <label class="field"
-      >{{ 'Database' | transloco
-      }}<input [formField]="fields().database" spellcheck="false" autocomplete="off"
-    /></label>
-    <div class="row">
-      <label class="field grow"
-        >{{ 'Username' | transloco
-        }}<input [formField]="fields().user" spellcheck="false" autocomplete="off"
-      /></label>
-      <label class="field grow"
-        >{{ 'Password' | transloco
-        }}<input
-          type="password"
-          [formField]="fields().password"
-          autocomplete="new-password"
-          [attr.placeholder]="passwordStored() ? ('Saved in the vault' | transloco) : ''"
-      /></label>
-    </div>
-    <p class="muted">
-      {{ 'The password goes to the vault.' | transloco }}
-      {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
-    </p>
+      <div class="row">
+        <label class="field grow"
+          >{{ 'Username' | transloco
+          }}<input [formField]="fields().user" spellcheck="false" autocomplete="off"
+        /></label>
+        <label class="field grow"
+          >{{ 'Password' | transloco
+          }}<input
+            type="password"
+            [formField]="fields().password"
+            autocomplete="new-password"
+            [attr.placeholder]="passwordStored() ? ('Saved in the vault' | transloco) : ''"
+        /></label>
+      </div>
+      <p class="muted">
+        {{ 'The password goes to the vault.' | transloco }}
+        {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
+      </p>
+    }
     @if (profile().limits; as limits) {
       <p class="muted">{{ limits | transloco }}</p>
     }

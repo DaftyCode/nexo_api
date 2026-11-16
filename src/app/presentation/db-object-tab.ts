@@ -219,8 +219,12 @@ export class DbObjectTab {
     const key = keys[this.sectionRow];
     const tab = this.tab();
     const path = tab.path ?? [];
-    if (!key || path.length < 3) return;
-    const target = [...path.slice(0, -3), key.schema || path.at(-3)!, path.at(-2)!, key.table];
+    if (!key || path.length < 2) return;
+    // `[…, schema, folder, table]`, or `[folder, table]` where there are no schemas (SQLite).
+    const target =
+      path.length < 3
+        ? [path[0], key.table]
+        : [...path.slice(0, -3), key.schema || path.at(-3)!, path.at(-2)!, key.table];
     this.section.tabs.open({
       kind: 'object',
       connection: tab.connection,

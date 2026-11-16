@@ -5,6 +5,8 @@
 #   25434 PostgreSQL 14, the oldest supported, with the same data
 #   21433 SQL Server 2022 (user sa), with tools/sql-fixture-seed-mssql.sql and a certificate of
 #         the same CA; only on x86-64, where Microsoft publishes it (elsewhere its tests skip)
+#   23306 MySQL 8.4 (user root), with tools/sql-fixture-seed-mysql.sql and a certificate of the CA
+#   23307 MariaDB 11.4 (user root), with the same data
 # Prints the NEXO_SQL_* variables the driver and contract tests read, and adds them to
 # $GITHUB_ENV in CI.  Usage: tools/sql-fixture.sh start | stop
 set -euo pipefail
@@ -13,8 +15,11 @@ export MSYS_NO_PATHCONV=1
 
 current=postgres:18
 oldest=postgres:14
-names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql)
+names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql nexo-sql-mysql nexo-sql-mariadb)
 mssql=mcr.microsoft.com/mssql/server:2022-latest
+mysql=mysql:8.4
+mariadb=mariadb:11.4
+mysql_password='nexo-secret'
 mssql_password='Nexo-secret-2026'
 case "$(uname -m)" in x86_64 | amd64) with_mssql=true ;; *) with_mssql=false ;; esac
 directory="${NEXO_SQL_FIXTURE_DIR:-${TMPDIR:-/tmp}/nexo-sql-fixture}"
@@ -28,8 +33,9 @@ tools="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$directory"
 mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init"
 cp "$tools/sql-fixture-seed-postgres.sql" "$directory/seed/"
-mkdir -p "$directory/mssql"
+mkdir -p "$directory/mssql" "$directory/mysql-seed"
 cp "$tools/sql-fixture-seed-mssql.sql" "$directory/mssql/seed.sql"
+cp "$tools/sql-fixture-seed-mysql.sql" "$directory/mysql-seed/seed.sql"
 cd "$directory/certs"
 # A private CA, a server certificate for localhost and a client certificate for user nexo.
 openssl req -x509 -newkey rsa:2048 -nodes -days 2 -subj "/CN=nexo-test-ca" \
@@ -86,6 +92,15 @@ CONF
     "$mssql" >/dev/null
 fi
 
+# MySQL takes the certificate of the CA made above and still accepts plain connections; MariaDB
+# makes its own. Both load the same data, as root and into `shop`.
+docker run -d --name nexo-sql-mysql -p 23306:3306 -e MYSQL_ROOT_PASSWORD="$mysql_password" \
+  -e MYSQL_DATABASE=shop -v "$directory/certs:/certs:ro" \
+  -v "$directory/mysql-seed:/docker-entrypoint-initdb.d:ro" "$mysql" \
+  --ssl-ca=/certs/ca.crt --ssl-cert=/certs/server.crt --ssl-key=/certs/server.key >/dev/null
+docker run -d --name nexo-sql-mariadb -p 23307:3306 -e MARIADB_ROOT_PASSWORD="$mysql_password" \
+  -e MARIADB_DATABASE=shop -v "$directory/mysql-seed:/docker-entrypoint-initdb.d:ro" "$mariadb" >/dev/null
+
 # Ready once the final server (after the init scripts) answers over TCP.
 ready() { docker exec "$1" psql -h 127.0.0.1 -U nexo -d shop -tAc "$2" >/dev/null 2>&1; }
 started=false
@@ -114,6 +129,21 @@ if [[ "$started" == true && "$with_mssql" == true ]]; then
     sleep 2
   done
 fi
+# MySQL and MariaDB answer over TCP only once their data is loaded and they restarted.
+mysql_ready() {
+  docker exec "$1" "$2" -h 127.0.0.1 -uroot -p"$mysql_password" shop \
+    -e "SELECT COUNT(*) FROM numbers" >/dev/null 2>&1
+}
+if [[ "$started" == true ]]; then
+  started=false
+  for _ in $(seq 1 120); do
+    if mysql_ready nexo-sql-mysql mysql && mysql_ready nexo-sql-mariadb mariadb; then
+      started=true
+      break
+    fi
+    sleep 2
+  done
+fi
 if [[ "$started" != true ]]; then
   for name in "${names[@]}"; do
     echo "== $name: $(docker inspect -f '{{.State.Status}} (exit {{.State.ExitCode}})' "$name")" >&2
@@ -132,7 +162,18 @@ NEXO_SQL_PG_PASSWORD=nexo-secret
 NEXO_SQL_PG_DATABASE=shop
 NEXO_SQL_PG_CA=$directory/certs/ca.crt
 NEXO_SQL_PG_CLIENT_CERT=$directory/certs/client.crt
-NEXO_SQL_PG_CLIENT_KEY=$directory/certs/client.pk8"
+NEXO_SQL_PG_CLIENT_KEY=$directory/certs/client.pk8
+NEXO_SQL_MYSQL_HOST=127.0.0.1
+NEXO_SQL_MYSQL_PORT=23306
+NEXO_SQL_MYSQL_USER=root
+NEXO_SQL_MYSQL_PASSWORD=$mysql_password
+NEXO_SQL_MYSQL_DATABASE=shop
+NEXO_SQL_MYSQL_CA=$directory/certs/ca.crt
+NEXO_SQL_MARIADB_HOST=127.0.0.1
+NEXO_SQL_MARIADB_PORT=23307
+NEXO_SQL_MARIADB_USER=root
+NEXO_SQL_MARIADB_PASSWORD=$mysql_password
+NEXO_SQL_MARIADB_DATABASE=shop"
 if [[ "$with_mssql" == true ]]; then
   variables="$variables
 NEXO_SQL_MSSQL_HOST=127.0.0.1

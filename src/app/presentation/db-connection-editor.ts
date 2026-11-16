@@ -59,7 +59,6 @@ export class DbConnectionEditor {
   protected readonly task = new PanelTask(this.state);
   protected readonly step = signal<'engine' | 'form'>('engine');
   protected readonly page = signal<EditorPage>('main');
-  protected readonly pages: readonly EditorPage[] = ['main', 'tls', 'properties', 'general'];
   protected readonly model = signal<DbForm>(emptyDbForm(''));
   protected readonly fields = form(this.model, (path) => {
     min(path.timeoutSeconds, 0);
@@ -80,6 +79,18 @@ export class DbConnectionEditor {
   protected readonly document = computed(() => this.section.connection(this.tab().connection));
   private readonly stored = computed(() => readDbConnection(this.document()?.value));
   protected readonly profile = computed(() => engineProfile(this.model().driver));
+  /** The tabs of the form; an engine without TLS (a file) has no TLS tab. */
+  protected readonly pages = computed(() =>
+    (['main', 'tls', 'properties', 'general'] as const).filter(
+      (page) => page !== 'tls' || this.profile().tlsModes.length > 0,
+    ),
+  );
+  /** How a URL of the engine looks, under the field where one is pasted. */
+  protected readonly urlExample = computed(() =>
+    this.profile().file
+      ? 'jdbc:sqlite:C:/data/shop.db'
+      : 'postgresql://user:password@localhost:5432/database',
+  );
   protected readonly url = computed(() => formUrl(this.model()));
   protected readonly problem = computed(() => formProblem(this.model()));
   protected readonly passwordStored = computed(() => !!this.stored().password);

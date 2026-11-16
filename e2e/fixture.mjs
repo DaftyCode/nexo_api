@@ -63,9 +63,12 @@ const port = () =>
   });
 
 export const test = base.extend({
-  // One server per test file run.
+  // A file that needs a server of its own, without the sessions the files before it left
+  // open, says `test.use({ ownServer: true })`: Playwright then runs it in a worker of its own.
+  ownServer: [false, { scope: 'worker', option: true }],
+  // One server per worker.
   nexo: [
-    async ({}, use) => {
+    async ({ ownServer: _ownServer }, use) => {
       const directory = await mkdtemp(join(tmpdir(), 'nexo-e2e-'));
       const token = 'e2e-token';
       const listen = await port();

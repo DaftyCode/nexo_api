@@ -133,6 +133,16 @@ export interface TransferFilesPort {
   /** Where to write an export named `name`; `undefined` when the person cancels. */
   save(name: string, extension: string, type: string): Promise<TransferTarget | undefined>;
 }
+/**
+ * The file of a database that lives in one (SQLite), chosen in the desktop app's dialog. Its
+ * path is saved in the connection, and the driver opens only that file.
+ */
+export interface DatabaseFilesPort {
+  /** Only the desktop app has the dialog; the web version types the path. */
+  readonly available: boolean;
+  /** A file to open, or where to make a new one; `undefined` when the person cancels. */
+  choose(create: boolean): Promise<string | undefined>;
+}
 /** Prints a report shown on screen, where the system lets the person save it as PDF. */
 export interface PrintPort {
   print(sheet: HTMLElement): Promise<void>;

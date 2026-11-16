@@ -1,47 +1,230 @@
 :host {
+  position: relative;
   display: block;
+  isolation: isolate;
+}
+// A soft glow of the accent in the top corner, crossed by a thin wave: the gallery's mark.
+:host::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 auto auto;
+  width: min(70%, calc(var(--nexo-size-unit) * 360));
+  height: calc(var(--nexo-size-unit) * 120);
+  background:
+    radial-gradient(
+      ellipse 130% 90% at 118% -30%,
+      transparent 56%,
+      color-mix(in srgb, var(--nexo-color-accent) 34%, transparent) 58.5%,
+      transparent 61%
+    ),
+    radial-gradient(
+      ellipse 150% 110% at 125% -45%,
+      transparent 60%,
+      color-mix(in srgb, var(--nexo-color-accent-strong) 20%, transparent) 63%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 70% 80% at 100% 0%,
+      color-mix(in srgb, var(--nexo-color-accent) 24%, transparent),
+      transparent 100%
+    );
+  // Faded towards the content, so the glow has no edges.
+  mask-image: radial-gradient(ellipse 100% 100% at 100% 0%, currentColor 35%, transparent 100%);
+  pointer-events: none;
+}
+.db-gallery-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nexo-space-7);
+  margin-bottom: var(--nexo-space-9);
+  padding-top: var(--nexo-space-3);
+}
+.db-gallery-mark {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--nexo-size-unit) * 24);
+  height: calc(var(--nexo-size-unit) * 24);
+  border: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  border-radius: var(--nexo-radius-lg);
+  background: color-mix(in srgb, var(--nexo-color-accent) 16%, var(--nexo-color-surface));
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-5xl);
+}
+.db-gallery-title h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-6xl);
+  font-weight: var(--nexo-font-weight-bold);
+  letter-spacing: var(--nexo-tracking-tight);
+}
+.db-gallery-title p {
+  margin: var(--nexo-space-2) 0 0;
+  font-size: var(--nexo-font-size-lg);
 }
 .db-gallery-search {
-  max-width: calc(var(--nexo-size-unit) * 90);
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+  max-width: calc(var(--nexo-size-unit) * 210);
+  margin-bottom: var(--nexo-space-10);
+  padding: 0 var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-search-bg);
+  color: var(--nexo-color-text-muted);
+}
+.db-gallery-search:focus-within {
+  border-color: var(--nexo-color-accent-border);
+  box-shadow: var(--nexo-shadow-glow);
+}
+.db-gallery-search input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--nexo-space-5) 0;
+  border: 0;
+  font-size: var(--nexo-font-size-lg);
+  background: transparent;
+  color: var(--nexo-color-text);
+  outline: none;
 }
 .db-gallery-error {
   color: var(--nexo-color-danger-text);
 }
 .db-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(calc(var(--nexo-size-unit) * 60), 1fr));
-  gap: var(--nexo-space-5);
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--nexo-size-unit) * 140), 1fr));
+  gap: var(--nexo-space-7);
   list-style: none;
   margin: 0;
   padding: 0;
 }
 .db-engine {
   display: flex;
-  flex-direction: column;
   align-items: flex-start;
-  gap: var(--nexo-space-2);
+  gap: var(--nexo-space-7);
   width: 100%;
   height: 100%;
-  padding: var(--nexo-space-6);
+  padding: var(--nexo-space-8);
   border: var(--nexo-border-width) solid var(--nexo-color-border);
-  border-radius: var(--nexo-radius-lg);
-  background: var(--nexo-color-surface);
+  border-radius: var(--nexo-radius-xl);
+  background: var(--nexo-card-bg);
   color: var(--nexo-color-text);
   text-align: left;
+  transition:
+    border-color var(--nexo-duration-fast),
+    box-shadow var(--nexo-duration-fast);
 }
 .db-engine:hover,
 .db-engine:focus-visible {
   border-color: var(--nexo-color-accent-border);
-  background: var(--nexo-color-hover);
+  background: color-mix(in srgb, var(--nexo-color-accent) 8%, var(--nexo-card-bg));
+  box-shadow: var(--nexo-shadow-accent);
 }
-.db-engine .muted {
+.db-engine-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: calc(var(--nexo-size-unit) * 28);
+  height: calc(var(--nexo-size-unit) * 28);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-xl);
+  background: color-mix(in srgb, var(--nexo-color-sunken) 70%, var(--nexo-color-surface-3));
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-5xl);
+}
+.db-engine-icon img {
+  width: 76%;
+  height: 76%;
+}
+.db-engine-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  min-width: 0;
+}
+.db-engine-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-2);
+}
+.db-engine-title strong {
+  font-size: var(--nexo-font-size-3xl);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-engine-badge {
+  padding: var(--nexo-space-px) var(--nexo-space-4);
+  border: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  border-radius: var(--nexo-radius-md);
+  background: color-mix(in srgb, var(--nexo-color-accent) 18%, transparent);
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-xs);
+  font-weight: var(--nexo-font-weight-medium);
+  line-height: var(--nexo-line-height-relaxed);
+}
+.db-engine-badge.lightweight {
+  border-color: var(--nexo-color-border-strong);
+  background: var(--nexo-color-surface-3);
+  color: var(--nexo-color-text-soft);
+}
+.db-engine-summary {
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-md);
+  line-height: var(--nexo-line-height-normal);
+}
+.db-engine-state,
+.db-engine-download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  align-self: flex-start;
+  margin-top: var(--nexo-space-4);
   font-size: var(--nexo-font-size-sm);
+  font-weight: var(--nexo-font-weight-medium);
 }
 .db-engine-state {
-  margin-top: auto;
-  font-size: var(--nexo-font-size-xs);
-  color: var(--nexo-color-text-muted);
+  padding: var(--nexo-space-1) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-md);
 }
 .db-engine-state.ready {
+  background: color-mix(in srgb, var(--nexo-color-success) 16%, transparent);
   color: var(--nexo-color-success);
+}
+.db-engine-state.update {
+  background: color-mix(in srgb, var(--nexo-color-warning) 16%, transparent);
+  color: var(--nexo-color-warning);
+}
+.db-engine-download {
+  color: var(--nexo-color-text-dim);
+}
+.db-engine-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nexo-space-2);
+  min-height: calc(var(--nexo-size-unit) * 75);
+  padding: var(--nexo-space-8);
+  border: var(--nexo-border-width) dashed var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-xl);
+  color: var(--nexo-color-text);
+  text-align: center;
+}
+.db-engine-soon strong {
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-engine-soon .muted {
+  font-size: var(--nexo-font-size-md);
+}
+.db-engine-plus {
+  display: grid;
+  place-items: center;
+  width: calc(var(--nexo-size-unit) * 20);
+  height: calc(var(--nexo-size-unit) * 20);
+  margin-bottom: var(--nexo-space-2);
+  border-radius: var(--nexo-radius-md);
+  background: color-mix(in srgb, var(--nexo-color-accent) 18%, transparent);
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-xl);
 }

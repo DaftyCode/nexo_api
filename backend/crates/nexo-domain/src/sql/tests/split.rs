@@ -145,3 +145,21 @@ fn unfinished_strings_and_comments_end_with_the_script() {
         ["select $$ open; body"]
     );
 }
+
+#[test]
+fn a_sqlite_trigger_keeps_the_statements_of_its_body() {
+    let trigger = "create temp trigger t after insert on a begin
+  update b set n = n + 1;
+                     select case when new.x then 1 end;
+end";
+    let script = format!(
+        "{trigger};
+begin;
+insert into a values (1);
+end;"
+    );
+    assert_eq!(
+        texts(&script, Dialect::Sqlite),
+        [trigger, "begin", "insert into a values (1)", "end"]
+    );
+}

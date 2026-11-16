@@ -45,7 +45,7 @@ struct Current {
     end: usize,
     /// Words read so far, upper case (only the first few matter).
     words: Vec<String>,
-    /// BEGIN and CASE not yet closed by END (SQL Server).
+    /// BEGIN and CASE not yet closed by END (SQL Server, and a trigger of SQLite).
     depth: u32,
     /// A `BEGIN` whose next word says whether it opens a block.
     pending_begin: bool,
@@ -180,8 +180,24 @@ pub fn split(script: &str, dialect: Dialect) -> Vec<Statement> {
     statements
 }
 
+/// A `CREATE [TEMP] TRIGGER` of SQLite, whose body between BEGIN and END has its own `;`.
+fn sqlite_trigger(words: &[String]) -> bool {
+    let words: Vec<&str> = words.iter().map(String::as_str).collect();
+    matches!(
+        words.as_slice(),
+        ["CREATE", "TRIGGER", ..] | ["CREATE", "TEMP" | "TEMPORARY", "TRIGGER", ..]
+    )
+}
+
 fn read_word(current: &mut Current, dialect: Dialect, word: &str) {
     let word = word.to_ascii_uppercase();
+    if dialect == Dialect::Sqlite && sqlite_trigger(&current.words) {
+        match word.as_str() {
+            "BEGIN" | "CASE" => current.depth += 1,
+            "END" => current.depth = current.depth.saturating_sub(1),
+            _ => {}
+        }
+    }
     if dialect == Dialect::TSql {
         if current.pending_begin {
             current.pending_begin = false;

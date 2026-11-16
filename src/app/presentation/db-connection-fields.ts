@@ -1,6 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FieldTree, FormField } from '@angular/forms/signals';
+import { DATABASE_FILES } from '../composition/providers';
 import { CONNECTION_TYPES, TLS_MODES } from '../domain/db/connection';
 import { EngineProfile } from '../domain/db/engines';
 import { DbForm } from '../domain/db/form';
@@ -26,6 +27,8 @@ export class DbConnectionFields {
   protected readonly types = CONNECTION_TYPES;
   protected readonly tlsModes = TLS_MODES;
   protected readonly colors = CONNECTION_COLORS;
+  /** The desktop dialog that chooses the file of a SQLite connection. */
+  protected readonly files = inject(DATABASE_FILES);
   protected readonly settings = computed(() => this.fields()().value());
   /** The settings of the driver not chosen yet. */
   protected readonly unused = computed(() => {
@@ -48,6 +51,19 @@ export class DbConnectionFields {
       ...form,
       params: form.params.filter((_, at) => at !== index),
     }));
+  }
+  /** The file chosen in the dialog; a new one is made when the connection opens. */
+  protected async chooseFile(create: boolean) {
+    const path = await this.files.choose(create);
+    if (!path) return;
+    this.fields()().value.update((form) => {
+      const params = form.params.filter((row) => row.name !== 'create');
+      return {
+        ...form,
+        database: path,
+        params: create ? [...params, { name: 'create', value: 'true' }] : form.params,
+      };
+    });
   }
   protected setColor(color: string) {
     this.fields()().value.update((form) => ({ ...form, color }));

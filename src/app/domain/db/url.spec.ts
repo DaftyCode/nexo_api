@@ -24,6 +24,48 @@ describe('database URLs', () => {
     );
   });
 
+  it('reads and writes MySQL and MariaDB URLs, with their ssl-mode', () => {
+    const parsed = parseDbUrl(
+      'jdbc:mariadb://ana:secret@db:3307/shop?ssl-mode=REQUIRED&charset=utf8mb4&useSSL=true',
+    );
+    expect(parsed).toEqual({
+      driver: 'mysql',
+      host: 'db',
+      port: '3307',
+      database: 'shop',
+      user: 'ana',
+      password: 'secret',
+      tlsMode: 'require',
+      params: { charset: 'utf8mb4' },
+      ignored: ['useSSL'],
+    });
+    expect(parseDbUrl('mysql://root@localhost/?sslMode=VERIFY_IDENTITY').tlsMode).toBe('verify');
+    expect(parseDbUrl('mysql://root@localhost/?ssl_mode=preferred').tlsMode).toBe('prefer');
+    const form = withUrl(emptyDbForm('mysql'), parsed);
+    expect(formUrl(form)).toBe('mysql://ana@db:3307/shop?ssl-mode=REQUIRED&charset=utf8mb4');
+  });
+
+  it('reads and writes SQLite URLs: the path of the file and its settings', () => {
+    const parsed = parseDbUrl('jdbc:sqlite:C:/data/shop.db?journal_mode=wal&cache=shared');
+    expect(parsed).toEqual({
+      driver: 'sqlite',
+      host: '',
+      port: '',
+      database: 'C:/data/shop.db',
+      user: '',
+      params: { journal_mode: 'wal' },
+      ignored: ['cache'],
+    });
+    expect(parseDbUrl('sqlite:///home/ana/shop.db').database).toBe('/home/ana/shop.db');
+    expect(parseDbUrl('sqlite:///C:/data/shop.db').database).toBe('C:/data/shop.db');
+    expect(parseDbUrl('sqlite:{{folder}}/shop.db').database).toBe('{{folder}}/shop.db');
+    const form = withUrl(emptyDbForm('sqlite'), parsed);
+    expect(formUrl(form)).toBe('jdbc:sqlite:C:/data/shop.db?journal_mode=wal');
+    // A file engine needs its file, not a server.
+    expect(formProblem({ ...form, name: 'Shop', database: '' })).toBe('Choose the database file');
+    expect(formProblem({ ...form, name: 'Shop' })).toBe('');
+  });
+
   it('accepts the JDBC prefix, the short scheme, IPv6 and variables', () => {
     expect(parseDbUrl('jdbc:postgres://[::1]:5432/db').host).toBe('[::1]');
     const parsed = parseDbUrl('postgres://{{user}}@{{host}}:{{port}}/{{db}}?sslmode=require');

@@ -1,4 +1,5 @@
 import { InjectionToken } from '@angular/core';
+import { BrowserDatabaseFiles } from '../infrastructure/database-files';
 import { TRANSLOCO_LOADER } from '@jsverse/transloco';
 import { TestTranslations } from './translations';
 import { provideRouter } from '@angular/router';
@@ -12,6 +13,7 @@ import {
   MONGO,
   DATABASES,
   TRANSFER_FILES,
+  DATABASE_FILES,
   PROTOCOLS,
   REPORTS,
   WORKSPACE,
@@ -166,6 +168,8 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
       useValue: new ModulesUseCases(api, files, memoryPreferences(), () => Promise.resolve()),
     },
     { provide: TRANSFER_FILES, useValue: new TestTransferFiles() },
+    // The web version: the file of a SQLite connection is typed.
+    { provide: DATABASE_FILES, useValue: new BrowserDatabaseFiles() },
     {
       provide: MONGO,
       useValue: (

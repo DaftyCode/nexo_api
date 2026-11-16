@@ -1,14 +1,26 @@
-<h2>{{ 'Choose the database' | transloco }}</h2>
-<p class="muted">
-  {{
-    'Each database has its module. Nexo downloads it the first time you use it and keeps only the ones you use.'
-      | transloco
-  }}
-</p>
-<label class="field db-gallery-search"
-  >{{ 'Search databases' | transloco
-  }}<input type="search" [formField]="searchFields.text" autocomplete="off" spellcheck="false"
-/></label>
+<header class="db-gallery-head">
+  <span class="db-gallery-mark" aria-hidden="true"><app-studio-icon name="databases" /></span>
+  <div class="db-gallery-title">
+    <h2>{{ 'Choose the database' | transloco }}</h2>
+    <p class="muted">
+      {{
+        'Each database has its module. Nexo downloads it the first time you use it and keeps only the ones you use.'
+          | transloco
+      }}
+    </p>
+  </div>
+</header>
+<label class="db-gallery-search">
+  <app-studio-icon name="search" />
+  <input
+    type="search"
+    [formField]="searchFields.text"
+    [placeholder]="'Search databases…' | transloco"
+    [attr.aria-label]="'Search databases' | transloco"
+    autocomplete="off"
+    spellcheck="false"
+  />
+</label>
 @if (error()) {
   <p class="db-gallery-error" role="alert">{{ error() }}</p>
 }
@@ -16,24 +28,55 @@
   <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
 } @else {
   <ul class="db-gallery" [attr.aria-label]="'Databases' | transloco">
-    @for (module of shown(); track module.id) {
+    @for (card of shown(); track card.module.id) {
       <li>
-        <button type="button" class="db-engine" (click)="chosen.emit(module)">
-          <strong>{{ module.name }}</strong>
-          <span class="muted">{{ module.description }}</span>
-          <span class="db-engine-state" [class.ready]="ready(module)">
-            @switch (module.state) {
+        <button
+          type="button"
+          class="db-engine"
+          [class.ready]="ready(card.module)"
+          (click)="chosen.emit(card.module)"
+        >
+          <span class="db-engine-icon" aria-hidden="true">
+            @if (plain().has(card.module.id)) {
+              <app-studio-icon name="databases" />
+            } @else {
+              <img [src]="card.icon" alt="" (error)="noIcon(card.module.id)" />
+            }
+          </span>
+          <span class="db-engine-text">
+            <span class="db-engine-title">
+              <strong>{{ card.name }}</strong>
+              @if (card.badge) {
+                <span class="db-engine-badge" [class]="card.badge">{{
+                  'db.badge.' + card.badge | transloco
+                }}</span>
+              }
+            </span>
+            <span class="db-engine-summary">{{
+              card.summary ? (card.summary | transloco) : card.module.description
+            }}</span>
+            @switch (card.module.state) {
               @case ('installed') {
-                {{ 'Installed' | transloco }}
+                <span class="db-engine-state ready"
+                  ><app-studio-icon name="check" />{{ 'Installed' | transloco }}</span
+                >
               }
               @case ('development') {
-                {{ 'Development copy' | transloco }}
+                <span class="db-engine-state ready"
+                  ><app-studio-icon name="check" />{{ 'Development copy' | transloco }}</span
+                >
               }
               @case ('outdated') {
-                {{ 'Update available' | transloco }}
+                <span class="db-engine-state update"
+                  ><app-studio-icon name="download" />{{ 'Update available' | transloco }}</span
+                >
               }
               @default {
-                {{ 'db.download' | transloco: { v0: bytes(module.downloadSize) } }}
+                <span class="db-engine-download"
+                  ><app-studio-icon name="download" />{{
+                    'db.download' | transloco: { v0: bytes(card.module.downloadSize) }
+                  }}</span
+                >
               }
             }
           </span>
@@ -41,6 +84,15 @@
       </li>
     } @empty {
       <li class="muted">{{ 'No database matches the search.' | transloco }}</li>
+    }
+    @if (!searching()) {
+      <li class="db-engine-soon">
+        <span class="db-engine-plus" aria-hidden="true"><app-studio-icon name="plus" /></span>
+        <strong>{{ 'More soon' | transloco }}</strong>
+        <span class="muted">{{
+          'Additional database modules will be available here.' | transloco
+        }}</span>
+      </li>
     }
   </ul>
 }
