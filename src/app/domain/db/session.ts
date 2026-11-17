@@ -2,12 +2,23 @@
  * What the database section keeps in the workspace session: the navigator as it was, and
  * its editor tabs with the unsaved text of each script. Results are never kept.
  */
+import { DashboardLayout, readDashboardLayouts } from './dashboard';
 import { DiagramLayout, readLayouts } from './erd-document';
 import { QuickFilter, TableQuery } from './table-query';
 import { DbBookmark } from './tree';
 
-export type DbTabKind =
-  'connection' | 'sql' | 'object' | 'console' | 'diagram' | 'sessions' | 'locks';
+/** The kinds of editor tab of the section. */
+export const DB_TAB_KINDS = [
+  'connection',
+  'sql',
+  'object',
+  'console',
+  'diagram',
+  'sessions',
+  'locks',
+  'dashboard',
+] as const;
+export type DbTabKind = (typeof DB_TAB_KINDS)[number];
 
 /** An editor tab of the section. */
 export interface DbTab {
@@ -54,6 +65,8 @@ export interface DatabaseSession {
   drafts: Record<string, SqlDraft>;
   /** Where the entities of the automatic diagrams were moved, by diagram (DB-20). */
   diagrams?: Record<string, DiagramLayout>;
+  /** The dashboard of each connection: its panels' order, sizes and its own ones (DB-22). */
+  dashboards?: Record<string, DashboardLayout>;
 }
 
 export function emptyDatabaseSession(): DatabaseSession {
@@ -80,13 +93,7 @@ const text = (source: Record<string, unknown>, key: string) =>
 function readTab(item: unknown): DbTab[] {
   const tab = record(item);
   const kind = tab['kind'];
-  if (
-    typeof tab['id'] !== 'string' ||
-    !['connection', 'sql', 'object', 'console', 'diagram', 'sessions', 'locks'].includes(
-      String(kind),
-    )
-  )
-    return [];
+  if (typeof tab['id'] !== 'string' || !DB_TAB_KINDS.some((each) => each === kind)) return [];
   return [
     {
       id: tab['id'],
@@ -172,6 +179,7 @@ export function readDatabaseSession(value: unknown): DatabaseSession {
     activeTab: tabs.some((tab) => tab.id === stored['activeTab']) ? text(stored, 'activeTab') : '',
     drafts,
     ...(stored['diagrams'] ? { diagrams: readLayouts(stored['diagrams']) } : {}),
+    ...(stored['dashboards'] ? { dashboards: readDashboardLayouts(stored['dashboards']) } : {}),
   };
 }
 

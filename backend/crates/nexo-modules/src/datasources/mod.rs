@@ -7,6 +7,7 @@ use nexo_application::ports::{DataSources, SqlConnection, StatementRequest};
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{
     admin::{AdminParams, KillParams, Killed, LockList, SessionList},
+    dashboard::{DashboardParams, Dashboards},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainParams, Plan},
     import::{ImportParams, Imported},
@@ -276,6 +277,11 @@ impl DataSources for Modules {
             "request to end a session",
         )
         .await
+    }
+
+    async fn dashboards(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<DashboardParams, Dashboards>(session, methods::DASHBOARDS, request, "request")
+            .await
     }
 
     async fn hold(&self, session: &str, held: bool) -> Result<()> {

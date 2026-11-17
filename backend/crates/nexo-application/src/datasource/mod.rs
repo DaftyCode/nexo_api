@@ -4,6 +4,7 @@
 //! the history; the connection's vault values never come back in an answer or an error.
 mod admin;
 mod connection;
+mod dashboard;
 mod explain;
 mod history;
 mod journal;
@@ -137,6 +138,8 @@ impl Application {
                     .await
             }
             Operation::DbSessionKill => self.kill_session(sources, read(payload)?).await,
+            Operation::DbDashboards => self.dashboards(sources, read(payload)?).await,
+            Operation::DbDashboardRead => self.read_dashboard(sources, read(payload)?).await,
             _ => Err(Error::Validation(format!(
                 "{operation} is not an operation of the database connections"
             ))),

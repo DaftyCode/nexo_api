@@ -137,6 +137,9 @@
           @case ('locks') {
             <app-db-locks [tab]="tab" />
           }
+          @case ('dashboard') {
+            <app-db-dashboard [tab]="tab" />
+          }
         }
       </div>
     } @empty {

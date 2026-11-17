@@ -2,6 +2,7 @@
 use crate::{
     DriverError, Peer, Result,
     admin::{AdminParams, KillParams, Killed, LockList, SessionList},
+    dashboard::{DashboardParams, Dashboards},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainParams, Plan},
     import::{ImportParams, Imported},
@@ -154,6 +155,11 @@ pub trait Driver: Send + Sync + 'static {
     /// Cancels the statement of a session or ends it ([`crate::admin::kill`]).
     async fn kill(&self, _params: KillParams) -> Result<Killed> {
         unsupported("ending sessions")
+    }
+
+    /// The panels of the server's dashboard ([`crate::dashboard`]).
+    async fn dashboards(&self, _params: DashboardParams) -> Result<Dashboards> {
+        unsupported("dashboards")
     }
 
     /// Any other method: the optional ones a driver lists in its capabilities and the

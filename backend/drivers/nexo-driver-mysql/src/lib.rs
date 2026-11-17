@@ -5,6 +5,7 @@
 mod admin;
 mod catalog;
 mod connection;
+mod dashboards;
 mod ddl;
 mod dialect;
 mod errors;
@@ -18,6 +19,7 @@ use connection::{MyConnection, not_open};
 use nexo_driver_sdk::{
     Driver, DriverError, HostLink, PROTOCOL_VERSION, Result,
     admin::{AdminParams, KillMode, KillParams, Killed, LockList, SessionList},
+    dashboard::{DashboardParams, Dashboards},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainMode, ExplainParams, Plan},
     limits, methods,
@@ -86,6 +88,7 @@ impl Driver for MysqlDriver {
                     methods::SESSIONS,
                     methods::LOCKS,
                     methods::KILL,
+                    methods::DASHBOARDS,
                 ]
                 .map(String::from)
                 .to_vec(),
@@ -197,5 +200,11 @@ impl Driver for MysqlDriver {
     async fn kill(&self, params: KillParams) -> Result<Killed> {
         let server = self.connection(&params.connection)?.server;
         nexo_driver_sdk::admin::kill(self, params, &admin::MysqlAdmin { server }).await
+    }
+
+    async fn dashboards(&self, _params: DashboardParams) -> Result<Dashboards> {
+        Ok(Dashboards {
+            dashboards: dashboards::predefined(),
+        })
     }
 }

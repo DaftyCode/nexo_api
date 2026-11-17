@@ -1,0 +1,98 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--nexo-space-6) var(--nexo-space-8);
+  gap: var(--nexo-space-5);
+}
+.db-dash-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-3) var(--nexo-space-5);
+}
+.db-dash-toolbar app-studio-icon {
+  width: var(--nexo-size-7);
+  height: var(--nexo-size-7);
+}
+.db-dash-toolbar .button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+}
+.db-dash-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-dash-choose {
+  position: relative;
+}
+.db-dash-choose summary {
+  list-style: none;
+  cursor: pointer;
+}
+.db-dash-choose fieldset {
+  position: absolute;
+  z-index: var(--nexo-z-dropdown);
+  display: grid;
+  gap: var(--nexo-space-2);
+  min-width: 220px;
+  margin: var(--nexo-space-2) 0 0;
+  padding: var(--nexo-space-4) var(--nexo-space-5);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-surface);
+  box-shadow: var(--nexo-shadow-md);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-dash-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.db-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--nexo-space-6);
+}
+.db-dash-card {
+  min-width: 0;
+  padding: var(--nexo-space-5) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface);
+}
+.db-dash-wide {
+  grid-column: span 2;
+}
+.db-dash-card[data-drop^='before'] {
+  box-shadow: var(--nexo-shadow-accent);
+}
+.db-dash-card[data-drop^='after'] {
+  box-shadow: var(--nexo-shadow-accent);
+}
+.db-dash-head {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  margin-bottom: var(--nexo-space-3);
+}
+.db-dash-head h3 {
+  margin: 0;
+  font-size: var(--nexo-font-size-md);
+}
+.grow {
+  flex: 1;
+}
+.db-dash-error {
+  margin: 0 0 var(--nexo-space-3);
+  color: var(--nexo-color-danger-text);
+  font-size: var(--nexo-font-size-xs);
+}

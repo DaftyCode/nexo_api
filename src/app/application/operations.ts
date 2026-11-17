@@ -99,6 +99,8 @@ export const EXECUTION_OPERATIONS = [
   'db.sessions',
   'db.locks',
   'db.session.kill',
+  'db.dashboards',
+  'db.dashboard.read',
   'db.split',
   'db.dialect',
 ] as const;

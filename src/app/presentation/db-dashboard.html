@@ -1,0 +1,132 @@
+@let dashboard = run();
+<div class="db-dash-toolbar" role="toolbar" [attr.aria-label]="'Dashboard' | transloco">
+  <label class="db-dash-label">
+    {{ 'Read every' | transloco }}
+    <select (change)="setInterval($event)">
+      @for (seconds of intervals; track seconds) {
+        <option [value]="seconds" [selected]="layout().interval === seconds">
+          {{ seconds ? seconds + ' s' : ('As each panel says' | transloco) }}
+        </option>
+      }
+    </select>
+  </label>
+  <button
+    type="button"
+    class="button small"
+    [attr.aria-pressed]="dashboard.paused()"
+    (click)="togglePause()"
+  >
+    {{ (dashboard.paused() ? 'Resume' : 'Pause') | transloco }}
+  </button>
+  <details class="db-dash-choose">
+    <summary class="button small">{{ 'Panels' | transloco }}</summary>
+    <fieldset>
+      <legend class="db-dash-hidden">{{ 'Panels shown' | transloco }}</legend>
+      @for (panel of dashboard.panels(); track panel.id) {
+        <label>
+          <input
+            type="checkbox"
+            [checked]="shown(panel.id)"
+            (change)="dashboards.toggleShown(tab().connection, panel.id)"
+          />
+          {{ panel.title }}
+        </label>
+      }
+    </fieldset>
+  </details>
+  <button type="button" class="button small" (click)="editing.set('new')">
+    <app-studio-icon name="plus" />{{ 'New panel' | transloco }}
+  </button>
+</div>
+@if (dashboard.status() === 'error') {
+  <p class="global-alert panel-alert" role="alert">{{ dashboard.error() | transloco }}</p>
+} @else if (dashboard.status() === 'opening') {
+  <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+} @else if (!dashboard.shown().length) {
+  <p class="muted">{{ 'db.dashboard.empty' | transloco }}</p>
+}
+<div class="db-dash-grid">
+  @for (panel of dashboard.shown(); track panel.id; let first = $first; let last = $last) {
+    <section
+      class="db-dash-card"
+      [class.db-dash-wide]="wide(panel.id)"
+      [attr.aria-label]="panel.title"
+      [attr.draggable]="true"
+      [attr.data-drop]="drag.at(panel.id)"
+      (dragstart)="drag.start($event, panel.id, panel.title)"
+      (dragover)="drag.over($event, panel.id)"
+      (drop)="drag.drop($event, panel.id)"
+      (dragend)="drag.end()"
+    >
+      <header class="db-dash-head">
+        <h3>{{ panel.title }}</h3>
+        <span class="grow"></span>
+        <button
+          type="button"
+          class="icon-button"
+          [disabled]="first"
+          [attr.aria-label]="'db.dashboard.earlier' | transloco: { v0: panel.title }"
+          [attr.title]="'Move earlier' | transloco"
+          (click)="dashboards.move(dashboard, panel.id, -1)"
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [disabled]="last"
+          [attr.aria-label]="'db.dashboard.later' | transloco: { v0: panel.title }"
+          [attr.title]="'Move later' | transloco"
+          (click)="dashboards.move(dashboard, panel.id, 1)"
+        >
+          →
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-pressed]="wide(panel.id)"
+          [attr.aria-label]="'db.dashboard.wide' | transloco: { v0: panel.title }"
+          [attr.title]="'Wide' | transloco"
+          (click)="dashboards.toggleWide(tab().connection, panel.id)"
+        >
+          ↔
+        </button>
+        @if (panel.custom) {
+          <button type="button" class="text-button" (click)="editing.set(panel)">
+            {{ 'Edit' | transloco }}
+          </button>
+          <button type="button" class="text-button danger" (click)="remove(panel)">
+            {{ 'Delete' | transloco }}
+          </button>
+        }
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'db.dashboard.hide' | transloco: { v0: panel.title }"
+          [attr.title]="'Hide' | transloco"
+          (click)="dashboards.toggleShown(tab().connection, panel.id)"
+        >
+          ×
+        </button>
+      </header>
+      @if (dashboard.errors()[panel.id]; as error) {
+        <p class="db-dash-error" role="alert">{{ error | transloco }}</p>
+      }
+      <app-chart
+        [kind]="panel.chart"
+        [series]="dashboard.data()[panel.id]?.series ?? []"
+        [unit]="panel.unit ?? ''"
+        [perSecond]="panel.delta"
+        [label]="panel.title"
+      />
+    </section>
+  }
+</div>
+@if (editing(); as panel) {
+  <app-db-panel-editor
+    [panel]="edited()"
+    [run]="dashboard"
+    (saved)="saved($event)"
+    (closed)="editing.set(undefined)"
+  />
+}

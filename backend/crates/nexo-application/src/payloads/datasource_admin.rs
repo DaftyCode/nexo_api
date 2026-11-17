@@ -17,6 +17,21 @@ payload! {
 }
 
 payload! {
+    /// `db.dashboard.read`: a reading of a panel of the server's dashboard: one query that
+    /// only reads, not recorded in the history.
+    closed DbDashboardReadPayload {
+        required {
+            session "session": String => "string",
+            statement "statement": String => "string",
+            sql "sql": String => "string",
+        }
+        optional {
+            workspace "workspace": String => "string",
+        }
+    }
+}
+
+payload! {
     /// `db.session.kill`: cancels the statement of the server's session `target`, or ends it.
     /// Refused on a read-only connection; `confirm` always, and on production also
     /// `confirmName` with the id of the session.

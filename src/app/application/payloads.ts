@@ -815,6 +815,13 @@ export interface DbSessionKillPayload {
   workspace?: string;
 }
 
+export interface DbDashboardReadPayload {
+  session: string;
+  statement: string;
+  sql: string;
+  workspace?: string;
+}
+
 export interface DbSplitPayload {
   script: string;
   dialect?: string;
@@ -938,6 +945,8 @@ export interface OperationPayloads {
   'db.sessions': DbAdminPayload;
   'db.locks': DbAdminPayload;
   'db.session.kill': DbSessionKillPayload;
+  'db.dashboards': DbSessionPayload;
+  'db.dashboard.read': DbDashboardReadPayload;
   'db.split': DbSplitPayload;
   'db.dialect': DbDriverPayload;
 }

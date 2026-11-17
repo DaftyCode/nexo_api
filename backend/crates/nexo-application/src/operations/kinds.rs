@@ -40,6 +40,8 @@ impl Operation {
                 | Self::DbSessions
                 | Self::DbLocks
                 | Self::DbSessionKill
+                | Self::DbDashboards
+                | Self::DbDashboardRead
                 | Self::DbSplit
                 | Self::DbDialect
         )

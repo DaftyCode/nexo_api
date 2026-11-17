@@ -124,6 +124,9 @@ import { DbSection } from './section';
         <button type="button" role="menuitem" (click)="chosen.emit('newDiagram')">
           {{ 'New diagram' | transloco }}
         </button>
+        <button type="button" role="menuitem" (click)="chosen.emit('dashboard')">
+          {{ 'Dashboard' | transloco }}
+        </button>
         @if (admin().sessions) {
           <button type="button" role="menuitem" (click)="chosen.emit('sessions')">
             {{ 'Sessions' | transloco }}

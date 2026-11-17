@@ -1,4 +1,4 @@
-import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type { TransferRequest } from './transfer-request';
 import type { StructureRequest } from './structure-draft';
 import type { DatabaseUseCases } from '../../application/database-use-cases';
@@ -22,6 +22,7 @@ import { DriverFacts } from './drivers';
 import { OpenEditors } from './editors';
 import { DbTabsStore } from './tabs-store';
 import { SectionDiagrams } from './diagrams';
+import { SectionDashboards } from './dashboards';
 import { DbTreeStore } from './tree-store';
 import { SchemaCache } from './schema-cache';
 import { SectionTransactions } from './transactions';
@@ -77,6 +78,8 @@ export class DbSection {
   readonly schema = new SchemaCache(this);
   /** The entity-relationship diagrams: their layouts and the saved ones (DB-20). */
   readonly diagrams = new SectionDiagrams(this);
+  /** The dashboards of the servers: their layouts and their readings (DB-22). */
+  readonly dashboards = new SectionDashboards(this);
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
   /** Saved SQL scripts. */
@@ -112,6 +115,7 @@ export class DbSection {
   );
 
   constructor() {
+    inject(DestroyRef).onDestroy(() => this.dashboards.closeAll());
     // The navigator as it was: open nodes and bookmarks come back, but nothing reconnects.
     const stored = untracked(() => this.state.databaseSession());
     if (stored) {
@@ -131,6 +135,7 @@ export class DbSection {
         activeTab: this.tabs.activeId(),
         drafts: storedDrafts(this.tabs.drafts()),
         diagrams: { ...this.diagrams.layouts() },
+        dashboards: { ...this.dashboards.layouts() },
       };
       untracked(() => this.state.databaseSession.set(session));
     });
@@ -161,6 +166,7 @@ export class DbSection {
   /** Closes an editor tab with what it had open: sessions and cursors. */
   closeTab(id: string) {
     this.editors.close(id);
+    this.dashboards.close(id);
     this.tabs.close(id);
   }
 

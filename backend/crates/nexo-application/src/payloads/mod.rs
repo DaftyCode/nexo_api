@@ -276,6 +276,8 @@ operation_payloads! {
     DbSessions => DbAdminPayload,
     DbLocks => DbAdminPayload,
     DbSessionKill => DbSessionKillPayload,
+    DbDashboards => DbSessionPayload,
+    DbDashboardRead => DbDashboardReadPayload,
     DbSplit => DbSplitPayload,
     DbDialect => DbDriverPayload,
 }

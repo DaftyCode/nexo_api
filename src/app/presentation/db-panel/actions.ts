@@ -93,6 +93,7 @@ export class DbActions {
   viewDiagram = (row: NavigatorRow) => this.section.diagrams.view(row);
   sessions = (row: NavigatorRow) => openAdmin(this.section, row, 'sessions');
   locks = (row: NavigatorRow) => openAdmin(this.section, row, 'locks');
+  dashboard = (row: NavigatorRow) => this.section.dashboards.open(row);
   newDiagram = (row: NavigatorRow) =>
     this.task.announce('The diagram could not be created', () =>
       this.section.diagrams.create(row.connection ?? ''),

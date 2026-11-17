@@ -1,0 +1,172 @@
+<figure class="chart" [attr.aria-label]="label()">
+  @if (!hasData()) {
+    <p class="chart-empty">{{ 'Waiting for the first reading…' | transloco }}</p>
+  } @else if (table()) {
+    <table class="chart-table">
+      <caption class="chart-hidden">
+        {{
+          label()
+        }}
+      </caption>
+      @if (kind() === 'bar' || kind() === 'value') {
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Series' | transloco }}</th>
+            <th scope="col">{{ 'Value' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (each of latest(); track each.name) {
+            <tr>
+              <th scope="row">{{ each.name }}</th>
+              <td>{{ format(each.value) }}</td>
+            </tr>
+          }
+        </tbody>
+      } @else {
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Time' | transloco }}</th>
+            @for (each of series(); track each.name) {
+              <th scope="col">{{ each.name }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.at) {
+            <tr>
+              <th scope="row">{{ timeLabel(row.at) }}</th>
+              @for (value of row.values; track $index) {
+                <td>{{ format(value) }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      }
+    </table>
+  } @else if (kind() === 'value') {
+    <p class="chart-value" role="img" [attr.aria-label]="summary()">
+      <span aria-hidden="true">{{ format(latest()[0]?.value) }}</span>
+    </p>
+  } @else if (kind() === 'bar') {
+    <svg
+      class="chart-svg"
+      role="img"
+      [attr.aria-label]="summary()"
+      [attr.viewBox]="'0 0 ' + frame.width + ' ' + frame.height"
+    >
+      <g aria-hidden="true">
+        @for (mark of bars().marks; track $index) {
+          <line
+            class="chart-grid"
+            [attr.x1]="frame.left"
+            [attr.x2]="frame.width - frame.right"
+            [attr.y1]="mark.y"
+            [attr.y2]="mark.y"
+          />
+          <text
+            class="chart-axis"
+            [attr.x]="frame.left - 6"
+            [attr.y]="mark.y + 4"
+            text-anchor="end"
+          >
+            {{ format(mark.value) }}
+          </text>
+        }
+        @for (bar of bars().bars; track bar.name; let index = $index) {
+          <rect
+            [class]="'chart-bar ' + color(index)"
+            [attr.x]="bar.x"
+            [attr.y]="bar.y"
+            [attr.width]="bar.width"
+            [attr.height]="bar.height"
+          >
+            <title>{{ bar.name }}: {{ format(bar.value) }}</title>
+          </rect>
+        }
+      </g>
+    </svg>
+  } @else {
+    <svg
+      class="chart-svg"
+      role="img"
+      [attr.aria-label]="summary()"
+      [attr.viewBox]="'0 0 ' + frame.width + ' ' + frame.height"
+      (pointermove)="hover($event)"
+      (pointerleave)="hoverAt.set(undefined)"
+    >
+      <g aria-hidden="true">
+        @for (mark of time().marks; track $index) {
+          <line
+            class="chart-grid"
+            [attr.x1]="frame.left"
+            [attr.x2]="frame.width - frame.right"
+            [attr.y1]="mark.y"
+            [attr.y2]="mark.y"
+          />
+          <text
+            class="chart-axis"
+            [attr.x]="frame.left - 6"
+            [attr.y]="mark.y + 4"
+            text-anchor="end"
+          >
+            {{ format(mark.value) }}
+          </text>
+        }
+        @for (time of time().times; track $index) {
+          <text
+            class="chart-axis"
+            [attr.x]="time.x"
+            [attr.y]="frame.height - 6"
+            [attr.text-anchor]="$first ? 'start' : $last ? 'end' : 'middle'"
+          >
+            {{ timeLabel(time.at) }}
+          </text>
+        }
+        @for (line of time().lines; track line.name; let index = $index) {
+          @if (kind() === 'area') {
+            <path [class]="'chart-area ' + color(index)" [attr.d]="line.area" />
+          }
+          <path [class]="'chart-line ' + color(index)" [attr.d]="line.d" />
+        }
+        @if (hovered(); as at) {
+          <line
+            class="chart-cursor"
+            [attr.x1]="at.x"
+            [attr.x2]="at.x"
+            [attr.y1]="frame.top"
+            [attr.y2]="frame.height - frame.bottom"
+          />
+        }
+      </g>
+    </svg>
+    @if (hovered(); as at) {
+      <p class="chart-tip" role="status">
+        {{ timeLabel(at.at) }}
+        @for (value of at.values; track value.name) {
+          · {{ value.name }}: {{ format(value.value) }}
+        }
+      </p>
+    }
+  }
+  @if (hasData()) {
+    <figcaption class="chart-foot">
+      <ul class="chart-legend">
+        @for (each of latest(); track each.name; let index = $index) {
+          <li [class]="color(index)">
+            <span class="chart-swatch" aria-hidden="true"></span>{{ each.name }}
+            <strong>{{ format(each.value) }}</strong>
+          </li>
+        }
+      </ul>
+      <button
+        type="button"
+        class="text-button"
+        [attr.aria-pressed]="table()"
+        (click)="table.set(!table())"
+      >
+        {{ 'As a table' | transloco }}
+      </button>
+    </figcaption>
+  }
+</figure>

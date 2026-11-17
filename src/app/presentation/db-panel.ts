@@ -13,6 +13,7 @@ import { DbTableEditor } from './db-table-editor';
 import { DbDiagram } from './db-diagram';
 import { DbLocks } from './db-locks';
 import { DbSessions } from './db-sessions';
+import { DbDashboard } from './db-dashboard';
 import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -46,6 +47,7 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbDiagram,
     DbSessions,
     DbLocks,
+    DbDashboard,
   ],
   providers: [DbSection],
   host: {
@@ -89,6 +91,7 @@ export class DbPanel {
     if (tab.kind === 'console') return `${connection} · Console`;
     if (tab.kind === 'sessions') return `${connection} · Sessions`;
     if (tab.kind === 'locks') return `${connection} · Locks`;
+    if (tab.kind === 'dashboard') return `${connection} · Dashboard`;
     const script = this.section
       .scripts()
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
@@ -98,6 +101,7 @@ export class DbPanel {
     if (tab.kind === 'diagram') return 'schema';
     if (tab.kind === 'sessions') return 'bars';
     if (tab.kind === 'locks') return 'lock';
+    if (tab.kind === 'dashboard') return 'datasets';
     return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {

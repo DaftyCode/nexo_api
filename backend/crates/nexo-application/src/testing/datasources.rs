@@ -162,6 +162,16 @@ impl DataSources for FakeSources {
             .push((session.into(), request));
         Ok(json!({"done": true}))
     }
+    async fn dashboards(&self, session: &str, request: Value) -> Result<Value> {
+        self.administered
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(
+            json!({"dashboards": [{"id": "sessions", "title": "Sessions", "sql": "SELECT 1",
+            "chart": "line", "interval": 5}]}),
+        )
+    }
     async fn hold(&self, session: &str, held: bool) -> Result<()> {
         self.held.lock().unwrap().push((session.into(), held));
         Ok(())

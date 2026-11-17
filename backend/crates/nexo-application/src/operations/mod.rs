@@ -133,6 +133,8 @@ operations!(
         DbSessions => "db.sessions",
         DbLocks => "db.locks",
         DbSessionKill => "db.session.kill",
+        DbDashboards => "db.dashboards",
+        DbDashboardRead => "db.dashboard.read",
         DbSplit => "db.split",
         DbDialect => "db.dialect",
     }

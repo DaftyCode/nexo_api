@@ -163,6 +163,8 @@ impl ExecutionGateway for Engine {
             | Operation::DbSessions
             | Operation::DbLocks
             | Operation::DbSessionKill
+            | Operation::DbDashboards
+            | Operation::DbDashboardRead
             | Operation::DbSplit
             | Operation::DbDialect
             => Err(Error::Validation(format!(

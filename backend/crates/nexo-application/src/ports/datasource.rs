@@ -107,6 +107,8 @@ pub trait DataSources: Send + Sync {
     /// Cancels the statement of a session of the server, or ends it:
     /// `{connection, statement, session, mode}`.
     async fn kill(&self, session: &str, request: Value) -> Result<Value>;
+    /// The panels of the server's dashboard its driver offers: `{connection}`.
+    async fn dashboards(&self, session: &str, request: Value) -> Result<Value>;
     /// Keeps a session with an open transaction from being closed for being idle: the
     /// transaction would be lost with it.
     async fn hold(&self, _session: &str, _held: bool) -> Result<()> {

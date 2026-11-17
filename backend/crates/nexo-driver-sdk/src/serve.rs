@@ -52,6 +52,7 @@ impl<D: Driver> Handler for Dispatcher<D> {
             methods::SESSIONS => write(driver.sessions(read(params)?).await?),
             methods::LOCKS => write(driver.locks(read(params)?).await?),
             methods::KILL => write(driver.kill(read(params)?).await?),
+            methods::DASHBOARDS => write(driver.dashboards(read(params)?).await?),
             other => driver.extension(host, other, params).await,
         }
     }

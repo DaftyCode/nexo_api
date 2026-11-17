@@ -19,6 +19,7 @@ pub mod admin;
 mod client;
 #[cfg(feature = "conformance")]
 pub mod conformance;
+pub mod dashboard;
 pub mod ddl;
 mod driver;
 mod error;
@@ -81,6 +82,8 @@ pub mod methods {
     pub const LOCKS: &str = "locks";
     /// Cancels the statement of a session of the server, or ends the session.
     pub const KILL: &str = "kill";
+    /// The panels of the server's dashboard the driver offers.
+    pub const DASHBOARDS: &str = "dashboards";
     /// Asked by the driver: the addresses of a host it may connect to.
     pub const NET_RESOLVE: &str = "net.resolve";
     /// Notified by the driver: a line for the host's log.

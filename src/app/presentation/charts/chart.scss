@@ -1,0 +1,125 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+.chart {
+  margin: 0;
+}
+.chart-series-0 {
+  --chart-color: var(--nexo-color-info);
+}
+.chart-series-1 {
+  --chart-color: var(--nexo-color-success);
+}
+.chart-series-2 {
+  --chart-color: var(--nexo-color-warning);
+}
+.chart-series-3 {
+  --chart-color: var(--nexo-color-danger);
+}
+.chart-series-4 {
+  --chart-color: var(--nexo-color-accent);
+}
+.chart-series-5 {
+  --chart-color: var(--nexo-color-data-number);
+}
+.chart-series-6 {
+  --chart-color: var(--nexo-color-data-string);
+}
+.chart-series-7 {
+  --chart-color: var(--nexo-color-data-date);
+}
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--nexo-font-sans);
+  font-size: var(--nexo-font-size-2xs);
+}
+.chart-grid {
+  stroke: var(--nexo-color-border-subtle);
+}
+.chart-axis {
+  fill: var(--nexo-color-text-muted);
+}
+.chart-line {
+  fill: none;
+  stroke: var(--chart-color);
+  stroke-width: 2;
+}
+.chart-area {
+  fill: var(--chart-color);
+  opacity: var(--nexo-opacity-faint);
+}
+.chart-bar {
+  fill: var(--chart-color);
+}
+.chart-cursor {
+  stroke: var(--nexo-color-text-soft);
+  stroke-dasharray: 3 3;
+}
+.chart-value {
+  margin: var(--nexo-space-6) 0;
+  font-size: var(--nexo-font-size-5xl);
+  font-weight: var(--nexo-font-weight-bold);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.chart-empty,
+.chart-tip {
+  margin: var(--nexo-space-2) 0;
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.chart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nexo-space-3);
+  margin-top: var(--nexo-space-3);
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2) var(--nexo-space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--nexo-font-size-xs);
+}
+.chart-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+}
+.chart-swatch {
+  width: var(--nexo-size-4);
+  height: var(--nexo-size-4);
+  border-radius: var(--nexo-radius-xs);
+  background: var(--chart-color);
+}
+.chart-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-xs);
+}
+.chart-table th,
+.chart-table td {
+  padding: var(--nexo-space-1) var(--nexo-space-3);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.chart-table th[scope='row'],
+.chart-table thead th:first-child {
+  text-align: left;
+}
+.chart-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

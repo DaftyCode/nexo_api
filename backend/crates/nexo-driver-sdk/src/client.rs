@@ -118,6 +118,12 @@ impl Client {
     pub async fn kill(&self, params: &crate::admin::KillParams) -> Result<crate::admin::Killed> {
         self.call(methods::KILL, params).await
     }
+    pub async fn dashboards(
+        &self,
+        params: &crate::dashboard::DashboardParams,
+    ) -> Result<crate::dashboard::Dashboards> {
+        self.call(methods::DASHBOARDS, params).await
+    }
     pub async fn ddl_model(
         &self,
         params: &crate::ddl::DdlModelParams,

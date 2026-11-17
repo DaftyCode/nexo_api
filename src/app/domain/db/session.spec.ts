@@ -74,11 +74,15 @@ describe('the stored session of the database section', () => {
         { id: 'a', kind: 'sessions', connection: 'c', title: 'Sessions', path: ['x'] },
         { id: 'b', kind: 'locks', connection: 'c', title: 'Locks' },
         { id: 'c', kind: 'admin', connection: 'c', title: 'Unknown' },
+        { id: 'd', kind: 'dashboard', connection: 'c', title: 'Dashboard' },
       ],
+      dashboards: { c: { order: ['tps'], interval: 2 } },
     });
+    expect(session.dashboards?.['c']).toMatchObject({ order: ['tps'], interval: 2, custom: [] });
     expect(session.tabs).toEqual([
       { id: 'a', kind: 'sessions', connection: 'c', title: 'Sessions' },
       { id: 'b', kind: 'locks', connection: 'c', title: 'Locks' },
+      { id: 'd', kind: 'dashboard', connection: 'c', title: 'Dashboard' },
     ]);
   });
 
