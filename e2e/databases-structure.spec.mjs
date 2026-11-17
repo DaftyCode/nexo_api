@@ -80,6 +80,22 @@ test('a table is created, changed in place and dropped, and a view starts from a
     .click();
   const type = page.getByLabel('Type of status');
   await expect(type).toHaveValue('TEXT');
+  // The list holds every type of the engine, not only what is written; the current one marked.
+  const cell = page.locator('app-db-type-picker').filter({ has: type });
+  await cell.getByRole('button', { name: 'Show the types' }).click();
+  const types = page.getByRole('listbox', { name: 'Types' });
+  await expect.poll(() => types.getByRole('option').count()).toBeGreaterThan(3);
+  await expect(types.getByRole('option', { name: 'TEXT', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  expect(await violations(page)).toEqual([]);
+  await types.getByRole('option', { name: 'INTEGER', exact: true }).click();
+  await expect(type).toHaveValue('INTEGER');
+  await type.press('ArrowDown');
+  await expect(types).toBeVisible();
+  await type.press('Escape');
+  await expect(types).toBeHidden();
   await type.fill('VARCHAR(10)');
   await type.press('Tab');
   await page

@@ -2572,5 +2572,12 @@
   "Bars": "Bars",
   "Single value": "Single value",
   "Unit": "Unit",
-  "Counters: draw the change per second": "Counters: draw the change per second"
+  "Counters: draw the change per second": "Counters: draw the change per second",
+  "Show the types": "Show the types",
+  "No type matches": "No type matches",
+  "Permissions": "Permissions",
+  "Member of": "Member of",
+  "Members": "Members",
+  "Privileges": "Privileges",
+  "Grants": "Grants"
 }

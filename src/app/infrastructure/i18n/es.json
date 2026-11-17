@@ -2572,5 +2572,12 @@
   "Bars": "Barras",
   "Single value": "Valor único",
   "Unit": "Unidad",
-  "Counters: draw the change per second": "Contadores: dibujar el cambio por segundo"
+  "Counters: draw the change per second": "Contadores: dibujar el cambio por segundo",
+  "Show the types": "Mostrar los tipos",
+  "No type matches": "Ningún tipo coincide",
+  "Permissions": "Permisos",
+  "Member of": "Miembro de",
+  "Members": "Miembros",
+  "Privileges": "Privilegios",
+  "Grants": "Permisos concedidos"
 }

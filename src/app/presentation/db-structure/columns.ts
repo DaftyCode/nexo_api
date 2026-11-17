@@ -1,5 +1,5 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import {
   ColumnModel,
   addColumn,
@@ -8,6 +8,7 @@ import {
   removeColumn,
 } from '../../domain/db/structure';
 import type { StructureDraft } from '../db-panel/structure-draft';
+import { DbTypePicker } from './type-picker';
 
 /**
  * The columns of a table, each cell edited in place as DBeaver's column editor: its name, its
@@ -15,16 +16,11 @@ import type { StructureDraft } from '../db-panel/structure-draft';
  * default, its identity and its comment. Changed cells are marked until saved or reverted.
  */
 @Component({
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, DbTypePicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-structure-columns',
   template: `
     @let d = draft();
-    <datalist [id]="typesId()">
-      @for (type of d.types(); track type) {
-        <option [value]="type"></option>
-      }
-    </datalist>
     <div class="db-structure-scroll">
       <table class="db-structure-table" [attr.aria-label]="'Columns' | transloco">
         <thead>
@@ -53,13 +49,11 @@ import type { StructureDraft } from '../db-panel/structure-draft';
                 />
               </td>
               <td [class.db-structure-changed]="changed(column, 'typeName')">
-                <input
+                <app-db-type-picker
                   [value]="column.typeName"
-                  [attr.list]="typesId()"
-                  [attr.aria-label]="'db.structure.type' | transloco: { v0: column.name }"
-                  autocomplete="off"
-                  spellcheck="false"
-                  (change)="set(at, { typeName: text($event) })"
+                  [types]="d.types()"
+                  [label]="'db.structure.type' | transloco: { v0: column.name }"
+                  (changed)="set(at, { typeName: $event })"
                 />
               </td>
               <td
@@ -124,8 +118,6 @@ import type { StructureDraft } from '../db-panel/structure-draft';
 })
 export class DbStructureColumns {
   readonly draft = input.required<StructureDraft>();
-  /** One list of types per editor, named for its inputs. */
-  protected readonly typesId = computed(() => `db-types-${this.draft().connection}`);
 
   protected changed(column: ColumnModel, field: keyof ColumnModel) {
     return !this.draft().creating && columnChanged(this.draft().original(), column, field);
