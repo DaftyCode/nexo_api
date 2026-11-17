@@ -27,17 +27,7 @@
           <header class="report-header">
             <span class="report-brand">Nexo API</span>
             <h1>{{ report.title }}</h1>
-            <p>
-              {{
-                (report.kind === 'run'
-                  ? 'Collection run report'
-                  : report.kind === 'request'
-                    ? 'Request and response'
-                    : 'Collection documentation'
-                ) | transloco
-              }}
-              · {{ report.generatedAt | date: 'medium' }}
-            </p>
+            <p>{{ kinds[report.kind] | transloco }} · {{ report.generatedAt | date: 'medium' }}</p>
           </header>
 
           @switch (report.kind) {
@@ -279,6 +269,17 @@
                     </section>
                   }
                 }
+              }
+            }
+            @case ('diagram') {
+              @if (report.kind === 'diagram') {
+                @let diagram = report.diagram;
+                <p class="report-meta">
+                  {{
+                    'report.diagram' | transloco: { v0: diagram.entities, v1: diagram.relations }
+                  }}
+                </p>
+                <img class="report-diagram" [src]="diagram.image" [alt]="report.title" />
               }
             }
           }

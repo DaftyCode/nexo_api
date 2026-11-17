@@ -60,6 +60,8 @@
                   {{ 'New connection' | transloco }}
                 } @else if (tab.kind === 'object') {
                   {{ 'db.tab.object' | transloco: { v0: title(tab) } }}
+                } @else if (tab.kind === 'diagram' && !tab.diagram) {
+                  {{ 'db.tab.diagram' | transloco: { v0: title(tab) } }}
                 } @else {
                   {{ title(tab) }}
                 }
@@ -125,6 +127,9 @@
           }
           @case ('console') {
             <app-db-console [tab]="tab" />
+          }
+          @case ('diagram') {
+            <app-db-diagram [tab]="tab" />
           }
         }
       </div>

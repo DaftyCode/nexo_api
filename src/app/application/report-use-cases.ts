@@ -20,11 +20,20 @@ export type Report = { title: string; generatedAt: number } & (
   | { kind: 'run'; run: RunReport }
   | { kind: 'request'; request: RequestReport }
   | { kind: 'collection'; docs: CollectionDocs }
+  | { kind: 'diagram'; diagram: DiagramReport }
 );
 
+/** An entity-relationship diagram (DB-20): its picture, and how many tables and relations. */
+export interface DiagramReport {
+  /** The diagram as an image (`data:image/svg+xml`), in the colors of the theme in use. */
+  image: string;
+  entities: number;
+  relations: number;
+}
+
 /**
- * Reports to print or save as PDF: a collection run, a request with its response, and the
- * documentation of a collection. Credentials are hidden as on screen.
+ * Reports to print or save as PDF: a collection run, a request with its response, the
+ * documentation of a collection and a database diagram. Credentials are hidden as on screen.
  */
 export class ReportUseCases {
   constructor(
@@ -56,6 +65,9 @@ export class ReportUseCases {
       generatedAt: this.now(),
       docs,
     };
+  }
+  diagramReport(title: string, diagram: DiagramReport): Report {
+    return { kind: 'diagram', title: title || 'Diagram', generatedAt: this.now(), diagram };
   }
   /** Opens the system print dialog for the report shown in `sheet`, to print or save a PDF. */
   print(sheet: HTMLElement) {

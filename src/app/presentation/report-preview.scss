@@ -128,6 +128,12 @@
 .report-folder {
   border-bottom: var(--nexo-border-width) solid var(--nexo-report-border);
 }
+.report-diagram {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-top: var(--nexo-space-6);
+}
 @media print {
   .report-paper {
     box-shadow: none;

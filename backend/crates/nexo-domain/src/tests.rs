@@ -22,6 +22,12 @@ fn document_kinds_round_trip() {
     assert!(!DocumentKind::History.keeps_revisions());
     assert!(!DocumentKind::QueryHistory.keeps_revisions());
     assert!(DocumentKind::Query.keeps_revisions());
+    assert!(DocumentKind::DbDiagram.keeps_revisions());
+    assert!(DocumentKind::DbDiagram.listed_whole());
+    assert_eq!(
+        DocumentKind::parse("db-diagram").unwrap(),
+        DocumentKind::DbDiagram
+    );
     assert!(DocumentKind::QueryHistory.listed_whole());
     assert!(!DocumentKind::History.listed_whole());
     assert!(!DocumentKind::Session.keeps_revisions());

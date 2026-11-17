@@ -5,7 +5,7 @@
  */
 import { ConnectionType, connectionType, filterAt, readDbConnection } from './connection';
 import { engineProfile } from './engines';
-import { readScript } from './sql';
+import { diagramRows, scriptRows } from './document-rows';
 import { ConnectionStatus, DbNode, filtered, matchesText, nodeKey, simpleView } from './tree';
 
 export interface NavigatorRow {
@@ -19,7 +19,9 @@ export interface NavigatorRow {
     | 'empty'
     | 'scripts'
     | 'script-group'
-    | 'script';
+    | 'script'
+    | 'diagrams'
+    | 'diagram';
   /** 1 for the top level, as `aria-level`. */
   level: number;
   label: string;
@@ -39,6 +41,8 @@ export interface NavigatorRow {
   driver?: string;
   /** The `sql-script` document of a script row. */
   script?: string;
+  /** The `db-diagram` document of a diagram row. */
+  diagram?: string;
 }
 
 export interface NavigatorSnapshot {
@@ -53,7 +57,15 @@ export interface NavigatorSnapshot {
   simple: boolean;
   text: string;
   /** Saved SQL scripts (`sql-script` documents). */
-  scripts?: readonly { id: string; name: string; value: unknown }[];
+  scripts?: readonly SavedDocument[];
+  /** Saved diagrams (`db-diagram` documents). */
+  diagrams?: readonly SavedDocument[];
+}
+
+export interface SavedDocument {
+  id: string;
+  name: string;
+  value: unknown;
 }
 
 export const folderKey = (folder: string) => `folder:${encodeURIComponent(folder)}`;
@@ -210,70 +222,6 @@ export function navigatorRows(snapshot: NavigatorSnapshot): NavigatorRow[] {
       });
     if (open) rows.push(...inside);
   }
-  rows.push(...scriptRows(snapshot));
+  rows.push(...scriptRows(snapshot), ...diagramRows(snapshot));
   return rows;
-}
-
-export const SCRIPTS_KEY = 'scripts';
-
-/** The saved scripts, under «Scripts», by connection. */
-function scriptRows(snapshot: NavigatorSnapshot): NavigatorRow[] {
-  const text = snapshot.text.trim();
-  const scripts = (snapshot.scripts ?? []).filter(
-    (script) => !text || matchesText({ label: script.name }, text),
-  );
-  if (!scripts.length) return [];
-  const open = !snapshot.closedFolders.has(SCRIPTS_KEY) || !!text;
-  const rows: NavigatorRow[] = [
-    {
-      key: SCRIPTS_KEY,
-      type: 'scripts',
-      level: 1,
-      label: 'Scripts',
-      expandable: true,
-      expanded: open,
-    },
-  ];
-  if (!open) return rows;
-  const owner = (script: { value: unknown }) => readScript(script.value).connectionId;
-  const ids = [...new Set(scripts.map(owner))].sort((a, b) =>
-    nameOf(snapshot, a).localeCompare(nameOf(snapshot, b)),
-  );
-  for (const id of ids) {
-    const key = `${SCRIPTS_KEY}:${id}`;
-    const expanded = !snapshot.closedFolders.has(key) || !!text;
-    rows.push({
-      key,
-      type: 'script-group',
-      level: 2,
-      label: nameOf(snapshot, id),
-      connection: id,
-      parent: SCRIPTS_KEY,
-      expandable: true,
-      expanded,
-    });
-    if (!expanded) continue;
-    for (const script of scripts
-      .filter((item) => owner(item) === id)
-      .sort((a, b) => a.name.localeCompare(b.name))) {
-      const folder = readScript(script.value).folder;
-      rows.push({
-        key: `script:${script.id}`,
-        type: 'script',
-        level: 3,
-        label: script.name,
-        ...(folder ? { detail: folder } : {}),
-        connection: id,
-        script: script.id,
-        parent: key,
-        expandable: false,
-        expanded: false,
-      });
-    }
-  }
-  return rows;
-}
-
-function nameOf(snapshot: NavigatorSnapshot, id: string) {
-  return snapshot.connections.find((connection) => connection.id === id)?.name ?? '—';
 }

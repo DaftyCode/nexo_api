@@ -12,7 +12,7 @@ import {
 } from '../../domain/db/connection';
 import { NavigatorRow, navigatorRows } from '../../domain/db/rows';
 import { SqlDraft, restoredDrafts, storedDrafts } from '../../domain/db/session';
-import { databaseOf, qualifiedName, readScript } from '../../domain/db/sql';
+import { readScript } from '../../domain/db/sql';
 import { QueryStyle } from '../../domain/db/table-query';
 import { DbBookmark, DbNode, QuoteStyle, keyPath, nodeKey } from '../../domain/db/tree';
 import { ModuleSummary } from '../../domain/modules';
@@ -21,6 +21,7 @@ import { WorkspaceState } from '../workspace-state';
 import { DriverFacts } from './drivers';
 import { OpenEditors } from './editors';
 import { DbTabsStore } from './tabs-store';
+import { SectionDiagrams } from './diagrams';
 import { DbTreeStore } from './tree-store';
 import { SchemaCache } from './schema-cache';
 import { SectionTransactions } from './transactions';
@@ -74,6 +75,8 @@ export class DbSection {
   readonly transactions = new SectionTransactions(this);
   /** What the SQL editor knows of each connection's schema. */
   readonly schema = new SchemaCache(this);
+  /** The entity-relationship diagrams: their layouts and the saved ones (DB-20). */
+  readonly diagrams = new SectionDiagrams(this);
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
   /** Saved SQL scripts. */
@@ -104,6 +107,7 @@ export class DbSection {
       simple: this.simple(),
       text: this.text(),
       scripts: this.scripts(),
+      diagrams: this.diagrams.saved(),
     }),
   );
 
@@ -126,6 +130,7 @@ export class DbSection {
         tabs: [...this.tabs.tabs()],
         activeTab: this.tabs.activeId(),
         drafts: storedDrafts(this.tabs.drafts()),
+        diagrams: { ...this.diagrams.layouts() },
       };
       untracked(() => this.state.databaseSession.set(session));
     });
@@ -214,25 +219,6 @@ export class DbSection {
       const parent = nodeKey(connection, path.slice(0, depth));
       const found = children.get(parent)?.find((node) => node.name === name);
       return found ? [found] : [];
-    });
-  }
-
-  /**
-   * «View data», as DBeaver's SQL console: a SQL tab with `SELECT *` of the table or view,
-   * run at once, on the database it is in.
-   */
-  async viewData(row: NavigatorRow) {
-    if (!row.connection || !row.path) return;
-    const connection = row.connection;
-    await this.learnQuotes(connection).catch(() => undefined);
-    const nodes = this.nodesAlong(connection, row.path);
-    const name = qualifiedName(nodes, this.quoteStyle(connection));
-    const database = databaseOf(nodes);
-    const own = readDbConnection(this.connection(connection)?.value).database ?? '';
-    this.newScript(connection, {
-      text: `SELECT * FROM ${name}`,
-      ...(database && database !== own ? { database } : {}),
-      run: true,
     });
   }
 

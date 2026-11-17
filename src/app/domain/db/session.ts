@@ -2,10 +2,11 @@
  * What the database section keeps in the workspace session: the navigator as it was, and
  * its editor tabs with the unsaved text of each script. Results are never kept.
  */
+import { DiagramLayout, readLayouts } from './erd-document';
 import { QuickFilter, TableQuery } from './table-query';
 import { DbBookmark } from './tree';
 
-export type DbTabKind = 'connection' | 'sql' | 'object' | 'console';
+export type DbTabKind = 'connection' | 'sql' | 'object' | 'console' | 'diagram';
 
 /** An editor tab of the section. */
 export interface DbTab {
@@ -21,6 +22,8 @@ export interface DbTab {
   query?: TableQuery;
   /** An object tab: the view it shows (properties, data, a section, DDL), as it was left. */
   part?: string;
+  /** A diagram tab: the saved diagram it shows; without one, the tables under `path`. */
+  diagram?: string;
 }
 
 /** What a SQL tab holds besides its results. */
@@ -48,6 +51,8 @@ export interface DatabaseSession {
   activeTab: string;
   /** The SQL tabs' texts, by tab. */
   drafts: Record<string, SqlDraft>;
+  /** Where the entities of the automatic diagrams were moved, by diagram (DB-20). */
+  diagrams?: Record<string, DiagramLayout>;
 }
 
 export function emptyDatabaseSession(): DatabaseSession {
@@ -76,16 +81,17 @@ function readTab(item: unknown): DbTab[] {
   const kind = tab['kind'];
   if (
     typeof tab['id'] !== 'string' ||
-    (kind !== 'connection' && kind !== 'sql' && kind !== 'object' && kind !== 'console')
+    !['connection', 'sql', 'object', 'console', 'diagram'].includes(String(kind))
   )
     return [];
   return [
     {
       id: tab['id'],
-      kind,
+      kind: kind as DbTabKind,
       connection: text(tab, 'connection'),
       title: text(tab, 'title'),
-      ...(kind === 'object' ? { path: strings(tab['path']) } : {}),
+      ...(kind === 'object' || kind === 'diagram' ? { path: strings(tab['path']) } : {}),
+      ...(kind === 'diagram' && text(tab, 'diagram') ? { diagram: text(tab, 'diagram') } : {}),
       ...(kind === 'object' && tab['query'] ? { query: readQuery(tab['query']) } : {}),
       ...(kind === 'object' && text(tab, 'part') ? { part: text(tab, 'part') } : {}),
     },
@@ -162,6 +168,7 @@ export function readDatabaseSession(value: unknown): DatabaseSession {
     tabs,
     activeTab: tabs.some((tab) => tab.id === stored['activeTab']) ? text(stored, 'activeTab') : '',
     drafts,
+    ...(stored['diagrams'] ? { diagrams: readLayouts(stored['diagrams']) } : {}),
   };
 }
 

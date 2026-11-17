@@ -51,4 +51,19 @@ describe('DbTabsStore', () => {
     tabs.restore([a], {}, 'missing');
     expect(tabs.activeId()).toBe(a.id);
   });
+  it('opens a diagram once per saved diagram, and once per node for the automatic ones', () => {
+    const tabs = store();
+    const saved = tabs.open({ kind: 'diagram', connection: 'c1', title: 'Mine', diagram: 'd1' });
+    expect(tabs.open({ kind: 'diagram', connection: 'c1', title: 'Mine', diagram: 'd1' })).toBe(
+      saved,
+    );
+    const shop = tabs.open({ kind: 'diagram', connection: 'c1', title: 'shop', path: ['shop'] });
+    expect(tabs.open({ kind: 'diagram', connection: 'c1', title: 'shop', path: ['shop'] })).toBe(
+      shop,
+    );
+    expect(tabs.open({ kind: 'diagram', connection: 'c1', title: 'x', path: ['other'] })).not.toBe(
+      shop,
+    );
+    expect(tabs.tabs()).toHaveLength(3);
+  });
 });

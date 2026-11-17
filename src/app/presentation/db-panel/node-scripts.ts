@@ -49,6 +49,21 @@ export async function newObject(section: DbSection, row: NavigatorRow) {
   if (script) open(section, connection, row.path, script, false);
 }
 
+/**
+ * «View data», as DBeaver's SQL console: a SQL tab with `SELECT *` of the table or view, run
+ * at once, on the database it is in.
+ */
+export async function viewData(section: DbSection, row: NavigatorRow) {
+  if (!row.connection || !row.path) return;
+  const connection = row.connection;
+  await section.learnQuotes(connection).catch(() => undefined);
+  const name = qualifiedName(
+    section.nodesAlong(connection, row.path),
+    section.quoteStyle(connection),
+  );
+  open(section, connection, row.path, `SELECT * FROM ${name}`, true);
+}
+
 /** «Refresh» of a materialized view, as DBeaver's: its statement, run under the usual rules. */
 export async function refreshView(section: DbSection, row: NavigatorRow) {
   if (!row.connection || !row.path) return;

@@ -269,4 +269,15 @@ describe('ReportPreview', () => {
     await clickButton(fixture, 'Close');
     expect(state.report()).toBeUndefined();
   });
+
+  it('shows a database diagram as its picture, with how many tables and relations', async () => {
+    const image = 'data:image/svg+xml;charset=utf-8,%3Csvg%2F%3E';
+    state.report.set(state.reports.diagramReport('', { image, entities: 3, relations: 2 }));
+    await fixture.whenStable();
+    expect(paper()).toContain('Entity-relationship diagram');
+    expect(paper()).toContain('3 tables, 2 relations');
+    const picture = root().querySelector<HTMLImageElement>('.report-diagram')!;
+    expect(picture.getAttribute('src')).toBe(image);
+    expect(picture.alt).toBe('Diagram');
+  });
 });

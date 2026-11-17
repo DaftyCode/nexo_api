@@ -86,6 +86,9 @@ export class SectionTransactions {
   /** Closes a tab; one whose transaction has changes asks first. */
   requestClose(tab: string) {
     const kind = this.section.tabs.tabs().find((other) => other.id === tab)?.kind;
+    const unsaved = kind === 'diagram' && this.section.diagrams.unsaved(tab);
+    if (unsaved && !this.section.state.confirm('Close the diagram without saving its changes?'))
+      return;
     const runner = kind === 'sql' ? this.section.editors.runner(tab) : undefined;
     const shared = runner && this.section.editors.sharing(runner.session, tab).length > 0;
     if (runner && !shared && hasPendingWrites(runner.transaction())) this.closing.set(tab);

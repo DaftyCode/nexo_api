@@ -10,6 +10,7 @@ import { DbConsole } from './db-console';
 import { DbTransfer } from './db-transfer';
 import { DbSearch } from './db-search';
 import { DbTableEditor } from './db-table-editor';
+import { DbDiagram } from './db-diagram';
 import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -40,6 +41,7 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbTransfer,
     DbSearch,
     DbTableEditor,
+    DbDiagram,
   ],
   providers: [DbSection],
   host: {
@@ -76,6 +78,10 @@ export class DbPanel {
     const connection = this.section.connection(tab.connection)?.name ?? '';
     if (tab.kind === 'connection') return connection || tab.title;
     if (tab.kind === 'object') return tab.title;
+    if (tab.kind === 'diagram')
+      return (
+        this.section.diagrams.saved().find((each) => each.id === tab.diagram)?.name ?? tab.title
+      );
     if (tab.kind === 'console') return `${connection} · Console`;
     const script = this.section
       .scripts()
@@ -83,9 +89,11 @@ export class DbPanel {
     return script ? script.name : `${connection} · SQL`;
   }
   protected kindIcon(tab: DbTab) {
+    if (tab.kind === 'diagram') return 'schema';
     return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {
+    if (tab.kind === 'diagram') return this.section.diagrams.unsaved(tab.id);
     return tab.kind === 'sql' && !!this.tabs.drafts()[tab.id]?.dirty;
   }
   /** Leaving Nexo with changes not committed: the browser asks first. */

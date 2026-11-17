@@ -212,6 +212,33 @@ describe('the saved scripts in the navigator', () => {
     ).toBe(false);
   });
 
+  it('lists the saved diagrams under their heading, with their connection, folded or found', () => {
+    const diagrams = [
+      { id: 'd2', name: 'Sales', value: { connectionId: 'a' } },
+      { id: 'd1', name: 'Audit', value: { connectionId: 'gone' } },
+    ];
+    const rows = navigatorRows(snapshot({ diagrams })).filter((row) =>
+      row.type.startsWith('diagram'),
+    );
+    expect(rows.map((row) => [row.type, row.label, row.detail])).toEqual([
+      ['diagrams', 'Diagrams', undefined],
+      ['diagram', 'Audit', '—'],
+      ['diagram', 'Sales', 'Shop'],
+    ]);
+    expect(rows[2]).toMatchObject({ connection: 'a', diagram: 'd2', parent: 'diagrams' });
+    const closed = navigatorRows(snapshot({ diagrams, closedFolders: new Set(['diagrams']) }));
+    expect(closed.filter((row) => row.type === 'diagram')).toEqual([]);
+    const found = navigatorRows(
+      snapshot({ diagrams, closedFolders: new Set(['diagrams']), text: 'sal' }),
+    );
+    expect(found.filter((row) => row.type === 'diagram').map((row) => row.label)).toEqual([
+      'Sales',
+    ]);
+    expect(
+      navigatorRows(snapshot({ diagrams, text: 'zzz' })).some((row) => row.type === 'diagrams'),
+    ).toBe(false);
+  });
+
   it('describes a connection without a driver by its address only', () => {
     const rows = navigatorRows(
       snapshot({

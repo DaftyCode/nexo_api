@@ -1,0 +1,138 @@
+:host {
+  display: block;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.erd-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--nexo-color-bg);
+  touch-action: none;
+  cursor: grab;
+}
+.erd-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--nexo-font-sans);
+  font-size: var(--nexo-font-size-sm);
+}
+.erd-hidden-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.erd-line,
+.erd-mark {
+  fill: none;
+  stroke: var(--nexo-color-text-soft);
+}
+.erd-mark {
+  fill: var(--nexo-color-bg);
+}
+.erd-mark.erd-filled {
+  fill: var(--nexo-color-text-soft);
+}
+.erd-dashed {
+  stroke-dasharray: 6 4;
+}
+.erd-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 10;
+  cursor: pointer;
+}
+.erd-label {
+  fill: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+}
+.erd-relation.erd-lit .erd-line,
+.erd-relation.erd-lit .erd-mark {
+  stroke: var(--nexo-color-accent);
+  stroke-width: 2;
+}
+.erd-entity {
+  --erd-tint: var(--nexo-color-border-strong);
+  cursor: move;
+  outline: none;
+}
+.erd-entity[data-color='accent'] {
+  --erd-tint: var(--nexo-color-accent);
+}
+.erd-entity[data-color='info'] {
+  --erd-tint: var(--nexo-color-info);
+}
+.erd-entity[data-color='success'] {
+  --erd-tint: var(--nexo-color-success);
+}
+.erd-entity[data-color='warning'] {
+  --erd-tint: var(--nexo-color-warning);
+}
+.erd-entity[data-color='danger'] {
+  --erd-tint: var(--nexo-color-danger);
+}
+.erd-box {
+  fill: var(--nexo-color-surface);
+  stroke: var(--erd-tint);
+}
+.erd-head {
+  fill: var(--nexo-color-surface-2);
+}
+.erd-entity[data-color] .erd-head {
+  fill: var(--erd-tint);
+}
+.erd-name {
+  fill: var(--nexo-color-text);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.erd-badge {
+  fill: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-3xs);
+}
+.erd-column {
+  fill: var(--nexo-color-text);
+  font-family: var(--nexo-font-mono);
+}
+.erd-primary {
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.erd-column.erd-lit {
+  fill: var(--nexo-color-accent-strong);
+  font-weight: var(--nexo-font-weight-bold);
+}
+.erd-selected .erd-box,
+.erd-note.erd-selected rect,
+.erd-entity:focus-visible .erd-box,
+.erd-note:focus-visible rect {
+  stroke: var(--nexo-color-focus-ring);
+  stroke-width: 2;
+}
+.erd-found .erd-box {
+  fill: var(--nexo-color-highlight);
+}
+.erd-note {
+  cursor: move;
+  outline: none;
+}
+.erd-note rect {
+  fill: var(--nexo-color-warning-soft);
+  stroke: var(--nexo-color-border);
+}
+.erd-note text {
+  fill: var(--nexo-color-text);
+}
+.erd-note-editor {
+  position: absolute;
+  min-height: var(--nexo-size-24);
+  padding: var(--nexo-space-4);
+  border: var(--nexo-border-width-strong) solid var(--nexo-color-focus-ring);
+  background: var(--nexo-color-warning-soft);
+  color: var(--nexo-color-text);
+  font: inherit;
+  resize: vertical;
+}

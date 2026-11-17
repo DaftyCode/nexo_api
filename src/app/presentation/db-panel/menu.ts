@@ -31,4 +31,7 @@ export type MenuAction =
   | 'emptyTable'
   | 'newTable'
   | 'newObject'
-  | 'refreshView';
+  | 'refreshView'
+  | 'viewDiagram'
+  | 'newDiagram'
+  | 'deleteDiagram';

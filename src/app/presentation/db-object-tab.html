@@ -138,6 +138,8 @@
       [readonly]="true"
       [label]="'DDL' | transloco"
     />
+  } @else if (part() === 'diagram') {
+    <app-db-diagram class="db-object-diagram" [tab]="tab()" [table]="isTable()" />
   } @else if (part() === 'columns' && editable()) {
     <app-db-structure-inline [tab]="tab()" />
   } @else if (shownSection(); as shown) {

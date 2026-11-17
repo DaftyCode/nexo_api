@@ -134,3 +134,10 @@
 .db-object-body > app-data-grid {
   height: 100%;
 }
+.db-object-diagram {
+  flex: 1;
+  min-height: 0;
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  overflow: hidden;
+}

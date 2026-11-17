@@ -1,5 +1,6 @@
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { DbStructureInline } from './db-structure/inline';
+import { DbDiagram } from './db-diagram';
 import { editsStructure } from './db-panel/structure-request';
 import {
   ChangeDetectionStrategy,
@@ -79,6 +80,7 @@ const KEYS: Record<string, { schema: string; table: string }> = {
     DbObjectProperties,
     DbTableData,
     DbStructureInline,
+    DbDiagram,
     StudioIcon,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -155,7 +157,16 @@ export class DbObjectTab {
     'properties',
     ...(this.description()?.sections ?? []).map((section) => section.id),
     ...(this.ddl() ? ['ddl'] : []),
+    ...(['table', 'schema', 'database'].includes(this.objectKind()) ? ['diagram'] : []),
   ]);
+  /**
+   * A table has a «Diagram» with the tables one step away from it; a schema or a database,
+   * with all of its tables (DB-20).
+   */
+  protected readonly objectKind = computed(
+    () => this.description()?.kind ?? this.node()?.kind ?? '',
+  );
+  protected readonly isTable = computed(() => this.objectKind() === 'table');
   protected readonly shownSection = computed(() =>
     this.description()?.sections.find((section) => section.id === this.part()),
   );
@@ -165,9 +176,7 @@ export class DbObjectTab {
   );
   /** A table whose driver edits its structure: its «Columns» are edited in place (DB-19). */
   protected readonly editable = computed(
-    () =>
-      (this.description()?.kind ?? this.node()?.kind) === 'table' &&
-      editsStructure(this.section, this.tab().connection),
+    () => this.isTable() && editsStructure(this.section, this.tab().connection),
   );
   protected readonly parents = computed(() => this.keys('foreign-keys'));
   protected readonly children = computed(() => this.keys('references'));
@@ -194,6 +203,7 @@ export class DbObjectTab {
     if (part === 'properties') return 'Properties';
     if (part === 'data') return 'Data';
     if (part === 'ddl') return 'DDL';
+    if (part === 'diagram') return 'Diagram';
     return this.description()?.sections.find((section) => section.id === part)?.title ?? part;
   }
   /** Shows a view and keeps it in the tab; the view shown stays as it is (its WHERE text too). */

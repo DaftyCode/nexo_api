@@ -1,0 +1,194 @@
+@let diagram = draft();
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="erd-toolbar" role="toolbar" [attr.aria-label]="'Diagram tools' | transloco">
+  @if (saved()) {
+    <input
+      class="erd-name"
+      [attr.aria-label]="'Diagram name' | transloco"
+      [value]="diagram.name()"
+      (change)="rename($event)"
+    />
+    <button
+      type="button"
+      class="button small primary"
+      [disabled]="!diagram.dirty()"
+      [attr.title]="'Save (Ctrl+S)' | transloco"
+      (click)="save()"
+    >
+      <app-studio-icon name="save" />{{ 'Save' | transloco }}
+    </button>
+    <button type="button" class="button small" (click)="picking.set(true)">
+      <app-studio-icon name="plus" />{{ 'Add tables' | transloco }}
+    </button>
+    <button type="button" class="button small" [disabled]="listed()" (click)="addNote()">
+      {{ 'Add note' | transloco }}
+    </button>
+  }
+  <select [attr.aria-label]="'Notation' | transloco" (change)="setNotation($event)">
+    @for (each of notations; track each[0]) {
+      <option [value]="each[0]" [selected]="diagram.notation() === each[0]">
+        {{ each[1] | transloco }}
+      </option>
+    }
+  </select>
+  <select [attr.aria-label]="'Columns shown' | transloco" (change)="setDetail($event)">
+    @for (each of details; track each[0]) {
+      <option [value]="each[0]" [selected]="diagram.detail() === each[0]">
+        {{ each[1] | transloco }}
+      </option>
+    }
+  </select>
+  <label class="erd-check">
+    <input type="checkbox" [checked]="diagram.types()" (change)="setTypes($event)" />
+    {{ 'Types and nullability' | transloco }}
+  </label>
+  <span class="erd-group" role="group" [attr.aria-label]="'Layout' | transloco">
+    <button type="button" class="button small subtle" (click)="diagram.arrange('layers')">
+      {{ 'Layered layout' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="diagram.arrange('grid')">
+      {{ 'Grid layout' | transloco }}
+    </button>
+  </span>
+  <span class="erd-group" role="group" [attr.aria-label]="'Zoom' | transloco">
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Zoom out' | transloco"
+      [attr.title]="'Zoom out' | transloco"
+      [disabled]="listed()"
+      (click)="zoom(1 / 1.2)"
+    >
+      −
+    </button>
+    <button
+      type="button"
+      class="button small subtle erd-zoom"
+      [attr.title]="'Actual size' | transloco"
+      [disabled]="listed()"
+      (click)="actualSize()"
+    >
+      {{ zoomText() }}
+    </button>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Zoom in' | transloco"
+      [attr.title]="'Zoom in' | transloco"
+      [disabled]="listed()"
+      (click)="zoom(1.2)"
+    >
+      +
+    </button>
+    <button type="button" class="button small subtle" [disabled]="listed()" (click)="fit()">
+      {{ 'Fit to window' | transloco }}
+    </button>
+  </span>
+  <input
+    type="search"
+    class="erd-search"
+    [attr.aria-label]="'Find a table' | transloco"
+    [placeholder]="'Find a table' | transloco"
+    [value]="diagram.search()"
+    (input)="find($event)"
+    (keydown)="searchKey($event)"
+  />
+  <select
+    [attr.aria-label]="'Color of the tables selected' | transloco"
+    [disabled]="!chosen()"
+    (change)="paint($event)"
+  >
+    <option value="">{{ 'Color' | transloco }}…</option>
+    <option value="none">{{ 'No color' | transloco }}</option>
+    @for (each of colors; track each[0]) {
+      <option [value]="each[0]">{{ each[1] | transloco }}</option>
+    }
+  </select>
+  <button
+    type="button"
+    class="button small subtle"
+    [disabled]="!chosen()"
+    (click)="diagram.removeSelected()"
+  >
+    {{ 'Hide' | transloco }}
+  </button>
+  @if (editable(); as entity) {
+    <button type="button" class="button small subtle" (click)="editStructure(entity)">
+      {{ 'Edit structure…' | transloco }}
+    </button>
+  }
+  @if (diagram.hidden().length; as hidden) {
+    <button type="button" class="button small subtle" (click)="diagram.show()">
+      {{ 'db.diagram.showHidden' | transloco: { v0: hidden } }}
+    </button>
+  }
+  <span class="grow"></span>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-pressed]="listed()"
+    (click)="listed.set(!listed())"
+  >
+    {{ 'As a list' | transloco }}
+  </button>
+  <span class="erd-group" role="group" [attr.aria-label]="'Export' | transloco">
+    <button type="button" class="button small subtle" [disabled]="empty()" (click)="exportSvg()">
+      SVG
+    </button>
+    <button type="button" class="button small subtle" [disabled]="empty()" (click)="exportPng()">
+      PNG
+    </button>
+    <button type="button" class="button small subtle" [disabled]="empty()" (click)="print()">
+      {{ 'Print' | transloco }}
+    </button>
+  </span>
+  <button
+    type="button"
+    class="icon-button"
+    [attr.aria-label]="'Refresh' | transloco"
+    [attr.title]="'Refresh' | transloco"
+    [disabled]="diagram.dirty() || !!diagram.progress()"
+    (click)="load()"
+  >
+    <app-studio-icon name="refresh" />
+  </button>
+</div>
+@if (diagram.progress(); as progress) {
+  <p class="erd-progress" role="status">
+    {{ 'db.diagram.reading' | transloco: { v0: progress.done, v1: progress.total } }}
+  </p>
+} @else if (diagram.loaded() && empty()) {
+  <p class="erd-empty muted">
+    {{ (saved() ? 'db.diagram.emptySaved' : 'db.diagram.empty') | transloco }}
+  </p>
+}
+@if (listed()) {
+  <app-db-diagram-list [draft]="diagram" (opened)="open($event)" />
+} @else {
+  <app-db-diagram-canvas
+    [draft]="diagram"
+    [editable]="saved()"
+    (opened)="open($event)"
+    (dropped)="dropped($event)"
+  />
+}
+@if (picking()) {
+  <app-db-diagram-picker
+    [connection]="diagram.source.connection"
+    [present]="present()"
+    (added)="added($event)"
+    (closed)="picking.set(false)"
+  />
+}

@@ -1,6 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
+import type { Report } from '../application/report-use-cases';
 import { WorkspaceState } from './workspace-state';
 
 /**
@@ -18,6 +19,13 @@ import { WorkspaceState } from './workspace-state';
 export class ReportPreview {
   protected readonly state = inject(WorkspaceState);
   private readonly sheet = viewChild<ElementRef<HTMLElement>>('sheet');
+  /** What each kind of report is, under its title. */
+  protected readonly kinds: Record<Report['kind'], string> = {
+    run: 'Collection run report',
+    request: 'Request and response',
+    collection: 'Collection documentation',
+    diagram: 'Entity-relationship diagram',
+  };
 
   protected async print() {
     const sheet = this.sheet()?.nativeElement;

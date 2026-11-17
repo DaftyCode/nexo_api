@@ -83,6 +83,11 @@ import { DbSection } from './section';
             {{ 'Open' | transloco }}
           </button>
         }
+        @if (diagrammed()) {
+          <button type="button" role="menuitem" (click)="chosen.emit('viewDiagram')">
+            {{ 'View diagram' | transloco }}
+          </button>
+        }
         @if (row().node?.actions?.includes('data')) {
           <button type="button" role="menuitem" (click)="chosen.emit('viewData')">
             {{ 'View data' | transloco }}
@@ -115,6 +120,9 @@ import { DbSection } from './section';
         <button type="button" role="menuitem" (click)="chosen.emit('console')">
           {{ 'SQL console' | transloco }}
         </button>
+        <button type="button" role="menuitem" (click)="chosen.emit('newDiagram')">
+          {{ 'New diagram' | transloco }}
+        </button>
       }
       @if (row().type === 'connection' || row().type === 'node' || row().type === 'script-group') {
         <button type="button" role="menuitem" (click)="chosen.emit('newScript')">
@@ -127,6 +135,14 @@ import { DbSection } from './section';
         </button>
         <button type="button" role="menuitem" class="danger" (click)="chosen.emit('deleteScript')">
           {{ 'Delete script' | transloco }}
+        </button>
+      }
+      @if (row().type === 'diagram') {
+        <button type="button" role="menuitem" (click)="chosen.emit('open')">
+          {{ 'Open' | transloco }}
+        </button>
+        <button type="button" role="menuitem" class="danger" (click)="chosen.emit('deleteDiagram')">
+          {{ 'Delete diagram' | transloco }} <kbd>Del</kbd>
         </button>
       }
       @if (row().type === 'node') {
@@ -157,7 +173,7 @@ import { DbSection } from './section';
           {{ 'Delete' | transloco }} <kbd>Del</kbd>
         </button>
       }
-      @if (row().type === 'folder' || row().type === 'error' || row().type === 'scripts') {
+      @if (['folder', 'error', 'scripts', 'diagrams'].includes(row().type)) {
         <button type="button" role="menuitem" (click)="closed.emit()">
           {{ 'Close' | transloco }}
         </button>
@@ -186,6 +202,14 @@ export class DbRowMenu {
   protected readonly templated = computed(() =>
     (TEMPLATE_FOLDERS as readonly string[]).includes(this.row().node?.name ?? ''),
   );
+  /** Tables, schemas, databases and folders of tables have a diagram (DB-20). */
+  protected readonly diagrammed = computed(() => {
+    const node = this.row().node;
+    return (
+      ['table', 'schema', 'database'].includes(node?.kind ?? '') ||
+      (node?.kind === 'folder' && node.name === 'tables')
+    );
+  });
   /** The structure of a table (DB-19), when its driver edits it. */
   protected readonly structure = computed(() =>
     editsStructure(this.section, this.row().connection),

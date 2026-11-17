@@ -79,7 +79,7 @@
         role="treeitem"
         [class]="'db-row db-row-' + row.type + ' db-type-' + (row.kind ?? 'none')"
         [class.db-active]="row.key === current()?.key"
-        [class.db-drop]="row.key === dropKey()"
+        [class.db-drop]="row.key === drag.dropKey()"
         [attr.data-key]="row.key"
         [attr.data-kind]="row.node?.kind"
         [id]="rowId(row)"
@@ -88,17 +88,17 @@
         [attr.aria-selected]="row.key === current()?.key"
         [attr.aria-busy]="row.status === 'connecting' ? true : null"
         [attr.tabindex]="tabIndex(row)"
-        [attr.draggable]="row.type === 'connection' ? 'true' : null"
+        [attr.draggable]="drag.draggable(row) ? 'true' : null"
         [style.--db-level]="row.level"
         (click)="click($event, row)"
         (keydown)="key($event, row)"
         (dblclick)="doubleClick($event, row)"
         (contextmenu)="contextMenu($event, row)"
-        (dragstart)="dragStart($event, row)"
-        (dragover)="dragOver($event, row)"
-        (dragleave)="dropKey.set('')"
-        (drop)="drop($event, row)"
-        (dragend)="dragEnd()"
+        (dragstart)="drag.start($event, row)"
+        (dragover)="drag.over($event, row)"
+        (dragleave)="drag.dropKey.set('')"
+        (drop)="drag.drop($event, row)"
+        (dragend)="drag.end()"
       >
         <span class="db-twisty" [class.open]="row.expanded" [class.hidden]="!row.expandable"
           ><app-studio-icon name="chevron"
@@ -133,7 +133,9 @@
             <app-studio-icon class="db-icon" [name]="icon(row)" />
             <span class="db-name">
               <span class="db-label">{{
-                row.node?.kind === 'folder' ? (row.label | transloco) : row.label
+                row.node?.kind === 'folder' || row.type === 'diagrams'
+                  ? (row.label | transloco)
+                  : row.label
               }}</span>
               @if (count(row) !== undefined) {
                 <span class="db-count">({{ count(row) }})</span>

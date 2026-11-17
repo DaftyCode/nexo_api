@@ -20,6 +20,7 @@ import { StudioIcon } from './studio-icon';
 import { DbActions } from './db-panel/actions';
 import { MenuAction } from './db-panel/menu';
 import { RowClicks } from './db-panel/row-clicks';
+import { NavigatorDrag } from './db-navigator/drag';
 import { DbRowMenu } from './db-panel/row-menu';
 import { menuKeys } from './menu-keys';
 import { PopupPlace, placeAt, placeBy } from './popup-place';
@@ -60,9 +61,8 @@ export class DbNavigator {
   protected readonly options = signal<PopupPlace | undefined>(undefined);
   /** The connections' list, folded under its heading. */
   protected readonly folded = signal(false);
-  /** The connection being dragged to a folder. */
-  protected readonly dragging = signal('');
-  protected readonly dropKey = signal('');
+  /** Connections dragged to a folder, and tables to a diagram. */
+  protected readonly drag = new NavigatorDrag(this.section, this.actions);
   protected readonly current = computed((): NavigatorRow | undefined => {
     const rows = this.rows();
     return rows.find((row) => row.key === this.focusKey()) ?? rows[0];
@@ -76,6 +76,7 @@ export class DbNavigator {
   /** The icon of a row, by the class of object the driver says it is. */
   protected icon(row: NavigatorRow) {
     if (row.type === 'script') return 'code';
+    if (row.type === 'diagram') return 'schema';
     return row.node ? nodeIcon(row.node) : 'folder';
   }
   /** How many objects a folder of the tree holds, once they are loaded. */
@@ -175,6 +176,7 @@ export class DbNavigator {
         return void this.actions.refresh(row);
       case 'Delete':
         event.preventDefault();
+        if (row.type === 'diagram') return this.actions.deleteDiagram(row);
         return row.type === 'script' ? this.actions.deleteScript(row) : this.actions.remove(row);
       case ']':
         if (!event.ctrlKey && !event.metaKey) return;
@@ -258,34 +260,5 @@ export class DbNavigator {
 
   protected collapseAll() {
     this.section.tree.expanded.set(new Set());
-  }
-
-  // Connections dragged to a folder, or beside a connection of another folder.
-  protected dragStart(event: DragEvent, row: NavigatorRow) {
-    if (row.type !== 'connection' || !row.connection) return;
-    this.dragging.set(row.connection);
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', row.label);
-    }
-  }
-  protected dragOver(event: DragEvent, row: NavigatorRow) {
-    if (!this.dragging() || (row.type !== 'folder' && row.type !== 'connection')) return;
-    event.preventDefault();
-    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
-    this.dropKey.set(row.key);
-  }
-  protected drop(event: DragEvent, row: NavigatorRow) {
-    const document = this.section.connection(this.dragging());
-    this.dragEnd();
-    if (!document || (row.type !== 'folder' && row.type !== 'connection')) return;
-    event.preventDefault();
-    void this.actions.task.announce('The connection could not be moved', () =>
-      this.actions.move(document, row.folder ?? ''),
-    );
-  }
-  protected dragEnd() {
-    this.dragging.set('');
-    this.dropKey.set('');
   }
 }

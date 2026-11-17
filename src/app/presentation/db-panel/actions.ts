@@ -3,7 +3,7 @@ import { Generated } from '../../domain/db/sql-generate';
 import { generateSql } from './generate';
 import { openTransfer } from './transfer-request';
 import { openStructure } from './structure-request';
-import { copyDdl, copyName, newObject, refreshView } from './node-scripts';
+import { copyDdl, copyName, newObject, refreshView, viewData } from './node-scripts';
 import { failureCode } from '../../application/ports';
 import { filterAt, readDbConnection, withFilter } from '../../domain/db/connection';
 import { NavigatorRow } from '../../domain/db/rows';
@@ -55,7 +55,7 @@ export class DbActions {
   }
 
   async toggle(row: NavigatorRow) {
-    if (row.type === 'folder' || row.type === 'scripts' || row.type === 'script-group')
+    if (['folder', 'scripts', 'script-group', 'diagrams'].includes(row.type))
       return this.section.tree.toggleFolder(row.key);
     const document = this.document(row);
     if (!document || !row.expandable) return;
@@ -85,11 +85,19 @@ export class DbActions {
   /** Opens what a row is: a saved script, or the tab of an object. */
   open(row: NavigatorRow) {
     if (row.type === 'script' && row.script) return this.section.openScript(row.script);
+    if (row.type === 'diagram' && row.diagram) return this.section.diagrams.openId(row.diagram);
     if (row.type === 'node' && row.node?.actions.includes('open')) this.section.openObject(row);
   }
-  viewData(row: NavigatorRow) {
-    return this.section.viewData(row);
-  }
+  viewData = (row: NavigatorRow) => viewData(this.section, row);
+  viewDiagram = (row: NavigatorRow) => this.section.diagrams.view(row);
+  newDiagram = (row: NavigatorRow) =>
+    this.task.announce('The diagram could not be created', () =>
+      this.section.diagrams.create(row.connection ?? ''),
+    );
+  deleteDiagram = (row: NavigatorRow) =>
+    this.task.announce('The diagram could not be deleted', () =>
+      this.section.diagrams.remove(row.diagram ?? ''),
+    );
   newScript(row: NavigatorRow) {
     if (row.connection) this.section.newScript(row.connection);
   }

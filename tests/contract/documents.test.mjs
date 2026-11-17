@@ -83,6 +83,34 @@ test('a workspace keeps one session, saved over without revisions', async () => 
   assert.deepEqual((await server.api('GET', '/documents/session-local/revisions')).body, []);
 });
 
+test('a database diagram keeps its revisions and is listed with its tables', async () => {
+  const value = {
+    connectionId: 'c1',
+    notation: 'idef1x',
+    detail: 'all',
+    types: true,
+    entities: [{ path: ['tables', 'orders'], name: 'orders', x: 10, y: 20 }],
+    notes: [{ id: 'n1', text: 'Billing', x: 0, y: 0 }],
+  };
+  const first = await server.api('PUT', '/documents', document('d1', 'db-diagram', value));
+  assert.equal(first.status, 200);
+  const moved = { ...value, entities: [{ ...value.entities[0], x: 40 }] };
+  const second = await server.api('PUT', '/documents', { ...first.body, value: moved });
+  assert.equal(second.body.revision, 2);
+  const listing = await server.api('GET', '/documents?workspace=local&lite=true');
+  const listed = listing.body.find((d) => d.id === 'd1');
+  assert.deepEqual(listed.value.entities[0], {
+    path: ['tables', 'orders'],
+    name: 'orders',
+    x: 40,
+    y: 20,
+  });
+  const revisions = await server.api('GET', '/documents/d1/revisions');
+  const kept = Object.fromEntries(revisions.body.map((each) => [each.revision, each.value.value]));
+  assert.equal(kept[1].entities[0].x, 10, 'the place it had before is kept');
+  assert.equal(kept[2].entities[0].x, 40);
+});
+
 test('every response carries a request id for the logs', async () => {
   const first = await fetch(`${server.base}/health`);
   const second = await fetch(`${server.base}/health`);

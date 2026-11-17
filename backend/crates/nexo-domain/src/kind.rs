@@ -46,13 +46,17 @@ pub enum DocumentKind {
     /// its results.
     #[serde(rename = "sql-history")]
     SqlHistory,
+    /// A saved entity-relationship diagram of a SQL connection: its tables, where each one
+    /// is drawn and its color, its notes, and how it is drawn.
+    #[serde(rename = "db-diagram")]
+    DbDiagram,
     /// What a workspace shows when it opens again: its open tabs with their unsaved changes
     /// (the files chosen for them by name only), the active tab, the section shown and the
     /// order of its collections. Never responses.
     Session,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 21] = [
+    pub const ALL: [DocumentKind; 22] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -73,6 +77,7 @@ impl DocumentKind {
         Self::Comparison,
         Self::SqlScript,
         Self::SqlHistory,
+        Self::DbDiagram,
         Self::Session,
     ];
     pub fn as_str(self) -> &'static str {
@@ -97,6 +102,7 @@ impl DocumentKind {
             Self::Comparison => "mongo-compare",
             Self::SqlScript => "sql-script",
             Self::SqlHistory => "sql-history",
+            Self::DbDiagram => "db-diagram",
             Self::Session => "session",
         }
     }

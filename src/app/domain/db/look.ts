@@ -61,6 +61,7 @@ export function partIcon(part: string): string {
   if (part === 'data') return 'table';
   if (part === 'properties') return 'info';
   if (part === 'ddl') return 'code';
+  if (part === 'diagram') return 'schema';
   return FOLDER_ICONS[part] ?? 'rule';
 }
 

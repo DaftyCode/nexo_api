@@ -1,0 +1,120 @@
+@let scene = draft().scene();
+<div
+  #viewport
+  class="erd-viewport"
+  tabindex="0"
+  (wheel)="wheel($event)"
+  (pointerdown)="down($event)"
+  (pointermove)="move($event)"
+  (pointerup)="up()"
+  (pointercancel)="up()"
+  (keydown)="canvasKey($event)"
+  (dragover)="dragOver($event)"
+  (drop)="drop($event)"
+>
+  <p id="erd-keys" class="erd-hidden-text">
+    {{ 'db.diagram.keys' | transloco }}
+  </p>
+  <svg class="erd-canvas" role="group" [attr.aria-label]="'Diagram' | transloco">
+    <g [attr.transform]="transform()">
+      @for (line of scene.lines; track line.key) {
+        <g
+          class="erd-relation"
+          [class.erd-lit]="line.key === draft().relation()"
+          (pointerdown)="$event.stopPropagation()"
+          (click)="draft().relation.set(line.key)"
+        >
+          <title>{{ line.name }}</title>
+          <path class="erd-hit" [attr.d]="line.d" />
+          <path class="erd-line" [class.erd-dashed]="line.dashed" [attr.d]="line.d" />
+          @for (mark of line.marks; track $index) {
+            <path class="erd-mark" [class.erd-filled]="mark.filled" [attr.d]="mark.d" />
+          }
+          @for (label of line.labels; track $index) {
+            <text class="erd-label" [attr.x]="label.x" [attr.y]="label.y">{{ label.text }}</text>
+          }
+        </g>
+      }
+      @for (entity of scene.entities; track entity.key) {
+        <g
+          class="erd-entity"
+          tabindex="0"
+          role="button"
+          aria-describedby="erd-keys"
+          [attr.data-key]="entity.key"
+          [attr.data-color]="entity.color ?? null"
+          [attr.aria-roledescription]="'Table' | transloco"
+          [attr.aria-pressed]="draft().selected().has(entity.key)"
+          [class.erd-selected]="draft().selected().has(entity.key)"
+          [class.erd-found]="draft().found().has(entity.key)"
+          [attr.transform]="'translate(' + entity.box.x + ' ' + entity.box.y + ')'"
+          (pointerdown)="down($event, entity.key)"
+          (dblclick)="opened.emit(entity)"
+          (keydown)="key($event, entity.key, entity)"
+        >
+          <rect
+            class="erd-box"
+            rx="4"
+            [attr.width]="entity.box.width"
+            [attr.height]="entity.box.height"
+          />
+          <rect class="erd-head" rx="4" [attr.width]="entity.box.width" height="28" />
+          <text class="erd-name" x="8" y="18">{{ entity.name }}</text>
+          @for (row of entity.rows; track row.name) {
+            @if (row.primary || row.foreign) {
+              <text class="erd-badge" x="8" [attr.y]="row.y + 4">
+                {{ row.primary ? 'PK' : 'FK' }}
+              </text>
+            }
+            <text
+              class="erd-column"
+              x="26"
+              [class.erd-primary]="row.primary"
+              [class.erd-lit]="lit().has(entity.key + '\n' + row.name)"
+              [attr.y]="row.y + 4"
+            >
+              {{ row.text }}
+            </text>
+          }
+        </g>
+      }
+      @for (note of scene.notes; track note.id) {
+        <g
+          class="erd-note"
+          tabindex="0"
+          role="button"
+          aria-describedby="erd-keys"
+          [attr.data-key]="noteKey(note.id)"
+          [attr.aria-roledescription]="'Note' | transloco"
+          [attr.aria-label]="note.text ? null : ('Empty note' | transloco)"
+          [attr.aria-pressed]="draft().selected().has(noteKey(note.id))"
+          [class.erd-selected]="draft().selected().has(noteKey(note.id))"
+          [attr.transform]="'translate(' + note.box.x + ' ' + note.box.y + ')'"
+          (pointerdown)="down($event, noteKey(note.id))"
+          (dblclick)="editable() && write(note.id)"
+          (keydown)="key($event, noteKey(note.id))"
+        >
+          <rect [attr.width]="note.box.width" [attr.height]="note.box.height" />
+          @for (text of lines(note); track $index) {
+            <text x="8" [attr.y]="20 + $index * 16">{{ text }}</text>
+          }
+        </g>
+      }
+    </g>
+  </svg>
+  @if (note(); as writing) {
+    <textarea
+      class="erd-note-editor"
+      [attr.aria-label]="'Note' | transloco"
+      [value]="writing.text"
+      [style.left.px]="draft().pan().x + writing.box.x * draft().zoom()"
+      [style.top.px]="draft().pan().y + writing.box.y * draft().zoom()"
+      [style.width.px]="writing.box.width * draft().zoom()"
+      (pointerdown)="$event.stopPropagation()"
+      (input)="written(writing.id, $event)"
+      (keydown)="writeKey($event, writing.id)"
+      (blur)="editing.set(undefined)"
+    ></textarea>
+  }
+  <app-db-diagram-minimap [draft]="draft()" [size]="size()" />
+</div>
