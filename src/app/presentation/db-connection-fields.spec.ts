@@ -70,3 +70,74 @@ describe('DbConnectionFields of a SQLite connection', () => {
     expect(buttons(root(), 'Open…')).toEqual([]);
   });
 });
+
+@Component({
+  imports: [DbConnectionFields],
+  template: `@for (page of pages; track page) {
+    <section [attr.data-page]="page">
+      <app-db-connection-fields [page]="page" [fields]="fields" [profile]="profile" />
+    </section>
+  }`,
+})
+class Pages {
+  readonly pages = ['main', 'tls', 'properties', 'general'] as const;
+  readonly model = signal<DbForm>(emptyDbForm('postgres', 'Shop'));
+  readonly fields = form(this.model);
+  readonly profile = engineProfile('postgres');
+}
+
+describe('DbConnectionFields of a server connection', () => {
+  let fixture: ComponentFixture<Pages>;
+  const page = (name: string) =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(`[data-page="${name}"]`)!;
+  const settle = async () => {
+    fixture.detectChanges();
+    await fixture.whenStable();
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      providers: testProviders(),
+      imports: [Pages],
+    }).compileComponents();
+    fixture = TestBed.createComponent(Pages);
+    await settle();
+  });
+
+  it('shows the server, TLS and general fields', async () => {
+    expect(page('main').textContent).toContain('Host');
+    expect(page('main').textContent).toContain('Password');
+    expect(page('tls').textContent).toContain('Certificate authority (PEM)');
+    expect(page('general').textContent).toContain('Connection type');
+  });
+
+  it('adds the driver settings it accepts, one of each, and removes them', async () => {
+    const model = () => fixture.componentInstance.model();
+    for (let i = 0; i < 3; i++) {
+      buttons(page('properties'), '+ Add setting')[0]?.click();
+      await settle();
+    }
+    expect(model().params.map((row) => row.name)).toEqual([
+      'application_name',
+      'options',
+      'search_path',
+    ]);
+    expect(buttons(page('properties'), '+ Add setting')).toEqual([]);
+    const remove = page('properties').querySelector<HTMLButtonElement>(
+      'button[aria-label^="Remove"]',
+    );
+    remove?.click();
+    await settle();
+    expect(model().params.map((row) => row.name)).toEqual(['options', 'search_path']);
+  });
+
+  it('chooses a color and takes it away', async () => {
+    const swatches = page('general').querySelectorAll<HTMLButtonElement>('.db-swatch:not(.none)');
+    swatches[0].click();
+    await settle();
+    expect(fixture.componentInstance.model().color).not.toBe('');
+    buttons(page('general'), 'No color')[0].click();
+    await settle();
+    expect(fixture.componentInstance.model().color).toBe('');
+  });
+});

@@ -198,4 +198,75 @@ describe('ReportPreview', () => {
     await clickButton(fixture, 'Print or save as PDF');
     expect(state.error()).toBe('No printer');
   });
+  it('shows the bare reports: no error, no iteration, no description, no body', async () => {
+    state.report.set(
+      state.reports.runReport(
+        {
+          id: 'run',
+          state: 'completed',
+          duration: 10,
+          results: [
+            {
+              status: 0,
+              statusText: '',
+              body: '',
+              headers: [],
+              time: 1,
+              size: 0,
+              assertions: [],
+              logs: [],
+              name: 'Ping',
+              request: { method: 'GET', url: 'https://api.test/ping' },
+            } as unknown as ExecutionResponse,
+          ],
+          assertions: [{ name: 'fine', passed: true, skipped: false, request: 'Ping' }],
+          logs: [],
+        },
+        'Bare',
+      ),
+    );
+    await fixture.whenStable();
+    expect(paper()).toContain('ERR');
+    expect(paper()).not.toContain('Other tests');
+
+    state.report.set(
+      state.reports.requestReport(newRequest('r1'), {
+        ...response,
+        status: 0,
+        error: undefined,
+        assertions: [{ name: 'ok', passed: true, skipped: false }],
+      } as unknown as ExecutionResponse),
+    );
+    await fixture.whenStable();
+    expect(paper()).toContain('PASS');
+
+    const bare: WorkspaceDocument = {
+      id: 'c2',
+      workspace_id: 'local',
+      kind: 'collection',
+      name: 'Bare',
+      revision: 1,
+      updated_at: 0,
+      value: {
+        info: { name: 'Bare', schema: 'x' },
+        item: [
+          {
+            name: 'Folder',
+            item: [
+              {
+                name: 'Get',
+                request: { method: 'GET', url: 'https://api.test' },
+                response: [{ name: 'Empty', code: 204 }],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    state.report.set(state.reports.collectionDocs(bare));
+    await fixture.whenStable();
+    expect(paper()).toContain('Get');
+    await clickButton(fixture, 'Close');
+    expect(state.report()).toBeUndefined();
+  });
 });

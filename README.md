@@ -128,7 +128,7 @@ Build on the operating system and CPU architecture you want to distribute: the s
 
 ## Current status and next steps
 
-The current version is **0.8.0**, with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in the «Databases» section and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, real PostgreSQL, SQL Server, MySQL and MariaDB servers and SQLite files, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary.
+The current version is **0.8.0**, with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in the «Databases» section and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, real PostgreSQL, SQL Server, MySQL and MariaDB servers and SQLite files, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary. The interface's unit tests cover at least 90% of its statements, branches, functions and lines (`npm run test:coverage`, which CI runs): every change comes with its tests.
 
 Next steps:
 

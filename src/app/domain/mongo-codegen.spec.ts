@@ -1,4 +1,10 @@
-import { CODE_LANGUAGES, CodeQuery, generateCode } from './mongo-codegen';
+import {
+  CODE_LANGUAGES,
+  CodegenError,
+  CodeLanguage,
+  CodeQuery,
+  generateCode,
+} from './mongo-codegen';
 import { shellToExtendedJson } from './mongo-query';
 
 const read = (text: string) => shellToExtendedJson(text) as Record<string, unknown>;
@@ -163,5 +169,101 @@ describe('Driver code for MongoDB queries', () => {
     expect(generateCode('rust', query)).toContain('"it\'s \\"x\\"\\n\\u{0001}"');
     expect(generateCode('php', query)).toContain("'it\\'s \"x\"\n\u0001'");
     expect(generateCode('node', query)).toContain('"it\'s \\"x\\"\\n\\u0001"');
+  });
+});
+
+describe('Driver code for MongoDB queries, with every option', () => {
+  const bare: CodeQuery = { kind: 'find', database: 'a', collection: 'b' };
+  const options: CodeQuery = {
+    kind: 'aggregate',
+    database: 'shop',
+    collection: 'orders',
+    pipeline: [{ $match: { n: 1 } }],
+    collation: { locale: 'es' },
+    hint: { at: -1 },
+    maxTimeMS: 500,
+  };
+  const findWithKeys: CodeQuery = { ...find, hint: { at: -1 }, collation: { locale: 'es' } };
+
+  it('writes a bare find in each language', () => {
+    for (const { id } of CODE_LANGUAGES) {
+      const code = generateCode(id, bare);
+      expect(code, id).toMatch(/["']b["']/);
+      expect(code, id).not.toContain('limit(10)');
+    }
+  });
+
+  it('writes the time limit, collation and hint of an aggregation', () => {
+    const parts: Record<string, string[]> = {
+      java: [
+        '.maxTime(500, TimeUnit.MILLISECONDS)',
+        'import java.util.concurrent.TimeUnit;',
+        '// Collation',
+      ],
+      csharp: ['MaxTime = TimeSpan.FromMilliseconds(500)', 'Hint = ', '// Collation'],
+      go: ['// maxTimeMS 500', '// Collation', 'SetHint('],
+      rust: ['.max_time(std::time::Duration::from_millis(500))', 'Hint::Keys('],
+    };
+    for (const [language, expected] of Object.entries(parts)) {
+      const code = generateCode(language as CodeLanguage, options);
+      for (const part of expected) expect(code, `${language}: ${part}`).toContain(part);
+    }
+    for (const { id } of CODE_LANGUAGES) expect(generateCode(id, options), id).toContain('500');
+  });
+
+  it('writes a hint by its keys and the collation of a find', () => {
+    expect(generateCode('java', findWithKeys)).toContain('.hint(');
+    expect(generateCode('csharp', findWithKeys)).toContain('new FindOptions { Hint = ');
+    expect(generateCode('go', findWithKeys)).toContain('SetHint(');
+    expect(generateCode('rust', findWithKeys)).toContain('Hint::Keys(');
+    for (const { id } of CODE_LANGUAGES)
+      expect(generateCode(id, findWithKeys).toLowerCase(), id).toContain('collation');
+  });
+});
+
+describe('Driver code for the rarer BSON values', () => {
+  const rare: CodeQuery = {
+    kind: 'find',
+    database: 'a',
+    collection: 'b',
+    filter: {
+      low: { $minKey: 1 },
+      high: { $maxKey: 1 },
+      code: { $code: 'function () {}' },
+      symbol: { $symbol: 'sym' },
+      empty: {},
+      'odd-key': false,
+      int: { $numberInt: '3' },
+      long: { $numberLong: '4' },
+      blob: { $binary: { base64: 'AQ==', subType: '80' } },
+    },
+  };
+
+  it('writes MinKey, MaxKey, Code, Symbol, empty documents and odd keys in each language', () => {
+    for (const { id } of CODE_LANGUAGES) {
+      const code = generateCode(id, rare);
+      expect(code, id).toMatch(/min_?key/i);
+      expect(code, id).toMatch(/max_?key/i);
+      expect(code, id).toContain('odd-key');
+    }
+    expect(generateCode('python', rare)).toContain('False');
+    expect(generateCode('php', rare)).toContain(String.raw`new \stdClass()`);
+  });
+
+  it('refuses a number no language can write', () => {
+    const query: CodeQuery = {
+      kind: 'find',
+      database: 'a',
+      collection: 'b',
+      filter: { n: { $numberDouble: 'NaN' } },
+    };
+    expect(() => generateCode('node', query)).toThrow(CodegenError);
+    const unknown: CodeQuery = {
+      kind: 'find',
+      database: 'a',
+      collection: 'b',
+      filter: { p: { $dbPointer: { $ref: 'x', $id: { $oid: '65a1b2c3d4e5f6a7b8c9d0e1' } } } },
+    };
+    expect(() => generateCode('java', unknown)).toThrow(CodegenError);
   });
 });

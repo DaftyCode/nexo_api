@@ -196,3 +196,51 @@ describe('MongoDB queries in shell syntax', () => {
     );
   });
 });
+
+describe('MongoDB shell constructors, at their edges', () => {
+  it.each([
+    ['{n: -Infinity}', { n: { $numberDouble: '-Infinity' } }],
+    ['{n: -0x10}', { n: -16 }],
+    ['{n: 99999999999999999999}', { n: { $numberDouble: '100000000000000000000.0' } }],
+    ['{n: NumberInt()}', { n: { $numberInt: '0' } }],
+    ['{n: NumberLong()}', { n: { $numberLong: '0' } }],
+    ['{n: Double()}', { n: { $numberDouble: '0.0' } }],
+    ['{n: Double(2)}', { n: { $numberDouble: '2.0' } }],
+    ['{n: NumberDecimal()}', { n: { $numberDecimal: '0' } }],
+    ['{n: Int32({ $numberInt: "7" })}', { n: { $numberInt: '7' } }],
+    ['{t: Timestamp()}', { t: { $timestamp: { t: 0, i: 0 } } }],
+    ['{b: BinData()}', { b: { $binary: { base64: '', subType: '00' } } }],
+    ['{b: HexData(0, "0102")}', { b: { $binary: { base64: 'AQI=', subType: '00' } } }],
+    ['{b: HexData()}', { b: { $binary: { base64: '', subType: '00' } } }],
+    ['{k: MinKey()}', { k: { $minKey: 1 } }],
+    ['{k: MaxKey()}', { k: { $maxKey: 1 } }],
+    ['{r: RegExp()}', { r: { $regularExpression: { pattern: '', options: '' } } }],
+    ['{r: DBRef()}', { r: { $ref: '', $id: null } }],
+    ['{r: DBRef("c", 1, "db")}', { r: { $ref: 'c', $id: 1, $db: 'db' } }],
+  ])('%s', (source, expected) => {
+    expect(shellToExtendedJson(source)).toEqual(expected);
+  });
+
+  it.each([
+    '{n: NumberInt("x")}',
+    '{n: NumberInt(3000000000)}',
+    '{n: NumberLong("99999999999999999999")}',
+    '{n: NumberLong([1])}',
+    '{n: Double("x")}',
+    '{n: NumberDecimal("1,5")}',
+    '{b: BinData(300, "")}',
+    '{b: BinData(0, "@@")}',
+    '{b: HexData(0, "0")}',
+    '{u: UUID()}',
+    '{i: ObjectId("short")}',
+    '{r: RegExp("a", "z")}',
+    '{x: Nothing()}',
+  ])('refuses %s', (source) => {
+    expect(() => shellToExtendedJson(source)).toThrow();
+  });
+
+  it('makes a new ObjectId when given none', () => {
+    const made = shellToExtendedJson('{_id: ObjectId()}') as { _id: { $oid: string } };
+    expect(made._id.$oid).toMatch(/^[0-9a-f]{24}$/);
+  });
+});

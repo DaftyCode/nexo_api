@@ -221,4 +221,31 @@ describe('MongoAggregations', { timeout: 20_000 }, () => {
     });
     expect(unchanged).toEqual([]);
   });
+  it('moves and removes stages, shows its code, pages back and cancels', async () => {
+    await open();
+    await fill(fixture, 'New stage', '$group', tab());
+    await click('Add stage', tab());
+    await fill(fixture, 'New stage', '$sort', tab());
+    await click('Add stage', tab());
+    const labels = () =>
+      [...tab().querySelectorAll('app-mongo-aggregation-stage')].map(
+        (stage) =>
+          stage.querySelector('[aria-label^="Stage"]')?.getAttribute('aria-label') ??
+          stage.textContent?.slice(0, 20),
+      );
+    const before = labels();
+    await click('Move stage 3 $sort up', tab());
+    await click('Move stage 1 $match up', tab());
+    await click('Move stage 3 $group down', tab());
+    expect(labels()).not.toEqual(before);
+    const removes = [...tab().querySelectorAll<HTMLButtonElement>('button[aria-label^="Remove"]')];
+    removes.at(-1)?.click();
+    await settle();
+    expect(tab().querySelectorAll('app-mongo-aggregation-stage').length).toBe(before.length - 1);
+    await click(/^Code$/, tab());
+    await click(/^Run$/, tab());
+    await click('Next page', tab());
+    await click('Previous page', tab());
+    await click('Previous page', tab());
+  });
 });

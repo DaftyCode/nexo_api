@@ -14,6 +14,8 @@ export interface TreeContext {
   /** Whether the module of a driver can run, after offering to download it. */
   ensure: (driver: string) => Promise<boolean>;
   describe: (error: unknown) => string;
+  /** Asks the driver of a connection about itself (what it can do), once it connected. */
+  learn?: (connection: string) => Promise<void>;
 }
 
 const without = <T>(set: ReadonlySet<T>, item: T) => new Set([...set].filter((x) => x !== item));
@@ -68,6 +70,8 @@ export class DbTreeStore {
       );
       this.servers.update((all) => ({ ...all, [connection.id]: server }));
       this.setStatus(connection.id, 'connected');
+      // The menus offer what its driver does (DB-19's structure editor) without a SQL tab first.
+      void this.context.learn?.(connection.id).catch(() => undefined);
       return true;
     } catch (error) {
       this.setStatus(connection.id, 'error');

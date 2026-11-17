@@ -146,4 +146,24 @@ describe('MongoShell', { timeout: 20_000 }, () => {
       'Write a command as in mongosh',
     );
   });
+  it('runs with Ctrl+Enter and walks the history with Alt and the arrows', async () => {
+    const press = async (key: string, extra: KeyboardEventInit) => {
+      shell().dispatchEvent(
+        new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...extra }),
+      );
+      await settle();
+    };
+    await type('db.orders.find()');
+    await press('Enter', { ctrlKey: true });
+    await type('db.orders.countDocuments()');
+    await press('Enter', { metaKey: true });
+    await press('ArrowUp', { altKey: true });
+    expect(codeText(shell(), 'Shell command')).toBe('db.orders.countDocuments()');
+    await press('ArrowUp', { altKey: true });
+    await press('ArrowDown', { altKey: true });
+    expect(codeText(shell(), 'Shell command')).toBe('db.orders.countDocuments()');
+    await press('ArrowUp', {});
+    await press('Enter', {});
+    expect(codeText(shell(), 'Shell command')).toBe('db.orders.countDocuments()');
+  });
 });

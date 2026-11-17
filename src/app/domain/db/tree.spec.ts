@@ -169,3 +169,59 @@ describe('the database navigator', () => {
     });
   });
 });
+
+describe('the saved scripts in the navigator', () => {
+  const scripts = [
+    { id: 's1', name: 'Totals', value: { connectionId: 'b', sql: '', folder: 'Reports' } },
+    { id: 's2', name: 'Alpha', value: { connectionId: 'b', sql: '' } },
+    { id: 's3', name: 'Orphan', value: { connectionId: 'gone', sql: '' } },
+    { id: 's4', name: 'Orders', value: { connectionId: 'a', sql: '' } },
+  ];
+
+  it('lists them by connection name, each by name, with their folder', () => {
+    const rows = navigatorRows(snapshot({ scripts })).filter((row) => row.level >= 1);
+    const listed = rows.filter((row) => row.type?.startsWith('script') || row.type === 'scripts');
+    expect(listed.map((row) => [row.type, row.label, row.detail])).toEqual([
+      ['scripts', 'Scripts', undefined],
+      ['script-group', '—', undefined],
+      ['script', 'Orphan', undefined],
+      ['script-group', 'Local', undefined],
+      ['script', 'Alpha', undefined],
+      ['script', 'Totals', 'Reports'],
+      ['script-group', 'Shop', undefined],
+      ['script', 'Orders', undefined],
+    ]);
+  });
+
+  it('folds the scripts and their groups, and opens them all while searching', () => {
+    const closed = navigatorRows(snapshot({ scripts, closedFolders: new Set(['scripts']) }));
+    expect(closed.filter((row) => row.type === 'script')).toEqual([]);
+    const group = navigatorRows(snapshot({ scripts, closedFolders: new Set(['scripts:b']) }));
+    expect(group.filter((row) => row.type === 'script').map((row) => row.label)).toEqual([
+      'Orphan',
+      'Orders',
+    ]);
+    const found = navigatorRows(
+      snapshot({ scripts, closedFolders: new Set(['scripts', 'scripts:b']), text: 'tot' }),
+    );
+    expect(found.filter((row) => row.type === 'script').map((row) => row.label)).toEqual([
+      'Totals',
+    ]);
+    expect(
+      navigatorRows(snapshot({ scripts, text: 'zzz' })).some((row) => row.type === 'scripts'),
+    ).toBe(false);
+  });
+
+  it('describes a connection without a driver by its address only', () => {
+    const rows = navigatorRows(
+      snapshot({
+        connections: [{ id: 'a', name: 'Bare', value: { host: 'h', port: 1 } }],
+        folders: [{ folder: '', connections: [{ id: 'a' }] }],
+        children: new Map([[nodeKey('a', []), [node('t', { detail: 'note' })]]]),
+        expanded: new Set([nodeKey('a', [])]),
+      }),
+    );
+    expect(rows.find((row) => row.type === 'connection')?.detail).toBe('h:1');
+    expect(rows.find((row) => row.label === 't')?.detail).toBe('note');
+  });
+});

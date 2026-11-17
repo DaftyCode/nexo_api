@@ -181,4 +181,62 @@ describe('MongoTransfer', { timeout: 20_000 }, () => {
     const unchanged = await exerciseControls(fixture, read, { root: dialog() });
     expect(unchanged).toEqual([]);
   });
+  it('copies the whole collection to another one, saying first what is missing', async () => {
+    state.applySaved([connection, { ...connection, id: 'c2', name: 'Copy' }]);
+    await click('Export…');
+    await fill(fixture, 'Documents', 'collection', dialog());
+    await fill(fixture, 'Destination', 'collection', dialog());
+    await click(/^Copy$/, dialog());
+    expect(dialog().textContent).toContain('Choose the collection to copy to');
+    await fill(fixture, 'Connection', 'c1', dialog());
+    const labelled = (text: string) =>
+      [...dialog().querySelectorAll('label')]
+        .filter((label) => label.textContent?.trim() === text)
+        .at(-1)!
+        .querySelector('input')!;
+    const [database, collection] = [labelled('Database'), labelled('Collection')];
+    for (const [input, value] of [
+      [database, 'shop'],
+      [collection, 'orders'],
+    ] as const) {
+      input.value = value;
+      input.dispatchEvent(new Event('input'));
+    }
+    await settle();
+    await click(/^Copy$/, dialog());
+    expect(dialog().textContent).toContain('Copy to another collection');
+    collection.value = 'orders_copy';
+    collection.dispatchEvent(new Event('input'));
+    await fill(fixture, 'Mode', 'upsert', dialog());
+    await click(/^Copy$/, dialog());
+    expect(dialog().textContent).toContain('Choose the fields that find the document to replace');
+    await fill(fixture, 'Key fields, separated by commas', '_id', dialog());
+    await click(/^Copy$/, dialog());
+    const written = calls('mongo.import').at(-1)!.payload;
+    expect(written).toMatchObject({ collection: 'orders_copy', mode: 'upsert' });
+    await click('Run again', dialog());
+    expect(dialog().textContent).toContain('Destination');
+  });
+
+  it('exports the page shown, and nothing when no file is chosen', async () => {
+    await click('Export…');
+    await fill(fixture, 'Documents', 'page', dialog());
+    Object.defineProperty(files, 'save', { configurable: true, value: async () => undefined });
+    await click(/^Export$/, dialog());
+    expect(files.targets).toEqual([]);
+    Reflect.deleteProperty(files, 'save');
+    await click(/^Export$/, dialog());
+    expect(files.targets[0].text).toContain('65a1b2c3d4e5f6a7b8c9d0e1');
+    expect(calls('mongo.find').length).toBeGreaterThan(0);
+  });
+
+  it('asks for a file and a collection before an import, and keeps a saved transfer when not confirmed', async () => {
+    await click('Import…');
+    await click(/^Import$/, dialog());
+    expect(dialog().textContent).toContain('Choose a file to import');
+    await fill(fixture, 'Database', ' ', dialog());
+    await click(/^Import$/, dialog());
+    expect(dialog().textContent).toContain('Choose a database and a collection');
+    await click(/^Cancel$/, dialog());
+  });
 });

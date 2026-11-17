@@ -50,6 +50,7 @@ export class DbSection {
     scopes: () => this.state.scopes(),
     ensure: (driver) => this.ensure(driver),
     describe: (error) => this.state.describe(error),
+    learn: (connection) => this.drivers.learn(connection),
   });
   readonly tabs = new DbTabsStore(() => this.state.cases.files.id());
   readonly bookmarks = signal<readonly DbBookmark[]>([]);
@@ -76,9 +77,7 @@ export class DbSection {
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
   /** Saved SQL scripts. */
-  readonly scripts = computed(() =>
-    this.state.documents().filter((document) => document.kind === 'sql-script'),
-  );
+  readonly scripts = computed(() => this.state.documents().filter((d) => d.kind === 'sql-script'));
   /** SQL tabs that run their text as soon as they open («View data»). */
   readonly runOnOpen = signal<ReadonlySet<string>>(new Set());
   /** The transfer wizard open, and what it starts from (DB-17). */
