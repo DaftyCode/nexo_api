@@ -138,6 +138,25 @@ async fn closes_idle_connections_and_then_their_driver() {
 }
 
 #[tokio::test]
+async fn a_connection_with_an_open_transaction_is_never_closed_for_being_idle() {
+    let fixture = fixture_with(|config| config.idle = Duration::from_millis(200));
+    let host = &fixture.host;
+    host.connect("test", connection("pending"), Vec::new())
+        .await
+        .unwrap();
+    host.hold("pending", true);
+    tokio::time::sleep(Duration::from_millis(900)).await;
+    pid(host, "pending").await;
+    // Once the transaction ends, idleness closes it as any other.
+    host.hold("pending", false);
+    eventually("the driver stopped", async || {
+        host.running().await.is_empty()
+    })
+    .await;
+    host.shutdown().await;
+}
+
+#[tokio::test]
 async fn runs_no_more_drivers_than_allowed() {
     // One process at most, and it is the test driver's: another module has no room while
     // that one has a connection, and gets it when it has none.

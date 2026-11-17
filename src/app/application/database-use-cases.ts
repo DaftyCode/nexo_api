@@ -1,9 +1,33 @@
+import { DatabaseAssistCases } from './database-use-cases/assist';
 import { DatabaseConnectionCases, DatabasePorts } from './database-use-cases/connections';
 import { DatabaseNavigatorCases } from './database-use-cases/navigator';
+import { DatabasePlanCases } from './database-use-cases/plans';
+import { DatabaseSearchCases } from './database-use-cases/search';
+import { DatabaseStructureCases } from './database-use-cases/structure';
+import { DatabaseTransferCases } from './database-use-cases/transfer';
 import { DatabaseStatementCases, StatementPorts } from './database-use-cases/statements';
 import { PreferencePort } from './ports';
 
-export { DatabaseConnectionCases, DatabaseNavigatorCases, DatabaseStatementCases };
+export {
+  DatabaseConnectionCases,
+  DatabaseNavigatorCases,
+  DatabasePlanCases,
+  DatabaseStatementCases,
+};
+export type { ExplainOptions } from './database-use-cases/plans';
+export { DatabaseStructureCases } from './database-use-cases/structure';
+export {
+  DatabaseSearchCases,
+  type SearchAnswer,
+  type SearchRequest,
+} from './database-use-cases/search';
+export {
+  DatabaseTransferCases,
+  type CopyJob,
+  type ExportJob,
+  type ImportJob,
+  type TransferOutcome,
+} from './database-use-cases/transfer';
 export {
   connectionVariables,
   testedServers,
@@ -15,7 +39,12 @@ export {
 export { treeSession, type DbServerInfo, type DriverHello } from './database-use-cases/navigator';
 export {
   editorSession,
+  sharedSession,
+  type LoggedStatement,
+  type PendingTransaction,
   type ScriptFailure,
+  type TransactionAction,
+  type TransactionLimits,
   type TransactionState,
 } from './database-use-cases/statements';
 
@@ -27,16 +56,26 @@ function memory(): PreferencePort {
 
 /**
  * The database section's use cases, by area: saved connections with their secrets in the
- * vault, the navigator with its sessions, and the SQL editor.
+ * vault, the navigator with its sessions, the SQL editor and the plans of its statements.
  */
 export class DatabaseUseCases {
   readonly connections: DatabaseConnectionCases;
   readonly navigator: DatabaseNavigatorCases;
   readonly statements: DatabaseStatementCases;
+  readonly assist: DatabaseAssistCases;
+  readonly plans: DatabasePlanCases;
+  readonly transfer: DatabaseTransferCases;
+  readonly search: DatabaseSearchCases;
+  readonly structure: DatabaseStructureCases;
 
   constructor(api: DatabasePorts & StatementPorts, preferences: PreferencePort = memory()) {
     this.connections = new DatabaseConnectionCases(api);
     this.navigator = new DatabaseNavigatorCases(api);
     this.statements = new DatabaseStatementCases(api, preferences);
+    this.assist = new DatabaseAssistCases(preferences);
+    this.plans = new DatabasePlanCases(api);
+    this.transfer = new DatabaseTransferCases(api);
+    this.search = new DatabaseSearchCases(api, preferences);
+    this.structure = new DatabaseStructureCases(api);
   }
 }

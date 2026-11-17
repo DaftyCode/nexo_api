@@ -2,6 +2,7 @@
 //! each statement does, and the rules of a saved SQL connection.
 mod classify;
 mod connection;
+mod convert;
 mod scanner;
 mod split;
 #[cfg(test)]
@@ -10,6 +11,7 @@ mod vocabulary;
 
 pub use classify::{Classification, StatementKind, classify};
 pub use connection::{ConnectionType, validate_connection};
+pub use convert::{Converted, SourceColumn, convert, create_table, quote};
 pub use split::{Statement, split, statement_at};
 
 /// The SQL dialect of a script: how it quotes, comments and ends statements.

@@ -1,8 +1,13 @@
 import { signal } from '@angular/core';
+import { Generated } from '../../domain/db/sql-generate';
+import { generateSql } from './generate';
+import { openTransfer } from './transfer-request';
+import { openStructure } from './structure-request';
+import { copyDdl, copyName, newObject, refreshView } from './node-scripts';
 import { failureCode } from '../../application/ports';
 import { filterAt, readDbConnection, withFilter } from '../../domain/db/connection';
 import { NavigatorRow } from '../../domain/db/rows';
-import { copiedName, toggleBookmark } from '../../domain/db/tree';
+import { toggleBookmark } from '../../domain/db/tree';
 import { WorkspaceDocument } from '../../domain/models';
 import type { DialogAnswer, DialogRequest } from '../mongo-dialog';
 import { PanelTask } from '../panel-task';
@@ -71,8 +76,10 @@ export class DbActions {
   }
   async refresh(row: NavigatorRow) {
     const document = this.document(row);
-    if (document && (row.type === 'connection' || row.type === 'node'))
+    if (document && (row.type === 'connection' || row.type === 'node')) {
+      this.section.schema.clear(document.id);
       await this.section.tree.refresh(document, row.path ?? []);
+    }
   }
 
   /** Opens what a row is: a saved script, or the tab of an object. */
@@ -85,6 +92,28 @@ export class DbActions {
   }
   newScript(row: NavigatorRow) {
     if (row.connection) this.section.newScript(row.connection);
+  }
+  console(row: NavigatorRow) {
+    if (row.connection)
+      this.section.tabs.open({ kind: 'console', connection: row.connection, title: 'Console' });
+  }
+  generateSelect = (row: NavigatorRow) => this.generate(row, 'select');
+  generateInsert = (row: NavigatorRow) => this.generate(row, 'insert');
+  generateUpdate = (row: NavigatorRow) => this.generate(row, 'update');
+  generateDelete = (row: NavigatorRow) => this.generate(row, 'delete');
+  generateMerge = (row: NavigatorRow) => this.generate(row, 'merge');
+  exportData = (row: NavigatorRow) => openTransfer(this.section, row, 'export');
+  importData = (row: NavigatorRow) => openTransfer(this.section, row, 'import');
+  copyData = (row: NavigatorRow) => openTransfer(this.section, row, 'copy');
+  editStructure = (row: NavigatorRow) => openStructure(this.section, row, 'edit');
+  dropTable = (row: NavigatorRow) => openStructure(this.section, row, 'drop');
+  emptyTable = (row: NavigatorRow) => openStructure(this.section, row, 'empty');
+  newTable = (row: NavigatorRow) => openStructure(this.section, row, 'create');
+  private generate(row: NavigatorRow, kind: Generated) {
+    return this.task.announce('The SQL could not be generated', async () => {
+      await generateSql(this.section, row, kind);
+      return undefined;
+    });
   }
   deleteScript(row: NavigatorRow) {
     const document = this.section.scripts().find((script) => script.id === row.script);
@@ -229,34 +258,10 @@ export class DbActions {
     void this.task.announce(dialog.failure, () => dialog.run(answer));
   }
 
-  copyName(row: NavigatorRow) {
-    if (!row.node || !row.connection) return;
-    const connection = row.connection;
-    const node = row.node;
-    void this.task.run(async () => {
-      await this.section.learnQuotes(connection).catch(() => undefined);
-      await this.copy(copiedName(node, this.section.quoteStyle(connection)));
-    });
-  }
-
-  copyDdl(row: NavigatorRow) {
-    if (!row.connection || !row.path) return;
-    const { connection, path } = row;
-    void this.task.run(async () => {
-      const cases = await this.section.cases();
-      const sql = await cases.navigator.ddl(
-        this.section.state.workspaceId(),
-        `tree:${connection}`,
-        path,
-      );
-      await this.copy(sql);
-    });
-  }
-
-  private async copy(text: string) {
-    await globalThis.navigator?.clipboard?.writeText(text);
-    this.section.state.tell(success('Copied to the clipboard'));
-  }
+  copyName = (row: NavigatorRow) => copyName(this.section, this.task, row);
+  copyDdl = (row: NavigatorRow) => copyDdl(this.section, this.task, row);
+  newObject = (row: NavigatorRow) => void newObject(this.section, row);
+  refreshView = (row: NavigatorRow) => void refreshView(this.section, row);
 
   bookmark(row: NavigatorRow) {
     if (!row.connection || row.type === 'folder') return;

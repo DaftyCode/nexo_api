@@ -5,7 +5,8 @@
 //! line, with requests, responses and notifications in the style of JSON-RPC 2.0. Both sides
 //! may ask. The driver's standard error is its log.
 //!
-//! - [`protocol`] and [`statements`]: the messages.
+//! - [`protocol`] and [`statements`]: the messages; [`rows`], [`explain`], [`import`] and
+//!   [`search`], the ones every driver answers the same way.
 //! - [`value`]: values and columns that lose no type on their way to the interface.
 //! - [`Driver`] and [`run`]: what a driver implements and the loop that serves it.
 //! - [`Client`]: the same messages from the host's side.
@@ -17,12 +18,17 @@
 mod client;
 #[cfg(feature = "conformance")]
 pub mod conformance;
+pub mod ddl;
 mod driver;
 mod error;
+pub mod explain;
+pub mod import;
 pub mod limits;
 pub mod net;
 mod peer;
 pub mod protocol;
+pub mod rows;
+pub mod search;
 mod serve;
 pub mod statements;
 #[cfg(test)]
@@ -56,6 +62,18 @@ pub mod methods {
     pub const CLOSE: &str = "close";
     pub const CANCEL: &str = "cancel";
     pub const TRANSACTION: &str = "transaction";
+    /// Rows changed in the data grid, written as one.
+    pub const ROWS_WRITE: &str = "rows.write";
+    /// The execution plan of a statement.
+    pub const EXPLAIN: &str = "explain";
+    /// A batch of rows imported into a table.
+    pub const IMPORT: &str = "import";
+    /// Objects found by name, or a value found in the data of tables.
+    pub const SEARCH: &str = "search";
+    /// The model of a table and the types of the engine, for the structure editor.
+    pub const DDL_MODEL: &str = "ddl.model";
+    /// The statements that change a table into another.
+    pub const DDL_PLAN: &str = "ddl.plan";
     /// Asked by the driver: the addresses of a host it may connect to.
     pub const NET_RESOLVE: &str = "net.resolve";
     /// Notified by the driver: a line for the host's log.

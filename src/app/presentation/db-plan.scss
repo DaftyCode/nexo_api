@@ -1,0 +1,129 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.db-plan {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.db-plan-rolled {
+  padding: 0 var(--nexo-space-2);
+  border-radius: var(--nexo-radius-full);
+  background: var(--nexo-color-success-soft);
+  color: var(--nexo-color-success);
+}
+.db-plan-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  margin: 0;
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  list-style: none;
+  background: var(--nexo-color-warning-soft);
+}
+.db-plan-warning {
+  border: 0;
+  background: transparent;
+  color: var(--nexo-color-text);
+  text-align: start;
+  cursor: pointer;
+}
+.db-plan-warning:hover {
+  text-decoration: underline;
+}
+.db-plan-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.db-plan-tree {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-plan-tree th,
+.db-plan-tree td {
+  padding: var(--nexo-space-1) var(--nexo-space-3);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: start;
+  white-space: nowrap;
+}
+.db-plan-tree th {
+  position: sticky;
+  top: 0;
+  background: var(--nexo-color-surface-2);
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-regular);
+}
+.db-plan-tree .num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.db-plan-tree tr:hover td {
+  background: var(--nexo-color-hover);
+}
+.db-plan-chosen td {
+  background: var(--nexo-color-selection);
+}
+.db-plan-operation {
+  padding-inline-start: calc(var(--db-plan-depth, 0) * var(--nexo-space-5) + var(--nexo-space-3));
+}
+.db-plan-toggle,
+.db-plan-name {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.db-plan-name {
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-plan-flag {
+  margin-inline-start: var(--nexo-space-2);
+  padding: 0 var(--nexo-space-2);
+  border-radius: var(--nexo-radius-full);
+  background: var(--nexo-color-warning-soft);
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-plan-condition {
+  max-width: calc(var(--nexo-size-unit) * 120);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--nexo-font-mono);
+}
+.db-plan-share {
+  min-width: calc(var(--nexo-size-unit) * 30);
+}
+.db-plan-bar {
+  display: block;
+  height: var(--nexo-space-3);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-3);
+}
+.db-plan-fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-accent);
+}
+.db-plan-details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--nexo-space-1) var(--nexo-space-4);
+  margin: 0;
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-plan-details dt {
+  color: var(--nexo-color-text-muted);
+}
+.db-plan-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

@@ -39,7 +39,14 @@ fn first_word(sql: &str) -> String {
 }
 
 /// A write that returns no rows: SQL Server then says how many it changed.
+/// Opens a batch the driver reads as results even when it changes rows: the measured plan of
+/// a change comes back as a result.
+pub(crate) const RESULTS: &str = "/* nexo:results */";
+
 fn counts_rows(sql: &str) -> bool {
+    if sql.trim_start().starts_with(RESULTS) {
+        return false;
+    }
     let word = first_word(sql);
     let output = sql
         .to_ascii_uppercase()

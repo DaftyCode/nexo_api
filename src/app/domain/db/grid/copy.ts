@@ -7,7 +7,8 @@ import { ResultColumn, cellText, isNull } from '../results';
 import { QuoteStyle, quoteName } from '../tree';
 import { base64Bytes, classOf } from './cells';
 
-export type CopyFormat = 'text' | 'text-headers' | 'json' | 'csv' | 'markdown' | 'in' | 'insert';
+export type CopyFormat =
+  'text' | 'text-headers' | 'json' | 'csv' | 'markdown' | 'in' | 'insert' | 'update' | 'delete';
 
 /** What is copied: the columns and the rows of the selection, in the order shown. */
 export interface CopiedCells {
@@ -28,7 +29,7 @@ function csvField(text: string) {
 }
 
 /** A value as JSON: numbers, booleans and `null` as such; every other value as its text. */
-function jsonValue(value: unknown): unknown {
+export function jsonValue(value: unknown): unknown {
   if (isNull(value)) return null;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string')
     return value;
@@ -153,5 +154,34 @@ export function copyAs(cells: CopiedCells, format: CopyFormat, style?: SqlStyle)
         )
         .join('\n');
     }
+    case 'update':
+    case 'delete':
+      return keyedStatements(cells, format, style);
   }
+}
+
+/** `UPDATE` or `DELETE` of each copied row, named by its key (or by every value without one). */
+function keyedStatements(cells: CopiedCells, kind: 'update' | 'delete', style?: SqlStyle) {
+  const sql = style ?? { name: '', quoteOpen: '"', quoteClose: '"' };
+  const { columns, rows } = cells;
+  const table = sourceTable(columns, sql) ?? 'table_name';
+  const name = (at: number) => quoteName(columns[at].origin?.column ?? columns[at].name, sql);
+  const key = columns.map((column, at) => (column.key ? at : -1)).filter((at) => at >= 0);
+  const named = key.length ? key : columns.map((_, at) => at);
+  const where = (row: readonly unknown[]) =>
+    named
+      .map((at) =>
+        isNull(row[at]) ? `${name(at)} IS NULL` : `${name(at)} = ${sqlLiteral(row[at], sql)}`,
+      )
+      .join(' AND ');
+  return rows
+    .map((row) => {
+      if (kind === 'delete') return `DELETE FROM ${table} WHERE ${where(row)};`;
+      const set = row
+        .map((value, at) => (key.includes(at) ? '' : `${name(at)} = ${sqlLiteral(value, sql)}`))
+        .filter(Boolean)
+        .join(', ');
+      return `UPDATE ${table} SET ${set} WHERE ${where(row)};`;
+    })
+    .join('\n');
 }

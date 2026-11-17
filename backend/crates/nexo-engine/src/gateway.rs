@@ -151,6 +151,15 @@ impl ExecutionGateway for Engine {
             | Operation::DbClose
             | Operation::DbCancel
             | Operation::DbTransaction
+            | Operation::DbTransactions
+            | Operation::DbRowsWrite
+            | Operation::DbExplain
+            | Operation::DbImport
+            | Operation::DbConvert
+            | Operation::DbCopy
+            | Operation::DbSearch
+            | Operation::DbDdlModel
+            | Operation::DbDdlPlan
             | Operation::DbSplit
             | Operation::DbDialect
             => Err(Error::Validation(format!(

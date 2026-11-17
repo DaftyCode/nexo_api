@@ -182,6 +182,16 @@
         'Auto-commit: each statement is committed by itself' | transloco
       }}</label
     >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().smartCommit" />{{
+        'db.smartCommit' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().sharedSession" />{{
+        'db.sharedSession' | transloco
+      }}</label
+    >
     <label class="field db-port"
       >{{ 'Statement time limit (seconds, 0 for none)' | transloco
       }}<input type="number" [formField]="fields().timeoutSeconds"

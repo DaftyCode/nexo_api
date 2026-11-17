@@ -4,21 +4,28 @@
 //! The design of the drivers is in `docs/ARCHITECTURE.md`, section "Database modules".
 mod catalog;
 mod connection;
+mod ddl;
 mod dialect;
 mod errors;
 mod file;
 mod guard;
+mod plan;
+mod search;
 mod session;
 mod values;
 
 use async_trait::async_trait;
 use connection::{SqliteConnection, not_open};
 use nexo_driver_sdk::{
-    Driver, DriverError, HostLink, PROTOCOL_VERSION, Result, limits,
+    Driver, DriverError, HostLink, PROTOCOL_VERSION, Result,
+    ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
+    explain::{ExplainMode, ExplainParams, Plan},
+    limits, methods,
     protocol::{
         Capabilities, ConnectParams, Ddl, DriverInfo, Hello, ObjectDescription, ObjectParams,
         ServerInfo, TreeNode,
     },
+    search::{SearchParams, SearchResult},
     statements::{
         CancelParams, CursorParams, ExecuteParams, ExecuteResult, FetchParams, Page,
         TransactionParams, TransactionState,
@@ -62,7 +69,14 @@ impl Driver for SqliteDriver {
                 schemas: false,
                 cancel: true,
                 read_only_sessions: true,
-                methods: Vec::new(),
+                isolation_levels: ["deferred", "immediate", "exclusive"]
+                    .map(String::from)
+                    .to_vec(),
+                ddl_commits: false,
+                explain: vec![ExplainMode::Estimated],
+                methods: [methods::DDL_MODEL, methods::DDL_PLAN]
+                    .map(String::from)
+                    .to_vec(),
                 extensions: Vec::new(),
             },
             dialect: dialect::dialect(),
@@ -135,5 +149,22 @@ impl Driver for SqliteDriver {
         self.connection(&params.connection)?
             .transaction(params.action, params.isolation)
             .await
+    }
+
+    async fn explain(&self, params: ExplainParams) -> Result<Plan> {
+        nexo_driver_sdk::explain::run(self, params, &plan::SqlitePlans).await
+    }
+
+    async fn ddl_model(&self, params: DdlModelParams) -> Result<DdlModel> {
+        let connection = self.connection(&params.connection)?;
+        ddl::model(&connection, &params.path).await
+    }
+
+    async fn ddl_plan(&self, params: DdlPlanParams) -> Result<DdlPlan> {
+        nexo_driver_sdk::ddl::plan(&ddl::writer::SqliteWriter, &params)
+    }
+
+    async fn search(&self, params: SearchParams) -> Result<SearchResult> {
+        nexo_driver_sdk::search::run(self, params, &search::SqliteSearch).await
     }
 }

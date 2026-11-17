@@ -47,8 +47,8 @@
               [attr.data-drop]="drag.at(tab.id)"
               (click)="tabs.activeId.set(tab.id)"
               (keydown)="tabKey($event, tab)"
-              (keydown.delete)="section.closeTab(tab.id)"
-              (auxclick)="section.closeTab(tab.id)"
+              (keydown.delete)="section.transactions.requestClose(tab.id)"
+              (auxclick)="section.transactions.requestClose(tab.id)"
               (dragstart)="drag.start($event, tab.id, title(tab))"
               (dragover)="drag.over($event, tab.id)"
               (drop)="drag.drop($event, tab.id)"
@@ -71,7 +71,7 @@
                 class="db-tab-close"
                 aria-hidden="true"
                 [attr.title]="'Close the tab' | transloco"
-                (click)="$event.stopPropagation(); section.closeTab(tab.id)"
+                (click)="$event.stopPropagation(); section.transactions.requestClose(tab.id)"
                 >×</span
               >
             </button>
@@ -89,6 +89,21 @@
           <app-studio-icon name="plus" />
         </button>
       }
+      <button
+        type="button"
+        class="button small subtle db-pending-button"
+        [attr.title]="'Pending transactions' | transloco"
+        (click)="section.transactions.show()"
+      >
+        {{ 'Transactions' | transloco }}
+        @if (pendingTabs(); as count) {
+          <span
+            class="db-pending-count"
+            [attr.aria-label]="'db.transaction.pendingTabs' | transloco: { v0: count }"
+            >{{ count }}</span
+          >
+        }
+      </button>
     </div>
     <!-- One instance per tab: another tab of the same kind gets its own editor. -->
     @for (tab of shownTabs(); track tab.id) {
@@ -107,6 +122,9 @@
           }
           @case ('object') {
             <app-db-object-tab [tab]="tab" />
+          }
+          @case ('console') {
+            <app-db-console [tab]="tab" />
           }
         }
       </div>
@@ -139,4 +157,49 @@
     (installed)="wait.done(true)"
     (closed)="wait.done(false)"
   />
+}
+@if (section.transactions.shown()) {
+  <app-db-transactions (closed)="section.transactions.hide()" />
+}
+@if (section.transactions.closing()) {
+  <div class="db-close-backdrop">
+    <section
+      class="feature-card db-close-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-close-title"
+      (keydown.escape)="section.transactions.answerClose('cancel')"
+    >
+      <h2 id="db-close-title">{{ 'Changes not committed' | transloco }}</h2>
+      <p>{{ 'db.transaction.closing' | transloco }}</p>
+      <div class="row db-close-actions">
+        <button
+          type="button"
+          class="button primary"
+          (click)="section.transactions.answerClose('commit')"
+        >
+          {{ 'Commit' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="section.transactions.answerClose('rollback')">
+          {{ 'Rollback' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="button subtle"
+          (click)="section.transactions.answerClose('cancel')"
+        >
+          {{ 'Cancel' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+@if (section.transferRequest(); as request) {
+  <app-db-transfer [request]="request" (closed)="section.transferRequest.set(undefined)" />
+}
+@if (section.searching()) {
+  <app-db-search (closed)="section.searching.set(false)" />
+}
+@if (section.structureRequest(); as request) {
+  <app-db-table-editor [request]="request" (closed)="section.structureRequest.set(undefined)" />
 }

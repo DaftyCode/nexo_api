@@ -1,0 +1,107 @@
+<div class="db-transactions-backdrop">
+  <section
+    class="feature-card db-transactions"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-transactions-title"
+  >
+    <h2 id="db-transactions-title">
+      {{ (only() ? 'Transaction log' : 'Pending transactions') | transloco }}
+    </h2>
+    @for (pending of sessions(); track pending.session) {
+      <article class="db-pending" [attr.aria-label]="pending.name">
+        <header class="db-pending-head">
+          <div>
+            <strong>{{ pending.name }}</strong>
+            <span class="muted">
+              {{
+                'db.transaction.summary'
+                  | transloco
+                    : {
+                        v0: time(pending.since),
+                        v1: minutes(pending.since),
+                        v2: pending.statements,
+                        v3: pending.writes,
+                      }
+              }}
+            </span>
+          </div>
+          <div class="row db-pending-actions">
+            <button
+              type="button"
+              class="button small primary"
+              (click)="transactions.act(pending.session, 'commit')"
+            >
+              {{ 'Commit' | transloco }}
+            </button>
+            <button
+              type="button"
+              class="button small"
+              (click)="transactions.act(pending.session, 'rollback')"
+            >
+              {{ 'Rollback' | transloco }}
+            </button>
+          </div>
+        </header>
+        <table class="db-pending-log">
+          <thead>
+            <tr>
+              <th scope="col">{{ 'Time' | transloco }}</th>
+              <th scope="col">{{ 'Duration' | transloco }}</th>
+              <th scope="col">{{ 'Rows' | transloco }}</th>
+              <th scope="col">{{ 'Statement' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of pending.log; track $index) {
+              <tr>
+                <td>{{ time(entry.at) }}</td>
+                <td>{{ entry.ms }} ms</td>
+                <td>{{ entry.affected ?? '' }}</td>
+                <td>
+                  <code>{{ entry.sql }}</code>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </article>
+    } @empty {
+      <p class="muted">{{ 'No transaction waits for a commit or a rollback.' | transloco }}</p>
+    }
+    <p class="muted">
+      {{
+        'If Nexo closes, each database rolls back what was not committed when its connection ends.'
+          | transloco
+      }}
+    </p>
+    @if (!only()) {
+      <fieldset class="db-pending-limits">
+        <legend>{{ 'Open transactions' | transloco }}</legend>
+        <label class="field"
+          >{{ 'Point one out after (minutes, 0 for never)' | transloco }}
+          <input
+            type="number"
+            min="0"
+            max="1440"
+            [value]="transactions.limits().warnMinutes"
+            (change)="limit('warnMinutes', $any($event.target).value)"
+        /></label>
+        <label class="field"
+          >{{ 'Roll one back by itself after (minutes, 0 for never)' | transloco }}
+          <input
+            type="number"
+            min="0"
+            max="1440"
+            [value]="transactions.limits().rollbackMinutes"
+            (change)="limit('rollbackMinutes', $any($event.target).value)"
+        /></label>
+      </fieldset>
+    }
+    <div class="row db-pending-close">
+      <button type="button" class="button" (click)="closed.emit()">
+        {{ 'Close' | transloco }}
+      </button>
+    </div>
+  </section>
+</div>

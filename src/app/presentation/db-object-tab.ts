@@ -1,4 +1,6 @@
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { DbStructureInline } from './db-structure/inline';
+import { editsStructure } from './db-panel/structure-request';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -70,7 +72,15 @@ const KEYS: Record<string, { schema: string; table: string }> = {
  * and its DDL. A key leads to the table it points to, or to the one that points to it.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor, DataGrid, DbObjectProperties, DbTableData, StudioIcon],
+  imports: [
+    TranslocoPipe,
+    CodeEditor,
+    DataGrid,
+    DbObjectProperties,
+    DbTableData,
+    DbStructureInline,
+    StudioIcon,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-object-tab',
   host: { '(document:click)': 'more.set(undefined)' },
@@ -152,6 +162,12 @@ export class DbObjectTab {
   /** The columns of the section shown, as the grid takes them. */
   protected readonly sectionColumns = computed(() =>
     (this.shownSection()?.columns ?? []).map((name) => ({ name, typeName: '', kind: 'text' })),
+  );
+  /** A table whose driver edits its structure: its «Columns» are edited in place (DB-19). */
+  protected readonly editable = computed(
+    () =>
+      (this.description()?.kind ?? this.node()?.kind) === 'table' &&
+      editsStructure(this.section, this.tab().connection),
   );
   protected readonly parents = computed(() => this.keys('foreign-keys'));
   protected readonly children = computed(() => this.keys('references'));

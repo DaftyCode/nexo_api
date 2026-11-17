@@ -28,6 +28,15 @@ impl Operation {
                 | Self::DbClose
                 | Self::DbCancel
                 | Self::DbTransaction
+                | Self::DbTransactions
+                | Self::DbRowsWrite
+                | Self::DbExplain
+                | Self::DbImport
+                | Self::DbConvert
+                | Self::DbCopy
+                | Self::DbSearch
+                | Self::DbDdlModel
+                | Self::DbDdlPlan
                 | Self::DbSplit
                 | Self::DbDialect
         )

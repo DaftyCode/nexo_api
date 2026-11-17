@@ -1,0 +1,73 @@
+[
+  {
+    "Plan": {
+      "Node Type": "Sort",
+      "Parallel Aware": false,
+      "Async Capable": false,
+      "Startup Cost": 67.00,
+      "Total Cost": 67.89,
+      "Plan Rows": 357,
+      "Plan Width": 40,
+      "Disabled": false,
+      "Sort Key": ["o.id"],
+      "Plans": [
+        {
+          "Node Type": "Hash Join",
+          "Parent Relationship": "Outer",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Join Type": "Inner",
+          "Startup Cost": 27.55,
+          "Total Cost": 51.86,
+          "Plan Rows": 357,
+          "Plan Width": 40,
+          "Disabled": false,
+          "Inner Unique": true,
+          "Hash Cond": "(o.customer = c.id)",
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "orders",
+              "Alias": "o",
+              "Startup Cost": 0.00,
+              "Total Cost": 23.38,
+              "Plan Rows": 357,
+              "Plan Width": 12,
+              "Disabled": false,
+              "Filter": "((total)::numeric > '10'::numeric)"
+            },
+            {
+              "Node Type": "Hash",
+              "Parent Relationship": "Inner",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 17.80,
+              "Total Cost": 17.80,
+              "Plan Rows": 780,
+              "Plan Width": 36,
+              "Disabled": false,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "customers",
+                  "Alias": "c",
+                  "Startup Cost": 0.00,
+                  "Total Cost": 17.80,
+                  "Plan Rows": 780,
+                  "Plan Width": 36,
+                  "Disabled": false
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

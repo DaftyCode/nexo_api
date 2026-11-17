@@ -73,18 +73,25 @@
 <div class="db-data-body">
   <div class="db-data-grid">
     <app-data-grid
-      [columns]="rows.columns()"
-      [rows]="rows.rows()"
+      [columns]="rows.editor.grid().columns"
+      [rows]="rows.editor.grid().rows"
+      [editing]="rows.editor"
       [more]="!!rows.cursor()"
       [loading]="rows.loading()"
       [sql]="section.sqlStyle(tab().connection)"
-      [cellActions]="actions"
+      [cellActions]="cellActions()"
       [view]="rows.view()"
       (viewChange)="viewChanged($event)"
       (needMore)="rows.more()"
       (cellAction)="cellAction($event)"
       (activeRow)="rowChanged($event)"
     >
+      <app-db-row-edits
+        gridStart
+        [editor]="rows.editor"
+        [columns]="rows.columns()"
+        [virtualColumns]="true"
+      />
       <div gridStart class="db-data-toolbar" role="group" [attr.aria-label]="'Data' | transloco">
         <label class="db-data-page"
           >{{ 'Show:' | transloco }}

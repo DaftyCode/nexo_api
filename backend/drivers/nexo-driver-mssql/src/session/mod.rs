@@ -5,6 +5,8 @@ mod read;
 mod statement;
 mod transaction;
 
+pub(crate) use statement::RESULTS;
+
 use crate::{
     connection::Opener,
     errors::{cancelled, driver_error, reopened},

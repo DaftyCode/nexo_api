@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -20,7 +20,6 @@ import { GridFormats, formatCell } from '../../domain/db/grid/cells';
 import { SqlStyle } from '../../domain/db/grid/copy';
 import {
   GridSelection,
-  clickSelection,
   isSelected,
   selectedRange,
   startSelection,
@@ -31,7 +30,10 @@ import { columnBadge } from '../../domain/db/look';
 import { ResultColumn } from '../../domain/db/results';
 import { StudioIcon } from '../studio-icon';
 import { WorkspaceState } from '../workspace-state';
+import { GridCellEditor, GridEditing } from './cell-editor';
 import { GridColumns } from './columns';
+import { GridFooter } from './grid-footer';
+import { GridInteraction } from './interaction';
 import { GridFind } from './find';
 import { GridBar } from './grid-bar';
 import { GridMenu } from './grid-menu';
@@ -39,7 +41,6 @@ import { GridPanels, PanelKind } from './grid-panels';
 import { GridLayout } from './layout';
 import { GridRecord } from './grid-record';
 import { GridFormatsState } from './formats';
-import { gridKey } from './keys';
 import { GridMenus } from './menu-actions';
 import { GridOutput } from './output';
 import { GridPointer } from './pointer';
@@ -57,7 +58,16 @@ let grids = 0;
  * several formats, a plain text view, full screen, and side panels.
  */
 @Component({
-  imports: [TranslocoPipe, NgTemplateOutlet, GridBar, GridPanels, GridMenu, GridRecord, StudioIcon],
+  imports: [
+    TranslocoPipe,
+    NgTemplateOutlet,
+    GridBar,
+    GridFooter,
+    GridPanels,
+    GridMenu,
+    GridRecord,
+    StudioIcon,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-data-grid',
   templateUrl: './data-grid.html',
@@ -81,14 +91,21 @@ export class DataGrid {
   readonly formats = input<GridFormats | undefined>(undefined);
   private readonly chosen = inject(GridFormatsState);
   private readonly state = inject(WorkspaceState);
-  private readonly i18n = inject(TranslocoService);
   protected readonly format = computed(() => this.formats() ?? this.chosen.formats());
   readonly grouping = input<GroupingSource | undefined>(undefined);
   readonly cellActions = input<readonly CellAction[]>([]);
   readonly view = model<GridView>(emptyView());
   readonly needMore = output<void>();
   readonly readAll = output<void>();
-  readonly cellAction = output<{ action: string; column: number; value: unknown }>();
+  /** The rows given carry the changes; this edits them (DB-13). */
+  readonly editing = input<GridEditing | undefined>(undefined);
+  /** A cell action chosen, with the rows the selection spans (indexes of those given). */
+  readonly cellAction = output<{
+    action: string;
+    column: number;
+    value: unknown;
+    rows: number[];
+  }>();
   /** The row the person is on, by its index among the rows loaded. */
   readonly activeRow = output<number>();
 
@@ -170,8 +187,25 @@ export class DataGrid {
     find: this.find,
     copy: (format) => this.output.copy(undefined, format),
     download: (format) => this.output.download(format),
-    cellAction: (action, column, value) => this.cellAction.emit({ action, column, value }),
+    cellAction: (action, column, value) =>
+      this.cellAction.emit({ action, column, value, rows: this.selectedRows() }),
     focus: () => this.viewport()?.nativeElement.focus({ preventScroll: true }),
+  });
+  protected readonly editor = new GridCellEditor({
+    editing: () => this.editing(),
+    active: () => this.active(),
+    focus: () => this.viewport()?.nativeElement.focus({ preventScroll: true }),
+    input: () => this.viewport()?.nativeElement.querySelector<HTMLInputElement>('.grid-editor'),
+  });
+  protected readonly interaction = new GridInteraction({
+    layout: this.layout,
+    selection: this.selection,
+    panel: this.panel,
+    find: this.find,
+    output: this.output,
+    menus: this.menus,
+    editor: this.editor,
+    viewport: () => this.viewport()?.nativeElement,
   });
   private asked = -1;
 
@@ -209,9 +243,6 @@ export class DataGrid {
   protected badgeOf(column: number) {
     return columnBadge(this.columns()[column]);
   }
-  protected number(value: number) {
-    return new Intl.NumberFormat(this.i18n.getActiveLang()).format(value);
-  }
   protected cellId(position: number, column: number) {
     return `${this.id}-${position}-${column}`;
   }
@@ -240,61 +271,14 @@ export class DataGrid {
     return { none: '', ascending: '▲', descending: '▼' }[this.sortOf(column)];
   }
 
-  protected scrolled() {
-    const element = this.viewport()?.nativeElement;
-    if (element) this.layout.read(element);
+  /** What is pending in a row the screen around the grid edits. */
+  protected mark(row: number) {
+    return this.editing()?.mark(row);
   }
-  private reveal() {
-    const element = this.viewport()?.nativeElement;
-    if (element) this.layout.reveal(element, this.selection().active);
-  }
-
-  protected key(event: KeyboardEvent) {
-    gridKey(event, {
-      layout: this.layout,
-      selection: this.selection,
-      panel: this.panel,
-      findOpen: this.find.open,
-      copy: (keys) => this.output.copy(keys, 'text'),
-      menu: () => {
-        const cell = this.viewport()?.nativeElement.querySelector('.grid-active');
-        this.menus.under(cell ?? this.viewport()?.nativeElement);
-      },
-      reveal: () => this.reveal(),
-    });
-  }
-
-  protected findNext(back = false) {
-    const target = this.find.next(this.selection().active, back);
-    if (!target) return;
-    this.selection.set({ active: target, anchor: target, mode: 'cells' });
-    this.reveal();
-  }
-
-  /** The record view goes to the row before or after. */
-  protected step(by: -1 | 1) {
-    const last = this.layout.shown().length - 1;
-    const row = Math.min(Math.max(this.selection().active.row + by, 0), last);
-    const active = { row, column: this.selection().active.column };
-    this.selection.set({ active, anchor: active, mode: 'cells' });
-  }
-
-  /** A click on a cell or a row number: the grid takes it, as it holds the keyboard. */
-  protected clicked(event: MouseEvent) {
-    const target = (event.target as HTMLElement).closest<HTMLElement>('[data-row]');
-    if (!target) return;
-    const mode = target.dataset['mode'] === 'rows' ? 'rows' : 'cells';
-    const at = {
-      row: Number(target.dataset['row']),
-      column: Number(target.dataset['column'] ?? 0),
-    };
-    this.selection.set(clickSelection(this.selection(), at, mode, event.shiftKey));
-    this.viewport()?.nativeElement.focus({ preventScroll: true });
-  }
-  protected contextMenu(event: MouseEvent) {
-    if (!(event.target as HTMLElement).closest('[data-column]')) return;
-    event.preventDefault();
-    this.clicked(event);
-    this.menus.at(event.clientX, event.clientY);
+  /** The rows the selection spans, by their index among those given. */
+  private selectedRows(): number[] {
+    const shown = this.layout.shown();
+    const range = selectedRange(this.selection(), shown.length, this.layout.order().length);
+    return shown.slice(range.top, range.bottom + 1);
   }
 }

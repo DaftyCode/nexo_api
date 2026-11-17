@@ -38,6 +38,8 @@ const ROW = [
   ['copy:text-headers', 'Copy with headers'],
   ['copy:json', 'Copy as JSON'],
   ['copy:insert', 'Copy as INSERT'],
+  ['copy:update', 'Copy as UPDATE'],
+  ['copy:delete', 'Copy as DELETE'],
 ] as const;
 const TOOLS = [
   ['tool:find', 'Find'],
@@ -56,6 +58,8 @@ const COPY = [
   ['copy:markdown', 'Markdown'],
   ['copy:in', 'IN (…)'],
   ['copy:insert', 'INSERT'],
+  ['copy:update', 'UPDATE'],
+  ['copy:delete', 'DELETE'],
 ] as const;
 const DOWNLOAD = [
   ['download:csv', 'CSV'],

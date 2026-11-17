@@ -122,6 +122,6 @@ test('the SQL editor keeps a result tab per query and comes back after a reload'
     .getByRole('navigation', { name: 'Object views' })
     .getByRole('button', { name: 'Columns' })
     .click();
-  await expect(page.locator('app-db-object-tab app-data-grid')).toContainText('customer');
+  await expect(page.locator('app-db-object-tab').getByLabel('Type of customer')).toBeVisible();
   expect(await violations(page)).toEqual([]);
 });

@@ -78,6 +78,15 @@
     <button
       type="button"
       class="button small"
+      [disabled]="!!runner().running()"
+      [attr.title]="'Explain the execution plan (Ctrl+Shift+E)' | transloco"
+      (click)="command('explain')"
+    >
+      {{ 'Explain' | transloco }}
+    </button>
+    <button
+      type="button"
+      class="button small"
       [disabled]="!runner().running()"
       (click)="command('cancel')"
     >
@@ -99,11 +108,55 @@
         <button type="button" class="button small subtle" (click)="runner().transact('auto')">
           {{ 'Manual commit' | transloco }}
         </button>
-        <button type="button" class="button small" (click)="runner().transact('commit')">
+        @if (isolations().length) {
+          <select
+            class="db-sql-isolation"
+            [attr.aria-label]="'Isolation level' | transloco"
+            [disabled]="transaction.open"
+            (change)="runner().isolation.set($any($event.target).value)"
+          >
+            <option value="" [selected]="!runner().isolation()">
+              {{ 'Server isolation' | transloco }}
+            </option>
+            @for (level of isolations(); track level) {
+              <option [value]="level" [selected]="runner().isolation() === level">
+                {{ level }}
+              </option>
+            }
+          </select>
+        }
+        <button
+          type="button"
+          class="button small"
+          [disabled]="!transaction.open"
+          [attr.title]="'Commit (Ctrl+Alt+Shift+K)' | transloco"
+          (click)="runner().transact('commit')"
+        >
           {{ 'Commit' | transloco }}
+          @if (transaction.statements) {
+            <span
+              class="db-sql-count"
+              [attr.aria-label]="'db.transaction.count' | transloco: { v0: transaction.statements }"
+              >{{ transaction.statements }}</span
+            >
+          }
         </button>
-        <button type="button" class="button small" (click)="runner().transact('rollback')">
+        <button
+          type="button"
+          class="button small"
+          [disabled]="!transaction.open"
+          [attr.title]="'Rollback (Ctrl+Alt+Shift+R)' | transloco"
+          (click)="runner().transact('rollback')"
+        >
           {{ 'Rollback' | transloco }}
+        </button>
+        <button
+          type="button"
+          class="button small subtle"
+          [disabled]="!transaction.open"
+          (click)="section.transactions.show(runner().session)"
+        >
+          {{ 'Transaction log' | transloco }}
         </button>
       }
     }
@@ -118,15 +171,22 @@
         <span class="db-sql-dirty" [attr.aria-label]="'Unsaved changes' | transloco">●</span>
       }
     </button>
-    <button
-      type="button"
-      class="button small subtle"
-      [attr.aria-pressed]="showHistory()"
-      (click)="showHistory.set(!showHistory())"
-    >
-      {{ 'History' | transloco }}
-    </button>
+    @for (each of sides; track each[0]) {
+      <button
+        type="button"
+        class="button small subtle"
+        [attr.aria-pressed]="side() === each[0]"
+        (click)="side.set(side() === each[0] ? '' : each[0])"
+      >
+        {{ each[1] | transloco }}
+      </button>
+    }
   </div>
+  @if (section.transactions.isLong(runner())) {
+    <p class="db-sql-long" role="alert">
+      {{ 'db.transaction.long' | transloco: { v0: section.transactions.minutes(runner()) } }}
+    </p>
+  }
   <div class="db-sql-body">
     <div class="db-sql-main">
       <div
@@ -139,6 +199,7 @@
           [cursor]="opened().cursor"
           [driver]="value().driver"
           [words]="words()"
+          [assist]="assist()"
           [label]="'SQL script' | transloco"
           (changed)="changed($event)"
           (moved)="moved($event)"
@@ -156,12 +217,32 @@
       />
       <app-db-results [runner]="runner()" (goTo)="goTo($event)" />
     </div>
-    @if (showHistory()) {
-      <app-db-history
-        [connection]="tab().connection"
-        (chosen)="useHistory($event)"
-        (closed)="showHistory.set(false)"
-      />
+    @switch (side()) {
+      @case ('variables') {
+        <app-db-sql-variables [client]="runner().client" (closed)="side.set('')" />
+      }
+      @case ('history') {
+        <app-db-history
+          [connection]="tab().connection"
+          (chosen)="useHistory($event)"
+          (closed)="side.set('')"
+        />
+      }
+      @case ('outline') {
+        <app-db-sql-outline
+          [text]="draft().text"
+          [driver]="value().driver"
+          (goTo)="goTo($event)"
+          (closed)="side.set('')"
+        />
+      }
+      @case ('templates') {
+        <app-db-sql-templates
+          [own]="templates()"
+          (changed)="templates.set($event)"
+          (closed)="side.set('')"
+        />
+      }
     }
   </div>
   <footer class="db-sql-status" role="status">
@@ -193,40 +274,4 @@
     (cancelled)="dialog.set(undefined)"
   />
 }
-@if (confirmRequest(); as request) {
-  <app-mongo-dialog
-    [request]="request"
-    (confirmed)="confirmAnswer(true)"
-    (cancelled)="confirmAnswer(false)"
-  />
-}
-@if (runner().dialog()?.kind === 'failure') {
-  <div class="db-sql-backdrop">
-    <section
-      class="feature-card db-sql-failure"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="db-sql-failure-title"
-      (keydown.escape)="failureAnswer('stop')"
-    >
-      <h2 id="db-sql-failure-title">{{ 'A statement failed' | transloco }}</h2>
-      <p>{{ 'db.failure.message' | transloco }}</p>
-      <label class="check-field"
-        ><input type="checkbox" [formField]="failureFields.remember" />{{
-          'Remember my choice' | transloco
-        }}</label
-      >
-      <div class="row db-sql-failure-actions">
-        <button type="button" class="button primary" (click)="failureAnswer('continue')">
-          {{ 'Continue' | transloco }}
-        </button>
-        <button type="button" class="button" (click)="failureAnswer('ignore')">
-          {{ 'Ignore the next failures' | transloco }}
-        </button>
-        <button type="button" class="button" (click)="failureAnswer('stop')">
-          {{ 'Stop' | transloco }}
-        </button>
-      </div>
-    </section>
-  </div>
-}
+<app-db-runner-dialogs [runner]="runner()" />

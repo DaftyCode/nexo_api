@@ -3,6 +3,7 @@
  * leaves its own tab, numbered, until there are more than the most kept; then the oldest
  * one that is not pinned closes. A pinned tab is never closed nor reused by itself.
  */
+import type { ExplainPlan } from './plan';
 
 /** A column of a result, as the driver describes it. */
 export interface ResultColumn {
@@ -48,6 +49,8 @@ export interface ResultTab {
   startedAt: number;
   executeMs: number;
   fetchMs: number;
+  /** A plan instead of rows: the statement was explained (DB-16). */
+  plan?: ExplainPlan;
 }
 
 /** The most result tabs kept by default, as SQuirreL. */

@@ -4,6 +4,7 @@
  * viewers of the «Value» panel: JSON and XML laid out, binaries in hexadecimal, images,
  * dates in several forms.
  */
+import { isDefault } from '../edits';
 import { ResultColumn, cellText, isNull } from '../results';
 
 export type CellClass = 'null' | 'number' | 'boolean' | 'date' | 'binary' | 'json' | 'text';
@@ -99,6 +100,8 @@ export function formatCell(
   value: unknown,
   formats: GridFormats = DEFAULT_FORMATS,
 ): { text: string; kind: CellClass } {
+  // A cell of a new row left to its column's default (DB-13).
+  if (isDefault(value)) return { text: 'DEFAULT', kind: 'null' };
   const kind = classOf(value);
   switch (kind) {
     case 'null':

@@ -1,0 +1,52 @@
+{
+  "query": "/* select#1 */ select `shop`.`numbers`.`n` AS `n`,`shop`.`numbers`.`label` AS `label` from `shop`.`numbers` where (`shop`.`numbers`.`n` > 10) order by `shop`.`numbers`.`label`",
+  "inputs": [
+    {
+      "inputs": [
+        {
+          "ranges": [
+            "(10 < n)"
+          ],
+          "covering": false,
+          "operation": "Index range scan on numbers using PRIMARY over (10 < n)",
+          "index_name": "PRIMARY",
+          "table_name": "numbers",
+          "access_type": "index",
+          "actual_rows": 99990.0,
+          "schema_name": "shop",
+          "actual_loops": 1,
+          "used_columns": [
+            "n",
+            "label"
+          ],
+          "estimated_rows": 56179.0,
+          "index_access_type": "index_range_scan",
+          "actual_last_row_ms": 15.762675999999999,
+          "actual_first_row_ms": 0.554239,
+          "estimated_total_cost": 11247.708753438968
+        }
+      ],
+      "condition": "(numbers.n > 10)",
+      "operation": "Filter: (numbers.n > 10)",
+      "access_type": "filter",
+      "actual_rows": 99990.0,
+      "actual_loops": 1,
+      "estimated_rows": 56179.0,
+      "actual_last_row_ms": 21.487865,
+      "actual_first_row_ms": 0.65423,
+      "estimated_total_cost": 11247.708753438968
+    }
+  ],
+  "operation": "Sort: numbers.label",
+  "query_type": "select",
+  "access_type": "sort",
+  "actual_rows": 99990.0,
+  "sort_fields": [
+    "numbers.label"
+  ],
+  "actual_loops": 1,
+  "estimated_rows": 56179.0,
+  "actual_last_row_ms": 64.215075,
+  "actual_first_row_ms": 60.173249,
+  "estimated_total_cost": 11247.708753438968
+}

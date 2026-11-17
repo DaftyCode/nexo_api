@@ -3431,6 +3431,7 @@ dependencies = [
  "chrono",
  "futures-util",
  "nexo-driver-sdk",
+ "quick-xml",
  "serde_json",
  "tiberius",
  "tokio",

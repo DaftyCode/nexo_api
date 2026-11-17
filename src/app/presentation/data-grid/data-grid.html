@@ -9,7 +9,7 @@
   [away]="recordView() || textView()"
   (back)="recordView.set(false); textView.set(false)"
   (menu)="menus.by($event.event, $event.mode)"
-  (next)="findNext($event)"
+  (next)="interaction.findNext($event)"
 >
   <ng-content select="[gridStart]" ngProjectAs="[gridStart]" />
 </app-grid-bar>
@@ -25,7 +25,7 @@
         [count]="layout.shown().length"
         [values]="rows()"
         [formats]="format()"
-        (moved)="step($event)"
+        (moved)="interaction.step($event)"
       />
     } @else if (textView()) {
       <pre class="grid-plain" tabindex="0" [attr.aria-label]="label() | transloco">{{
@@ -42,11 +42,11 @@
         [attr.aria-rowcount]="layout.shown().length + 1"
         [attr.aria-colcount]="layout.order().length + 2"
         [attr.aria-activedescendant]="activeId()"
-        (scroll)="scrolled()"
-        (keydown)="key($event)"
-        (click)="clicked($event)"
-        (dblclick)="panel.set('value')"
-        (contextmenu)="contextMenu($event)"
+        (scroll)="interaction.scrolled()"
+        (keydown)="interaction.key($event)"
+        (click)="interaction.clicked($event)"
+        (dblclick)="interaction.doubleClicked($event)"
+        (contextmenu)="interaction.contextMenu($event)"
       >
         <div
           class="grid-canvas"
@@ -100,6 +100,8 @@
                 [class.grid-row-odd]="drawn.position % 2 === 1"
                 [class.grid-row-active]="drawn.position === selection().active.row"
                 [class.grid-row-selected]="rowChosen(drawn.position)"
+                [class.grid-row-new]="mark(drawn.row)?.kind === 'new'"
+                [class.grid-row-deleted]="mark(drawn.row)?.kind === 'deleted'"
                 [style.top.px]="layout.headerHeight() + drawn.position * layout.rowHeight()"
                 [attr.aria-rowindex]="drawn.position + 2"
               >
@@ -159,43 +161,19 @@
         </div>
       </div>
     }
-    <div class="grid-footer">
-      <ng-content select="[gridFooterStart]" />
-      <button
-        type="button"
-        class="button small grid-export"
-        aria-haspopup="menu"
-        (click)="menus.by($event, 'export')"
-      >
-        <app-studio-icon name="download" />{{ 'Export' | transloco }}
-        <app-studio-icon class="grid-caret" name="chevron" />
-      </button>
-      <span class="grid-divider" aria-hidden="true"></span>
-      <ng-content select="[gridFooterStatus]" />
-      <span class="grid-fact" role="status">
-        <app-studio-icon name="databases" />{{
-          (layout.shown().length === rows().length ? 'db.grid.loaded' : 'db.grid.loadedShown')
-            | transloco: { v0: number(layout.shown().length), v1: number(rows().length) }
-        }}
-      </span>
-      <ng-content select="[gridFooterCount]" />
-      <span class="grid-fact">
-        <app-studio-icon name="selection" />{{
-          (chosenRows() === 1 ? 'db.grid.selectedOne' : 'db.grid.selected')
-            | transloco: { v0: chosenRows() }
-        }}
-      </span>
-      @if (more()) {
-        <button
-          type="button"
-          class="button small subtle"
-          [disabled]="loading()"
-          (click)="readAll.emit()"
-        >
-          {{ 'Read all' | transloco }}
-        </button>
-      }
-    </div>
+    <app-grid-footer
+      [shown]="layout.shown().length"
+      [loaded]="rows().length"
+      [chosen]="chosenRows()"
+      [more]="more()"
+      [loading]="loading()"
+      (exported)="menus.by($event, 'export')"
+      (readAll)="readAll.emit()"
+    >
+      <ng-content select="[gridFooterStart]" ngProjectAs="[gridFooterStart]" />
+      <ng-content select="[gridFooterStatus]" ngProjectAs="[gridFooterStatus]" />
+      <ng-content select="[gridFooterCount]" ngProjectAs="[gridFooterCount]" />
+    </app-grid-footer>
   </div>
   @if (panel() !== 'none') {
     <app-grid-panels
@@ -283,6 +261,7 @@
     [class.grid-selected]="selected(drawn.position, position)"
     [class.grid-active]="activeId() === cellId(drawn.position, position)"
     [class.grid-found]="find.has(drawn.position, position)"
+    [class.grid-changed]="!!mark(drawn.row)?.cells?.has(column)"
     [style.left.px]="left"
     [style.width.px]="layout.widthOf(column)"
     [attr.aria-colindex]="position + 2"
@@ -290,6 +269,22 @@
     [attr.data-row]="drawn.position"
     [attr.data-column]="position"
   >
-    {{ shown.text }}
+    @if (editor.editingAt(drawn.row, column)) {
+      <input
+        #cellInput
+        class="grid-editor"
+        [value]="editor.at()!.text"
+        [attr.aria-label]="'db.edit.cell' | transloco: { v0: columns()[column].name }"
+        [attr.aria-invalid]="!!editor.at()!.error"
+        [attr.title]="editor.at()!.error | transloco"
+        (keydown.enter)="$event.stopPropagation(); editor.commit(cellInput.value)"
+        (keydown.escape)="$event.stopPropagation(); editor.cancel()"
+        (keydown)="$event.stopPropagation()"
+        (blur)="editor.at() && editor.commit(cellInput.value)"
+        (click)="$event.stopPropagation()"
+      />
+    } @else {
+      {{ shown.text }}
+    }
   </div>
 </ng-template>

@@ -1,10 +1,16 @@
 //! What a driver implements, and its line back to the host.
 use crate::{
-    DriverError, Peer, Result, methods,
+    DriverError, Peer, Result,
+    ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
+    explain::{ExplainParams, Plan},
+    import::{ImportParams, Imported},
+    methods,
     protocol::{
         ConnectParams, Ddl, Hello, LogParams, NetResolveParams, NetResolved, ObjectDescription,
         ObjectParams, ServerInfo, TestReport, TreeNode,
     },
+    rows::{RowsWriteParams, RowsWritten},
+    search::{SearchParams, SearchResult},
     statements::{
         CancelParams, CursorParams, ExecuteParams, ExecuteResult, FetchParams, Page,
         TransactionParams, TransactionState,
@@ -104,6 +110,35 @@ pub trait Driver: Send + Sync + 'static {
     }
     async fn transaction(&self, _params: TransactionParams) -> Result<TransactionState> {
         unsupported("transactions")
+    }
+    /// Writes rows changed in the data grid as one, with the driver's own `execute` and
+    /// `transaction` (see [`crate::rows`]); a driver may write them its own way.
+    async fn rows_write(&self, params: RowsWriteParams) -> Result<RowsWritten> {
+        crate::rows::write(self, params).await
+    }
+    /// Imports a batch of rows into a table, with the driver's own `execute` and
+    /// `transaction` (see [`crate::import`]).
+    async fn import(&self, params: ImportParams) -> Result<Imported> {
+        crate::import::write(self, params).await
+    }
+    /// The model of a table, and the types its engine offers (structure editor).
+    async fn ddl_model(&self, _params: DdlModelParams) -> Result<DdlModel> {
+        unsupported("editing the structure of tables")
+    }
+    /// The statements that change a table into another, with [`crate::ddl::plan`] and the
+    /// engine's [`crate::ddl::DdlWriter`]; nothing runs.
+    async fn ddl_plan(&self, _params: DdlPlanParams) -> Result<DdlPlan> {
+        unsupported("editing the structure of tables")
+    }
+    /// Searches objects or data; a driver answers it with [`crate::search::run`] and its
+    /// engine's [`crate::search::SearchCatalog`].
+    async fn search(&self, _params: SearchParams) -> Result<SearchResult> {
+        unsupported("searching")
+    }
+    /// The plan of a statement; a driver answers it with [`crate::explain::run`] and its
+    /// engine's [`crate::explain::PlanReader`], and lists the modes in its capabilities.
+    async fn explain(&self, _params: ExplainParams) -> Result<Plan> {
+        unsupported("execution plans")
     }
 
     /// Any other method: the optional ones a driver lists in its capabilities and the

@@ -203,3 +203,28 @@
   font-family: var(--nexo-font-mono);
   font-size: var(--nexo-font-size-xs);
 }
+/* Rows edited and not saved yet (DB-13): changed cells, new rows and deleted rows. */
+.grid-cell.grid-changed {
+  background: color-mix(in srgb, var(--nexo-color-warning) 18%, transparent);
+}
+.grid-row-new .grid-cell {
+  background: color-mix(in srgb, var(--nexo-color-success) 14%, transparent);
+}
+.grid-row-deleted .grid-cell {
+  text-decoration: line-through;
+  background: color-mix(in srgb, var(--nexo-color-danger) 12%, transparent);
+}
+.grid-editor {
+  width: 100%;
+  height: 100%;
+  padding: 0 var(--nexo-space-2);
+  border: var(--nexo-border-width-strong) solid var(--nexo-color-accent);
+  border-radius: var(--nexo-radius-xs);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text);
+  font: inherit;
+  outline: none;
+}
+.grid-editor[aria-invalid='true'] {
+  border-color: var(--nexo-color-danger);
+}

@@ -9,6 +9,16 @@ pub(crate) struct FakeSources {
     pub(crate) connected: Mutex<Vec<(String, SqlConnection)>>,
     pub(crate) executed: Mutex<Vec<(String, StatementRequest)>>,
     pub(crate) disconnected: Mutex<Vec<String>>,
+    /// Rows written, by session.
+    pub(crate) written: Mutex<Vec<(String, Value)>>,
+    /// Searches asked for, by session.
+    pub(crate) searched: Mutex<Vec<(String, Value)>>,
+    /// Batches imported, by session.
+    pub(crate) imported: Mutex<Vec<(String, Value)>>,
+    /// Plans asked for, by session.
+    pub(crate) explained: Mutex<Vec<(String, Value)>>,
+    /// Sessions kept from closing for being idle, and whether they still are.
+    pub(crate) held: Mutex<Vec<(String, bool)>>,
 }
 
 #[async_trait]
@@ -80,6 +90,58 @@ impl DataSources for FakeSources {
     }
     async fn transaction(&self, _: &str, action: &str, _: Option<String>) -> Result<Value> {
         Ok(json!({"autoCommit": action != "manual", "open": action == "begin"}))
+    }
+    async fn write_rows(&self, session: &str, request: Value) -> Result<Value> {
+        let changes = request["changes"].as_array().map_or(0, Vec::len);
+        self.written.lock().unwrap().push((session.into(), request));
+        Ok(
+            json!({"affected": changes, "statements": ["UPDATE \"t\" SET \"a\" = ? WHERE \"id\" = ?"]}),
+        )
+    }
+    async fn ddl_model(&self, _: &str, request: Value) -> Result<Value> {
+        Ok(
+            json!({"table": {"name": request["path"].as_array().and_then(|p| p.last()).cloned().unwrap_or_default(), "columns": []}, "types": ["integer", "text"]}),
+        )
+    }
+    async fn ddl_plan(&self, _: &str, request: Value) -> Result<Value> {
+        let sql = if request["target"].is_null() {
+            "DROP TABLE t"
+        } else {
+            "ALTER TABLE t ADD COLUMN c text"
+        };
+        Ok(json!({"statements": [sql], "warnings": [], "transactional": true}))
+    }
+    async fn search(&self, session: &str, request: Value) -> Result<Value> {
+        self.searched
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(json!({"objects": [{"kind": "table", "name": "orders", "path": ["shop", "orders"]}]}))
+    }
+    async fn import(&self, session: &str, request: Value) -> Result<Value> {
+        let rows = request["rows"].as_array().map_or(0, Vec::len);
+        self.imported
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(json!({"inserted": rows, "upserted": 0, "failed": 0, "failures": []}))
+    }
+    async fn explain(&self, session: &str, request: Value) -> Result<Value> {
+        self.explained
+            .lock()
+            .unwrap()
+            .push((session.into(), request.clone()));
+        Ok(json!({
+            "mode": request["mode"],
+            "nodes": [{"operation": "Seq Scan", "object": "t", "flags": ["full-scan"]}],
+            "format": "json",
+            "original": "[]",
+            "rolledBack": request["mode"] == "actual" && request["writes"] == true,
+        }))
+    }
+    async fn hold(&self, session: &str, held: bool) -> Result<()> {
+        self.held.lock().unwrap().push((session.into(), held));
+        Ok(())
     }
 }
 

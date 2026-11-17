@@ -1,4 +1,6 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import type { TransferRequest } from './transfer-request';
+import type { StructureRequest } from './structure-draft';
 import type { DatabaseUseCases } from '../../application/database-use-cases';
 import { DATABASES, MODULES } from '../../composition/providers';
 import {
@@ -16,9 +18,12 @@ import { DbBookmark, DbNode, QuoteStyle, keyPath, nodeKey } from '../../domain/d
 import { ModuleSummary } from '../../domain/modules';
 import { WorkspaceDocument } from '../../domain/models';
 import { WorkspaceState } from '../workspace-state';
+import { DriverFacts } from './drivers';
 import { OpenEditors } from './editors';
 import { DbTabsStore } from './tabs-store';
 import { DbTreeStore } from './tree-store';
+import { SchemaCache } from './schema-cache';
+import { SectionTransactions } from './transactions';
 
 /** A module the section waits for: the download dialog asks, then says how it went. */
 export interface ModuleWait {
@@ -53,9 +58,21 @@ export class DbSection {
   readonly text = signal('');
   /** The connection last chosen in the navigator. */
   readonly active = signal('');
-  private readonly quotes = signal<Readonly<Record<string, QuoteStyle>>>({});
+  /** What the driver of each connection said about itself. */
+  readonly drivers = new DriverFacts({
+    connection: (id) => this.connection(id),
+    cases: () => this.cases(),
+    workspace: () => this.state.workspaceId(),
+  });
+  readonly quoteStyle = (connection: string): QuoteStyle => this.drivers.quoteStyle(connection);
+  readonly sqlStyle = (connection: string): QueryStyle => this.drivers.sqlStyle(connection);
+  readonly learnQuotes = (connection: string) => this.drivers.learn(connection);
   /** What each editor tab keeps open while another one is shown. */
   readonly editors = new OpenEditors(this);
+  /** The transactions of the SQL tabs: their warnings and the pending list. */
+  readonly transactions = new SectionTransactions(this);
+  /** What the SQL editor knows of each connection's schema. */
+  readonly schema = new SchemaCache(this);
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
   /** Saved SQL scripts. */
@@ -64,6 +81,11 @@ export class DbSection {
   );
   /** SQL tabs that run their text as soon as they open («View data»). */
   readonly runOnOpen = signal<ReadonlySet<string>>(new Set());
+  /** The transfer wizard open, and what it starts from (DB-17). */
+  readonly transferRequest = signal<TransferRequest | undefined>(undefined);
+  /** The search dialog is open (DB-18), and the table editor (DB-19). */
+  readonly searching = signal(false);
+  readonly structureRequest = signal<StructureRequest | undefined>(undefined);
   readonly folders = computed(() => dbFolders(this.connections()));
   readonly folderNames = computed(() =>
     this.folders()
@@ -160,7 +182,7 @@ export class DbSection {
   }
 
   /** Opens a saved script, or shows its tab when it is open. */
-  openScript(id: string) {
+  openScript(id: string, cursor = 0) {
     const document = this.scripts().find((script) => script.id === id);
     if (!document) return;
     const value = readScript(document.value);
@@ -168,7 +190,7 @@ export class DbSection {
       { kind: 'sql', connection: value.connectionId, title: document.name },
       {
         text: value.sql,
-        cursor: 0,
+        cursor,
         script: id,
         ...(value.database ? { database: value.database } : {}),
       },
@@ -239,28 +261,6 @@ export class DbSection {
         },
       }),
     );
-  }
-
-  /** How the driver of a connection quotes names; plain double quotes until it says. */
-  quoteStyle(connection: string): QuoteStyle {
-    const driver = readDbConnection(this.connection(connection)?.value).driver;
-    return this.quotes()[driver] ?? { quoteOpen: '"', quoteClose: '"' };
-  }
-  /** How the driver of a connection writes SQL: its quotes and its dialect's name. */
-  sqlStyle(connection: string): QueryStyle {
-    const style = this.quoteStyle(connection) as QuoteStyle & {
-      name?: string;
-      parameters?: string;
-    };
-    return { ...style, name: style.name ?? '' };
-  }
-
-  /** Asks the driver of a connection how it quotes names, once. */
-  async learnQuotes(connection: string) {
-    const driver = readDbConnection(this.connection(connection)?.value).driver;
-    if (!driver || this.quotes()[driver]) return;
-    const hello = await (await this.cases()).navigator.hello(this.state.workspaceId(), driver);
-    this.quotes.update((all) => ({ ...all, [driver]: hello.dialect }));
   }
 
   /** Opens the editor of a saved connection, or of a new one. */

@@ -87,4 +87,22 @@ pub trait DataSources: Send + Sync {
         action: &str,
         isolation: Option<String>,
     ) -> Result<Value>;
+    /// Writes rows changed in the data grid as one: `request` names the table and the
+    /// changes; the driver builds and runs the statements.
+    async fn write_rows(&self, session: &str, request: Value) -> Result<Value>;
+    /// The model of a table and the types of its engine (`nexo_driver_sdk::ddl`).
+    async fn ddl_model(&self, session: &str, request: Value) -> Result<Value>;
+    /// The statements that change a table into another; nothing runs.
+    async fn ddl_plan(&self, session: &str, request: Value) -> Result<Value>;
+    /// Objects or data found (`nexo_driver_sdk::search`).
+    async fn search(&self, session: &str, request: Value) -> Result<Value>;
+    /// A batch of rows written into a table (`nexo_driver_sdk::import`).
+    async fn import(&self, session: &str, request: Value) -> Result<Value>;
+    /// The plan of a statement: `{connection, statement, sql, params, mode, writes}`.
+    async fn explain(&self, session: &str, request: Value) -> Result<Value>;
+    /// Keeps a session with an open transaction from being closed for being idle: the
+    /// transaction would be lost with it.
+    async fn hold(&self, _session: &str, _held: bool) -> Result<()> {
+        Ok(())
+    }
 }

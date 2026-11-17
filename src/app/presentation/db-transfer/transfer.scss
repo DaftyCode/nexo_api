@@ -1,0 +1,53 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+}
+.db-transfer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(calc(var(--nexo-size-unit) * 90), 1fr));
+  gap: var(--nexo-space-3) var(--nexo-space-5);
+  align-items: end;
+}
+.db-transfer-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-transfer-table th,
+.db-transfer-table td {
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: start;
+  white-space: nowrap;
+}
+.db-transfer-table th {
+  color: var(--nexo-color-text-muted);
+  font-weight: var(--nexo-font-weight-regular);
+}
+.db-transfer-scroll {
+  max-height: calc(var(--nexo-size-unit) * 90);
+  overflow: auto;
+}
+.db-transfer-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2) var(--nexo-space-5);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.db-transfer-ddl {
+  margin: 0;
+  padding: var(--nexo-space-3);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
+  white-space: pre-wrap;
+}
+.db-transfer-note {
+  margin: 0;
+  color: var(--nexo-color-warning);
+}

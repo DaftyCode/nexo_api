@@ -16,6 +16,9 @@
           <span aria-hidden="true">📌</span>
           <span class="db-hidden-text">{{ 'Pinned' | transloco }}</span>
         }
+        @if (tab.plan) {
+          {{ 'Plan' | transloco }} ·
+        }
         {{ title(tab) }}
       </button>
     }
@@ -39,10 +42,19 @@
 </div>
 
 <div class="db-results-panel" role="tabpanel" [attr.aria-label]="'Result' | transloco">
+  @if (planTab(); as tab) {
+    <app-db-plan [tab]="tab" [runner]="runner()" />
+  }
   @if (current(); as tab) {
     <div class="db-result-toolbar" role="toolbar" [attr.aria-label]="'Result' | transloco">
       <button type="button" class="button small" (click)="runner().rerun(tab)">
         {{ 'Run again' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="explain(tab)">
+        {{ 'Explain' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="exportTab(tab)">
+        {{ 'Export…' | transloco }}
       </button>
       <button
         type="button"
@@ -99,9 +111,13 @@
     >
       @switch (part()) {
         @case ('rows') {
+          @let editor = runner().editorOf(tab.id);
+          @let editing = editingOn().has(tab.id);
           <app-data-grid
             [columns]="tab.columns"
-            [rows]="tab.rows"
+            [rows]="editing ? editor.shown() : tab.rows"
+            [editing]="editing ? editor : undefined"
+            [cellActions]="editing ? editActions : []"
             [more]="!!tab.cursor"
             [loading]="results().fetching().has(tab.id)"
             [sql]="sqlStyle()"
@@ -110,7 +126,23 @@
             (viewChange)="results().setView(tab.id, $event)"
             (needMore)="results().more(tab.id)"
             (readAll)="readAll(tab)"
-          />
+            (cellAction)="edited(editor, $event)"
+          >
+            @if (!editor.reason()) {
+              <button
+                gridStart
+                type="button"
+                class="button small subtle"
+                [attr.aria-pressed]="editing"
+                (click)="toggleEditing(tab.id)"
+              >
+                {{ 'Edit in the grid' | transloco }}
+              </button>
+            }
+            @if (editing) {
+              <app-db-row-edits gridStart [editor]="editor" [columns]="tab.columns" />
+            }
+          </app-data-grid>
           @if (tab.lost) {
             <p class="muted">{{ 'db.result.lost' | transloco }}</p>
           }
@@ -190,7 +222,7 @@
         }
       }
     </div>
-  } @else {
+  } @else if (!planTab()) {
     <div class="db-result-toolbar">
       <span class="grow"></span>
       <button type="button" class="button small subtle" (click)="results().clearMessages()">

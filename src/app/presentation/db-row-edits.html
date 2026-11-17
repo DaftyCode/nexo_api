@@ -1,0 +1,200 @@
+@let edits = editor();
+@if (edits.reason(); as reason) {
+  <span class="db-edit-reason" role="note">
+    <app-studio-icon name="lock" />{{ reason | transloco }}
+  </span>
+  @if (reason === 'db.edit.noKey') {
+    <button type="button" class="button small subtle" (click)="choosingKey.set(true)">
+      {{ 'Choose a key…' | transloco }}
+    </button>
+  }
+} @else {
+  <button type="button" class="button small" (click)="edits.addRow()">
+    <app-studio-icon name="plus" />{{ 'Add row' | transloco }}
+  </button>
+  @if (edits.count(); as count) {
+    <button
+      type="button"
+      class="button small primary"
+      [disabled]="edits.saving()"
+      (click)="edits.save()"
+    >
+      {{ 'db.edit.save' | transloco: { v0: count } }}
+    </button>
+    <button type="button" class="button small" (click)="edits.undo()">
+      {{ 'Undo' | transloco }}
+    </button>
+    <button type="button" class="button small" (click)="edits.discard()">
+      {{ 'Discard' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="edits.showScript()">
+      {{ 'View script' | transloco }}
+    </button>
+  }
+  <label class="check-field db-edit-optimistic"
+    ><input
+      type="checkbox"
+      [checked]="edits.optimistic()"
+      (change)="edits.optimistic.set(!edits.optimistic())"
+    />{{ 'Optimistic locking' | transloco }}</label
+  >
+}
+
+@if (virtualColumns()) {
+  <button type="button" class="button small subtle" (click)="choosingColumns.set(true)">
+    {{ 'Virtual columns…' | transloco }}
+  </button>
+}
+
+@if (choosingColumns()) {
+  <div class="db-edit-backdrop">
+    <section
+      class="feature-card db-edit-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-edit-virtual"
+      (keydown.escape)="choosingColumns.set(false)"
+    >
+      <h2 id="db-edit-virtual">{{ 'Virtual columns' | transloco }}</h2>
+      <p class="muted">{{ 'db.virtual.help' | transloco }}</p>
+      <ul class="db-edit-virtual">
+        @for (column of edits.virtual(); track column.name) {
+          <li>
+            <strong>{{ column.name }}</strong> <code>{{ column.expression }}</code>
+            <button
+              type="button"
+              class="button small subtle"
+              [attr.aria-label]="'db.virtual.remove' | transloco: { v0: column.name }"
+              (click)="removeColumn(column.name)"
+            >
+              ×
+            </button>
+          </li>
+        }
+      </ul>
+      <div class="row db-edit-new">
+        <label class="field"
+          >{{ 'Name' | transloco
+          }}<input
+            [value]="draft().name"
+            (input)="setDraft('name', $any($event.target).value)"
+            autocomplete="off"
+        /></label>
+        <label class="field grow"
+          >{{ 'Expression' | transloco
+          }}<input
+            [value]="draft().expression"
+            [attr.aria-invalid]="!!draft().error"
+            placeholder="price * qty"
+            spellcheck="false"
+            autocomplete="off"
+            (input)="setDraft('expression', $any($event.target).value)"
+        /></label>
+        <button
+          type="button"
+          class="button"
+          [disabled]="!draft().name.trim() || !draft().expression.trim()"
+          (click)="addColumn()"
+        >
+          {{ 'Add' | transloco }}
+        </button>
+      </div>
+      @if (draft().error) {
+        <p class="db-edit-error" role="alert">{{ draft().error | transloco }}</p>
+      }
+      <div class="row db-edit-actions">
+        <button type="button" class="button" (click)="choosingColumns.set(false)">
+          {{ 'Close' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+@if (edits.question(); as question) {
+  <div class="db-edit-backdrop">
+    <section
+      class="feature-card db-edit-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-edit-question"
+      (keydown.escape)="question.answer(false)"
+    >
+      <h2 id="db-edit-question">{{ 'Save the changes' | transloco }}</h2>
+      <p>{{ question.message | transloco: question.params }}</p>
+      <div class="row db-edit-actions">
+        <button type="button" class="button primary" (click)="question.answer(true)">
+          {{ 'Save' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="question.answer(false)">
+          {{ 'Cancel' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+@if (edits.script() !== undefined) {
+  <div class="db-edit-backdrop">
+    <section
+      class="feature-card db-edit-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-edit-script"
+      (keydown.escape)="edits.script.set(undefined)"
+    >
+      <h2 id="db-edit-script">{{ 'The script of the save' | transloco }}</h2>
+      <p class="muted">
+        {{
+          'Its values are written in line to read them; the save binds them as parameters.'
+            | transloco
+        }}
+      </p>
+      <pre class="db-edit-script">{{ edits.script() }}</pre>
+      <div class="row db-edit-actions">
+        <button type="button" class="button" (click)="edits.script.set(undefined)">
+          {{ 'Close' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}
+@if (choosingKey()) {
+  <div class="db-edit-backdrop">
+    <section
+      class="feature-card db-edit-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-edit-key"
+      (keydown.escape)="choosingKey.set(false)"
+    >
+      <h2 id="db-edit-key">{{ 'Choose a virtual key' | transloco }}</h2>
+      <p class="muted">
+        {{
+          'The table has no key: choose the columns that name each row. Nexo keeps them in the connection.'
+            | transloco
+        }}
+      </p>
+      <div class="db-edit-columns" role="group" [attr.aria-label]="'Columns' | transloco">
+        @for (name of names(); track name) {
+          <label class="check-field"
+            ><input type="checkbox" [checked]="chosen().has(name)" (change)="toggle(name)" />{{
+              name
+            }}</label
+          >
+        }
+      </div>
+      <div class="row db-edit-actions">
+        <button
+          type="button"
+          class="button primary"
+          [disabled]="!chosen().size"
+          (click)="saveKey()"
+        >
+          {{ 'Use as the key' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="choosingKey.set(false)">
+          {{ 'Cancel' | transloco }}
+        </button>
+      </div>
+    </section>
+  </div>
+}

@@ -6,7 +6,7 @@ import { violations } from './helpers.mjs';
 import { addConnection, folder, newScript, write } from './databases-helpers.mjs';
 
 // The other database files leave their sessions open, up to the limit a server allows.
-test.use({ ownServer: true });
+test.use({ ownServer: 'sqlite' });
 
 test('a SQLite file is made, written from a script and browsed', async ({ page, nexo }) => {
   test.setTimeout(120_000);

@@ -3,11 +3,18 @@
 //! session. Every statement is checked by `rules` before its driver sees it and recorded in
 //! the history; the connection's vault values never come back in an answer or an error.
 mod connection;
+mod explain;
 mod history;
+mod journal;
+mod rows;
 mod rules;
+mod search;
 mod sessions;
+mod structure;
 #[cfg(test)]
 mod tests;
+mod transactions;
+mod transfer;
 
 pub(crate) use sessions::Sessions;
 
@@ -16,21 +23,21 @@ use crate::{
     operations::Operation,
     payloads::{
         DbCancelPayload, DbConnectPayload, DbCursorPayload, DbDriverPayload, DbExecutePayload,
-        DbObjectPayload, DbSessionPayload, DbSplitPayload, DbTestPayload, DbTransactionPayload,
+        DbObjectPayload, DbSessionPayload, DbSplitPayload, DbTestPayload,
     },
     ports::{DataSources, StatementRequest},
     vault::{redact_error, redact_secrets},
 };
 use nexo_domain::{
     Error, Result, WorkspaceId,
-    sql::{ConnectionType, Dialect, classify, split, statement_at, validate_connection},
+    sql::{
+        ConnectionType, Dialect, StatementKind, classify, split, statement_at, validate_connection,
+    },
 };
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use sessions::{Session, session_name};
 use std::time::{Duration, Instant};
-
-const TRANSACTION_ACTIONS: [&str; 6] = ["status", "begin", "commit", "rollback", "auto", "manual"];
 
 /// Reads a payload already checked against its type.
 fn read<T: DeserializeOwned>(payload: Value) -> Result<T> {
@@ -114,20 +121,16 @@ impl Application {
                 let answer = sources.cancel(&payload.session, &payload.statement).await;
                 redacted(answer.map(|()| json!({})), &session)
             }
-            Operation::DbTransaction => {
-                let payload: DbTransactionPayload = read(payload)?;
-                if !TRANSACTION_ACTIONS.contains(&payload.action.as_str()) {
-                    return Err(Error::Validation(format!(
-                        "Unknown transaction action {}",
-                        payload.action
-                    )));
-                }
-                let session = self.sql_sessions.get(&payload.session)?;
-                let answer = sources
-                    .transaction(&payload.session, &payload.action, payload.isolation)
-                    .await;
-                redacted(answer, &session)
-            }
+            Operation::DbTransaction => self.transact(sources, read(payload)?).await,
+            Operation::DbTransactions => self.open_transactions(read(payload)?),
+            Operation::DbRowsWrite => self.write_rows(sources, read(payload)?).await,
+            Operation::DbExplain => self.explain_statement(sources, read(payload)?).await,
+            Operation::DbImport => self.import_rows(sources, read(payload)?).await,
+            Operation::DbConvert => self.convert_columns(read(payload)?),
+            Operation::DbCopy => self.copy_page(sources, read(payload)?).await,
+            Operation::DbSearch => self.search_session(sources, read(payload)?).await,
+            Operation::DbDdlModel => self.table_model(sources, read(payload)?).await,
+            Operation::DbDdlPlan => self.table_plan(sources, read(payload)?).await,
             _ => Err(Error::Validation(format!(
                 "{operation} is not an operation of the database connections"
             ))),
@@ -200,6 +203,7 @@ impl Application {
                 .as_u64()
                 .map(Duration::from_secs),
             secrets: values.clone(),
+            journal: Default::default(),
         };
         self.sql_sessions.insert(name, session)?;
         match sources.connect(name, connection).await {
@@ -239,6 +243,17 @@ impl Application {
         let took = started.elapsed();
         match redacted(answer, &session) {
             Ok(value) => {
+                let writes = matches!(
+                    classification.kind,
+                    StatementKind::Write | StatementKind::Structure
+                );
+                let affected = value["affected"].as_u64();
+                session
+                    .journal
+                    .lock()
+                    .unwrap()
+                    .statement(&payload.sql, took, affected, writes);
+                self.hold_open(sources, &payload.session, &session).await;
                 self.record_statement(&session, &payload.sql, took, Ok(&value))
                     .await;
                 Ok(value)

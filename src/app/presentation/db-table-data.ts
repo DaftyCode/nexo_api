@@ -20,6 +20,7 @@ import {
   orderBy,
 } from '../domain/db/table-query';
 import { CodeEditor } from './code-editor';
+import { DbRowEdits, EDIT_ACTIONS, editAction } from './db-row-edits';
 import { CellAction, DataGrid } from './data-grid/data-grid';
 import { DbSection } from './db-panel/section';
 import { PAGES } from './db-panel/table-data';
@@ -44,7 +45,7 @@ const ACTIONS: readonly CellAction[] = [
  * related by its foreign keys.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid, StudioIcon],
+  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid, DbRowEdits, StudioIcon],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-table-data',
   templateUrl: './db-table-data.html',
@@ -62,7 +63,10 @@ export class DbTableData {
   private readonly i18n = inject(TranslocoService);
   protected readonly data = computed(() => this.section.editors.table(this.tab().id));
   protected readonly query = computed(() => this.tab().query ?? emptyTableQuery());
-  protected readonly actions = ACTIONS;
+  /** The quick filters, and the edits while the rows can be edited. */
+  protected readonly cellActions = computed(() =>
+    this.data().editor.reason() ? ACTIONS : [...ACTIONS, ...EDIT_ACTIONS],
+  );
   protected readonly model = signal({ where: '', every: 10, page: '200' });
   protected readonly pages = PAGES;
   protected readonly refreshMenu = signal<PopupPlace | undefined>(undefined);
@@ -171,7 +175,8 @@ export class DbTableData {
     if (column) this.change(orderBy(this.query(), column, false));
   }
 
-  protected cellAction(event: { action: string; column: number; value: unknown }) {
+  protected cellAction(event: { action: string; column: number; value: unknown; rows: number[] }) {
+    if (event.action.startsWith('edit.')) return editAction(this.data().editor, event);
     const column = this.data().columns()[event.column]?.name;
     if (!column) return;
     if (event.action === 'order-add') return this.change(orderBy(this.query(), column, true));

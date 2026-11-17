@@ -1,0 +1,62 @@
+.db-transfer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-transfer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 240), 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+.db-transfer h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-transfer h3 {
+  margin: var(--nexo-space-2) 0 0;
+  font-size: var(--nexo-font-size-md);
+}
+.db-transfer p {
+  margin: 0;
+}
+.db-transfer-warning {
+  color: var(--nexo-color-warning);
+}
+.db-transfer-error {
+  color: var(--nexo-color-danger-text);
+}
+.db-transfer-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.db-transfer-progress progress {
+  flex: 1;
+}
+.db-transfer-outcome {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--nexo-space-1) var(--nexo-space-4);
+  margin: 0;
+}
+.db-transfer-outcome dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.db-transfer-failures {
+  margin: 0;
+  padding-inline-start: var(--nexo-space-6);
+  max-height: calc(var(--nexo-size-unit) * 60);
+  overflow: auto;
+}
+.db-transfer-actions {
+  justify-content: flex-end;
+  gap: var(--nexo-space-4);
+}

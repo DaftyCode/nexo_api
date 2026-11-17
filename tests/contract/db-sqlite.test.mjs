@@ -54,7 +54,7 @@ before(async () => {
 });
 after(async () => {
   await server?.stop();
-  if (folder) await rm(folder, { recursive: true, force: true });
+  if (folder) await rm(folder, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 });
 
 test('the SQLite module answers through Nexo on the file the connection names', async () => {

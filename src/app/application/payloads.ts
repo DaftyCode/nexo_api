@@ -702,6 +702,103 @@ export interface DbTransactionPayload {
   workspace?: string;
 }
 
+export interface DbTransactionsPayload {
+  workspace?: string;
+}
+
+export interface DbRowsWritePayload {
+  session: string;
+  table: string;
+  changes: readonly unknown[];
+  schema?: string;
+  optimistic?: boolean;
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbExplainPayload {
+  session: string;
+  statement: string;
+  sql: string;
+  params?: readonly unknown[];
+  mode?: 'estimated' | 'actual';
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbImportPayload {
+  session: string;
+  table: string;
+  columns: readonly string[];
+  rows: readonly (readonly unknown[])[];
+  schema?: string;
+  mode?: 'insert' | 'upsert';
+  key?: readonly string[];
+  stopOnError?: boolean;
+  first?: number;
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbConvertPayload {
+  session: string;
+  table: string;
+  columns: readonly { name: string; kind: string; typeName?: string; nullable?: boolean }[];
+  schema?: string;
+  sourceDriver?: string;
+  targetDriver?: string;
+  workspace?: string;
+}
+
+export interface DbCopyPayload {
+  source: string;
+  target: string;
+  table: string;
+  sql?: string;
+  cursor?: string;
+  schema?: string;
+  columns?: readonly string[];
+  mode?: 'insert' | 'upsert';
+  key?: readonly string[];
+  stopOnError?: boolean;
+  first?: number;
+  pageRows?: number;
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbSearchPayload {
+  session: string;
+  statement: string;
+  text: string;
+  mode?: 'metadata' | 'data';
+  kinds?: readonly string[];
+  code?: boolean;
+  schemas?: readonly string[];
+  max?: number;
+  tables?: readonly { schema?: string; name: string; path?: readonly string[] }[];
+  caseSensitive?: boolean;
+  wholeWord?: boolean;
+  columns?: readonly ('text' | 'number')[];
+  maxRows?: number;
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbDdlModelPayload {
+  session: string;
+  path?: readonly string[];
+  workspace?: string;
+}
+
+export interface DbDdlPlanPayload {
+  session: string;
+  original?: unknown;
+  target?: unknown;
+  cascade?: boolean;
+  workspace?: string;
+}
+
 export interface DbSplitPayload {
   script: string;
   dialect?: string;
@@ -813,6 +910,15 @@ export interface OperationPayloads {
   'db.close': DbCursorPayload;
   'db.cancel': DbCancelPayload;
   'db.transaction': DbTransactionPayload;
+  'db.transactions': DbTransactionsPayload;
+  'db.rows.write': DbRowsWritePayload;
+  'db.explain': DbExplainPayload;
+  'db.import': DbImportPayload;
+  'db.convert': DbConvertPayload;
+  'db.copy': DbCopyPayload;
+  'db.search': DbSearchPayload;
+  'db.ddl.model': DbDdlModelPayload;
+  'db.ddl.plan': DbDdlPlanPayload;
   'db.split': DbSplitPayload;
   'db.dialect': DbDriverPayload;
 }

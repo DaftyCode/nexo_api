@@ -1,0 +1,35 @@
+.grid-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-4) var(--nexo-space-8);
+  margin-top: var(--nexo-space-5);
+  padding: var(--nexo-space-4) var(--nexo-space-6);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-lg);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text-soft);
+  font-size: var(--nexo-font-size-sm);
+}
+.grid-footer app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}
+.grid-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.grid-divider {
+  align-self: stretch;
+  width: var(--nexo-border-width);
+  background: var(--nexo-color-border);
+}
+.grid-export {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.grid-caret {
+  transform: rotate(90deg);
+}

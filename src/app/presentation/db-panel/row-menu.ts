@@ -1,9 +1,12 @@
 import { TranslocoPipe } from '@jsverse/transloco';
+import { TEMPLATE_FOLDERS } from '../../domain/db/ddl-templates';
+import { editsStructure } from './structure-request';
 import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
   afterNextRender,
+  computed,
   inject,
   input,
   output,
@@ -60,6 +63,21 @@ import { DbSection } from './section';
         </button>
       }
       @if (row().type === 'node') {
+        @if (row().node?.kind === 'folder' && row().node?.name === 'tables' && structure()) {
+          <button type="button" role="menuitem" (click)="chosen.emit('newTable')">
+            {{ 'New table…' | transloco }}
+          </button>
+        }
+        @if (row().node?.kind === 'folder' && templated()) {
+          <button type="button" role="menuitem" (click)="chosen.emit('newObject')">
+            {{ 'db.structure.newObject' | transloco: { v0: row().label } }}
+          </button>
+        }
+        @if (row().path?.at(-2) === 'materialized-views' && row().node?.kind !== 'folder') {
+          <button type="button" role="menuitem" (click)="chosen.emit('refreshView')">
+            {{ 'Refresh materialized view' | transloco }}
+          </button>
+        }
         @if (row().node?.actions?.includes('open')) {
           <button type="button" role="menuitem" (click)="chosen.emit('open')">
             {{ 'Open' | transloco }}
@@ -69,7 +87,34 @@ import { DbSection } from './section';
           <button type="button" role="menuitem" (click)="chosen.emit('viewData')">
             {{ 'View data' | transloco }}
           </button>
+          @for (kind of generated; track kind[0]) {
+            <button type="button" role="menuitem" (click)="chosen.emit(kind[0])">
+              {{ 'db.generate' | transloco: { v0: kind[1] } }}
+            </button>
+          }
+          @for (each of transfers; track each[0]) {
+            <button type="button" role="menuitem" (click)="chosen.emit(each[0])">
+              {{ each[1] | transloco }}
+            </button>
+          }
+          @if (row().node?.kind === 'table' && structure()) {
+            @for (each of tableStructure; track each[0]) {
+              <button
+                type="button"
+                role="menuitem"
+                [class.danger]="each[0] !== 'editStructure'"
+                (click)="chosen.emit(each[0])"
+              >
+                {{ each[1] | transloco }}
+              </button>
+            }
+          }
         }
+      }
+      @if (row().type === 'connection') {
+        <button type="button" role="menuitem" (click)="chosen.emit('console')">
+          {{ 'SQL console' | transloco }}
+        </button>
       }
       @if (row().type === 'connection' || row().type === 'node' || row().type === 'script-group') {
         <button type="button" role="menuitem" (click)="chosen.emit('newScript')">
@@ -129,6 +174,33 @@ export class DbRowMenu {
   readonly chosen = output<MenuAction>();
   readonly closed = output<void>();
   protected readonly section = inject(DbSection);
+  /** «Generate SQL» of a table or view, as DBeaver's. */
+  protected readonly generated = [
+    ['generateSelect', 'SELECT'],
+    ['generateInsert', 'INSERT'],
+    ['generateUpdate', 'UPDATE'],
+    ['generateDelete', 'DELETE'],
+    ['generateMerge', 'MERGE'],
+  ] as const;
+  /** A folder whose new objects start from a template of their engine (DB-19). */
+  protected readonly templated = computed(() =>
+    (TEMPLATE_FOLDERS as readonly string[]).includes(this.row().node?.name ?? ''),
+  );
+  /** The structure of a table (DB-19), when its driver edits it. */
+  protected readonly structure = computed(() =>
+    editsStructure(this.section, this.row().connection),
+  );
+  protected readonly tableStructure = [
+    ['editStructure', 'Edit structure…'],
+    ['emptyTable', 'Empty table…'],
+    ['dropTable', 'Drop table…'],
+  ] as const;
+  /** Data in and out of a table (DB-17). */
+  protected readonly transfers = [
+    ['exportData', 'Export data…'],
+    ['importData', 'Import data…'],
+    ['copyData', 'Copy to another connection…'],
+  ] as const;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor() {

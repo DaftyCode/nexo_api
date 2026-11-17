@@ -55,7 +55,10 @@ test("an object's tab shows its data from the server and follows its keys", asyn
   await expect(page.getByRole('region', { name: 'Object details' })).toContainText('permanent');
   expect(await violations(page)).toEqual([]);
   await views.getByRole('button', { name: 'Columns' }).click();
-  await expect(page.getByRole('grid', { name: 'Columns' })).toContainText('customer');
+  // Editable in place (DB-19): each column is a row of fields.
+  await expect(
+    page.getByRole('table', { name: 'Columns' }).getByLabel('Type of customer'),
+  ).toBeVisible();
   await views.getByRole('button', { name: 'DDL' }).click();
   await expect(page.locator('app-db-object-tab .cm-content')).toContainText(
     'CREATE TABLE shop.orders',

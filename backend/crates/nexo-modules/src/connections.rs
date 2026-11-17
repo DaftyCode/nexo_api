@@ -36,6 +36,8 @@ pub(crate) struct Connection {
     pub secret_hosts: SecretHosts,
     pub last_used: Instant,
     pub destinations: Vec<Destination>,
+    /// A transaction is open in it: it is never closed for being idle (the person is told).
+    pub held: bool,
 }
 
 #[derive(Default)]
@@ -90,6 +92,12 @@ impl Connections {
             list.push(destination);
         }
     }
+    /// Keeps a connection open while it has a transaction, however long it is not used.
+    pub fn hold(&self, name: &str, held: bool) {
+        if let Some(connection) = self.0.lock().unwrap().get_mut(name) {
+            connection.held = held;
+        }
+    }
     pub fn count(&self, module: &str) -> usize {
         let connections = self.0.lock().unwrap();
         connections.values().filter(|c| c.module == module).count()
@@ -106,7 +114,7 @@ impl Connections {
         let mut connections = self.0.lock().unwrap();
         let names: Vec<String> = connections
             .iter()
-            .filter(|(_, connection)| connection.last_used.elapsed() >= idle)
+            .filter(|(_, connection)| !connection.held && connection.last_used.elapsed() >= idle)
             .map(|(name, _)| name.clone())
             .collect();
         names

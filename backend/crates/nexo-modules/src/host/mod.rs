@@ -158,6 +158,7 @@ impl DriverHost {
             secret_hosts,
             last_used: Instant::now(),
             destinations: Vec::new(),
+            held: false,
         };
         if let Err(error) = shared.connections.open(&params.connection, connection) {
             return (Err(error), Vec::new());
@@ -218,6 +219,11 @@ impl DriverHost {
             .await;
         self.shared.connections.close(connection);
         outcome
+    }
+
+    /// Keeps a connection with an open transaction from being closed for being idle.
+    pub fn hold(&self, connection: &str, held: bool) {
+        self.shared.connections.hold(connection, held);
     }
 
     /// The modules whose driver is running.

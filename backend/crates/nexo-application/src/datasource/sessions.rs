@@ -1,5 +1,6 @@
 //! The sessions open on the databases of the modules, and what the application must know of
 //! each to apply its rules without the client sending the connection again.
+use super::journal::Journal;
 use nexo_domain::{DocumentId, Error, Result, WorkspaceId, sql::ConnectionType};
 use std::{
     collections::HashMap,
@@ -21,6 +22,8 @@ pub(crate) struct Session {
     pub timeout: Option<Duration>,
     /// The vault values the connection used, to keep them out of every answer.
     pub secrets: Vec<(String, String)>,
+    /// Its transaction: the statements since it began.
+    pub journal: Mutex<Journal>,
 }
 
 #[derive(Default)]
@@ -61,5 +64,15 @@ impl Sessions {
     }
     pub fn remove(&self, name: &str) -> Option<Arc<Session>> {
         self.0.lock().unwrap().remove(name)
+    }
+    /// Every open session, by name.
+    pub fn all(&self) -> Vec<(String, Arc<Session>)> {
+        let sessions = self.0.lock().unwrap();
+        let mut all: Vec<_> = sessions
+            .iter()
+            .map(|(name, session)| (name.clone(), session.clone()))
+            .collect();
+        all.sort_by(|a, b| a.0.cmp(&b.0));
+        all
     }
 }

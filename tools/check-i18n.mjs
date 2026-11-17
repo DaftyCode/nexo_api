@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import { readdir, readFile } from 'node:fs/promises';
-import { BindingPipe, Conditional, LiteralPrimitive, parseTemplate } from '@angular/compiler';
+import {
+  BindingPipe,
+  Conditional,
+  LiteralPrimitive,
+  ParenthesizedExpression,
+  parseTemplate,
+} from '@angular/compiler';
 import ts from 'typescript';
 const path = 'src/app/infrastructure/i18n/';
 const en = JSON.parse(await readFile(`${path}en.json`, 'utf8'));
@@ -23,6 +29,8 @@ function verifyKey(expression) {
       Object.hasOwn(en, expression.value),
       `Message used by a template is missing: ${expression.value}`,
     );
+  } else if (expression instanceof ParenthesizedExpression) {
+    verifyKey(expression.expression);
   } else if (expression instanceof Conditional) {
     verifyKey(expression.trueExp);
     verifyKey(expression.falseExp);
@@ -58,7 +66,8 @@ function checkTemplate(source, file) {
   }
   result.nodes.forEach(visit);
 }
-for (const name of await readdir('src/app/presentation')) {
+const presentation = await readdir('src/app/presentation', { recursive: true });
+for (const name of presentation.map((each) => each.replaceAll('\\', '/'))) {
   const file = `src/app/presentation/${name}`;
   if (name.endsWith('.html')) checkTemplate(await readFile(file, 'utf8'), file);
   else if (name.endsWith('.ts') && !name.endsWith('.spec.ts')) {

@@ -51,9 +51,19 @@ export interface DbConnectionValue {
   readOnly?: boolean;
   /** Off: statements wait for a commit. Production connections start with it off. */
   autoCommit?: boolean;
+  /** In auto-commit, a statement that writes switches to manual commit first (DBeaver's
+   * «smart commit»), so it can be rolled back. */
+  smartCommit?: boolean;
+  /** The SQL tabs of the connection share one session, and so one transaction. */
+  sharedSession?: boolean;
   /** The longest a statement may run, in seconds. */
   timeoutSeconds?: number;
   filters?: NodeFilter[];
+  /** The columns that name each row of a table without a key, by `schema.table`, chosen to
+   * edit its rows in the grid (DBeaver's virtual keys). */
+  virtualKeys?: Record<string, string[]>;
+  /** Columns computed in the interface from the others, by `schema.table` (DB-13). */
+  virtualColumns?: Record<string, { name: string; expression: string }[]>;
 }
 
 /** The vault entries Nexo creates for a connection. */
@@ -80,6 +90,34 @@ function texts(value: unknown): Record<string, string> {
     ),
   );
 }
+
+function virtualKeys(value: unknown): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(record(value)).filter(
+      (entry): entry is [string, string[]] =>
+        Array.isArray(entry[1]) &&
+        entry[1].length > 0 &&
+        entry[1].every((column) => typeof column === 'string'),
+    ),
+  );
+}
+
+function virtualColumns(value: unknown): Record<string, { name: string; expression: string }[]> {
+  return Object.fromEntries(
+    Object.entries(record(value)).flatMap(([table, list]) => {
+      const kept = (Array.isArray(list) ? list : []).flatMap((item) => {
+        const column = record(item);
+        const name = typeof column['name'] === 'string' ? column['name'].trim() : '';
+        const expression = typeof column['expression'] === 'string' ? column['expression'] : '';
+        return name && expression.trim() ? [{ name, expression }] : [];
+      });
+      return kept.length ? [[table, kept]] : [];
+    }),
+  );
+}
+
+/** The name a table's virtual key is kept under. */
+export const tableKey = (table: string, schema?: string) => (schema ? `${schema}.${table}` : table);
 
 function filters(value: unknown): NodeFilter[] {
   if (!Array.isArray(value)) return [];
@@ -108,6 +146,8 @@ export function readDbConnection(value: unknown): DbConnectionValue {
   const timeout = source['timeoutSeconds'];
   const params = texts(source['params']);
   const kept = filters(source['filters']);
+  const keys = virtualKeys(source['virtualKeys']);
+  const computed = virtualColumns(source['virtualColumns']);
   const optional = {
     host: text('host'),
     database: text('database'),
@@ -128,8 +168,12 @@ export function readDbConnection(value: unknown): DbConnectionValue {
     ...(type ? { type } : {}),
     ...(source['readOnly'] === true ? { readOnly: true } : {}),
     ...(typeof source['autoCommit'] === 'boolean' ? { autoCommit: source['autoCommit'] } : {}),
+    ...(source['smartCommit'] === true ? { smartCommit: true } : {}),
+    ...(source['sharedSession'] === true ? { sharedSession: true } : {}),
     ...(typeof timeout === 'number' && timeout > 0 ? { timeoutSeconds: timeout } : {}),
     ...(kept.length ? { filters: kept } : {}),
+    ...(Object.keys(keys).length ? { virtualKeys: keys } : {}),
+    ...(Object.keys(computed).length ? { virtualColumns: computed } : {}),
   };
 }
 

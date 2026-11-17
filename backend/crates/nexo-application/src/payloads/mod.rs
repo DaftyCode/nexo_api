@@ -96,6 +96,7 @@ mod mongo_write;
 mod protocols;
 #[cfg(test)]
 mod tests;
+mod typescript;
 
 pub use auth::*;
 pub use common::*;
@@ -108,6 +109,7 @@ pub use mongo_read::*;
 pub use mongo_schema::*;
 pub use mongo_write::*;
 pub use protocols::*;
+pub use typescript::typescript_contract;
 
 fn check<T: DeserializeOwned + Serialize>(
     operation: impl std::fmt::Display,
@@ -260,6 +262,15 @@ operation_payloads! {
     DbClose => DbCursorPayload,
     DbCancel => DbCancelPayload,
     DbTransaction => DbTransactionPayload,
+    DbTransactions => DbTransactionsPayload,
+    DbRowsWrite => DbRowsWritePayload,
+    DbExplain => DbExplainPayload,
+    DbImport => DbImportPayload,
+    DbConvert => DbConvertPayload,
+    DbCopy => DbCopyPayload,
+    DbSearch => DbSearchPayload,
+    DbDdlModel => DbDdlModelPayload,
+    DbDdlPlan => DbDdlPlanPayload,
     DbSplit => DbSplitPayload,
     DbDialect => DbDriverPayload,
 }
@@ -267,31 +278,4 @@ operation_payloads! {
 /// Checks the payload of a Git operation.
 pub fn validate_git(operation: GitOperation, payload: Value) -> Result<Value> {
     check::<GitPayload>(operation, payload)
-}
-
-/// The TypeScript contract written to `src/app/application/payloads.ts`.
-pub fn typescript_contract() -> String {
-    let mut parts = vec![
-        "// Generated from backend/crates/nexo-application/src/payloads.rs.\n\
-         // Regenerate with `NEXO_UPDATE_CONTRACTS=1 cargo test -p nexo-application`.\n\
-         import type { ExecutionOperation } from './operations';\n"
-            .to_string(),
-        VariableRow::TYPESCRIPT.to_string(),
-        ExecutionContext::TYPESCRIPT.to_string(),
-        RunCursor::TYPESCRIPT.to_string(),
-        FileAttachment::TYPESCRIPT.to_string(),
-        CookieKey::TYPESCRIPT.to_string(),
-        GitFile::TYPESCRIPT.to_string(),
-        MongoConnection::TYPESCRIPT.to_string(),
-        MongoCollectionRef::TYPESCRIPT.to_string(),
-    ];
-    parts.extend(typescript_interfaces().into_iter().map(String::from));
-    parts.push(GitPayload::TYPESCRIPT.to_string());
-    parts.push(typescript_map());
-    parts.push(
-        "/** The payload of an operation. */\n\
-         export type PayloadOf<O extends ExecutionOperation> = OperationPayloads[O];\n"
-            .to_string(),
-    );
-    parts.join("\n")
 }

@@ -5,6 +5,12 @@ import { DbNavigator } from './db-navigator';
 import { DbObjectTab } from './db-object-tab';
 import { DbSqlTab } from './db-sql-tab';
 import { ListDrag } from './workspace/list-drag';
+import { DbTransactions } from './db-transactions';
+import { DbConsole } from './db-console';
+import { DbTransfer } from './db-transfer';
+import { DbSearch } from './db-search';
+import { DbTableEditor } from './db-table-editor';
+import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
 import { ModuleDownload } from './module-download';
@@ -29,9 +35,18 @@ const NAVIGATOR = { min: 200, initial: 300 };
     ModuleDownload,
     Splitter,
     StudioIcon,
+    DbTransactions,
+    DbConsole,
+    DbTransfer,
+    DbSearch,
+    DbTableEditor,
   ],
   providers: [DbSection],
-  host: { '(keydown)': 'shortcut($event)' },
+  host: {
+    '(keydown)': 'shortcut($event)',
+    '(window:keydown)': 'searchKey($event)',
+    '(window:beforeunload)': 'leaving($event)',
+  },
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-panel',
   styleUrl: './db-panel.scss',
@@ -47,6 +62,12 @@ export class DbPanel {
     const active = this.tabs.active();
     return active ? [active] : [];
   });
+  /** SQL tabs whose transaction has changes a rollback would undo. */
+  protected readonly pendingTabs = computed(() => {
+    this.tabs.tabs();
+    return this.section.editors.all().filter((runner) => hasPendingWrites(runner.transaction()))
+      .length;
+  });
   /** Editor tabs dragged to put them in another order. */
   protected readonly drag = new ListDrag('x', (id, over, side) => this.tabs.move(id, over, side));
 
@@ -55,20 +76,35 @@ export class DbPanel {
     const connection = this.section.connection(tab.connection)?.name ?? '';
     if (tab.kind === 'connection') return connection || tab.title;
     if (tab.kind === 'object') return tab.title;
+    if (tab.kind === 'console') return `${connection} · Console`;
     const script = this.section
       .scripts()
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
     return script ? script.name : `${connection} · SQL`;
   }
   protected kindIcon(tab: DbTab) {
-    return tab.kind === 'sql' ? 'code' : 'databases';
+    return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {
     return tab.kind === 'sql' && !!this.tabs.drafts()[tab.id]?.dirty;
   }
+  /** Leaving Nexo with changes not committed: the browser asks first. */
+  protected leaving(event: BeforeUnloadEvent) {
+    if (this.section.transactions.anyPending()) event.preventDefault();
+  }
+
   /** Ctrl+] opens a SQL script on the connection last chosen, as in DBeaver. */
+  /** Ctrl+H searches the databases, as DBeaver, wherever the focus is in the section. */
+  protected searchKey(event: KeyboardEvent) {
+    const control = event.ctrlKey || event.metaKey;
+    if (!control || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'h') return;
+    event.preventDefault();
+    this.section.searching.set(true);
+  }
+
   protected shortcut(event: KeyboardEvent) {
-    if (event.key !== ']' || !(event.ctrlKey || event.metaKey) || event.defaultPrevented) return;
+    if (!(event.ctrlKey || event.metaKey) || event.defaultPrevented) return;
+    if (event.key !== ']') return;
     const active = this.section.active();
     if (!this.section.connection(active)) return;
     event.preventDefault();

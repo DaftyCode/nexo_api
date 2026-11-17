@@ -1,0 +1,46 @@
+{
+  "query_optimization": {
+    "r_total_time_ms": 9.016762947
+  },
+  "query_block": {
+    "select_id": 1,
+    "cost": 84.03150095,
+    "r_loops": 1,
+    "r_total_time_ms": 209.840245,
+    "nested_loop": [
+      {
+        "read_sorted_file": {
+          "r_rows": 99990,
+          "filesort": {
+            "sort_key": "numbers.label",
+            "r_loops": 1,
+            "r_total_time_ms": 203.6242838,
+            "r_used_priority_queue": false,
+            "r_output_rows": 99990,
+            "r_sort_passes": 3,
+            "r_buffer_size": "2047KiB",
+            "r_sort_mode": "sort_key,packed_addon_fields",
+            "table": {
+              "table_name": "numbers",
+              "access_type": "ALL",
+              "possible_keys": ["PRIMARY"],
+              "loops": 1,
+              "r_loops": 1,
+              "rows": 100344,
+              "r_rows": 100000,
+              "cost": 16.558402,
+              "r_table_time_ms": 45.24296079,
+              "r_other_time_ms": 158.1163704,
+              "r_engine_stats": {
+                "pages_accessed": 227
+              },
+              "filtered": 100,
+              "r_filtered": 99.99,
+              "attached_condition": "numbers.n > 10"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

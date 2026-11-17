@@ -8,6 +8,15 @@
   >
     <app-studio-icon name="plus" />{{ 'Connection' | transloco }}
   </button>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-label]="'Search the databases (Ctrl+H)' | transloco"
+    [attr.title]="'Search the databases (Ctrl+H)' | transloco"
+    (click)="section.searching.set(true)"
+  >
+    <app-studio-icon name="search" />
+  </button>
 </div>
 <div class="db-nav-search">
   <label class="db-search">

@@ -1,0 +1,27 @@
+@use './structure';
+
+.db-structure-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-structure-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 280), 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+.db-structure-dialog h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-structure-dialog h3 {
+  margin: var(--nexo-space-2) 0 0;
+  font-size: var(--nexo-font-size-md);
+}

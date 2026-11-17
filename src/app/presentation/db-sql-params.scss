@@ -1,0 +1,27 @@
+.db-params-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-params {
+  width: min(560px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+}
+.db-params h2 {
+  margin-top: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-param-row {
+  align-items: flex-end;
+  gap: var(--nexo-space-4);
+}
+.db-params-actions {
+  justify-content: flex-end;
+  gap: var(--nexo-space-4);
+  margin-top: var(--nexo-space-5);
+}

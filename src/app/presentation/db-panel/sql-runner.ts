@@ -12,6 +12,9 @@ import {
 } from '../../domain/db/sql';
 import { PAGE_ROWS } from './sql-results';
 import { SqlSession } from './sql-session';
+import { ScriptClient } from './sql-client';
+import { prepareTransaction } from './sql-transaction';
+import { errorPlace } from './error-place';
 
 /** What the tab asks the person before a statement runs or after one fails. */
 export type RunnerDialog =
@@ -21,24 +24,6 @@ export type RunnerDialog =
       message: string;
       answer: (choice: 'continue' | 'stop' | 'ignore', remember: boolean) => void;
     };
-
-/** Where an error is: an offset of the editor and its line and column, from 1. */
-function errorPlace(script: string, base: number, statement: SplitStatement, detail: unknown) {
-  const place = (detail ?? {}) as { line?: unknown; column?: unknown };
-  if (typeof place.line !== 'number') return undefined;
-  const lines = statement.text.split('\n');
-  const line = Math.min(Math.max(place.line, 1), lines.length);
-  const column = typeof place.column === 'number' ? Math.max(place.column, 1) : 1;
-  const inside =
-    lines.slice(0, line - 1).reduce((sum, text) => sum + text.length + 1, 0) + column - 1;
-  const offset = base + statement.start + inside;
-  const before = script.slice(0, offset);
-  return {
-    offset,
-    line: before.split('\n').length,
-    column: offset - before.lastIndexOf('\n'),
-  };
-}
 
 /**
  * A SQL tab while it is open: what runs on its session, confirmed first when it needs it,
@@ -50,6 +35,8 @@ export class SqlRunner extends SqlSession {
   readonly reuse = signal(false);
   /** The editor's place of the last error, for the tab to go there. */
   readonly errorAt = signal<{ offset: number } | undefined>(undefined);
+  /** The `@` commands, `${variables}` and parameters of its scripts (DB-15). */
+  readonly client = new ScriptClient(this);
   private runs = 0;
   private order = 0;
   private ignoreFailures = false;
@@ -74,18 +61,22 @@ export class SqlRunner extends SqlSession {
 
   /** Runs every statement of `text` (the script, or a selection at `base`) in order. */
   async runScript(text: string, base = 0, script = text, fresh = false) {
-    const split = await this.split(text);
-    if (!split?.statements.length) return;
+    const parts = this.client.parts(text);
+    if (!parts) return;
     this.ignoreFailures = false;
-    for (const statement of split.statements) {
-      const ran = await this.runStatement(
-        statement,
-        base,
-        script,
-        fresh || split.statements.length > 1,
-      );
-      if (ran === 'cancelled') return;
-      if (ran === 'failed' && !(await this.goOn())) return;
+    for (const part of parts) {
+      if (part.kind === 'command') {
+        if (!(await this.client.command(part.command))) return;
+        continue;
+      }
+      const split = await this.split(part.text);
+      for (const statement of split?.statements ?? []) {
+        if (this.client.exportNext(statement.text)) continue;
+        const many = parts.length > 1 || (split?.statements.length ?? 0) > 1;
+        const ran = await this.runStatement(statement, base + part.offset, script, fresh || many);
+        if (ran === 'cancelled') return;
+        if (ran === 'failed' && !(await this.goOn())) return;
+      }
     }
   }
 
@@ -143,9 +134,11 @@ export class SqlRunner extends SqlSession {
   ): Promise<'ran' | 'failed' | 'cancelled'> {
     let sql: string;
     try {
-      sql = withVariables(statement.text, this.section.state.scopes());
+      sql = this.client.withVariables(withVariables(statement.text, this.section.state.scopes()));
     } catch (error) {
-      this.results.note({ kind: 'error', text: this.section.state.describe(error) });
+      const params = (error as { params?: Record<string, string> }).params;
+      const text = this.section.state.describe(error);
+      this.results.note({ kind: 'error', text, ...(params ? { params } : {}) });
       return 'failed';
     }
     const production = connectionType(readDbConnection(this.connection()?.value)) === 'production';
@@ -155,16 +148,30 @@ export class SqlRunner extends SqlSession {
       return 'cancelled';
     }
     if (!(await this.open())) return 'failed';
+    const bound = await this.client.bind(sql, this.parameterStyle());
+    if (!bound) {
+      this.results.note({ kind: 'info', text: 'Not run: its parameters were not given' });
+      return 'cancelled';
+    }
+    const asked = (wanted: Confirmation) => this.confirm(wanted, sql);
+    if (!(await prepareTransaction(this, statement.classification, asked))) return 'cancelled';
     const cases = await this.section.cases();
     const run = `${this.tab}-${++this.runs}`;
     this.running.set(run);
     const started = Date.now();
     try {
-      const answer = await cases.statements.execute(this.workspace(), this.session, run, sql, {
-        pageRows: PAGE_ROWS,
-        ...(confirmation ? { confirm: true } : {}),
-        ...(confirmation?.names ? { confirmName: confirmation.names } : {}),
-      });
+      const answer = await cases.statements.execute(
+        this.workspace(),
+        this.session,
+        run,
+        bound.sql,
+        {
+          pageRows: PAGE_ROWS,
+          ...(bound.params.length ? { params: bound.params } : {}),
+          ...(confirmation ? { confirm: true } : {}),
+          ...(confirmation?.names ? { confirmName: confirmation.names } : {}),
+        },
+      );
       for (const notice of answer.notices ?? [])
         this.results.note({
           kind: notice.severity === 'info' ? 'info' : 'warning',

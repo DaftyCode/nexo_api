@@ -1,0 +1,252 @@
+@let d = draft;
+<div class="db-search-backdrop">
+  <form
+    class="feature-card db-search-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-search-title"
+    (submit)="$event.preventDefault(); search()"
+    (keydown.escape)="closed.emit()"
+  >
+    <header class="row db-search-head">
+      <h2 id="db-search-title">{{ 'Search the databases' | transloco }}</h2>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Close' | transloco"
+        (click)="closed.emit()"
+      >
+        ×
+      </button>
+    </header>
+    <nav class="editor-tabs" [attr.aria-label]="'What is searched' | transloco">
+      @for (each of tabs; track each[0]) {
+        <button
+          type="button"
+          [class.active]="tab() === each[0]"
+          [attr.aria-current]="tab() === each[0] ? 'page' : null"
+          (click)="tab.set(each[0])"
+        >
+          {{ each[1] | transloco }}
+        </button>
+      }
+    </nav>
+    <div class="row db-search-text">
+      <label class="field grow"
+        >{{ (tab() === 'objects' ? 'Name, with * or % as wildcards' : 'Text to find') | transloco
+        }}<input
+          [formField]="d.fields.text"
+          autocomplete="off"
+          spellcheck="false"
+          list="db-search-recent"
+      /></label>
+      <datalist id="db-search-recent">
+        @for (text of d.recent(); track text) {
+          <option [value]="text"></option>
+        }
+      </datalist>
+      <button type="submit" class="button primary" [disabled]="d.running()">
+        {{ 'Search' | transloco }}
+      </button>
+    </div>
+    @switch (tab()) {
+      @case ('objects') {
+        <fieldset class="db-search-choices">
+          <legend>{{ 'In the connections' | transloco }}</legend>
+          @for (connection of section.connections(); track connection.id) {
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                [checked]="d.connections().has(connection.id)"
+                (change)="d.toggle('connections', connection.id)"
+              />{{ connection.name }}</label
+            >
+          }
+        </fieldset>
+        <fieldset class="db-search-choices">
+          <legend>{{ 'Kinds of objects' | transloco }}</legend>
+          @for (kind of kinds; track kind) {
+            <label class="check-field"
+              ><input
+                type="checkbox"
+                [checked]="d.kinds().has(kind)"
+                (change)="d.toggle('kinds', kind)"
+              />{{ 'db.search.kind.' + kind | transloco }}</label
+            >
+          }
+        </fieldset>
+        <div class="row db-search-options">
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.code" />{{
+              'Also in the code of views and routines, and in comments' | transloco
+            }}</label
+          >
+          <label class="field"
+            >{{ 'Only in the schemas (comma separated)' | transloco
+            }}<input [formField]="d.fields.schemas" autocomplete="off"
+          /></label>
+        </div>
+        <div
+          class="db-search-results"
+          role="region"
+          [attr.aria-label]="'Objects found' | transloco"
+        >
+          @for (group of d.objects(); track group.connection) {
+            <h3>{{ name(group.connection) }}</h3>
+            @if (group.error) {
+              <p class="db-search-error">{{ group.error | transloco }}</p>
+            }
+            <ul>
+              @for (hit of group.hits; track $index) {
+                <li>
+                  <button
+                    type="button"
+                    class="db-search-hit"
+                    (click)="opened(() => d.openObject(group.connection, hit))"
+                  >
+                    <span class="db-search-kind">{{
+                      'db.search.kind.' + hit.kind | transloco
+                    }}</span>
+                    <span>{{ dotted([hit.schema, hit.table, hit.name]) }}</span>
+                    @if (hit.inCode) {
+                      <span class="muted">{{ 'in its code' | transloco }}</span>
+                    }
+                  </button>
+                </li>
+              } @empty {
+                <li class="muted">{{ 'Nothing found' | transloco }}</li>
+              }
+            </ul>
+            @if (group.more) {
+              <p class="muted">{{ 'db.search.more' | transloco }}</p>
+            }
+          }
+        </div>
+      }
+      @case ('data') {
+        <div class="db-search-grid">
+          <label class="field"
+            >{{ 'Connection' | transloco }}
+            <select [formField]="d.fields.connection">
+              @for (connection of section.connections(); track connection.id) {
+                <option [value]="connection.id">{{ connection.name }}</option>
+              }
+            </select>
+          </label>
+          <label class="field"
+            >{{ 'Tables named like' | transloco
+            }}<input [formField]="d.fields.tables" autocomplete="off"
+          /></label>
+          <button type="button" class="button" (click)="d.findTables()">
+            {{ 'List the tables' | transloco }}
+          </button>
+        </div>
+        @if (d.tables().length) {
+          <fieldset class="db-search-choices db-search-tables">
+            <legend>{{ 'db.search.tables' | transloco: { v0: d.tables().length } }}</legend>
+            @for (table of d.tables(); track $index; let at = $index) {
+              <label class="check-field"
+                ><input type="checkbox" [checked]="table.chosen" (change)="chooseTable(at)" />{{
+                  dotted([table.schema, table.name])
+                }}</label
+              >
+            }
+          </fieldset>
+        }
+        <div class="row db-search-options">
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.caseSensitive" />{{
+              'Match the case' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.wholeWord" />{{
+              'Whole words' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.texts" />{{
+              'Text columns' | transloco
+            }}</label
+          >
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.numbers" />{{
+              'Number columns' | transloco
+            }}</label
+          >
+          <label class="field"
+            >{{ 'Rows per table, at most' | transloco
+            }}<input type="number" [formField]="d.fields.maxRows"
+          /></label>
+        </div>
+        <p class="db-search-warning">{{ 'db.search.fullScan' | transloco }}</p>
+        @if (production()) {
+          <label class="check-field"
+            ><input type="checkbox" [formField]="d.fields.confirm" />{{
+              'db.search.confirm' | transloco
+            }}</label
+          >
+        }
+        @if (d.running()) {
+          <div class="row db-search-progress" role="status">
+            <progress [max]="d.progress().total" [value]="d.progress().done"></progress>
+            <span>{{
+              'db.search.progress' | transloco: { v0: d.progress().done, v1: d.progress().total }
+            }}</span>
+            <button type="button" class="button small" (click)="d.cancel()">
+              {{ 'Cancel' | transloco }}
+            </button>
+          </div>
+        }
+        @if (d.error()) {
+          <p class="db-search-error" role="alert">{{ d.error() | transloco }}</p>
+        }
+        <div class="db-search-results" role="region" [attr.aria-label]="'Data found' | transloco">
+          <ul>
+            @for (hit of d.data(); track $index) {
+              <li>
+                <button type="button" class="db-search-hit" (click)="opened(() => d.openData(hit))">
+                  <span>{{ dotted([hit.schema, hit.table]) }}</span>
+                  <span class="muted">{{
+                    'db.search.found'
+                      | transloco: { v0: hit.rows.length, v1: hit.matched.join(', ') }
+                  }}</span>
+                </button>
+              </li>
+            } @empty {
+              @if (!d.running() && d.progress().total) {
+                <li class="muted">{{ 'Nothing found' | transloco }}</li>
+              }
+            }
+          </ul>
+        </div>
+      }
+      @case ('scripts') {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="d.fields.caseSensitive" />{{
+            'Match the case' | transloco
+          }}</label
+        >
+        <div class="db-search-results" role="region" [attr.aria-label]="'Lines found' | transloco">
+          <ul>
+            @for (hit of d.scripts(); track $index) {
+              <li>
+                <button
+                  type="button"
+                  class="db-search-hit"
+                  (click)="opened(() => d.openScript(hit))"
+                >
+                  <span class="db-search-kind">{{
+                    (hit.kind === 'script' ? 'Script' : 'History') | transloco
+                  }}</span>
+                  <span>{{ hit.name }} · {{ 'db.search.line' | transloco: { v0: hit.line } }}</span>
+                  <code>{{ hit.excerpt }}</code>
+                </button>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    }
+  </form>
+</div>

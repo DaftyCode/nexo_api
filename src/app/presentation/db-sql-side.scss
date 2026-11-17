@@ -1,0 +1,73 @@
+.db-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: calc(var(--nexo-size-unit) * 130);
+  height: 100%;
+  padding: var(--nexo-space-5);
+  border-left: var(--nexo-border-width) solid var(--nexo-color-border);
+  overflow: auto;
+}
+.db-side-head {
+  justify-content: space-between;
+}
+.db-side h3 {
+  margin: 0;
+  font-size: var(--nexo-font-size-lg);
+}
+.db-side h4 {
+  margin: 0;
+  font-size: var(--nexo-font-size-md);
+}
+ul,
+ol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+li {
+  gap: var(--nexo-space-3);
+  align-items: center;
+  min-width: 0;
+}
+code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db-outline-entry {
+  display: flex;
+  gap: var(--nexo-space-3);
+  width: 100%;
+  min-width: 0;
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border: 0;
+  border-radius: var(--nexo-radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.db-outline-entry:hover {
+  background: var(--nexo-color-hover);
+}
+.db-outline-line {
+  min-width: 3ch;
+  color: var(--nexo-color-text-muted);
+  text-align: end;
+}
+.db-template-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  margin-top: var(--nexo-space-3);
+}
+.db-template-form textarea {
+  font-family: var(--nexo-font-mono);
+}
+.db-template-form button {
+  align-self: flex-start;
+}

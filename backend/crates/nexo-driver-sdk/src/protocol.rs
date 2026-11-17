@@ -34,6 +34,15 @@ pub struct Capabilities {
     pub cancel: bool,
     /// A session can be opened so that the server refuses writes.
     pub read_only_sessions: bool,
+    /// The isolation levels a transaction may begin with, as `transaction` takes them.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub isolation_levels: Vec<String>,
+    /// A change of structure (DDL) commits what is pending first (MySQL, Oracle).
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub ddl_commits: bool,
+    /// The modes of `explain` the driver answers; none when it has no plans.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub explain: Vec<crate::explain::ExplainMode>,
     /// Optional methods the driver answers, beyond the ones every driver has.
     pub methods: Vec<String>,
     /// Groups of methods for engines that are not relational (`keyvalue`, `rest`,

@@ -22,6 +22,19 @@ export class OpenEditors {
     return runner;
   }
 
+  /** The other SQL tabs whose session `session` is open, when their connection shares one. */
+  sharing(session: string, except: string): SqlRunner[] {
+    return [...this.runners.entries()]
+      .filter(([tab, runner]) => tab !== except && runner.session === session)
+      .map(([, runner]) => runner)
+      .filter((runner) => runner.status() === 'open');
+  }
+
+  /** Every SQL tab open now, to find the transactions that wait. */
+  all(): SqlRunner[] {
+    return [...this.runners.values()];
+  }
+
   /** The «Data» of an object tab: its table and database from the tab's path. */
   table(tab: string): TableData {
     let data = this.tables.get(tab);

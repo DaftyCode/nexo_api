@@ -1,0 +1,60 @@
+:host {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+}
+.db-console {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font-family: var(--nexo-font-mono);
+}
+.db-console-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+}
+.db-console-output pre,
+.db-console-output p {
+  margin: 0 0 var(--nexo-space-2);
+  white-space: pre;
+  font-family: inherit;
+}
+.db-console-input-line {
+  color: var(--nexo-color-syntax-keyword);
+}
+.db-console-message {
+  white-space: pre-wrap;
+}
+.db-console-hint,
+.db-console-info {
+  color: var(--nexo-color-text-muted);
+}
+.db-console-warning {
+  color: var(--nexo-color-warning);
+}
+.db-console-error {
+  color: var(--nexo-color-danger-text);
+}
+.db-console-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-2) var(--nexo-space-4);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+}
+.db-console-text {
+  resize: vertical;
+  min-height: 1.6em;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.db-console-text:focus-visible {
+  outline: var(--nexo-border-width-strong) solid var(--nexo-color-focus-ring);
+}

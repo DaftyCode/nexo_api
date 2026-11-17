@@ -1,0 +1,63 @@
+{
+  "query": "/* select#1 */ select `o`.`id` AS `id`,`c`.`name` AS `name` from `shop`.`orders` `o` join `shop`.`customers` `c` where ((`c`.`id` = `o`.`customer`) and (`o`.`total` > 10.00)) order by `o`.`total`",
+  "inputs": [
+    {
+      "inputs": [
+        {
+          "inputs": [
+            {
+              "alias": "o",
+              "operation": "Table scan on o",
+              "table_name": "orders",
+              "access_type": "table",
+              "schema_name": "shop",
+              "used_columns": [
+                "id",
+                "customer",
+                "total"
+              ],
+              "estimated_rows": 3.0,
+              "estimated_total_cost": 0.55
+            }
+          ],
+          "condition": "(o.total > 10.00)",
+          "operation": "Filter: (o.total > 10.00)",
+          "access_type": "filter",
+          "estimated_rows": 3.0,
+          "estimated_total_cost": 0.55
+        }
+      ],
+      "operation": "Sort: o.total",
+      "access_type": "sort",
+      "sort_fields": [
+        "o.total"
+      ],
+      "estimated_rows": 3.0,
+      "estimated_total_cost": 0.55
+    },
+    {
+      "alias": "c",
+      "covering": false,
+      "operation": "Single-row index lookup on c using PRIMARY (id=o.customer)",
+      "index_name": "PRIMARY",
+      "table_name": "customers",
+      "access_type": "index",
+      "schema_name": "shop",
+      "used_columns": [
+        "id",
+        "name"
+      ],
+      "estimated_rows": 1.0,
+      "lookup_condition": "id=o.customer",
+      "index_access_type": "index_lookup",
+      "estimated_total_cost": 0.3499999970197678
+    }
+  ],
+  "join_type": "inner join",
+  "operation": "Nested loop inner join",
+  "query_type": "select",
+  "access_type": "join",
+  "estimated_rows": 3.0,
+  "join_algorithm": "nested_loop",
+  "estimated_total_cost": 1.1000000074505807
+}

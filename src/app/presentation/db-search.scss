@@ -1,0 +1,106 @@
+.db-search-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-search-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 260), 94vw);
+  height: min(calc(var(--nexo-size-unit) * 340), 90vh);
+  overflow: auto;
+}
+.db-search-head {
+  justify-content: space-between;
+}
+.db-search-head h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-search-text,
+.db-search-options,
+.db-search-grid {
+  flex-wrap: wrap;
+  gap: var(--nexo-space-3) var(--nexo-space-5);
+  align-items: end;
+}
+.db-search-grid {
+  display: flex;
+}
+.db-search-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2) var(--nexo-space-5);
+  margin: 0;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-md);
+}
+.db-search-tables {
+  max-height: calc(var(--nexo-size-unit) * 50);
+  overflow: auto;
+}
+.db-search-warning {
+  margin: 0;
+  color: var(--nexo-color-warning);
+}
+.db-search-error {
+  margin: 0;
+  color: var(--nexo-color-danger-text);
+}
+.db-search-progress {
+  gap: var(--nexo-space-3);
+  align-items: center;
+}
+.db-search-progress progress {
+  flex: 1;
+}
+.db-search-results {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.db-search-results h3 {
+  margin: var(--nexo-space-3) 0 var(--nexo-space-1);
+  font-size: var(--nexo-font-size-md);
+}
+.db-search-results ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.db-search-hit {
+  display: flex;
+  gap: var(--nexo-space-3);
+  align-items: baseline;
+  width: 100%;
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border: 0;
+  border-radius: var(--nexo-radius-sm);
+  background: transparent;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.db-search-hit:hover {
+  background: var(--nexo-color-hover);
+}
+.db-search-hit code {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--nexo-color-text-muted);
+}
+.db-search-kind {
+  min-width: calc(var(--nexo-size-unit) * 40);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
+}

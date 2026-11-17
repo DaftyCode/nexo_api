@@ -1,0 +1,36 @@
+<div class="grid-footer">
+  <ng-content select="[gridFooterStart]" />
+  <button
+    type="button"
+    class="button small grid-export"
+    aria-haspopup="menu"
+    (click)="exported.emit($event)"
+  >
+    <app-studio-icon name="download" />{{ 'Export' | transloco }}
+    <app-studio-icon class="grid-caret" name="chevron" />
+  </button>
+  <span class="grid-divider" aria-hidden="true"></span>
+  <ng-content select="[gridFooterStatus]" />
+  <span class="grid-fact" role="status">
+    <app-studio-icon name="databases" />{{
+      (shown() === loaded() ? 'db.grid.loaded' : 'db.grid.loadedShown')
+        | transloco: { v0: number(shown()), v1: number(loaded()) }
+    }}
+  </span>
+  <ng-content select="[gridFooterCount]" />
+  <span class="grid-fact">
+    <app-studio-icon name="selection" />{{
+      (chosen() === 1 ? 'db.grid.selectedOne' : 'db.grid.selected') | transloco: { v0: chosen() }
+    }}
+  </span>
+  @if (more()) {
+    <button
+      type="button"
+      class="button small subtle"
+      [disabled]="loading()"
+      (click)="readAll.emit()"
+    >
+      {{ 'Read all' | transloco }}
+    </button>
+  }
+</div>

@@ -49,6 +49,9 @@ export class CsvReader {
   private quote = false;
   private carriage = false;
 
+  /** `,` by default; `;` or a tab for the files that use them. */
+  constructor(private readonly separator = ',') {}
+
   push(text: string): string[][] {
     const rows: string[][] = [];
     for (const character of text) {
@@ -73,7 +76,7 @@ export class CsvReader {
         }
       }
       if (character === '"' && this.cell === '') this.quoted = true;
-      else if (character === ',') this.endCell();
+      else if (character === this.separator) this.endCell();
       else if (character === '\n' || character === '\r') {
         this.carriage = character === '\r';
         this.endCell();

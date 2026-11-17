@@ -63,9 +63,10 @@ const port = () =>
   });
 
 export const test = base.extend({
-  // A file that needs a server of its own, without the sessions the files before it left
-  // open, says `test.use({ ownServer: true })`: Playwright then runs it in a worker of its own.
-  ownServer: [false, { scope: 'worker', option: true }],
+  // A file that needs a server of its own, without the connections and sessions other files
+  // left, names it: `test.use({ ownServer: 'structure' })`. Playwright runs the files of each
+  // value in a worker of their own, so every file gives its own name.
+  ownServer: ['', { scope: 'worker', option: true }],
   // One server per worker.
   nexo: [
     async ({ ownServer: _ownServer }, use) => {

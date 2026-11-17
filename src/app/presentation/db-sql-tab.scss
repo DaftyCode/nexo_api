@@ -86,19 +86,22 @@ app-db-results {
 .db-sql-running {
   color: var(--nexo-color-warning);
 }
-.db-sql-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: var(--nexo-z-dropdown);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--nexo-color-backdrop);
+.db-sql-count {
+  min-width: calc(var(--nexo-size-unit) * 8);
+  margin-left: var(--nexo-space-2);
+  padding: 0 var(--nexo-space-2);
+  border-radius: var(--nexo-radius-full);
+  background: var(--nexo-color-accent-soft);
+  color: var(--nexo-color-accent);
+  font-size: var(--nexo-font-size-xs);
 }
-.db-sql-failure {
-  max-width: calc(var(--nexo-size-unit) * 130);
+.db-sql-isolation {
+  max-width: calc(var(--nexo-size-unit) * 80);
 }
-.db-sql-failure-actions {
-  gap: var(--nexo-space-4);
-  justify-content: flex-end;
+.db-sql-long {
+  margin: 0;
+  padding: var(--nexo-space-3) var(--nexo-space-6);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-warning);
+  background: var(--nexo-color-warning-soft);
+  color: var(--nexo-color-text);
 }

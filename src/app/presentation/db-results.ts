@@ -1,4 +1,6 @@
 import { DatePipe } from '@angular/common';
+import { SqlPlans } from './db-panel/sql-plans';
+import { DbPlan } from './db-plan';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -13,6 +15,8 @@ import { FormField, form, max, min } from '@angular/forms/signals';
 import { ResultTab, resultTitle, summarize } from '../domain/db/results';
 import { sourceTable } from '../domain/db/grid/copy';
 import { DataGrid } from './data-grid/data-grid';
+import { DbRowEdits, EDIT_ACTIONS, editAction } from './db-row-edits';
+import type { RowEditor } from './db-panel/row-editor';
 import { WorkspaceState } from './workspace-state';
 import type { SqlRunner } from './db-panel/sql-runner';
 
@@ -26,7 +30,7 @@ const MESSAGES = 'messages';
  * window, read further or repeated; and the messages of what ran without rows.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, DataGrid, DatePipe],
+  imports: [TranslocoPipe, FormField, DataGrid, DbRowEdits, DatePipe, DbPlan],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-results',
   templateUrl: './db-results.html',
@@ -46,6 +50,9 @@ export class DbResults {
     max(path.max, 100);
   });
   protected readonly title = resultTitle;
+  /** Result tabs whose rows are being edited in the grid. */
+  protected readonly editingOn = signal<ReadonlySet<string>>(new Set());
+  protected readonly editActions = EDIT_ACTIONS;
   protected readonly messagesId = MESSAGES;
   protected readonly results = computed(() => this.runner().results);
   /** The tab shown: a result, or the messages when there is none. */
@@ -57,7 +64,13 @@ export class DbResults {
   protected readonly current = computed(() =>
     this.results()
       .tabs()
-      .find((tab) => tab.id === this.shown()),
+      .find((tab) => tab.id === this.shown() && !tab.plan),
+  );
+  /** The tab shown when it holds a plan (DB-16). */
+  protected readonly planTab = computed(() =>
+    this.results()
+      .tabs()
+      .find((tab) => tab.id === this.shown() && !!tab.plan),
   );
   protected readonly detached = computed(() =>
     this.results()
@@ -128,6 +141,22 @@ export class DbResults {
     const seconds = this.repeating(tab) ? 0 : this.settings().seconds;
     this.results().repeat(tab.id, seconds);
   }
+  /** Exports what a result's query reads, all its rows, with the transfer wizard. */
+  protected exportTab(tab: ResultTab) {
+    const runner = this.runner();
+    const connection = runner.connection()?.id;
+    if (connection)
+      runner.section.transferRequest.set({
+        kind: 'export',
+        connection,
+        sql: tab.sql,
+        name: 'result',
+      });
+  }
+  /** The plan of the statement that gave a result, in a tab of its own. */
+  protected explain(tab: ResultTab) {
+    void new SqlPlans(this.runner()).again(tab);
+  }
   protected closeOthers(tab: ResultTab) {
     this.results().close((other) => other.id !== tab.id && !other.pinned);
   }
@@ -159,5 +188,19 @@ export class DbResults {
     this.show(next);
     const list = (event.currentTarget as HTMLElement).parentElement;
     queueMicrotask(() => list?.querySelector<HTMLElement>(`[data-result="${next}"]`)?.focus());
+  }
+
+  protected toggleEditing(tab: string) {
+    this.editingOn.update((on) => {
+      const next = new Set(on);
+      if (!next.delete(tab)) next.add(tab);
+      return next;
+    });
+  }
+  protected edited(
+    editor: RowEditor,
+    event: { action: string; column: number; value: unknown; rows: number[] },
+  ) {
+    if (event.action.startsWith('edit.')) editAction(editor, event);
   }
 }

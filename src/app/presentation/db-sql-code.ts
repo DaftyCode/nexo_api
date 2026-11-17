@@ -13,18 +13,32 @@ import {
 } from '@angular/core';
 import {
   Compartment,
+  EditorSelection,
   EditorState,
   Extension,
   Prec,
+  StateCommand,
   StateEffect,
   StateField,
 } from '@codemirror/state';
 import { Decoration, EditorView, keymap } from '@codemirror/view';
 import { foldGutter, foldKeymap } from '@codemirror/language';
 import { baseExtensions, wordCompletions } from './code-editor-setup';
+import { SqlAssistSource, sqlAssist } from './db-panel/sql-assist';
 
 /** What the keys of the SQL editor ask for, with DBeaver's shortcuts. */
-export type SqlCommand = 'run' | 'run-new' | 'script' | 'save' | 'cancel' | 'previous' | 'next';
+export type SqlCommand =
+  | 'run'
+  | 'run-new'
+  | 'script'
+  | 'save'
+  | 'cancel'
+  | 'previous'
+  | 'next'
+  | 'commit'
+  | 'rollback'
+  | 'format'
+  | 'explain';
 
 /** The SQL dialect of CodeMirror for a driver, loaded with the editor. */
 async function sqlSupport(driver: string): Promise<Extension> {
@@ -62,9 +76,31 @@ const ranTheme = EditorView.theme({
   '.cm-sql-ran': { backgroundColor: 'var(--nexo-color-accent-soft)' },
 });
 
+/** Upper or lower case of the selection, or of the word at the cursor (DBeaver's keys). */
+const changeCase =
+  (upper: boolean): StateCommand =>
+  ({ state, dispatch }) => {
+    const changed = state.changeByRange((range) => {
+      const word = range.empty ? state.wordAt(range.head) : range;
+      if (!word) return { range };
+      const text = state.sliceDoc(word.from, word.to);
+      return {
+        changes: {
+          from: word.from,
+          to: word.to,
+          insert: upper ? text.toUpperCase() : text.toLowerCase(),
+        },
+        range: EditorSelection.range(range.anchor, range.head),
+      };
+    });
+    dispatch(state.update(changed, { userEvent: 'input' }));
+    return true;
+  };
+
 /**
  * The text of a SQL tab: CodeMirror with the dialect of the connection, folding, comments
- * (Ctrl+/), search, the names of the loaded tree suggested, and DBeaver's keys to run.
+ * (Ctrl+/), duplicating a line (Shift+Alt+↓), search, the names of the loaded tree suggested,
+ * and DBeaver's keys to run and to change case (Ctrl+Shift+X and Ctrl+Shift+Y).
  */
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -89,6 +125,8 @@ export class DbSqlCode {
   readonly driver = input('');
   readonly label = input('SQL');
   readonly words = input<readonly string[]>([]);
+  /** Completion with the schema, templates and going to objects; the tree's names without it. */
+  readonly assist = input<SqlAssistSource | undefined>(undefined);
   readonly changed = output<string>();
   readonly moved = output<number>();
   readonly action = output<SqlCommand>();
@@ -104,10 +142,8 @@ export class DbSqlCode {
       untracked(() => void this.useDialect(driver));
     });
     effect(() => {
-      const words = this.words();
-      untracked(() =>
-        this.view?.dispatch({ effects: this.completions.reconfigure(wordCompletions(words)) }),
-      );
+      const completions = this.completionsNow();
+      untracked(() => this.view?.dispatch({ effects: this.completions.reconfigure(completions) }));
     });
     inject(DestroyRef).onDestroy(() => this.view?.destroy());
   }
@@ -132,6 +168,13 @@ export class DbSqlCode {
               { key: 'Mod-s', run: send('save') },
               { key: 'Mod-Alt-ArrowUp', run: send('previous') },
               { key: 'Mod-Alt-ArrowDown', run: send('next') },
+              // As DBeaver: commit and roll back the session's transaction.
+              { key: 'Mod-Alt-Shift-k', run: send('commit') },
+              { key: 'Mod-Alt-Shift-r', run: send('rollback') },
+              { key: 'Mod-Shift-f', run: send('format') },
+              { key: 'Mod-Shift-e', run: send('explain') },
+              { key: 'Mod-Shift-x', run: changeCase(true) },
+              { key: 'Mod-Shift-y', run: changeCase(false) },
             ]),
           ),
           ...baseExtensions({
@@ -144,7 +187,7 @@ export class DbSqlCode {
           ranField,
           ranTheme,
           this.language.of([]),
-          this.completions.of(wordCompletions(this.words())),
+          this.completions.of(this.completionsNow()),
           EditorView.updateListener.of((update) => {
             if (update.selectionSet) this.moved.emit(update.state.selection.main.head);
           }),
@@ -152,6 +195,11 @@ export class DbSqlCode {
       }),
     });
     void this.useDialect(this.driver());
+  }
+
+  private completionsNow(): Extension {
+    const assist = this.assist();
+    return assist ? sqlAssist(assist) : wordCompletions(this.words());
   }
 
   private async useDialect(driver: string) {
@@ -180,6 +228,13 @@ export class DbSqlCode {
     const at = Math.min(Math.max(offset, 0), view.state.doc.length);
     view.dispatch({ selection: { anchor: at }, scrollIntoView: true });
     view.focus();
+  }
+  /** Replaces a part of the text, as formatting a statement does. */
+  replaceRange(from: number, to: number, text: string) {
+    this.view?.dispatch({
+      changes: { from, to, insert: text },
+      selection: { anchor: from + text.length },
+    });
   }
   /** Replaces the whole text, as opening an entry of the history does. */
   replace(text: string) {

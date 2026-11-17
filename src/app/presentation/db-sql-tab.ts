@@ -15,12 +15,20 @@ import { FormField, form } from '@angular/forms/signals';
 import { failureCode } from '../application/ports';
 import { connectionType, readDbConnection } from '../domain/db/connection';
 import { engineProfile } from '../domain/db/engines';
+import { SqlTemplate } from '../domain/db/sql-templates';
+import { formatSql } from '../domain/db/sql-format';
 import { nodeKey, quoteName } from '../domain/db/tree';
+import { assistFor } from './db-panel/assist-source';
+import { SqlPlans } from './db-panel/sql-plans';
 import type { DialogAnswer, DialogRequest } from './mongo-dialog';
 import { MongoDialog } from './mongo-dialog';
 import { DbHistory } from './db-history';
 import { DbResults } from './db-results';
 import { DbSqlCode, SqlCommand } from './db-sql-code';
+import { DbRunnerDialogs } from './db-runner-dialogs';
+import { DbSqlOutline } from './db-sql-outline';
+import { DbSqlTemplates } from './db-sql-templates';
+import { DbSqlVariables } from './db-sql-variables';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
 import { PanelTask } from './panel-task';
@@ -33,7 +41,19 @@ import { named } from './workspace-state';
  * DBeaver's keys, every query leaving its result tab under it, and its history beside.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, DbSqlCode, DbResults, DbHistory, MongoDialog, Splitter],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    DbSqlCode,
+    DbResults,
+    DbHistory,
+    DbRunnerDialogs,
+    DbSqlVariables,
+    DbSqlOutline,
+    DbSqlTemplates,
+    MongoDialog,
+    Splitter,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-sql-tab',
   templateUrl: './db-sql-tab.html',
@@ -45,6 +65,16 @@ export class DbSqlTab {
   protected readonly task = new PanelTask(this.section.state);
   private readonly code = viewChild(DbSqlCode);
   protected readonly runner = computed(() => this.section.runner(this.tab().id));
+  /** The isolation levels the driver lets a transaction begin with. */
+  protected readonly isolations = computed(
+    () => this.section.drivers.capabilities(this.tab().connection)?.isolationLevels ?? [],
+  );
+  /** The person's own templates, beside the editor's. */
+  protected readonly templates = signal<readonly SqlTemplate[]>([]);
+  /** Completion with the schema, templates and going to objects (DB-15). */
+  protected readonly assist = computed(() =>
+    assistFor(this.section, this.runner(), () => this.templates()),
+  );
   protected readonly draft = computed(() => this.section.tabs.draft(this.tab().id));
   protected readonly connection = computed(() => this.section.connection(this.tab().connection));
   protected readonly value = computed(() => readDbConnection(this.connection()?.value));
@@ -56,14 +86,19 @@ export class DbSqlTab {
   /** The text this editor opened with; typing is kept in the draft. */
   protected readonly opened = signal({ text: '', cursor: 0 });
   protected readonly codeHeight = signal(0);
-  protected readonly showHistory = signal(false);
+  /** The panel beside the editor, one at a time. */
+  protected readonly side = signal<'' | 'history' | 'variables' | 'outline' | 'templates'>('');
+  protected readonly sides = [
+    ['history', 'History'],
+    ['variables', 'Variables'],
+    ['outline', 'Outline'],
+    ['templates', 'Templates'],
+  ] as const;
   protected readonly dialog = signal<
     { request: DialogRequest; run: (a: DialogAnswer) => void } | undefined
   >(undefined);
   protected readonly where = signal({ database: '', schema: '' });
   protected readonly whereFields = form(this.where);
-  protected readonly failure = signal({ remember: false });
-  protected readonly failureFields = form(this.failure);
   /** Where the history keys (Ctrl+Alt+↑ and ↓) are among this connection's statements. */
   private historyIndex = -1;
   /** Names of the loaded tree of the connection, suggested while typing. */
@@ -86,6 +121,7 @@ export class DbSqlTab {
   });
 
   constructor() {
+    void this.section.cases().then((cases) => this.templates.set(cases.assist.templates()));
     effect(() => {
       const tab = this.tab();
       untracked(() => {
@@ -136,7 +172,29 @@ export class DbSqlTab {
       case 'previous':
       case 'next':
         return void this.walkHistory(command === 'previous' ? 1 : -1);
+      case 'commit':
+      case 'rollback':
+        if (runner.transaction()?.open) void runner.transact(command);
+        return;
+      case 'format':
+        return this.format(code, text, selection);
+      case 'explain':
+        return void new SqlPlans(runner).explainAt(text, selection.from, selection);
     }
+  }
+
+  /** Formats the selection, or the statement at the cursor (Ctrl+Shift+F). */
+  private format(code: DbSqlCode, text: string, selection: { from: number; to: number }) {
+    let [from, to] = [selection.from, selection.to];
+    if (from === to) {
+      from = text.lastIndexOf(';', from - 1) + 1;
+      const next = text.indexOf(';', to);
+      to = next < 0 ? text.length : next;
+    }
+    const part = text.slice(from, to);
+    const start = from + (part.length - part.trimStart().length);
+    const end = to - (part.length - part.trimEnd().length);
+    if (end > start) code.replaceRange(start, end, formatSql(text.slice(start, end)));
   }
 
   /** Puts an older or newer statement of this connection's history in the editor. */
@@ -224,26 +282,5 @@ export class DbSqlTab {
 
   protected answerDialog(answer: DialogAnswer) {
     this.dialog()?.run(answer);
-  }
-  protected confirmRequest(): DialogRequest | undefined {
-    const dialog = this.runner().dialog();
-    if (dialog?.kind !== 'confirm') return undefined;
-    const { confirmation } = dialog;
-    return {
-      title: 'Confirm the statement',
-      message: { key: confirmation.message, params: confirmation.params },
-      ...(confirmation.names ? { confirmName: confirmation.names } : {}),
-      confirm: 'Run',
-      danger: true,
-    };
-  }
-  protected confirmAnswer(ok: boolean) {
-    const dialog = this.runner().dialog();
-    if (dialog?.kind === 'confirm') dialog.answer(ok);
-  }
-  protected failureAnswer(choice: 'continue' | 'stop' | 'ignore') {
-    const dialog = this.runner().dialog();
-    if (dialog?.kind === 'failure') dialog.answer(choice, this.failure().remember);
-    this.failure.set({ remember: false });
   }
 }

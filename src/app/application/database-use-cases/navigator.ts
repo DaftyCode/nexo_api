@@ -12,6 +12,14 @@ export interface DriverHello {
     schemas: boolean;
     cancel: boolean;
     readOnlySessions: boolean;
+    /** The isolation levels a transaction may begin with. */
+    isolationLevels?: string[];
+    /** A change of structure commits what is pending first (MySQL). */
+    ddlCommits?: boolean;
+    /** The plan modes the driver explains with: `estimated`, `actual`. */
+    explain?: string[];
+    /** Optional methods it answers: `ddl.model`, `ddl.plan`… */
+    methods?: string[];
   };
   dialect: QuoteStyle & {
     name: string;

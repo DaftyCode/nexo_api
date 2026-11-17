@@ -1,0 +1,72 @@
+:host {
+  display: contents;
+}
+.db-edit-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-edit-optimistic {
+  font-size: var(--nexo-font-size-sm);
+}
+.db-edit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-edit-dialog {
+  width: min(640px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+}
+.db-edit-dialog h2 {
+  margin-top: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-edit-script {
+  max-height: 50vh;
+  overflow: auto;
+  padding: var(--nexo-space-4);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
+  white-space: pre-wrap;
+}
+.db-edit-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-3) var(--nexo-space-6);
+}
+.db-edit-actions {
+  justify-content: flex-end;
+  gap: var(--nexo-space-4);
+  margin-top: var(--nexo-space-5);
+}
+.db-edit-virtual {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  margin: 0 0 var(--nexo-space-4);
+  padding: 0;
+  list-style: none;
+}
+.db-edit-virtual li {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-4);
+}
+.db-edit-new {
+  align-items: flex-end;
+  gap: var(--nexo-space-4);
+}
+.db-edit-error {
+  color: var(--nexo-color-danger-text);
+}

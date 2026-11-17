@@ -40,6 +40,8 @@ export interface DbForm {
   description: string;
   readOnly: boolean;
   autoCommit: boolean;
+  smartCommit: boolean;
+  sharedSession: boolean;
   /** 0: no limit. */
   timeoutSeconds: number;
   /** A URL pasted to fill the form. */
@@ -68,6 +70,8 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     description: '',
     readOnly: false,
     autoCommit: true,
+    smartCommit: false,
+    sharedSession: false,
     timeoutSeconds: 0,
     url: '',
   };
@@ -93,6 +97,8 @@ export function formOf(name: string, stored: unknown): DbForm {
     description: value.description ?? '',
     readOnly: !!value.readOnly,
     autoCommit: autoCommits(value),
+    smartCommit: !!value.smartCommit,
+    sharedSession: !!value.sharedSession,
     timeoutSeconds: value.timeoutSeconds ?? 0,
   };
 }
@@ -176,8 +182,12 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
     description: text(form.description),
     ...(form.readOnly ? { readOnly: true } : {}),
     ...(form.autoCommit !== (form.type !== 'production') ? { autoCommit: form.autoCommit } : {}),
+    ...(form.smartCommit ? { smartCommit: true } : {}),
+    ...(form.sharedSession ? { sharedSession: true } : {}),
     ...(form.timeoutSeconds > 0 ? { timeoutSeconds: form.timeoutSeconds } : {}),
     ...(stored?.filters?.length ? { filters: stored.filters } : {}),
+    ...(stored?.virtualKeys ? { virtualKeys: stored.virtualKeys } : {}),
+    ...(stored?.virtualColumns ? { virtualColumns: stored.virtualColumns } : {}),
   };
   for (const key of Object.keys(value) as (keyof DbConnectionValue)[])
     if (value[key] === undefined) delete value[key];

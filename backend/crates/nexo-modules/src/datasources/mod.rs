@@ -6,8 +6,13 @@ use async_trait::async_trait;
 use nexo_application::ports::{DataSources, SqlConnection, StatementRequest};
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{
-    DriverError, methods,
-    protocol::{ConnectParams, Ddl, ObjectDescription, ObjectParams, TlsSettings, TreeNodes},
+    ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
+    explain::{ExplainParams, Plan},
+    import::{ImportParams, Imported},
+    methods,
+    protocol::{Ddl, ObjectDescription, ObjectParams, TreeNodes},
+    rows::{RowsWriteParams, RowsWritten},
+    search::{SearchParams, SearchResult},
     statements::{
         CancelParams, CursorParams, ExecuteParams, ExecuteResult, FetchParams, Page,
         TransactionParams, TransactionState,
@@ -17,49 +22,8 @@ use serde::Serialize;
 use serde_json::{Value, json};
 use std::time::Duration;
 
-/// A driver's error as the application answers it: `database.<code>` with its detail.
-fn database_error(error: DriverError) -> Error {
-    let code = serde_json::to_value(error.code)
-        .ok()
-        .and_then(|code| code.as_str().map(String::from))
-        .unwrap_or_else(|| "internal".into());
-    Error::Database {
-        code,
-        message: error.message,
-        detail: error.detail,
-    }
-}
-
-fn to_json(value: impl Serialize) -> Result<Value> {
-    serde_json::to_value(value).map_err(|error| Error::Infrastructure(error.to_string()))
-}
-
-/// The settings of a connection as its driver reads them.
-fn connect_params(session: &str, connection: SqlConnection) -> Result<ConnectParams> {
-    let mode =
-        serde_json::from_value(Value::String(connection.tls.mode.clone())).map_err(|_| {
-            Error::Validation(format!(
-                "Unknown TLS mode {}: use disable, prefer, require or verify",
-                connection.tls.mode
-            ))
-        })?;
-    Ok(ConnectParams {
-        connection: session.to_owned(),
-        host: connection.host,
-        port: connection.port,
-        database: connection.database,
-        user: connection.user,
-        password: connection.password,
-        tls: TlsSettings {
-            mode,
-            ca_pem: connection.tls.ca_pem,
-            cert_pem: connection.tls.cert_pem,
-            key_pem: connection.tls.key_pem,
-        },
-        options: connection.options,
-        read_only: connection.read_only,
-    })
-}
+mod messages;
+use messages::{connect_params, database_error, to_json};
 
 impl Modules {
     fn object(session: &str, path: Vec<String>) -> ObjectParams {
@@ -67,6 +31,30 @@ impl Modules {
             connection: session.to_owned(),
             path,
         }
+    }
+
+    /// A request of the application sent to the session's driver as its own message (read,
+    /// so a wrong field is refused here, with the session as its connection), and its answer.
+    async fn relay<P, R>(
+        &self,
+        session: &str,
+        method: &str,
+        mut request: Value,
+        what: &str,
+    ) -> Result<Value>
+    where
+        P: serde::de::DeserializeOwned + Serialize + Send + Sync,
+        R: serde::de::DeserializeOwned + Serialize,
+    {
+        request["connection"] = json!(session);
+        let params: P = serde_json::from_value(request)
+            .map_err(|error| Error::Validation(format!("Invalid {what}: {error}")))?;
+        let answer: R = self
+            .host()
+            .call(session, method, &params)
+            .await
+            .map_err(database_error)?;
+        to_json(answer)
     }
 }
 
@@ -227,5 +215,50 @@ impl DataSources for Modules {
             .await
             .map_err(database_error)?;
         to_json(state)
+    }
+
+    async fn write_rows(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<RowsWriteParams, RowsWritten>(
+            session,
+            methods::ROWS_WRITE,
+            request,
+            "change of rows",
+        )
+        .await
+    }
+
+    async fn ddl_model(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<DdlModelParams, DdlModel>(session, methods::DDL_MODEL, request, "table")
+            .await
+    }
+
+    async fn ddl_plan(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<DdlPlanParams, DdlPlan>(
+            session,
+            methods::DDL_PLAN,
+            request,
+            "change of structure",
+        )
+        .await
+    }
+
+    async fn search(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<SearchParams, SearchResult>(session, methods::SEARCH, request, "search")
+            .await
+    }
+
+    async fn import(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<ImportParams, Imported>(session, methods::IMPORT, request, "import")
+            .await
+    }
+
+    async fn explain(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<ExplainParams, Plan>(session, methods::EXPLAIN, request, "plan request")
+            .await
+    }
+
+    async fn hold(&self, session: &str, held: bool) -> Result<()> {
+        self.host().hold(session, held);
+        Ok(())
     }
 }

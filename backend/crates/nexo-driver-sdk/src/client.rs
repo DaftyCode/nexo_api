@@ -79,4 +79,40 @@ impl Client {
     pub async fn transaction(&self, params: &TransactionParams) -> Result<TransactionState> {
         self.call(methods::TRANSACTION, params).await
     }
+    pub async fn rows_write(
+        &self,
+        params: &crate::rows::RowsWriteParams,
+    ) -> Result<crate::rows::RowsWritten> {
+        self.call(methods::ROWS_WRITE, params).await
+    }
+    pub async fn explain(
+        &self,
+        params: &crate::explain::ExplainParams,
+    ) -> Result<crate::explain::Plan> {
+        self.call(methods::EXPLAIN, params).await
+    }
+    pub async fn import(
+        &self,
+        params: &crate::import::ImportParams,
+    ) -> Result<crate::import::Imported> {
+        self.call(methods::IMPORT, params).await
+    }
+    pub async fn search(
+        &self,
+        params: &crate::search::SearchParams,
+    ) -> Result<crate::search::SearchResult> {
+        self.call(methods::SEARCH, params).await
+    }
+    pub async fn ddl_model(
+        &self,
+        params: &crate::ddl::DdlModelParams,
+    ) -> Result<crate::ddl::DdlModel> {
+        self.call(methods::DDL_MODEL, params).await
+    }
+    pub async fn ddl_plan(
+        &self,
+        params: &crate::ddl::DdlPlanParams,
+    ) -> Result<crate::ddl::DdlPlan> {
+        self.call(methods::DDL_PLAN, params).await
+    }
 }

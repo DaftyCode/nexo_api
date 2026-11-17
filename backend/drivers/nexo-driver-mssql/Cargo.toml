@@ -26,6 +26,8 @@ base64.workspace = true
 futures-util.workspace = true
 # Reads the messages (PRINT, RAISERROR under 11) tiberius only writes to its log.
 tracing.workspace = true
+# Reads the XML showplans of the execution plans (the version the lockfile already has).
+quick-xml = { version = "0.42.0", default-features = false }
 
 [dev-dependencies]
 nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["tls", "conformance"] }

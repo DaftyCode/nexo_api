@@ -1,0 +1,140 @@
+<section class="db-plan" [attr.aria-label]="'Execution plan' | transloco">
+  <div class="db-result-toolbar" role="toolbar" [attr.aria-label]="'Execution plan' | transloco">
+    <strong>{{ (timed() ? 'Actual plan' : 'Estimated plan') | transloco }}</strong>
+    @if (plan().totalMs !== undefined) {
+      <span class="muted">{{ 'db.plan.total' | transloco: { v0: number(plan().totalMs) } }}</span>
+    }
+    @if (plan().rolledBack) {
+      <span class="db-plan-rolled">{{ 'Rolled back' | transloco }}</span>
+    }
+    <span class="grow"></span>
+    @if (measures()) {
+      <button type="button" class="button small" (click)="again(timed() ? 'estimated' : 'actual')">
+        {{ (timed() ? 'Estimate again' : 'Run it to measure') | transloco }}
+      </button>
+    }
+    <button type="button" class="button small subtle" (click)="copy()">
+      {{ 'Copy the plan' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="close()">
+      {{ 'Close' | transloco }}
+    </button>
+  </div>
+  @if (warnings().length) {
+    <ul class="db-plan-warnings" [attr.aria-label]="'Warnings' | transloco">
+      @for (warning of warnings(); track $index) {
+        <li>
+          <button type="button" class="db-plan-warning" (click)="show(warning.id)">
+            ⚠ {{ warning.text | transloco: warning.params }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+  <nav class="editor-tabs db-result-parts" [attr.aria-label]="'Plan views' | transloco">
+    @for (each of ['tree', 'original']; track each) {
+      <button
+        type="button"
+        [class.active]="view() === each"
+        [attr.aria-current]="view() === each ? 'page' : null"
+        (click)="view.set($any(each))"
+      >
+        {{ (each === 'tree' ? 'Plan tree' : 'Original plan') | transloco }}
+      </button>
+    }
+  </nav>
+  @if (view() === 'tree') {
+    <div class="db-plan-body">
+      <table class="db-plan-tree" [attr.aria-label]="'Plan nodes' | transloco">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Operation' | transloco }}</th>
+            <th scope="col">{{ 'Object' | transloco }}</th>
+            <th scope="col">{{ 'Index' | transloco }}</th>
+            <th scope="col">{{ 'Condition' | transloco }}</th>
+            <th scope="col" class="num">{{ 'Estimated rows' | transloco }}</th>
+            @if (timed()) {
+              <th scope="col" class="num">{{ 'Actual rows' | transloco }}</th>
+              <th scope="col" class="num">{{ 'Loops' | transloco }}</th>
+            }
+            <th scope="col" class="num">{{ (timed() ? 'Time (ms)' : 'Cost') | transloco }}</th>
+            <th scope="col">{{ 'Share' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of rows(); track row.id) {
+            <tr
+              [class.db-plan-chosen]="selected() === row.id"
+              [attr.data-node]="row.id"
+              (click)="selected.set(row.id)"
+            >
+              <td class="db-plan-operation" [style.--db-plan-depth]="row.depth">
+                @if (row.parent) {
+                  <button
+                    type="button"
+                    class="db-plan-toggle"
+                    [attr.aria-expanded]="!collapsed().has(row.id)"
+                    [attr.aria-label]="'db.plan.toggle' | transloco: { v0: row.node.operation }"
+                    (click)="$event.stopPropagation(); toggle(row.id)"
+                  >
+                    {{ collapsed().has(row.id) ? '▸' : '▾' }}
+                  </button>
+                }
+                <button type="button" class="db-plan-name" (click)="selected.set(row.id)">
+                  {{ row.node.operation }}
+                </button>
+                @for (flag of row.node.flags ?? []; track flag) {
+                  <span class="db-plan-flag">{{ 'db.plan.flag.' + flag | transloco }}</span>
+                }
+              </td>
+              <td>{{ row.node.object }}</td>
+              <td>{{ row.node.index }}</td>
+              <td class="db-plan-condition" [attr.title]="row.node.condition">
+                {{ row.node.condition }}
+              </td>
+              <td class="num">{{ number(row.node.estimatedRows) }}</td>
+              @if (timed()) {
+                <td class="num">{{ number(row.node.actualRows) }}</td>
+                <td class="num">{{ number(row.node.loops) }}</td>
+              }
+              <td class="num">
+                {{ number(timed() ? row.node.actualMs : row.node.estimatedCost) }}
+              </td>
+              <td class="db-plan-share">
+                <span class="db-plan-bar"
+                  ><span class="db-plan-fill" [style.width.%]="row.share * 100"></span
+                ></span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (chosen(); as node) {
+        <dl class="db-plan-details" [attr.aria-label]="'Node details' | transloco">
+          <dt>{{ 'Operation' | transloco }}</dt>
+          <dd>{{ node.operation }}</dd>
+          @if (node.condition) {
+            <dt>{{ 'Condition' | transloco }}</dt>
+            <dd>{{ node.condition }}</dd>
+          }
+          @if (node.memoryKb !== undefined) {
+            <dt>{{ 'Memory (KB)' | transloco }}</dt>
+            <dd>{{ number(node.memoryKb) }}</dd>
+          }
+          @for (entry of details(node); track entry[0]) {
+            <dt>{{ entry[0] }}</dt>
+            <dd>{{ entry[1] }}</dd>
+          }
+        </dl>
+      }
+    </div>
+  } @else {
+    <app-code-editor
+      size="large"
+      [language]="language()"
+      [value]="plan().original"
+      [readonly]="true"
+      [label]="'Original plan' | transloco"
+    />
+  }
+</section>

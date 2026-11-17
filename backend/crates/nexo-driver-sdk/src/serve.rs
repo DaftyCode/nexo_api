@@ -43,6 +43,12 @@ impl<D: Driver> Handler for Dispatcher<D> {
             methods::CLOSE => write(driver.close(read(params)?).await?),
             methods::CANCEL => write(driver.cancel(read(params)?).await?),
             methods::TRANSACTION => write(driver.transaction(read(params)?).await?),
+            methods::ROWS_WRITE => write(driver.rows_write(read(params)?).await?),
+            methods::EXPLAIN => write(driver.explain(read(params)?).await?),
+            methods::IMPORT => write(driver.import(read(params)?).await?),
+            methods::SEARCH => write(driver.search(read(params)?).await?),
+            methods::DDL_MODEL => write(driver.ddl_model(read(params)?).await?),
+            methods::DDL_PLAN => write(driver.ddl_plan(read(params)?).await?),
             other => driver.extension(host, other, params).await,
         }
     }

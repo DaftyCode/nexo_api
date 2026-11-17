@@ -9,6 +9,8 @@ import {
   tableSelect,
 } from '../../domain/db/table-query';
 import { quoteName } from '../../domain/db/tree';
+import { autoCommits, readDbConnection } from '../../domain/db/connection';
+import { RowEditor } from './row-editor';
 import type { DbSection } from './section';
 
 /** Rows read at a time in the «Data» tab unless the person picks other, and those shown of
@@ -47,6 +49,8 @@ export class TableData {
   readonly elapsed = signal<number | undefined>(undefined);
   readonly related = signal<readonly RelatedRows[]>([]);
   readonly session: string;
+  /** Its rows edited in the grid before they are saved. */
+  readonly editor: RowEditor;
   private opened = false;
   private timer?: ReturnType<typeof setInterval>;
   private runs = 0;
@@ -62,6 +66,13 @@ export class TableData {
     },
   ) {
     this.session = `object:${tab}`;
+    this.editor = new RowEditor(section, {
+      columns: () => this.columns(),
+      rows: () => this.rows(),
+      connection: () => this.source().connection,
+      session: () => this.session,
+      reload: () => this.load(),
+    });
   }
 
   private workspace() {
@@ -88,7 +99,8 @@ export class TableData {
       this.section.state.scopes(),
       {
         ...(database ? { database } : {}),
-        manual: false,
+        // Saved edits wait for a commit when the connection commits by hand (DB-13).
+        manual: !autoCommits(readDbConnection(document.value)),
       },
     );
     this.opened = true;

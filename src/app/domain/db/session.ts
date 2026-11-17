@@ -5,7 +5,7 @@
 import { QuickFilter, TableQuery } from './table-query';
 import { DbBookmark } from './tree';
 
-export type DbTabKind = 'connection' | 'sql' | 'object';
+export type DbTabKind = 'connection' | 'sql' | 'object' | 'console';
 
 /** An editor tab of the section. */
 export interface DbTab {
@@ -76,7 +76,7 @@ function readTab(item: unknown): DbTab[] {
   const kind = tab['kind'];
   if (
     typeof tab['id'] !== 'string' ||
-    (kind !== 'connection' && kind !== 'sql' && kind !== 'object')
+    (kind !== 'connection' && kind !== 'sql' && kind !== 'object' && kind !== 'console')
   )
     return [];
   return [

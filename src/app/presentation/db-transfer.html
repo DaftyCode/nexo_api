@@ -1,0 +1,118 @@
+@let d = draft();
+<div class="db-transfer-backdrop">
+  <form
+    class="feature-card db-transfer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-transfer-title"
+    (submit)="$event.preventDefault(); ready() && d.run.start()"
+    (keydown.escape)="close()"
+  >
+    <h2 id="db-transfer-title">{{ title() | transloco }}</h2>
+    <p class="muted">{{ request().name }}</p>
+    @switch (d.phase()) {
+      @case ('setup') {
+        @switch (request().kind) {
+          @case ('export') {
+            <app-db-transfer-export [draft]="d" />
+          }
+          @case ('import') {
+            <app-db-transfer-import [draft]="d" />
+          }
+          @case ('copy') {
+            <app-db-transfer-copy [draft]="d" />
+          }
+        }
+        @if (request().kind !== 'export') {
+          <app-db-transfer-writing [draft]="d" />
+          <p class="db-transfer-warning">{{ 'db.transfer.final' | transloco }}</p>
+        }
+      }
+      @case ('running') {
+        <div class="db-transfer-progress" role="status" aria-live="polite">
+          @if (percent() !== undefined) {
+            <progress max="100" [value]="percent()"></progress>
+            <span>{{ percent() }} %</span>
+          } @else {
+            <div class="spinner small"></div>
+          }
+          <span>{{ 'db.transfer.rows' | transloco: { v0: d.progress().rows } }}</span>
+        </div>
+      }
+      @default {
+        <div role="status">
+          @if (d.error()) {
+            <p class="db-transfer-error">{{ d.error() | transloco }}</p>
+          }
+          @if (d.exported(); as exported) {
+            <p>
+              {{
+                (exported.cancelled ? 'db.transfer.exportCancelled' : 'db.transfer.exported')
+                  | transloco: { v0: exported.rows }
+              }}
+            </p>
+          }
+          @if (d.outcome(); as outcome) {
+            @if (outcome.stopped) {
+              <p class="db-transfer-error">{{ 'db.transfer.stopped' | transloco }}</p>
+            }
+            @if (outcome.cancelled) {
+              <p class="db-transfer-warning">{{ 'db.transfer.cancelled' | transloco }}</p>
+            }
+            <dl class="db-transfer-outcome">
+              <dt>{{ 'Read' | transloco }}</dt>
+              <dd>{{ outcome.read }}</dd>
+              <dt>{{ 'Inserted' | transloco }}</dt>
+              <dd>{{ outcome.inserted }}</dd>
+              <dt>{{ 'Inserted or updated' | transloco }}</dt>
+              <dd>{{ outcome.upserted }}</dd>
+              <dt>{{ 'Failed' | transloco }}</dt>
+              <dd>{{ outcome.failed }}</dd>
+            </dl>
+            @if (outcome.failures.length) {
+              <h3>{{ 'What failed' | transloco }}</h3>
+              <ol class="db-transfer-failures">
+                @for (failure of outcome.failures; track $index) {
+                  <li>
+                    {{
+                      (failure.last ? 'db.transfer.failedRows' : 'db.transfer.failedRow')
+                        | transloco: { v0: failure.position, v1: failure.last }
+                    }}
+                    <span class="muted">{{ failure.message }}</span>
+                  </li>
+                }
+              </ol>
+            }
+          }
+        </div>
+      }
+    }
+    <div class="row db-transfer-actions">
+      @switch (d.phase()) {
+        @case ('setup') {
+          <button type="submit" class="button primary" [disabled]="!ready()">
+            {{
+              (request().kind === 'export'
+                ? 'Export'
+                : request().kind === 'import'
+                  ? 'Import'
+                  : 'Copy'
+              ) | transloco
+            }}
+          </button>
+          <button type="button" class="button" (click)="close()">{{ 'Cancel' | transloco }}</button>
+        }
+        @case ('running') {
+          <button type="button" class="button" (click)="d.run.cancel()">
+            {{ 'Cancel' | transloco }}
+          </button>
+        }
+        @default {
+          <button type="button" class="button primary" (click)="close()">
+            {{ 'Close' | transloco }}
+          </button>
+        }
+      }
+    </div>
+  </form>
+</div>
