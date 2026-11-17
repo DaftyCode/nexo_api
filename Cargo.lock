@@ -3479,7 +3479,7 @@ dependencies = [
  "async-trait",
  "base64 0.23.1",
  "bytes",
- "fallible-iterator 0.2.0",
+ "fallible-iterator 0.3.0",
  "futures-util",
  "nexo-driver-sdk",
  "postgres-protocol",
