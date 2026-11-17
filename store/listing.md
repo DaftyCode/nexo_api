@@ -26,25 +26,23 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 - Collection runner with iterations and JSON/CSV data
 - WebSocket, Socket.IO, MQTT, Kafka and gRPC clients
 - MongoDB: explorer, aggregations, schema, indexes, shell, SQL, import/export and compare
-- PostgreSQL, SQL Server, MySQL, MariaDB and SQLite: navigator, SQL editor, data grid, structure editor and data transfer
+- PostgreSQL, SQL Server, MySQL, MariaDB and SQLite: navigator, SQL editor, data grid, structure editor, data transfer, ER diagrams, session and lock managers and server dashboards
 - Local mock servers and SQL queries over JSON/CSV datasets
 - Import cURL, OpenAPI/Swagger, HAR and portable collections; generate code in 8 languages
 - Works offline, without an account; English and Spanish; three visual themes
 
 ### What's new in this version
 
-More databases, and the tools to work with them: MySQL, MariaDB and SQLite join PostgreSQL and SQL Server.
+See your databases, and what your servers are doing.
 
-- MySQL, MariaDB and SQLite modules, chosen from a gallery that says what each engine is and whether it is installed.
-- Edit rows in the data grid and save every change together, in one transaction.
-- Manual transactions with commit, rollback, a statement counter, a log and smart commit.
-- A smarter SQL editor: completion from the schema, formatting, templates, :name parameters, SQL generated from a table and a SQL console.
-- Execution plans, estimated or measured, as a tree with warnings.
-- Export to eight formats, import CSV and JSON, and copy tables between different engines.
-- Ctrl+H searches objects, data and saved scripts.
-- A structure editor: create and change tables, columns, keys and indexes in forms or right in the Columns view, always showing the SQL before it runs.
-- A redesigned navigator, object sheet and data grid.
-- Many fixes and security improvements.
+- Entity-relationship diagrams of a table and its neighbours or of a whole schema, in IDEF1X, crow's foot or UML, moved with the mouse or the keyboard, saved as your own diagrams with notes, and exported to SVG, PNG or PDF.
+- A session manager that shows who is connected and what each session runs, and cancels a query or ends a session after asking.
+- A lock manager that shows who waits for whom, and ends the session that blocks.
+- Users and roles with their memberships and permissions, and the permissions of every table.
+- A dashboard for each server, with its sessions, transactions, reads and writes, size and locks drawn every few seconds, and charts of your own from read-only queries.
+- The type of a column is chosen from every type of the engine.
+- Menus always fit in the window.
+- Many fixes and accessibility improvements.
 
 ### Search terms
 
@@ -91,25 +89,23 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 - Runner de colecciones con iteraciones y datos JSON/CSV
 - Clientes de WebSocket, Socket.IO, MQTT, Kafka y gRPC
 - MongoDB: explorador, agregaciones, esquema, índices, shell, SQL, importar/exportar y comparar
-- PostgreSQL, SQL Server, MySQL, MariaDB y SQLite: navegador, editor SQL, rejilla de datos, editor de estructura y transferencia de datos
+- PostgreSQL, SQL Server, MySQL, MariaDB y SQLite: navegador, editor SQL, rejilla de datos, editor de estructura, transferencia de datos, diagramas ER, gestores de sesiones y bloqueos y paneles del servidor
 - Servidores mock locales y consultas SQL sobre datasets JSON/CSV
 - Importa cURL, OpenAPI/Swagger, HAR y colecciones portables; genera código en 8 lenguajes
 - Funciona sin conexión y sin cuenta; en español e inglés; tres temas visuales
 
 ### Novedades de esta versión
 
-Más bases de datos, y las herramientas para trabajar con ellas: MySQL, MariaDB y SQLite se suman a PostgreSQL y SQL Server.
+Mira tus bases de datos, y lo que hacen tus servidores.
 
-- Módulos de MySQL, MariaDB y SQLite, elegidos en una galería que dice qué es cada motor y si ya está instalado.
-- Edita filas en la rejilla de datos y guarda todos los cambios juntos, en una transacción.
-- Transacciones manuales con commit, rollback, contador de sentencias, registro y commit inteligente.
-- Un editor SQL más listo: autocompletado con el esquema, formato, plantillas, parámetros :nombre, SQL generado desde una tabla y una consola SQL.
-- Planes de ejecución, estimados o medidos, como un árbol con avisos.
-- Exporta a ocho formatos, importa CSV y JSON, y copia tablas entre motores distintos.
-- Ctrl+H busca objetos, datos y scripts guardados.
-- Un editor de estructura: crea y cambia tablas, columnas, claves e índices con formularios o en la propia vista Columnas, enseñando siempre el SQL antes de ejecutarlo.
-- Un navegador, una ficha de objeto y una rejilla de datos rediseñados.
-- Muchas correcciones y mejoras de seguridad.
+- Diagramas entidad-relación de una tabla y sus vecinas o de un esquema entero, en IDEF1X, pata de gallo o UML, que se mueven con el ratón o el teclado, se guardan como diagramas propios con notas y se exportan a SVG, PNG o PDF.
+- Un gestor de sesiones que muestra quién está conectado y qué ejecuta cada sesión, y cancela una consulta o termina una sesión tras preguntar.
+- Un gestor de bloqueos que muestra quién espera a quién y termina la sesión que bloquea.
+- Usuarios y roles con sus pertenencias y permisos, y los permisos de cada tabla.
+- Un panel para cada servidor, con sus sesiones, transacciones, lecturas y escrituras, tamaño y bloqueos dibujados cada pocos segundos, y gráficos propios a partir de consultas de solo lectura.
+- El tipo de una columna se elige entre todos los tipos del motor.
+- Los menús siempre caben en la ventana.
+- Muchas correcciones y mejoras de accesibilidad.
 
 ### Términos de búsqueda
 
