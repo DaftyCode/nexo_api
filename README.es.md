@@ -128,7 +128,7 @@ Compila en el sistema operativo y la arquitectura de CPU que quieras distribuir:
 
 ## Estado y siguientes pasos
 
-La versión actual es la **0.7.0**, con PostgreSQL y SQL Server en la sección «Bases de datos» y el cliente MongoDB completo. Las pruebas cubren peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, todos los tipos de autorización (con vectores oficiales y servidores que verifican), gRPC unary y streaming con proto o reflexión, WebSocket, Socket.IO, MQTT, Kafka, subscriptions GraphQL, MongoDB y FerretDB reales, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor.
+La versión actual es la **0.8.0**, con PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en la sección «Bases de datos» y el cliente MongoDB completo. Las pruebas cubren peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, todos los tipos de autorización (con vectores oficiales y servidores que verifican), gRPC unary y streaming con proto o reflexión, WebSocket, Socket.IO, MQTT, Kafka, subscriptions GraphQL, MongoDB y FerretDB reales, servidores reales de PostgreSQL, SQL Server, MySQL y MariaDB y ficheros SQLite, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor.
 
 Siguientes pasos:
 
