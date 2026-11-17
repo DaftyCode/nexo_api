@@ -1,0 +1,9 @@
+[
+  {
+    "advisory": "GHSA-fc5q-39xc-vjpf",
+    "package": "picomatch",
+    "latest": "4.0.7",
+    "expires": "2026-12-17",
+    "reason": "No picomatch release fixes it: 4.0.7, the latest, is affected. It reaches the audit only through the build tools (@angular/build, @angular/cli), which match the project's own glob patterns; the app does not contain it. Remove this entry once a fixed picomatch is published and installed."
+  }
+]
