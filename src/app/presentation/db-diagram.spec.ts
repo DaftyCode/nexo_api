@@ -57,6 +57,23 @@ describe('DbDiagram', () => {
     );
   });
 
+  it('opens again as it was left, from the layout kept in the session', async () => {
+    const panel = await startDiagramPanel();
+    await openSchema(panel);
+    panel.section().diagrams.keep('c1', ['shop', 'schemas', 'public'], {
+      positions: { 'public.users': { x: 900, y: 40 } },
+      notation: 'uml',
+      detail: 'keys',
+      types: false,
+    });
+    await panel.menu('public', 'View diagram');
+    await panel.settle(20);
+    expect(entities(panel)).toEqual(['public.orders', 'public.users']);
+    expect(placeOf(entity(panel, 'public.users'))).toEqual({ x: 900, y: 40 });
+    expect((panel.control('Notation') as HTMLSelectElement).value).toBe('uml');
+    expect(panel.root().querySelector('.erd-zoom')?.textContent?.trim()).toMatch(/%$/);
+  });
+
   it('moves, hides, colors and opens tables with the keyboard', async () => {
     const panel = await schemaDiagram();
     const orders = entity(panel, 'public.orders');

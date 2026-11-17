@@ -42,14 +42,18 @@ export class SectionDiagrams {
     for (const id of [...this.drafts.keys()]) if (!open.has(id)) this.drafts.delete(id);
     const kept = this.drafts.get(tab.id);
     if (kept) return kept;
-    const source = diagramSource(tab, table);
-    const draft =
-      source.kind === 'saved'
-        ? new DiagramDraft(source)
-        : new DiagramDraft(source, (layout) => this.keep(source.connection, source.path, layout));
-    if (source.kind !== 'saved') draft.restore(this.layout(source.connection, source.path));
-    this.drafts.set(tab.id, draft);
-    return draft;
+    // Asked for from a view's `computed`: restoring the layout kept writes the draft's
+    // signals, which a `computed` may not, so the draft is made outside it.
+    return untracked(() => {
+      const source = diagramSource(tab, table);
+      const draft =
+        source.kind === 'saved'
+          ? new DiagramDraft(source)
+          : new DiagramDraft(source, (layout) => this.keep(source.connection, source.path, layout));
+      if (source.kind !== 'saved') draft.restore(this.layout(source.connection, source.path));
+      this.drafts.set(tab.id, draft);
+      return draft;
+    });
   }
   /** Whether a tab holds a saved diagram with changes not saved yet. */
   unsaved(tab: string) {

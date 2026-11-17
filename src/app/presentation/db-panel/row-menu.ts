@@ -34,6 +34,7 @@ import { DbSection } from './section';
       [style.left.px]="x()"
       [style.top.px]="y()"
       [style.bottom.px]="bottom()"
+      [style.max-height.px]="maxHeight()"
       (keydown)="key($event)"
       (click)="$event.stopPropagation()"
     >
@@ -201,6 +202,8 @@ export class DbRowMenu {
   readonly y = input<number | undefined>(undefined);
   /** Opened over the row: the distance from the window's foot to the menu's bottom. */
   readonly bottom = input<number | undefined>(undefined);
+  /** The tallest it may be to stay in the window. */
+  readonly maxHeight = input<number | undefined>(undefined);
   readonly chosen = output<MenuAction>();
   readonly closed = output<void>();
   protected readonly section = inject(DbSection);

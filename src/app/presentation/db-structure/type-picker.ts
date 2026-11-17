@@ -13,11 +13,13 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { placeBy } from '../popup-place';
+import { PopupPlace, placeBy } from '../popup-place';
 
 let pickers = 0;
 /** The narrowest the list of types opens. */
 const WIDTH = 240;
+/** The tallest the list of types gets, when the window has room for it. */
+const LIST_HEIGHT = 280;
 
 /**
  * The type of a column, as DBeaver's: a text to write any type (`varchar(100)` too) and a
@@ -68,6 +70,7 @@ const WIDTH = 240;
         [style.left.px]="place().x"
         [style.top.px]="place().y"
         [style.bottom.px]="place().bottom"
+        [style.max-height.px]="place().maxHeight"
         [style.min-width.px]="place().width"
         (mousedown)="$event.preventDefault()"
       >
@@ -112,7 +115,6 @@ const WIDTH = 240;
     .db-type-list {
       position: fixed;
       z-index: var(--nexo-z-popover);
-      max-height: 280px;
       overflow: auto;
       margin: 0;
       padding: var(--nexo-space-2);
@@ -159,7 +161,7 @@ export class DbTypePicker {
   /** What narrows the list: nothing when it was opened whole. */
   protected readonly filter = signal('');
   protected readonly active = signal(-1);
-  protected readonly place = signal<{ x: number; y?: number; bottom?: number; width: number }>({
+  protected readonly place = signal<PopupPlace & { width: number }>({
     x: 0,
     width: WIDTH,
   });
@@ -189,7 +191,12 @@ export class DbTypePicker {
   private show(filter = '') {
     const element = this.field().nativeElement;
     const width = Math.max(WIDTH, element.getBoundingClientRect().width);
-    this.place.set({ ...placeBy(element, width), width });
+    const place = placeBy(element, width);
+    this.place.set({
+      ...place,
+      maxHeight: Math.min(LIST_HEIGHT, place.maxHeight ?? LIST_HEIGHT),
+      width,
+    });
     this.filter.set(filter);
     const shown = this.shown();
     const current = shown.findIndex((type) => this.isCurrent(type));

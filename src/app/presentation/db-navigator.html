@@ -183,6 +183,8 @@
     [attr.aria-label]="'Navigator options' | transloco"
     [style.left.px]="at.x"
     [style.top.px]="at.y"
+    [style.bottom.px]="at.bottom"
+    [style.max-height.px]="at.maxHeight"
     (click)="$event.stopPropagation()"
     (keydown)="optionsKey($event)"
   >
@@ -214,6 +216,7 @@
     [x]="open.x"
     [y]="open.y"
     [bottom]="open.bottom"
+    [maxHeight]="open.maxHeight"
     (chosen)="run($event)"
     (closed)="closeMenu()"
   />

@@ -80,6 +80,7 @@ const DOWNLOAD = [
       [style.left.px]="x()"
       [style.top.px]="bottom() === undefined ? y() : null"
       [style.bottom.px]="bottom()"
+      [style.max-height.px]="maxHeight()"
       (keydown)="key($event)"
       (click)="$event.stopPropagation()"
     >
@@ -173,6 +174,8 @@ export class GridMenu {
   readonly y = input(0);
   /** Opened over the element: the distance from the window's foot to the menu's bottom. */
   readonly bottom = input<number | undefined>(undefined);
+  /** The tallest it may be to stay in the window. */
+  readonly maxHeight = input<number | undefined>(undefined);
   readonly column = input('');
   readonly pinned = input(false);
   readonly actions = input<readonly CellAction[]>([]);

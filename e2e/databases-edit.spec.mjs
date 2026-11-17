@@ -50,6 +50,22 @@ SELECT count(*) AS stored FROM items`,
   await grid.locator('.grid-editor').press('Enter');
   // A new row, and a deleted one.
   await page.getByRole('button', { name: 'Add row' }).click();
+  // The menu of a cell opened a little above the middle of the window stays inside it,
+  // however long: what does not fit scrolls.
+  const chair = grid.getByRole('gridcell', { name: 'chair' });
+  const cell = await chair.boundingBox();
+  const height = Math.round((cell.y + cell.height / 2) / 0.45);
+  await page.setViewportSize({ width: 1280, height });
+  await chair.click({ button: 'right' });
+  const cellMenu = page.locator('app-grid-menu [role="menu"]');
+  const box = await cellMenu.boundingBox();
+  expect(box.y).toBeGreaterThanOrEqual(0);
+  expect(box.y + box.height).toBeLessThanOrEqual(height);
+  const lastEntry = cellMenu.getByRole('menuitem').last();
+  await lastEntry.scrollIntoViewIfNeeded();
+  await expect(lastEntry).toBeInViewport();
+  await page.keyboard.press('Escape');
+  await page.setViewportSize({ width: 1280, height: 720 });
   await grid.getByRole('gridcell', { name: 'chair' }).click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'Delete the rows' }).click();
   const save = page.getByRole('button', { name: /^Save \(/ });

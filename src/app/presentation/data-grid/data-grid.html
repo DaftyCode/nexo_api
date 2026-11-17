@@ -195,6 +195,7 @@
     [x]="open.x"
     [y]="open.y ?? 0"
     [bottom]="open.bottom"
+    [maxHeight]="open.maxHeight"
     [column]="active() ? columns()[active()!.column].name : ''"
     [pinned]="!!active() && view().pinned.includes(active()!.column)"
     [actions]="cellActions()"
