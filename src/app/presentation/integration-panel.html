@@ -1,7 +1,6 @@
 @if (task.error()) {
   <div class="global-alert panel-alert" role="alert">
-    <span>{{ task.error() | transloco }}</span
-    ><button
+    <span>{{ task.error() | transloco }}</span><button
       class="icon-button"
       (click)="task.error.set('')"
       [attr.aria-label]="'Dismiss error' | transloco"
@@ -63,8 +62,11 @@
           }}<input [formField]="fields.branch" placeholder="feature/my-api"
         /></label>
         <div class="row">
-          <button class="button" (click)="git('branch')">{{ 'Create branch' | transloco }}</button
-          ><button class="button" (click)="git('checkout')">
+          <button class="button" (click)="git('branch')">
+            {{ 'Create branch' | transloco }}</button><button
+            class="button"
+            (click)="git('checkout')"
+          >
             {{ 'Switch branch' | transloco }}
           </button>
         </div>
@@ -199,28 +201,7 @@
             <app-token-exchange [fields]="fields" (exchange)="oauth()" />
           }
           @case ('revisions') {
-            <h2>{{ 'Document history' | transloco }}</h2>
-            <label class="field"
-              >{{ 'Document' | transloco
-              }}<select [formField]="fields.documentId">
-                <option value="">{{ 'Choose a resource' | transloco }}</option>
-                @for (d of state.documents(); track d.id) {
-                  <option [value]="d.id">
-                    {{ 'document.resourceRevision' | transloco: { v0: d.name, v1: d.revision } }}
-                  </option>
-                }
-              </select></label
-            ><button class="button" (click)="revisionList()">
-              {{ 'Load revisions' | transloco }}
-            </button>
-            @for (revision of revisions(); track revision.revision) {
-              <div class="run-result">
-                <span>{{ 'document.revision' | transloco: { v0: revision.revision } }}</span
-                ><button class="button" (click)="restore(revision.value)">
-                  {{ 'Restore as new revision' | transloco }}
-                </button>
-              </div>
-            }
+            <app-document-revisions [task]="task" [output]="output" />
           }
           @case ('apis') {
             <app-api-definitions />
@@ -253,8 +234,9 @@
             </p>
             @for (file of v.status.files; track file.path) {
               <div class="run-result">
-                <span class="method-tag">{{ file.change | transloco }}</span
-                ><code>{{ file.path }}</code>
+                <span class="method-tag">{{ file.change | transloco }}</span><code>{{
+                  file.path
+                }}</code>
               </div>
             } @empty {
               <p class="muted">{{ 'No changes.' | transloco }}</p>

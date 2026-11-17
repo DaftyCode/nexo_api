@@ -41,8 +41,9 @@ export function environmentPreview(
         <strong>{{ 'Recent' | transloco }}</strong>
         @for (entry of recent(); track entry.document.id) {
           <button (click)="state.openHistory(entry.document)">
-            <span class="method-tag" [attr.data-method]="entry.method">{{ entry.method }}</span
-            ><span>{{ entry.document.name }}</span>
+            <span class="method-tag" [attr.data-method]="entry.method">{{
+              entry.method
+            }}</span><span>{{ entry.document.name }}</span>
           </button>
         } @empty {
           <span class="context-empty">{{
@@ -90,8 +91,9 @@ export function environmentPreview(
           @if (collection(); as current) {
             <strong class="context-collection-name">{{ current.name }}</strong>
             <div class="row between">
-              <span class="muted">{{ 'counts.requests' | transloco: { v0: requestCount() } }}</span
-              ><button
+              <span class="muted">{{
+                'counts.requests' | transloco: { v0: requestCount() }
+              }}</span><button
                 class="icon-button"
                 [title]="'Open runner' | transloco"
                 [attr.aria-label]="'Open runner' | transloco"
@@ -137,8 +139,7 @@ export function environmentPreview(
             <div class="context-variable-list">
               @for (variable of variables(); track $index) {
                 <div class="context-variable">
-                  <span>{{ variable.key }}</span
-                  ><code
+                  <span>{{ variable.key }}</span><code
                     [class.masked]="variable.secret"
                     [attr.title]="
                       variable.secret ? ('Sensitive value hidden' | transloco) : variable.text

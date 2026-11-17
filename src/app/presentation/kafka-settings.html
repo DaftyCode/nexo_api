@@ -26,8 +26,8 @@
   </div>
   <p class="editor-hint">
     {{ 'Keep the password in the vault and write its reference:' | transloco }}
-    <code>{{ vaultExample }}</code
-    >. {{ 'It is only sent to the brokers its allowed domains include.' | transloco }}
+    <code>{{ vaultExample }}</code>.
+    {{ 'It is only sent to the brokers its allowed domains include.' | transloco }}
   </p>
 }
 <div class="row">
@@ -53,8 +53,11 @@
     <label class="field">{{ 'Offset' | transloco }}<input [formField]="fields().offset" /></label>
   }
   <button class="button" (click)="action.emit('subscribe')" [disabled]="!connected()">
-    {{ 'Read topic' | transloco }}</button
-  ><button class="button" (click)="action.emit('unsubscribe')" [disabled]="!connected()">
+    {{ 'Read topic' | transloco }}</button><button
+    class="button"
+    (click)="action.emit('unsubscribe')"
+    [disabled]="!connected()"
+  >
     {{ 'Stop reading' | transloco }}</button
   ><button class="button" (click)="action.emit('topics')" [disabled]="!connected()">
     {{ 'List topics' | transloco }}

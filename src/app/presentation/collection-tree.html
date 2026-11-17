@@ -31,8 +31,9 @@
         <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
         <div>
           <button (click)="workspace().state.openCollectionSettings(collection.id)">
-            {{ 'Variables & settings' | transloco }}</button
-          ><button (click)="workspace().state.addRequest(collection)">
+            {{ 'Variables & settings' | transloco }}</button><button
+            (click)="workspace().state.addRequest(collection)"
+          >
             {{ 'Add request' | transloco }}</button
           ><button (click)="workspace().folder(collection)">
             {{ 'Add folder' | transloco }}</button
@@ -114,8 +115,7 @@
             >
               <span class="method-tag" [attr.data-method]="workspace().tree.method(entry.item)">{{
                 workspace().tree.method(entry.item)
-              }}</span
-              ><span>{{ entry.item.name }}</span>
+              }}</span><span>{{ entry.item.name }}</span>
             </button>
           }
           <details
@@ -139,8 +139,9 @@
                 </button>
               }
               <button (click)="workspace().state.reorderItem(collection, entry.path, -1)">
-                {{ 'Move up' | transloco }}</button
-              ><button (click)="workspace().state.reorderItem(collection, entry.path, 1)">
+                {{ 'Move up' | transloco }}</button><button
+                (click)="workspace().state.reorderItem(collection, entry.path, 1)"
+              >
                 {{ 'Move down' | transloco }}</button
               ><label
                 >{{ 'Move to' | transloco
@@ -191,8 +192,10 @@
       {{ 'Organize requests into collections and keep your work together.' | transloco }}
     </p>
     <button class="button" (click)="workspace().dialogs.set('collection')">
-      {{ 'Create collection' | transloco }}</button
-    ><button class="text-button" (click)="workspace().dialogs.set('import')">
+      {{ 'Create collection' | transloco }}</button><button
+      class="text-button"
+      (click)="workspace().dialogs.set('import')"
+    >
       {{ 'or import existing work' | transloco }}
     </button>
   </div>

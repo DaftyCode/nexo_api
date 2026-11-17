@@ -1,7 +1,6 @@
 @if (error()) {
   <div class="global-alert panel-alert" role="alert">
-    <span>{{ error() | transloco }}</span
-    ><button
+    <span>{{ error() | transloco }}</span><button
       class="icon-button"
       (click)="error.set('')"
       [attr.aria-label]="'Dismiss error' | transloco"

@@ -2,8 +2,7 @@
   <h2>{{ 'API definitions' | transloco }}</h2>
   @if (task.error()) {
     <div class="global-alert panel-alert" role="alert">
-      <span>{{ task.error() | transloco }}</span
-      ><button
+      <span>{{ task.error() | transloco }}</span><button
         class="icon-button"
         (click)="task.error.set('')"
         [attr.aria-label]="'Dismiss error' | transloco"
@@ -42,8 +41,9 @@
     }
   </div>
   <div class="row">
-    <button class="button primary" (click)="save()">{{ 'Save definition' | transloco }}</button
-    ><button class="button" (click)="check()">{{ 'Check definition' | transloco }}</button
+    <button class="button primary" (click)="save()">
+      {{ 'Save definition' | transloco }}</button><button class="button" (click)="check()">
+      {{ 'Check definition' | transloco }}</button
     ><button class="button" (click)="generate()">{{ 'Generate collection' | transloco }}</button>
   </div>
 
@@ -169,8 +169,7 @@
           <h3>{{ 'Schemas' | transloco }}</h3>
           @for (schema of schemas(); track schema.pointer) {
             <button type="button" class="tree-label" (click)="goTo(schema.line)">
-              <code>{{ schema.name }}</code
-              ><span class="muted">{{ schema.type }}</span>
+              <code>{{ schema.name }}</code><span class="muted">{{ schema.type }}</span>
             </button>
           }
         }

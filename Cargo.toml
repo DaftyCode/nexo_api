@@ -8,7 +8,7 @@ resolver = "3"
 [workspace.package]
 version = "0.9.0"
 edition = "2024"
-rust-version = "1.99"
+rust-version = "1.100"
 license = "MIT"
 
 [workspace.dependencies]
@@ -16,15 +16,15 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 async-trait = "0.1.92"
 thiserror = "2.0.21"
-uuid = { version = "1.29.0", features = ["v4", "serde"] }
+uuid = { version = "1.29.3", features = ["v4", "serde"] }
 tokio = { version = "1.54.1", features = ["full"] }
 axum = { version = "0.8.9", features = ["ws", "macros"] }
 tower-http = { version = "0.7.1", features = ["cors", "trace", "limit", "fs", "request-id"] }
-rusqlite = { version = "0.41.1", features = ["bundled", "hooks"] }
+rusqlite = { version = "0.43.0", features = ["bundled", "hooks"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
 keyring = { version = "4.2.0", features = ["v1"] }
-tauri = "2.12.5"
-tauri-build = "2.7.4"
+tauri = "2.12.6"
+tauri-build = "2.7.5"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 directories = "6.0.0"

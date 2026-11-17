@@ -1,22 +1,65 @@
 //! Dates, times and intervals in their binary form, written in ISO 8601 (timestamps with
 //! time zone in UTC), with `infinity` and `-infinity` as PostgreSQL has them.
 use super::Decoded;
-use chrono::{Duration, NaiveDate, NaiveDateTime, NaiveTime};
 use postgres_protocol::types::{date_from_sql, time_from_sql, timestamp_from_sql};
 
-fn epoch() -> NaiveDateTime {
-    NaiveDate::from_ymd_opt(2000, 1, 1)
-        .and_then(|date| date.and_hms_opt(0, 0, 0))
-        .expect("2000-01-01 is a date")
+const MICROS_A_DAY: i64 = 86_400_000_000;
+/// The days from 1970-01-01, where the calendar below counts from, to 2000-01-01, where
+/// PostgreSQL does.
+const POSTGRES_EPOCH: i64 = 10_957;
+
+/// The day of the proleptic Gregorian calendar some days after 1970-01-01 (Howard Hinnant's
+/// `civil_from_days`): exact for every day PostgreSQL keeps, which go beyond what date
+/// libraries take.
+fn civil(days: i64) -> (i64, i64, i64) {
+    let shifted = days + 719_468;
+    let era = shifted.div_euclid(146_097);
+    let of_era = shifted.rem_euclid(146_097);
+    let year_of_era = (of_era - of_era / 1460 + of_era / 36_524 - of_era / 146_096) / 365;
+    let of_year = of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+    let month_from_march = (5 * of_year + 2) / 153;
+    let day = of_year - (153 * month_from_march + 2) / 5 + 1;
+    let month = if month_from_march < 10 {
+        month_from_march + 3
+    } else {
+        month_from_march - 9
+    };
+    let year = year_of_era + era * 400 + i64::from(month <= 2);
+    (year, month, day)
+}
+
+/// `YYYY-MM-DD`; a year before 1 or after 9999 with its sign, as ISO 8601 extends it.
+fn day_text(days: i64) -> String {
+    let (year, month, day) = civil(POSTGRES_EPOCH + days);
+    let year = match year {
+        0..=9999 => format!("{year:04}"),
+        _ if year < 0 => format!("-{:04}", year.unsigned_abs()),
+        _ => format!("+{year}"),
+    };
+    format!("{year}-{month:02}-{day:02}")
+}
+
+/// `HH:MM:SS`, with the decimals of a second in groups of three, only when it has them.
+fn clock(micros: i64) -> String {
+    let (seconds, fraction) = (micros / 1_000_000, micros % 1_000_000);
+    let text = format!(
+        "{:02}:{:02}:{:02}",
+        seconds / 3600,
+        seconds % 3600 / 60,
+        seconds % 60
+    );
+    match fraction {
+        0 => text,
+        _ if fraction % 1000 == 0 => format!("{text}.{:03}", fraction / 1000),
+        _ => format!("{text}.{fraction:06}"),
+    }
 }
 
 pub(super) fn date(buf: &[u8]) -> Decoded<String> {
     Ok(match date_from_sql(buf)? {
         i32::MAX => "infinity".into(),
         i32::MIN => "-infinity".into(),
-        days => (epoch().date() + Duration::days(days.into()))
-            .format("%Y-%m-%d")
-            .to_string(),
+        days => day_text(days.into()),
     })
 }
 
@@ -24,10 +67,11 @@ fn timestamp_text(micros: i64, zone: &str) -> String {
     match micros {
         i64::MAX => "infinity".into(),
         i64::MIN => "-infinity".into(),
-        micros => {
-            let moment = epoch() + Duration::microseconds(micros);
-            format!("{}{zone}", moment.format("%Y-%m-%dT%H:%M:%S%.f"))
-        }
+        micros => format!(
+            "{}T{}{zone}",
+            day_text(micros.div_euclid(MICROS_A_DAY)),
+            clock(micros.rem_euclid(MICROS_A_DAY))
+        ),
     }
 }
 
@@ -45,16 +89,9 @@ pub(super) fn timestamptz(buf: &[u8]) -> Decoded<String> {
     Ok(timestamp_text(micros, zone))
 }
 
+/// A time of the day; 24:00:00 is one too in PostgreSQL.
 fn time_text(micros: i64) -> String {
-    // 24:00:00 is a valid time of PostgreSQL that chrono has no name for.
-    if micros >= 86_400_000_000 {
-        return "24:00:00".into();
-    }
-    let seconds = u32::try_from(micros.div_euclid(1_000_000)).unwrap_or(0);
-    let nanos = u32::try_from(micros.rem_euclid(1_000_000) * 1000).unwrap_or(0);
-    NaiveTime::from_num_seconds_from_midnight_opt(seconds, nanos)
-        .map(|time| time.format("%H:%M:%S%.f").to_string())
-        .unwrap_or_default()
+    clock(micros.clamp(0, MICROS_A_DAY))
 }
 
 pub(super) fn time(buf: &[u8]) -> Decoded<String> {
@@ -138,6 +175,29 @@ mod tests {
         let mut zoned = noon.to_be_bytes().to_vec();
         zoned.extend_from_slice(&(-3600i32).to_be_bytes());
         assert_eq!(timetz(&zoned).unwrap(), "12:00:00.500+01:00");
+    }
+
+    #[test]
+    fn every_day_postgresql_keeps_has_its_calendar_date() {
+        let day = |days: i32| date(&days.to_be_bytes()).unwrap();
+        assert_eq!(day(-1), "1999-12-31");
+        assert_eq!(day(59), "2000-02-29");
+        assert_eq!(day(-36_465), "1900-03-01");
+        assert_eq!(day(2_903_040), "9948-04-03");
+        assert_eq!(day(2_914_635), "9980-01-01");
+        assert_eq!(day(2_921_940), "+10000-01-01");
+        assert_eq!(day(-730_485), "0000-01-01");
+        assert_eq!(day(-730_486), "-0001-12-31");
+        // PostgreSQL's last date, far beyond what date libraries take.
+        assert_eq!(day(2_145_031_948), "+5874897-12-31");
+        let stamp = |micros: i64| timestamp(&micros.to_be_bytes()).unwrap();
+        assert_eq!(stamp(-1), "1999-12-31T23:59:59.999999");
+        assert_eq!(stamp(1_000), "2000-01-01T00:00:00.001");
+        assert_eq!(
+            stamp(9_223_371_331_199_999_999),
+            "+294276-12-31T23:59:59.999999"
+        );
+        assert_eq!(time(&(-5i64).to_be_bytes()).unwrap(), "00:00:00");
     }
 
     #[test]

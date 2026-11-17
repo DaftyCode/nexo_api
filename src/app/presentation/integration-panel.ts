@@ -16,9 +16,8 @@ import { GitRemotes } from './git-remotes';
 import { McpCall, McpResults } from './mcp-results';
 import { ApiDefinitions } from './api-definitions';
 import { KeyValueEditor } from './key-value-editor';
-import { KeyValue, WorkspaceDocument, row } from '../domain/models';
+import { KeyValue, row } from '../domain/models';
 import { GitOperation } from '../application/operations';
-import { RevisionEntry } from '../application/ports';
 import { INTEGRATION } from '../composition/providers';
 import {
   GitStatus,
@@ -62,7 +61,6 @@ const defaultModel = {
   params: '{}',
   language: 'curl',
   variant: 'cURL',
-  documentId: '',
   tokenUrl: '',
   clientId: '',
   clientSecret: '',
@@ -79,6 +77,7 @@ export type IntegrationModel = typeof defaultModel;
 import { SessionSettings } from './session-settings';
 import { ModulesSettings } from './modules-settings';
 import { GridFormatSettings } from './grid-format-settings';
+import { DocumentRevisions } from './document-revisions';
 @Component({
   imports: [
     TranslocoPipe,
@@ -94,6 +93,7 @@ import { GridFormatSettings } from './grid-format-settings';
     SessionSettings,
     ModulesSettings,
     GridFormatSettings,
+    DocumentRevisions,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',
@@ -112,7 +112,6 @@ export class IntegrationPanel {
   protected readonly model = signal<IntegrationModel>({ ...defaultModel });
   protected readonly fields = form(this.model);
   protected readonly headers = signal<KeyValue[]>([row()]);
-  protected readonly revisions = signal<RevisionEntry[]>([]);
   protected readonly vault = new VaultForm(this.task, this.output);
   protected readonly loadTest = new LoadTestRun(this.task, this.output);
   constructor() {
@@ -250,20 +249,6 @@ export class IntegrationPanel {
   }
   protected renameWorkspace() {
     void this.state.renameWorkspace(this.model().workspaceName);
-  }
-  protected revisionList() {
-    void this.task.run(async () => {
-      this.revisions.set(await this.integration.revisions(this.model().documentId));
-    });
-  }
-  protected restore(value: WorkspaceDocument) {
-    void this.task.announce('The revision could not be restored', async () => {
-      const current = this.state.documents().find((d) => d.id === value.id);
-      await this.integration.restoreRevision(value, current);
-      await this.state.refresh();
-      this.output.set('Revision restored as a new revision.');
-      return success('Revision restored', 'toast.revisionRestored', { v0: value.name });
-    });
   }
   protected oauth() {
     void this.task.run(async () => {

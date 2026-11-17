@@ -1,7 +1,6 @@
 @if (task.error()) {
   <div class="global-alert panel-alert" role="alert">
-    <span>{{ task.error() | transloco }}</span
-    ><button
+    <span>{{ task.error() | transloco }}</span><button
       type="button"
       class="icon-button"
       (click)="task.error.set('')"

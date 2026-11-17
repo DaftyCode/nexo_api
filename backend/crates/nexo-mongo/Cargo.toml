@@ -17,7 +17,7 @@ nexo-application = { path = "../nexo-application" }
 # gssapi-auth (system Kerberos), openssl-tls, zstd-compression (C), socks5-proxy (for
 # B-01) and cert-key-password, which needs a pkcs8 that is not released yet. Measured in
 # docs/ARCHITECTURE.md, section MongoDB.
-mongodb = { version = "3.10.0", default-features = false, features = [
+mongodb = { version = "3.10.1", default-features = false, features = [
     "rustls-tls-aws-lc",
     "dns-resolver",
     "compat-3-3-0",

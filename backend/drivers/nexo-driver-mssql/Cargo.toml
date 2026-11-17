@@ -18,9 +18,10 @@ tokio.workspace = true
 # The TDS client. Its TLS is rustls with aws-lc-rs (it takes the installed provider, else
 # aws-lc-rs); no native-tls, no Windows authentication (out of scope), no SQL Browser of its
 # own (the driver asks the host for every address, also the browser's).
-tiberius = { version = "=0.13.0", default-features = false, features = ["rustls", "tds73", "tds80", "chrono"] }
+tiberius = { version = "=0.13.0", default-features = false, features = ["rustls", "tds73", "tds80", "time"] }
 tokio-util = { version = "0.7", features = ["compat"] }
-chrono = { version = "0.4.45", default-features = false, features = ["std"] }
+# Dates and times as tiberius reads them (the version the lockfile already has).
+time = { version = "0.3.55", default-features = false, features = ["std"] }
 uuid.workspace = true
 base64.workspace = true
 futures-util.workspace = true

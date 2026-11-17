@@ -1,8 +1,7 @@
 <div class="workspace-navigation">
   @if (workspace().appearance.current() === 'canvas') {
     <div class="canvas-navigation-heading">
-      <strong>{{ 'Workspace' | transloco }}</strong
-      ><button
+      <strong>{{ 'Workspace' | transloco }}</strong><button
         class="icon-button"
         [attr.aria-label]="'Close workspace navigation' | transloco"
         (click)="workspace().closeNavigation()"
@@ -46,8 +45,7 @@
           workspace().state.section() === 'history'
             ? ('History' | transloco)
             : ('Collections' | transloco)
-        }}</strong
-        ><button
+        }}</strong><button
           class="icon-button"
           (click)="workspace().dialogs.set('collection')"
           [attr.aria-label]="'Create collection' | transloco"
@@ -68,8 +66,7 @@
       @if (workspace().state.section() === 'history') {
         @for (history of workspace().state.history(); track history.id) {
           <button class="history-item" (click)="workspace().state.openHistory(history)">
-            <span>{{ history.name }}</span
-            ><small>{{
+            <span>{{ history.name }}</span><small>{{
               history.updated_at * 1000
                 | date: 'short' : undefined : workspace().language.model().language
             }}</small>

@@ -22,8 +22,9 @@
 >
 <div class="row">
   <button class="button primary" (click)="run().start()">
-    {{ 'Start run' | transloco }}</button
-  ><button class="button" (click)="run().stop()">{{ 'Stop' | transloco }}</button>
+    {{ 'Start run' | transloco }}</button><button class="button" (click)="run().stop()">
+    {{ 'Stop' | transloco }}
+  </button>
 </div>
 @if (run().status(); as status) {
   <dl class="performance-stats">

@@ -2,6 +2,7 @@
 //! money as typed text, dates in ISO 8601, binaries in Base64, `uniqueidentifier`, `xml`.
 use nexo_driver_sdk::{Column, Value, ValueKind, limits};
 use tiberius::{ColumnData, ColumnType, FromSql};
+use time::{Duration, OffsetDateTime, PrimitiveDateTime};
 
 /// The name SQL Server gives a type of the result's metadata, and its class.
 pub(crate) fn column_type(kind: ColumnType) -> (&'static str, ValueKind) {
@@ -154,39 +155,79 @@ pub(crate) fn value(data: &ColumnData<'static>, kind: ColumnType) -> Value {
         }),
         // datetime keeps 1/300 s: SQL Server shows it rounded to milliseconds.
         DateTime(_) => temporal(
-            chrono::NaiveDateTime::from_sql(data)
+            PrimitiveDateTime::from_sql(data)
                 .ok()
                 .flatten()
                 .map(|time| {
-                    let rounded = time + chrono::Duration::microseconds(500);
-                    seconds(rounded.format("%Y-%m-%dT%H:%M:%S%.3f").to_string())
+                    let rounded = time
+                        .checked_add(Duration::microseconds(500))
+                        .unwrap_or(time);
+                    let millis = rounded.nanosecond() / 1_000_000;
+                    seconds(format!(
+                        "{}T{}.{millis:03}",
+                        day(rounded.date()),
+                        clock(rounded.time())
+                    ))
                 }),
         ),
         SmallDateTime(_) | DateTime2(_) => temporal(
-            chrono::NaiveDateTime::from_sql(data)
+            PrimitiveDateTime::from_sql(data)
                 .ok()
                 .flatten()
-                .map(|time| seconds(time.format("%Y-%m-%dT%H:%M:%S%.9f").to_string())),
+                .map(|time| seconds(format!("{}T{}", day(time.date()), fine(time.time())))),
         ),
-        Date(_) => temporal(
-            chrono::NaiveDate::from_sql(data)
-                .ok()
-                .flatten()
-                .map(|day| day.to_string()),
-        ),
+        Date(_) => temporal(time::Date::from_sql(data).ok().flatten().map(day)),
         Time(_) => temporal(
-            chrono::NaiveTime::from_sql(data)
+            time::Time::from_sql(data)
                 .ok()
                 .flatten()
-                .map(|time| seconds(time.format("%H:%M:%S%.9f").to_string())),
+                .map(|time| seconds(fine(time))),
         ),
         DateTimeOffset(_) => temporal(
-            chrono::DateTime::<chrono::FixedOffset>::from_sql(data)
+            OffsetDateTime::from_sql(data)
                 .ok()
                 .flatten()
-                .map(|time| seconds(time.format("%Y-%m-%dT%H:%M:%S%.9f%:z").to_string())),
+                .map(|time| seconds(zoned(time))),
         ),
     }
+}
+
+/// `YYYY-MM-DD`: SQL Server's dates go from year 1 to 9999.
+fn day(date: time::Date) -> String {
+    format!(
+        "{:04}-{:02}-{:02}",
+        date.year(),
+        u8::from(date.month()),
+        date.day()
+    )
+}
+
+/// `HH:MM:SS`, without the decimals of a second.
+fn clock(time: time::Time) -> String {
+    format!(
+        "{:02}:{:02}:{:02}",
+        time.hour(),
+        time.minute(),
+        time.second()
+    )
+}
+
+/// `HH:MM:SS.nnnnnnnnn`: every decimal, for [`seconds`] to keep the ones it has.
+fn fine(time: time::Time) -> String {
+    format!("{}.{:09}", clock(time), time.nanosecond())
+}
+
+/// The moment in its own offset, `+HH:MM` after it.
+fn zoned(moment: OffsetDateTime) -> String {
+    let offset = moment.offset();
+    let sign = if offset.is_negative() { '-' } else { '+' };
+    format!(
+        "{}T{}{sign}{:02}:{:02}",
+        day(moment.date()),
+        fine(moment.time()),
+        offset.whole_hours().unsigned_abs(),
+        offset.minutes_past_hour().unsigned_abs()
+    )
 }
 
 fn time_kind(kind: ColumnType) -> ValueKind {
@@ -213,7 +254,8 @@ pub(crate) fn row(row: tiberius::Row) -> Vec<Value> {
 
 #[cfg(test)]
 mod tests {
-    use super::seconds;
+    use super::{day, fine, seconds, zoned};
+    use time::{Date, Month, Time, UtcOffset};
 
     #[test]
     fn writes_the_decimals_of_a_second_it_has() {
@@ -227,5 +269,20 @@ mod tests {
             "2026-11-13T10:20:30.12"
         );
         assert_eq!(seconds("2026-11-13".into()), "2026-11-13");
+    }
+
+    #[test]
+    fn writes_dates_times_and_offsets_in_iso_8601() {
+        let date = Date::from_calendar_date(1, Month::January, 9).unwrap();
+        assert_eq!(day(date), "0001-01-09");
+        let time = Time::from_hms_nano(7, 5, 3, 120_000_000).unwrap();
+        assert_eq!(seconds(fine(time)), "07:05:03.12");
+        let moment = date.with_time(time).assume_utc();
+        let west = UtcOffset::from_hms(-5, -30, 0).unwrap();
+        assert_eq!(
+            seconds(zoned(moment.to_offset(west))),
+            "0001-01-09T01:35:03.12-05:30"
+        );
+        assert_eq!(seconds(zoned(moment)), "0001-01-09T07:05:03.12+00:00");
     }
 }

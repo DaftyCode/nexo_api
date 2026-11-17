@@ -47,8 +47,11 @@
                   (click)="show(token)"
                   [attr.aria-expanded]="shown()?.id === token.id"
                 >
-                  {{ (shown()?.id === token.id ? 'Hide' : 'Show') | transloco }}</button
-                ><button type="button" class="text-button danger" (click)="remove(token)">
+                  {{ (shown()?.id === token.id ? 'Hide' : 'Show') | transloco }}</button><button
+                  type="button"
+                  class="text-button danger"
+                  (click)="remove(token)"
+                >
                   {{ 'Delete' | transloco }}
                 </button>
               </span>

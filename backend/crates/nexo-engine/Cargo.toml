@@ -29,7 +29,6 @@ encoding_rs = "0.8.44"
 serde-saphyr = "2.1.1"
 shell-words = "1.1.1"
 url = "2.5.8"
-csv = "1.4.0"
 tokio-tungstenite = { version = "0.30.0", features = ["connect", "handshake", "rustls-tls-native-roots"], default-features = false }
 # Only the MQTT packet codec: transports and TLS are this crate's.
 rumqttc = { version = "0.25.1", default-features = false }
@@ -37,14 +36,14 @@ rumqttc = { version = "0.25.1", default-features = false }
 # offer the same post-quantum key exchange (X25519MLKEM768) and signature algorithms.
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws_lc_rs", "tls12", "logging"] }
 tonic = { version = "0.14.9", default-features = false, features = ["transport", "tls-aws-lc", "codegen", "tls-native-roots"] }
-prost = "0.14.4"
+prost = "0.14.6"
 prost-reflect = { version = "0.16.5", features = ["serde"] }
 protox = "0.10.0"
 tokio-util = "0.7.20"
-bytes = "1.12.1"
+bytes = "1.12.2"
 http = "1.5.0"
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum", "std", "tls12", "logging"] }
-rustls-pki-types = "1.15.1"
+rustls-pki-types = "1.16.0"
 # Already built for TLS; also the vault (AES-256-GCM), hashes, randomness and request signing
 # (HMAC, RSA, ECDSA): no other crypto crate.
 aws-lc-rs = "1.19.0"
@@ -57,7 +56,7 @@ rustls-native-certs = "0.8.5"
 # snappy only: its lz4 and zstd features build C libraries.
 kafka-protocol = { version = "0.18.0", default-features = false, features = ["client", "broker", "gzip", "snappy"] }
 # Pure-Rust decoders for lz4 and zstd batches, which many Java producers send.
-lz4_flex = { version = "0.14.0", default-features = false, features = ["frame", "safe-decode"] }
+lz4_flex = { version = "0.14.2", default-features = false, features = ["frame", "safe-decode"] }
 ruzstd = { version = "0.9.1", default-features = false, features = ["std"] }
 indexmap = "2"
 anyhow = "1"

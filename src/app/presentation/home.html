@@ -6,8 +6,11 @@
     >
     <div>
       <app-language-selector />
-      <a routerLink="/docs">{{ 'Documentation' | transloco }}</a
-      ><a class="button primary" routerLink="/workspace">{{ 'Open workspace ↗' | transloco }}</a>
+      <a routerLink="/docs">{{ 'Documentation' | transloco }}</a><a
+        class="button primary"
+        routerLink="/workspace"
+        >{{ 'Open workspace ↗' | transloco }}</a
+      >
     </div>
   </nav>
   @if (docs) {
@@ -36,7 +39,7 @@
             'Create a collection or import a portable collection, an environment, OpenAPI, HAR or a cURL command. Save requests into folders. Choose an environment to resolve variables such as'
               | transloco
           }}
-          <code>{{'{{base_url}}'}}</code>{{ '. Export your collection at any time.' | transloco }}
+          <code>{{ '{{base_url}}' }}</code>{{ '. Export your collection at any time.' | transloco }}
         </p>
       </section>
       <section>
@@ -94,8 +97,7 @@ nx.test('Successful response', () => {{ '{' }}
         <div class="hero-actions">
           <a class="button primary large" routerLink="/workspace">{{
             'Open your workspace ↗' | transloco
-          }}</a
-          ><a class="button large" routerLink="/docs">{{ 'Explore the docs' | transloco }}</a>
+          }}</a><a class="button large" routerLink="/docs">{{ 'Explore the docs' | transloco }}</a>
         </div>
         <div class="hero-protocols">
           HTTP <span>·</span> GraphQL <span>·</span> gRPC <span>·</span> WebSocket
@@ -104,12 +106,13 @@ nx.test('Successful response', () => {{ '{' }}
       </div>
       <div class="hero-preview">
         <div class="preview-top">
-          <span class="brand-mark">{{ 'n' | transloco }}</span
-          ><span>{{ 'My workspace' | transloco }}</span
+          <span class="brand-mark">{{ 'n' | transloco }}</span><span>{{
+            'My workspace' | transloco
+          }}</span
           ><span class="connection-dot"></span>
         </div>
         <div class="preview-url">
-          <b>GET</b><code>{{'{{base_url}}'}}/v1/ideas</code
+          <b>GET</b><code>{{ '{{base_url}}' }}/v1/ideas</code
           ><span class="button primary">{{ 'Send ↗' | transloco }}</span>
         </div>
         <div class="preview-tabs">
@@ -119,8 +122,7 @@ nx.test('Successful response', () => {{ '{' }}
         </div>
         <div class="preview-response">
           <div>
-            <b>{{ '200 OK' | transloco }}</b
-            ><span>{{ '128 ms · 0.24 KB' | transloco }}</span>
+            <b>{{ '200 OK' | transloco }}</b><span>{{ '128 ms · 0.24 KB' | transloco }}</span>
           </div>
           <pre>{{
             '{\n  "workspace": "yours",\n  "possibilities": "unlimited",\n  "next_idea": {\n    "status": "ready to build",\n    "location": "anywhere"\n  }\n}'

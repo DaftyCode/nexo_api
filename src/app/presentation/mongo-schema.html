@@ -55,8 +55,7 @@
       <ul>
         @for (field of anomalies(); track field.path) {
           <li>
-            <code>{{ field.path }}</code
-            >:
+            <code>{{ field.path }}</code>:
             @if (field.anomalies.includes('mixedTypes')) {
               {{
                 'mongo.schema.mixed'

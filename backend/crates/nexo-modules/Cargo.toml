@@ -24,4 +24,4 @@ reqwest.workspace = true
 # SHA-256 of the module files, with the provider every TLS connection of Nexo uses.
 aws-lc-rs = "1.19.0"
 # The release assets are compressed with gzip; already in the tree through Kafka.
-flate2 = "1.1.10"
+flate2 = "1.1.11"

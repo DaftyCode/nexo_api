@@ -19,4 +19,4 @@ tracing-subscriber.workspace = true
 nexo-server = { path = "../backend/crates/nexo-server" }
 # Native open and save dialogs for MongoDB imports and exports; GTK on Linux, as Tauri.
 # 0.15 is the last one on the gtk 0.18 that Tauri uses.
-rfd = { version = "0.15", default-features = false, features = ["gtk3"] }
+rfd = { version = "0.17.2", default-features = false, features = ["gtk3"] }

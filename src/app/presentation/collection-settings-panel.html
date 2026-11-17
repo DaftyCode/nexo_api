@@ -35,8 +35,8 @@
   @if (current.folder; as folder) {
     <nav class="settings-breadcrumb" [attr.aria-label]="'Folder settings' | transloco">
       <button class="text-button" (click)="openCollection()">
-        {{ current.collection.info.name }}</button
-      ><span aria-hidden="true">/</span><strong>{{ folder.name }}</strong>
+        {{ current.collection.info.name }}</button><span aria-hidden="true">/</span
+      ><strong>{{ folder.name }}</strong>
     </nav>
   }
   <section class="feature-card">
@@ -45,8 +45,10 @@
       [attr.aria-label]="(current.folder ? 'Folder settings' : 'Collection settings') | transloco"
     >
       <button [class.active]="tab() === 'variables'" (click)="tab.set('variables')">
-        {{ 'Variables' | transloco }}</button
-      ><button [class.active]="tab() === 'authorization'" (click)="tab.set('authorization')">
+        {{ 'Variables' | transloco }}</button><button
+        [class.active]="tab() === 'authorization'"
+        (click)="tab.set('authorization')"
+      >
         {{ 'Authorization' | transloco }}</button
       ><button [class.active]="tab() === 'scripts'" (click)="tab.set('scripts')">
         {{ 'Scripts' | transloco }}

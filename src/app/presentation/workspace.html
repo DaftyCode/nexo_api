@@ -16,8 +16,7 @@
   <app-workspace-topbar [workspace]="this" />
   @if (state.error()) {
     <div class="global-alert" role="alert">
-      <span>{{ state.error() | transloco }}</span
-      ><button
+      <span>{{ state.error() | transloco }}</span><button
         class="icon-button"
         (click)="state.error.set('')"
         [attr.aria-label]="'Dismiss error' | transloco"
@@ -117,8 +116,10 @@ bash install-web.sh  (macOS / Linux)</pre>
                 (click)="browseCollections()"
                 [attr.aria-expanded]="navigationOpen()"
               >
-                {{ 'Browse collections' | transloco }}</button
-              ><button class="button canvas-new" (click)="state.newTab()">
+                {{ 'Browse collections' | transloco }}</button><button
+                class="button canvas-new"
+                (click)="state.newTab()"
+              >
                 {{ '＋ New' | transloco }}
               </button>
             </div>
@@ -197,20 +198,19 @@ bash install-web.sh  (macOS / Linux)</pre>
     </div>
     <footer class="statusbar">
       <button (click)="state.consoleOpen.set(!state.consoleOpen())">
-        {{ '▣ Console' | transloco }}</button
-      ><span role="status" aria-live="polite">{{
+        {{ '▣ Console' | transloco }}</button><span role="status" aria-live="polite">{{
         state.notice() || 'All systems ready' | transloco
       }}</span>
       <div class="statusbar-right">
-        <span>{{ 'counts.resources' | transloco: { v0: state.documents().length } }}</span
-        ><span>UTF-8</span><span>Nexo {{ state.health()?.version }}</span>
+        <span>{{ 'counts.resources' | transloco: { v0: state.documents().length } }}</span><span
+          >UTF-8</span
+        ><span>Nexo {{ state.health()?.version }}</span>
       </div>
     </footer>
     @if (state.consoleOpen()) {
       <div class="floating-console">
         <div class="row between">
-          <strong>{{ 'Console' | transloco }}</strong
-          ><button
+          <strong>{{ 'Console' | transloco }}</strong><button
             class="icon-button"
             (click)="state.consoleOpen.set(false)"
             [attr.aria-label]="'Close console' | transloco"

@@ -29,8 +29,11 @@
       }
       <div class="row">
         <button type="button" class="button" (click)="state.reopenOAuth2SignIn()">
-          {{ 'Open the sign-in page' | transloco }}</button
-        ><button type="button" class="button" (click)="copy(signIn.authorizationUrl)">
+          {{ 'Open the sign-in page' | transloco }}</button><button
+          type="button"
+          class="button"
+          (click)="copy(signIn.authorizationUrl)"
+        >
           {{ (copied() ? 'Link copied' : 'Copy link') | transloco }}
         </button>
       </div>
