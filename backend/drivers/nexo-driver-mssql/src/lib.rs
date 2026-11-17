@@ -2,6 +2,7 @@
 //! tiberius (TDS 7.3 and 8.0).
 //!
 //! The design of the drivers is in `docs/ARCHITECTURE.md`, section "Database modules".
+mod admin;
 mod browser;
 mod catalog;
 mod connection;
@@ -18,6 +19,7 @@ use async_trait::async_trait;
 use connection::{MsConnection, not_open};
 use nexo_driver_sdk::{
     Driver, DriverError, HostLink, PROTOCOL_VERSION, Result,
+    admin::{AdminParams, KillMode, KillParams, Killed, LockList, SessionList},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainMode, ExplainParams, Plan},
     limits, methods,
@@ -88,9 +90,16 @@ impl Driver for MssqlDriver {
                 .to_vec(),
                 ddl_commits: false,
                 explain: vec![ExplainMode::Estimated, ExplainMode::Actual],
-                methods: [methods::DDL_MODEL, methods::DDL_PLAN]
-                    .map(String::from)
-                    .to_vec(),
+                methods: [
+                    methods::DDL_MODEL,
+                    methods::DDL_PLAN,
+                    methods::SESSIONS,
+                    methods::LOCKS,
+                    methods::KILL,
+                ]
+                .map(String::from)
+                .to_vec(),
+                kill: vec![KillMode::Terminate],
                 extensions: Vec::new(),
             },
             dialect: dialect::dialect(),
@@ -178,5 +187,17 @@ impl Driver for MssqlDriver {
 
     async fn search(&self, params: SearchParams) -> Result<SearchResult> {
         nexo_driver_sdk::search::run(self, params, &search::SqlServerSearch).await
+    }
+
+    async fn sessions(&self, params: AdminParams) -> Result<SessionList> {
+        nexo_driver_sdk::admin::sessions(self, params, &admin::SqlServerAdmin).await
+    }
+
+    async fn locks(&self, params: AdminParams) -> Result<LockList> {
+        nexo_driver_sdk::admin::locks(self, params, &admin::SqlServerAdmin).await
+    }
+
+    async fn kill(&self, params: KillParams) -> Result<Killed> {
+        nexo_driver_sdk::admin::kill(self, params, &admin::SqlServerAdmin).await
     }
 }

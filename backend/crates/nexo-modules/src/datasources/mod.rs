@@ -6,6 +6,7 @@ use async_trait::async_trait;
 use nexo_application::ports::{DataSources, SqlConnection, StatementRequest};
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{
+    admin::{AdminParams, KillParams, Killed, LockList, SessionList},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainParams, Plan},
     import::{ImportParams, Imported},
@@ -255,6 +256,26 @@ impl DataSources for Modules {
     async fn explain(&self, session: &str, request: Value) -> Result<Value> {
         self.relay::<ExplainParams, Plan>(session, methods::EXPLAIN, request, "plan request")
             .await
+    }
+
+    async fn sessions(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<AdminParams, SessionList>(session, methods::SESSIONS, request, "request")
+            .await
+    }
+
+    async fn locks(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<AdminParams, LockList>(session, methods::LOCKS, request, "request")
+            .await
+    }
+
+    async fn kill(&self, session: &str, request: Value) -> Result<Value> {
+        self.relay::<KillParams, Killed>(
+            session,
+            methods::KILL,
+            request,
+            "request to end a session",
+        )
+        .await
     }
 
     async fn hold(&self, session: &str, held: bool) -> Result<()> {

@@ -77,6 +77,8 @@ impl Driver for SqliteDriver {
                 methods: [methods::DDL_MODEL, methods::DDL_PLAN]
                     .map(String::from)
                     .to_vec(),
+                // A file has no server sessions: no `sessions`, `locks` nor `kill`.
+                kill: Vec::new(),
                 extensions: Vec::new(),
             },
             dialect: dialect::dialect(),

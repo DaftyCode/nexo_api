@@ -34,4 +34,6 @@ export type MenuAction =
   | 'refreshView'
   | 'viewDiagram'
   | 'newDiagram'
-  | 'deleteDiagram';
+  | 'deleteDiagram'
+  | 'sessions'
+  | 'locks';

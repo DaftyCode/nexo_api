@@ -49,6 +49,9 @@ impl<D: Driver> Handler for Dispatcher<D> {
             methods::SEARCH => write(driver.search(read(params)?).await?),
             methods::DDL_MODEL => write(driver.ddl_model(read(params)?).await?),
             methods::DDL_PLAN => write(driver.ddl_plan(read(params)?).await?),
+            methods::SESSIONS => write(driver.sessions(read(params)?).await?),
+            methods::LOCKS => write(driver.locks(read(params)?).await?),
+            methods::KILL => write(driver.kill(read(params)?).await?),
             other => driver.extension(host, other, params).await,
         }
     }

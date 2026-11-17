@@ -166,7 +166,7 @@ describe('the diagrams of the section', () => {
     const gone = offline.tabs.open({ kind: 'diagram', connection: 'c9', title: 's', path: [] });
     await expect(
       loadDiagram(offline.section, offline.section.diagrams.draft(gone)),
-    ).rejects.toThrow('db.diagram.noConnection');
+    ).rejects.toThrow('The connection is no longer there');
   });
 
   it('creates, fills, saves, reopens and deletes a diagram of the person', async () => {

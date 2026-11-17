@@ -1,6 +1,7 @@
 //! The databases of the modules: sessions, their rules, the history and what never leaves.
 use crate::testing::{datasources::with_sources, *};
 
+mod admin;
 mod explain;
 mod rows;
 mod rules;

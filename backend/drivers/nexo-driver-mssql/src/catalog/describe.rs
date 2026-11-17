@@ -137,6 +137,11 @@ async fn relation(
         );
         list.push(("triggers", "Triggers", triggers));
     }
+    list.push((
+        "permissions",
+        "Permissions",
+        super::security::object_permissions(db, &id),
+    ));
     let mut sections = Vec::new();
     for (key, title, sql) in list {
         sections.push(section(
@@ -261,15 +266,7 @@ pub(crate) async fn describe(
             )
             .await
         }
-        ["security", "logins" | "roles", name] => single(
-            connection,
-            "role",
-            (*name).into(),
-            "SELECT LOWER(REPLACE(type_desc, '_', ' ')) AS Kind, create_date AS Created, is_disabled AS Disabled, \
-             default_database_name AS [Default database] FROM sys.server_principals WHERE name = @P1",
-            &[name],
-        )
-        .await,
+        ["security", "logins" | "roles", name] => super::security::principal(connection, name).await,
         [.., item] if !item.is_empty() => Ok(ObjectDescription {
             kind: "object".into(),
             name: (*item).into(),

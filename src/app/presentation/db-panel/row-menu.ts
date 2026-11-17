@@ -1,6 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { TEMPLATE_FOLDERS } from '../../domain/db/ddl-templates';
 import { editsStructure } from './structure-request';
+import { administers } from './admin';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -123,6 +124,16 @@ import { DbSection } from './section';
         <button type="button" role="menuitem" (click)="chosen.emit('newDiagram')">
           {{ 'New diagram' | transloco }}
         </button>
+        @if (admin().sessions) {
+          <button type="button" role="menuitem" (click)="chosen.emit('sessions')">
+            {{ 'Sessions' | transloco }}
+          </button>
+        }
+        @if (admin().locks) {
+          <button type="button" role="menuitem" (click)="chosen.emit('locks')">
+            {{ 'Locks' | transloco }}
+          </button>
+        }
       }
       @if (row().type === 'connection' || row().type === 'node' || row().type === 'script-group') {
         <button type="button" role="menuitem" (click)="chosen.emit('newScript')">
@@ -202,6 +213,8 @@ export class DbRowMenu {
   protected readonly templated = computed(() =>
     (TEMPLATE_FOLDERS as readonly string[]).includes(this.row().node?.name ?? ''),
   );
+  /** The sessions and locks of the server of a connection (DB-21), when its driver lists them. */
+  protected readonly admin = computed(() => administers(this.section, this.row().connection));
   /** Tables, schemas, databases and folders of tables have a diagram (DB-20). */
   protected readonly diagrammed = computed(() => {
     const node = this.row().node;
@@ -228,7 +241,12 @@ export class DbRowMenu {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
 
   constructor() {
-    afterNextRender(() => this.host.querySelector<HTMLElement>('button')?.focus());
+    afterNextRender(() => {
+      this.host.querySelector<HTMLElement>('button')?.focus();
+      // What the driver can do decides some entries: it is asked once, connected or not.
+      const connection = this.row().type === 'connection' ? this.row().connection : undefined;
+      if (connection) void this.section.drivers.learn(connection).catch(() => undefined);
+    });
   }
 
   protected key(event: KeyboardEvent) {

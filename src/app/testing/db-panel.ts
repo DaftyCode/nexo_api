@@ -17,6 +17,7 @@ export function driverHello(options: {
   name?: string;
   methods?: string[];
   explain?: string[];
+  kill?: string[];
   quote?: [string, string];
 }) {
   const [quoteOpen, quoteClose] = options.quote ?? ['"', '"'];
@@ -30,6 +31,7 @@ export function driverHello(options: {
       isolationLevels: ['read committed'],
       ...(options.explain ? { explain: options.explain } : {}),
       ...(options.methods ? { methods: options.methods } : {}),
+      ...(options.kill ? { kill: options.kill } : {}),
     },
     dialect: {
       name: options.name ?? 'postgresql',

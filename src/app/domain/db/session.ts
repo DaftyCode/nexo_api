@@ -6,7 +6,8 @@ import { DiagramLayout, readLayouts } from './erd-document';
 import { QuickFilter, TableQuery } from './table-query';
 import { DbBookmark } from './tree';
 
-export type DbTabKind = 'connection' | 'sql' | 'object' | 'console' | 'diagram';
+export type DbTabKind =
+  'connection' | 'sql' | 'object' | 'console' | 'diagram' | 'sessions' | 'locks';
 
 /** An editor tab of the section. */
 export interface DbTab {
@@ -81,7 +82,9 @@ function readTab(item: unknown): DbTab[] {
   const kind = tab['kind'];
   if (
     typeof tab['id'] !== 'string' ||
-    !['connection', 'sql', 'object', 'console', 'diagram'].includes(String(kind))
+    !['connection', 'sql', 'object', 'console', 'diagram', 'sessions', 'locks'].includes(
+      String(kind),
+    )
   )
     return [];
   return [

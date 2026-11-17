@@ -1,6 +1,7 @@
 //! What a driver implements, and its line back to the host.
 use crate::{
     DriverError, Peer, Result,
+    admin::{AdminParams, KillParams, Killed, LockList, SessionList},
     ddl::{DdlModel, DdlModelParams, DdlPlan, DdlPlanParams},
     explain::{ExplainParams, Plan},
     import::{ImportParams, Imported},
@@ -139,6 +140,20 @@ pub trait Driver: Send + Sync + 'static {
     /// engine's [`crate::explain::PlanReader`], and lists the modes in its capabilities.
     async fn explain(&self, _params: ExplainParams) -> Result<Plan> {
         unsupported("execution plans")
+    }
+
+    /// The sessions of the server; a driver answers it with [`crate::admin::sessions`] and
+    /// its engine's [`crate::admin::AdminCatalog`].
+    async fn sessions(&self, _params: AdminParams) -> Result<SessionList> {
+        unsupported("listing the sessions of the server")
+    }
+    /// Who waits for whom ([`crate::admin::locks`]).
+    async fn locks(&self, _params: AdminParams) -> Result<LockList> {
+        unsupported("listing locks")
+    }
+    /// Cancels the statement of a session or ends it ([`crate::admin::kill`]).
+    async fn kill(&self, _params: KillParams) -> Result<Killed> {
+        unsupported("ending sessions")
     }
 
     /// Any other method: the optional ones a driver lists in its capabilities and the

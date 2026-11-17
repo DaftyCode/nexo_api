@@ -1,0 +1,115 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: var(--nexo-space-6) var(--nexo-space-8);
+  gap: var(--nexo-space-4);
+}
+.db-admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-3) var(--nexo-space-5);
+}
+.db-admin-filter {
+  width: 220px;
+}
+.db-admin-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-admin-toolbar app-studio-icon {
+  width: var(--nexo-size-8);
+  height: var(--nexo-size-8);
+}
+.grow {
+  flex: 1;
+}
+.db-admin-note {
+  margin: 0;
+  padding: var(--nexo-space-3) var(--nexo-space-5);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-warning-soft);
+  font-size: var(--nexo-font-size-sm);
+}
+.db-admin-grid {
+  flex: 1;
+  min-height: 0;
+}
+.db-admin-detail {
+  flex: 0 0 auto;
+  max-height: 30%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.db-admin-detail h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+  margin: 0 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-md);
+}
+.db-admin-detail pre,
+.db-locks code {
+  margin: 0;
+  overflow: auto;
+  padding: var(--nexo-space-4);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-code-bg);
+  color: var(--nexo-color-code-text);
+  font: var(--nexo-font-size-sm) / var(--nexo-line-height-normal) var(--nexo-font-mono);
+  white-space: pre-wrap;
+}
+.db-admin-own {
+  padding: var(--nexo-space-1) var(--nexo-space-4);
+  border-radius: var(--nexo-radius-full);
+  background: var(--nexo-color-accent-soft);
+  color: var(--nexo-color-accent-strong);
+  font-size: var(--nexo-font-size-xs);
+}
+.db-locks-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.db-locks {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-locks th,
+.db-locks td {
+  padding: var(--nexo-space-3) var(--nexo-space-4);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+.db-locks th {
+  color: var(--nexo-color-text-soft);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-lock-session {
+  padding-left: calc(var(--depth, 0) * var(--nexo-space-10));
+  white-space: nowrap;
+}
+.db-lock-blocker {
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.db-locks code {
+  display: block;
+  max-width: 48ch;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

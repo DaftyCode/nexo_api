@@ -8,6 +8,7 @@
 //! Adapted in part from DBeaver (Apache-2.0): plugins/org.jkiss.dbeaver.ext.mssql/model.
 pub(crate) mod ddl;
 pub(crate) mod describe;
+mod security;
 pub(crate) mod tree;
 
 use crate::{connection::MsConnection, dialect::quoted, session::Rows};

@@ -45,6 +45,9 @@ pub struct Capabilities {
     pub explain: Vec<crate::explain::ExplainMode>,
     /// Optional methods the driver answers, beyond the ones every driver has.
     pub methods: Vec<String>,
+    /// What `kill` can do to a session of the server: cancel its statement, end it.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub kill: Vec<crate::admin::KillMode>,
     /// Groups of methods for engines that are not relational (`keyvalue`, `rest`,
     /// `document`).
     pub extensions: Vec<String>,

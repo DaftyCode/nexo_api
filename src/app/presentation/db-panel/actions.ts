@@ -1,3 +1,4 @@
+import { openAdmin } from './admin';
 import { signal } from '@angular/core';
 import { Generated } from '../../domain/db/sql-generate';
 import { generateSql } from './generate';
@@ -90,6 +91,8 @@ export class DbActions {
   }
   viewData = (row: NavigatorRow) => viewData(this.section, row);
   viewDiagram = (row: NavigatorRow) => this.section.diagrams.view(row);
+  sessions = (row: NavigatorRow) => openAdmin(this.section, row, 'sessions');
+  locks = (row: NavigatorRow) => openAdmin(this.section, row, 'locks');
   newDiagram = (row: NavigatorRow) =>
     this.task.announce('The diagram could not be created', () =>
       this.section.diagrams.create(row.connection ?? ''),

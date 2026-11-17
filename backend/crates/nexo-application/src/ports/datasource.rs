@@ -100,6 +100,13 @@ pub trait DataSources: Send + Sync {
     async fn import(&self, session: &str, request: Value) -> Result<Value>;
     /// The plan of a statement: `{connection, statement, sql, params, mode, writes}`.
     async fn explain(&self, session: &str, request: Value) -> Result<Value>;
+    /// The sessions open on the server (`nexo_driver_sdk::admin`): `{connection, statement}`.
+    async fn sessions(&self, session: &str, request: Value) -> Result<Value>;
+    /// Who waits for a lock another session holds: `{connection, statement}`.
+    async fn locks(&self, session: &str, request: Value) -> Result<Value>;
+    /// Cancels the statement of a session of the server, or ends it:
+    /// `{connection, statement, session, mode}`.
+    async fn kill(&self, session: &str, request: Value) -> Result<Value>;
     /// Keeps a session with an open transaction from being closed for being idle: the
     /// transaction would be lost with it.
     async fn hold(&self, _session: &str, _held: bool) -> Result<()> {

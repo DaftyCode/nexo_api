@@ -2,6 +2,7 @@
 //! keeps what the rules need (read-only, production), so a statement only names its
 //! session. Every statement is checked by `rules` before its driver sees it and recorded in
 //! the history; the connection's vault values never come back in an answer or an error.
+mod admin;
 mod connection;
 mod explain;
 mod history;
@@ -131,6 +132,11 @@ impl Application {
             Operation::DbSearch => self.search_session(sources, read(payload)?).await,
             Operation::DbDdlModel => self.table_model(sources, read(payload)?).await,
             Operation::DbDdlPlan => self.table_plan(sources, read(payload)?).await,
+            Operation::DbSessions | Operation::DbLocks => {
+                self.server_activity(sources, operation, read(payload)?)
+                    .await
+            }
+            Operation::DbSessionKill => self.kill_session(sources, read(payload)?).await,
             _ => Err(Error::Validation(format!(
                 "{operation} is not an operation of the database connections"
             ))),

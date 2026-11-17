@@ -96,6 +96,9 @@ export const EXECUTION_OPERATIONS = [
   'db.search',
   'db.ddl.model',
   'db.ddl.plan',
+  'db.sessions',
+  'db.locks',
+  'db.session.kill',
   'db.split',
   'db.dialect',
 ] as const;

@@ -1,0 +1,113 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="db-admin-toolbar" role="toolbar" [attr.aria-label]="'Locks' | transloco">
+  <button
+    type="button"
+    class="icon-button"
+    [attr.aria-label]="'Refresh' | transloco"
+    [attr.title]="'Refresh' | transloco"
+    (click)="load()"
+  >
+    <app-studio-icon name="refresh" />
+  </button>
+  <label class="db-admin-check">
+    {{ 'Refresh every' | transloco }}
+    <select (change)="setEvery($event)">
+      @for (seconds of every; track seconds) {
+        <option [value]="seconds" [selected]="refresh.every() === seconds">
+          {{ seconds ? seconds + ' s' : ('Never' | transloco) }}
+        </option>
+      }
+    </select>
+  </label>
+</div>
+@if (list()?.privilege; as privilege) {
+  <p class="db-admin-note" role="note">
+    {{ 'db.admin.privilegeLocks' | transloco: { v0: privilege } }}
+  </p>
+}
+@if (!list()) {
+  <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+} @else if (!rows().length) {
+  <p class="muted" role="status">{{ 'No session waits for a lock.' | transloco }}</p>
+} @else {
+  <div
+    class="db-locks-scroll"
+    tabindex="0"
+    role="region"
+    [attr.aria-label]="'Lock waits' | transloco"
+  >
+    <table class="db-locks">
+      <caption class="sr-only">
+        {{
+          'Lock waits' | transloco
+        }}
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Session' | transloco }}</th>
+          <th scope="col">{{ 'Waits for' | transloco }}</th>
+          <th scope="col">{{ 'User' | transloco }}</th>
+          <th scope="col">{{ 'Lock' | transloco }}</th>
+          <th scope="col">{{ 'Waiting' | transloco }}</th>
+          <th scope="col">{{ 'Statement' | transloco }}</th>
+          <th scope="col">
+            <span class="sr-only">{{ 'Actions' | transloco }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track $index) {
+          <tr [class.db-lock-blocker]="row.blocks">
+            <td class="db-lock-session" [style.--depth]="row.depth">
+              {{ row.depth ? '└ ' : '' }}{{ row.session }}
+            </td>
+            <td>{{ row.wait?.blocking ?? '—' }}</td>
+            <td>{{ row.user ?? '' }}</td>
+            <td>
+              @if (row.wait; as wait) {
+                {{ wait.mode ?? '' }}
+                @if (wait.object) {
+                  · {{ wait.object }}
+                }
+              }
+            </td>
+            <td>{{ duration(row.wait?.seconds) }}</td>
+            <td>
+              @if (row.sql) {
+                <code>{{ row.sql }}</code>
+              }
+            </td>
+            <td>
+              @if (row.blocks && ends()) {
+                <button type="button" class="button small danger" (click)="ask(row)">
+                  {{ 'db.locks.end' | transloco: { v0: row.session } }}
+                </button>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+@if (ending(); as target) {
+  <app-db-kill-dialog
+    [target]="target"
+    mode="terminate"
+    [production]="production()"
+    (confirmed)="end(target, $event)"
+    (closed)="ending.set(undefined)"
+  />
+}

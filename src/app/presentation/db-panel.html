@@ -131,6 +131,12 @@
           @case ('diagram') {
             <app-db-diagram [tab]="tab" />
           }
+          @case ('sessions') {
+            <app-db-sessions [tab]="tab" />
+          }
+          @case ('locks') {
+            <app-db-locks [tab]="tab" />
+          }
         }
       </div>
     } @empty {

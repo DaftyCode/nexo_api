@@ -37,6 +37,9 @@ impl Operation {
                 | Self::DbSearch
                 | Self::DbDdlModel
                 | Self::DbDdlPlan
+                | Self::DbSessions
+                | Self::DbLocks
+                | Self::DbSessionKill
                 | Self::DbSplit
                 | Self::DbDialect
         )

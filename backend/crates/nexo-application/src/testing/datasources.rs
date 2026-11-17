@@ -17,6 +17,8 @@ pub(crate) struct FakeSources {
     pub(crate) imported: Mutex<Vec<(String, Value)>>,
     /// Plans asked for, by session.
     pub(crate) explained: Mutex<Vec<(String, Value)>>,
+    /// Requests of the server's sessions and locks, by session.
+    pub(crate) administered: Mutex<Vec<(String, Value)>>,
     /// Sessions kept from closing for being idle, and whether they still are.
     pub(crate) held: Mutex<Vec<(String, bool)>>,
 }
@@ -138,6 +140,27 @@ impl DataSources for FakeSources {
             "original": "[]",
             "rolledBack": request["mode"] == "actual" && request["writes"] == true,
         }))
+    }
+    async fn sessions(&self, session: &str, request: Value) -> Result<Value> {
+        self.administered
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(json!({"sessions": [{"id": "7", "user": "ana", "active": true, "own": true}]}))
+    }
+    async fn locks(&self, session: &str, request: Value) -> Result<Value> {
+        self.administered
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(json!({"waits": [{"waiting": "9", "blocking": "8"}]}))
+    }
+    async fn kill(&self, session: &str, request: Value) -> Result<Value> {
+        self.administered
+            .lock()
+            .unwrap()
+            .push((session.into(), request));
+        Ok(json!({"done": true}))
     }
     async fn hold(&self, session: &str, held: bool) -> Result<()> {
         self.held.lock().unwrap().push((session.into(), held));

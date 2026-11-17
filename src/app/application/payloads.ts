@@ -799,6 +799,22 @@ export interface DbDdlPlanPayload {
   workspace?: string;
 }
 
+export interface DbAdminPayload {
+  session: string;
+  statement: string;
+  workspace?: string;
+}
+
+export interface DbSessionKillPayload {
+  session: string;
+  statement: string;
+  target: string;
+  mode: 'cancel' | 'terminate';
+  confirm?: boolean;
+  confirmName?: string;
+  workspace?: string;
+}
+
 export interface DbSplitPayload {
   script: string;
   dialect?: string;
@@ -919,6 +935,9 @@ export interface OperationPayloads {
   'db.search': DbSearchPayload;
   'db.ddl.model': DbDdlModelPayload;
   'db.ddl.plan': DbDdlPlanPayload;
+  'db.sessions': DbAdminPayload;
+  'db.locks': DbAdminPayload;
+  'db.session.kill': DbSessionKillPayload;
   'db.split': DbSplitPayload;
   'db.dialect': DbDriverPayload;
 }

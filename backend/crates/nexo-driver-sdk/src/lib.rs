@@ -5,8 +5,8 @@
 //! line, with requests, responses and notifications in the style of JSON-RPC 2.0. Both sides
 //! may ask. The driver's standard error is its log.
 //!
-//! - [`protocol`] and [`statements`]: the messages; [`rows`], [`explain`], [`import`] and
-//!   [`search`], the ones every driver answers the same way.
+//! - [`protocol`] and [`statements`]: the messages; [`rows`], [`explain`], [`import`],
+//!   [`search`] and [`admin`], the ones every driver answers the same way.
 //! - [`value`]: values and columns that lose no type on their way to the interface.
 //! - [`Driver`] and [`run`]: what a driver implements and the loop that serves it.
 //! - [`Client`]: the same messages from the host's side.
@@ -15,6 +15,7 @@
 //! Secrets reach a driver only inside `connect`, never as arguments or environment, and a
 //! driver never resolves a name itself: it asks the host with `net.resolve`.
 
+pub mod admin;
 mod client;
 #[cfg(feature = "conformance")]
 pub mod conformance;
@@ -74,6 +75,12 @@ pub mod methods {
     pub const DDL_MODEL: &str = "ddl.model";
     /// The statements that change a table into another.
     pub const DDL_PLAN: &str = "ddl.plan";
+    /// The sessions open on the server.
+    pub const SESSIONS: &str = "sessions";
+    /// Who waits for a lock another session holds.
+    pub const LOCKS: &str = "locks";
+    /// Cancels the statement of a session of the server, or ends the session.
+    pub const KILL: &str = "kill";
     /// Asked by the driver: the addresses of a host it may connect to.
     pub const NET_RESOLVE: &str = "net.resolve";
     /// Notified by the driver: a line for the host's log.

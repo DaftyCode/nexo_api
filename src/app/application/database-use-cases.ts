@@ -1,6 +1,7 @@
 import { DatabaseAssistCases } from './database-use-cases/assist';
 import { DatabaseConnectionCases, DatabasePorts } from './database-use-cases/connections';
 import { DatabaseDiagramCases } from './database-use-cases/diagrams';
+import { DatabaseAdminCases } from './database-use-cases/admin';
 import { DatabaseNavigatorCases } from './database-use-cases/navigator';
 import { DatabasePlanCases } from './database-use-cases/plans';
 import { DatabaseSearchCases } from './database-use-cases/search';
@@ -18,6 +19,7 @@ export {
 export type { ExplainOptions } from './database-use-cases/plans';
 export { DatabaseStructureCases } from './database-use-cases/structure';
 export { DatabaseDiagramCases } from './database-use-cases/diagrams';
+export { DatabaseAdminCases } from './database-use-cases/admin';
 export {
   DatabaseSearchCases,
   type SearchAnswer,
@@ -70,6 +72,7 @@ export class DatabaseUseCases {
   readonly search: DatabaseSearchCases;
   readonly structure: DatabaseStructureCases;
   readonly diagrams: DatabaseDiagramCases;
+  readonly admin: DatabaseAdminCases;
 
   constructor(api: DatabasePorts & StatementPorts, preferences: PreferencePort = memory()) {
     this.connections = new DatabaseConnectionCases(api);
@@ -81,5 +84,6 @@ export class DatabaseUseCases {
     this.search = new DatabaseSearchCases(api, preferences);
     this.structure = new DatabaseStructureCases(api);
     this.diagrams = new DatabaseDiagramCases(api);
+    this.admin = new DatabaseAdminCases(api);
   }
 }

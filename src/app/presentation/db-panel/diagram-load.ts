@@ -1,4 +1,3 @@
-import { treeSession } from '../../application/database-use-cases';
 import { ErdTable } from '../../domain/db/erd';
 import {
   DiagramEntity,
@@ -10,23 +9,16 @@ import {
 } from '../../domain/db/erd-document';
 import { named } from '../workspace-state';
 import type { DiagramDraft } from './diagram-draft';
+import { navigatorSession } from './navigator-session';
 import type { DbSection } from './section';
 
 const pathKey = (path: readonly string[]) => path.join('\n');
 
-/** The diagram use cases on the navigator's session of a connection, connecting it if needed. */
+/** The diagram use cases on the navigator's session of a connection. */
 async function reader(section: DbSection, id: string) {
-  const connection = section.connection(id);
-  if (!connection) throw new Error('db.diagram.noConnection');
-  if (section.tree.status()[id] !== 'connected' && !(await section.tree.connect(connection)))
-    throw new Error('db.object.offline');
+  const at = await navigatorSession(section, id);
   const methods = section.drivers.capabilities(id)?.methods ?? [];
-  return {
-    cases: (await section.cases()).diagrams,
-    workspace: section.state.workspaceId(),
-    session: treeSession(id),
-    structured: methods.includes('ddl.model'),
-  };
+  return { ...at, cases: at.cases.diagrams, structured: methods.includes('ddl.model') };
 }
 
 /** The tables of a connection, to put some on a diagram. */

@@ -11,6 +11,8 @@ import { DbTransfer } from './db-transfer';
 import { DbSearch } from './db-search';
 import { DbTableEditor } from './db-table-editor';
 import { DbDiagram } from './db-diagram';
+import { DbLocks } from './db-locks';
+import { DbSessions } from './db-sessions';
 import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -42,6 +44,8 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbSearch,
     DbTableEditor,
     DbDiagram,
+    DbSessions,
+    DbLocks,
   ],
   providers: [DbSection],
   host: {
@@ -83,6 +87,8 @@ export class DbPanel {
         this.section.diagrams.saved().find((each) => each.id === tab.diagram)?.name ?? tab.title
       );
     if (tab.kind === 'console') return `${connection} · Console`;
+    if (tab.kind === 'sessions') return `${connection} · Sessions`;
+    if (tab.kind === 'locks') return `${connection} · Locks`;
     const script = this.section
       .scripts()
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
@@ -90,6 +96,8 @@ export class DbPanel {
   }
   protected kindIcon(tab: DbTab) {
     if (tab.kind === 'diagram') return 'schema';
+    if (tab.kind === 'sessions') return 'bars';
+    if (tab.kind === 'locks') return 'lock';
     return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {

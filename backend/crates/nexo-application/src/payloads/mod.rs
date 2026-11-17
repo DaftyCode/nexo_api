@@ -86,6 +86,7 @@ macro_rules! payload {
 mod auth;
 mod common;
 mod datasource;
+mod datasource_admin;
 mod git;
 mod http;
 mod modules;
@@ -101,6 +102,7 @@ mod typescript;
 pub use auth::*;
 pub use common::*;
 pub use datasource::*;
+pub use datasource_admin::*;
 pub use git::*;
 pub use http::*;
 pub use modules::*;
@@ -271,6 +273,9 @@ operation_payloads! {
     DbSearch => DbSearchPayload,
     DbDdlModel => DbDdlModelPayload,
     DbDdlPlan => DbDdlPlanPayload,
+    DbSessions => DbAdminPayload,
+    DbLocks => DbAdminPayload,
+    DbSessionKill => DbSessionKillPayload,
     DbSplit => DbSplitPayload,
     DbDialect => DbDriverPayload,
 }

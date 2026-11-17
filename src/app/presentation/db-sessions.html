@@ -1,0 +1,109 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span
+    ><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="db-admin-toolbar" role="toolbar" [attr.aria-label]="'Sessions' | transloco">
+  <input
+    type="search"
+    class="db-admin-filter"
+    [attr.aria-label]="'Filter sessions' | transloco"
+    [placeholder]="'Filter sessions' | transloco"
+    (input)="filter($event)"
+  />
+  <label class="db-admin-check">
+    <input type="checkbox" [checked]="idle()" (change)="showIdle($event)" />
+    {{ 'Show idle sessions' | transloco }}
+  </label>
+  <button
+    type="button"
+    class="icon-button"
+    [attr.aria-label]="'Refresh' | transloco"
+    [attr.title]="'Refresh' | transloco"
+    (click)="load()"
+  >
+    <app-studio-icon name="refresh" />
+  </button>
+  <label class="db-admin-check">
+    {{ 'Refresh every' | transloco }}
+    <select (change)="setEvery($event)">
+      @for (seconds of every; track seconds) {
+        <option [value]="seconds" [selected]="refresh.every() === seconds">
+          {{ seconds ? seconds + ' s' : ('Never' | transloco) }}
+        </option>
+      }
+    </select>
+  </label>
+  <span class="grow"></span>
+  @if (modes().includes('cancel')) {
+    <button
+      type="button"
+      class="button small"
+      [disabled]="!!blocked()"
+      [attr.title]="blocked() | transloco"
+      (click)="asking.set('cancel')"
+    >
+      {{ 'Cancel the query' | transloco }}
+    </button>
+  }
+  @if (modes().includes('terminate')) {
+    <button
+      type="button"
+      class="button small danger"
+      [disabled]="!!blocked()"
+      [attr.title]="blocked() | transloco"
+      (click)="asking.set('terminate')"
+    >
+      {{ 'End the session' | transloco }}
+    </button>
+  }
+</div>
+@if (list()?.privilege; as privilege) {
+  <p class="db-admin-note" role="note">
+    {{ 'db.admin.privilege' | transloco: { v0: privilege } }}
+  </p>
+}
+@if (!modes().length) {
+  <p class="db-admin-note" role="note">{{ 'db.admin.readOnly' | transloco }}</p>
+}
+@if (!list()) {
+  <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+} @else {
+  <app-data-grid
+    class="db-admin-grid"
+    [columns]="columns"
+    [rows]="rows()"
+    [label]="'Sessions' | transloco"
+    (activeRow)="choose($event)"
+  />
+}
+@if (current(); as session) {
+  <section class="db-admin-detail" [attr.aria-label]="'Statement of the session' | transloco">
+    <h3>
+      {{ 'db.admin.statementOf' | transloco: { v0: session.id } }}
+      @if (session.own) {
+        <span class="db-admin-own">{{ 'This session' | transloco }}</span>
+      }
+    </h3>
+    <pre>{{ session.sql || ('No statement' | transloco) }}</pre>
+  </section>
+}
+@if (asking(); as mode) {
+  @if (current(); as session) {
+    <app-db-kill-dialog
+      [target]="session"
+      [mode]="mode"
+      [production]="production()"
+      (confirmed)="kill(session, mode, $event)"
+      (closed)="asking.set(undefined)"
+    />
+  }
+}

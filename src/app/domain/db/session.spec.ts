@@ -68,6 +68,20 @@ describe('the stored session of the database section', () => {
     expect(session.activeTab).toBe('');
   });
 
+  it('keeps the tabs of the sessions and the locks of a server (DB-21)', () => {
+    const session = readDatabaseSession({
+      tabs: [
+        { id: 'a', kind: 'sessions', connection: 'c', title: 'Sessions', path: ['x'] },
+        { id: 'b', kind: 'locks', connection: 'c', title: 'Locks' },
+        { id: 'c', kind: 'admin', connection: 'c', title: 'Unknown' },
+      ],
+    });
+    expect(session.tabs).toEqual([
+      { id: 'a', kind: 'sessions', connection: 'c', title: 'Sessions' },
+      { id: 'b', kind: 'locks', connection: 'c', title: 'Locks' },
+    ]);
+  });
+
   it('keeps the drafts of SQL tabs only, each one checked', () => {
     const session = readDatabaseSession({
       tabs: [

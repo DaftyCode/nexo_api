@@ -130,6 +130,9 @@ operations!(
         DbSearch => "db.search",
         DbDdlModel => "db.ddl.model",
         DbDdlPlan => "db.ddl.plan",
+        DbSessions => "db.sessions",
+        DbLocks => "db.locks",
+        DbSessionKill => "db.session.kill",
         DbSplit => "db.split",
         DbDialect => "db.dialect",
     }

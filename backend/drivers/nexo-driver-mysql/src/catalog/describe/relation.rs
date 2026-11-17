@@ -60,6 +60,17 @@ pub(super) async fn relation(
         &header,
         Vec::new(),
     );
+    // Who may do what with it: on it, and on its whole database. Read only.
+    let permissions = section(
+        "permissions",
+        "Permissions",
+        query(
+            connection,
+            "SELECT GRANTEE AS Grantee, PRIVILEGE_TYPE AS Privilege, IS_GRANTABLE = 'YES' AS Grantable,              'table' AS Scope FROM information_schema.TABLE_PRIVILEGES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?              UNION ALL SELECT GRANTEE, PRIVILEGE_TYPE, IS_GRANTABLE = 'YES', 'database'              FROM information_schema.SCHEMA_PRIVILEGES WHERE TABLE_SCHEMA = ? ORDER BY 4 DESC, 1, 2",
+            &[db, name, db],
+        )
+        .await?,
+    );
     if view {
         let definition = query(
             connection,
@@ -70,6 +81,7 @@ pub(super) async fn relation(
         )
         .await?;
         description.properties.extend(properties(&definition));
+        sections.push(permissions);
         description.sections = sections;
         return Ok(description);
     }
@@ -120,6 +132,7 @@ pub(super) async fn relation(
     ] {
         sections.push(section(id, title, query(connection, sql, &at).await?));
     }
+    sections.push(permissions);
     description.sections = sections;
     Ok(description)
 }

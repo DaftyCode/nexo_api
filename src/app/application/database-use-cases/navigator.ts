@@ -18,8 +18,10 @@ export interface DriverHello {
     ddlCommits?: boolean;
     /** The plan modes the driver explains with: `estimated`, `actual`. */
     explain?: string[];
-    /** Optional methods it answers: `ddl.model`, `ddl.plan`… */
+    /** Optional methods it answers: `ddl.model`, `ddl.plan`, `sessions`… */
     methods?: string[];
+    /** What it can do to a session of the server: cancel its statement, end it. */
+    kill?: ('cancel' | 'terminate')[];
   };
   dialect: QuoteStyle & {
     name: string;

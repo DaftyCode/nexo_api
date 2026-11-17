@@ -103,6 +103,21 @@ impl Client {
     ) -> Result<crate::search::SearchResult> {
         self.call(methods::SEARCH, params).await
     }
+    pub async fn sessions(
+        &self,
+        params: &crate::admin::AdminParams,
+    ) -> Result<crate::admin::SessionList> {
+        self.call(methods::SESSIONS, params).await
+    }
+    pub async fn locks(
+        &self,
+        params: &crate::admin::AdminParams,
+    ) -> Result<crate::admin::LockList> {
+        self.call(methods::LOCKS, params).await
+    }
+    pub async fn kill(&self, params: &crate::admin::KillParams) -> Result<crate::admin::Killed> {
+        self.call(methods::KILL, params).await
+    }
     pub async fn ddl_model(
         &self,
         params: &crate::ddl::DdlModelParams,
