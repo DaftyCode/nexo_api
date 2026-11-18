@@ -23,13 +23,14 @@
     <fieldset>
       <legend class="db-dash-hidden">{{ 'Panels shown' | transloco }}</legend>
       @for (panel of dashboard.panels(); track panel.id) {
+        @let title = panel.custom ? panel.title : (panel.title | transloco);
         <label>
           <input
             type="checkbox"
             [checked]="shown(panel.id)"
             (change)="dashboards.toggleShown(tab().connection, panel.id)"
           />
-          {{ panel.title }}
+          {{ title }}
         </label>
       }
     </fieldset>
@@ -47,25 +48,26 @@
 }
 <div class="db-dash-grid">
   @for (panel of dashboard.shown(); track panel.id; let first = $first; let last = $last) {
+    @let title = panel.custom ? panel.title : (panel.title | transloco);
     <section
       class="db-dash-card"
       [class.db-dash-wide]="wide(panel.id)"
-      [attr.aria-label]="panel.title"
+      [attr.aria-label]="title"
       [attr.draggable]="true"
       [attr.data-drop]="drag.at(panel.id)"
-      (dragstart)="drag.start($event, panel.id, panel.title)"
+      (dragstart)="drag.start($event, panel.id, title)"
       (dragover)="drag.over($event, panel.id)"
       (drop)="drag.drop($event, panel.id)"
       (dragend)="drag.end()"
     >
       <header class="db-dash-head">
-        <h3>{{ panel.title }}</h3>
+        <h3>{{ title }}</h3>
         <span class="grow"></span>
         <button
           type="button"
           class="icon-button"
           [disabled]="first"
-          [attr.aria-label]="'db.dashboard.earlier' | transloco: { v0: panel.title }"
+          [attr.aria-label]="'db.dashboard.earlier' | transloco: { v0: title }"
           [attr.title]="'Move earlier' | transloco"
           (click)="dashboards.move(dashboard, panel.id, -1)"
         >
@@ -75,7 +77,7 @@
           type="button"
           class="icon-button"
           [disabled]="last"
-          [attr.aria-label]="'db.dashboard.later' | transloco: { v0: panel.title }"
+          [attr.aria-label]="'db.dashboard.later' | transloco: { v0: title }"
           [attr.title]="'Move later' | transloco"
           (click)="dashboards.move(dashboard, panel.id, 1)"
         >
@@ -85,7 +87,7 @@
           type="button"
           class="icon-button"
           [attr.aria-pressed]="wide(panel.id)"
-          [attr.aria-label]="'db.dashboard.wide' | transloco: { v0: panel.title }"
+          [attr.aria-label]="'db.dashboard.wide' | transloco: { v0: title }"
           [attr.title]="'Wide' | transloco"
           (click)="dashboards.toggleWide(tab().connection, panel.id)"
         >
@@ -102,7 +104,7 @@
         <button
           type="button"
           class="icon-button"
-          [attr.aria-label]="'db.dashboard.hide' | transloco: { v0: panel.title }"
+          [attr.aria-label]="'db.dashboard.hide' | transloco: { v0: title }"
           [attr.title]="'Hide' | transloco"
           (click)="dashboards.toggleShown(tab().connection, panel.id)"
         >
@@ -117,7 +119,8 @@
         [series]="dashboard.data()[panel.id]?.series ?? []"
         [unit]="panel.unit ?? ''"
         [perSecond]="panel.delta"
-        [label]="panel.title"
+        [label]="title"
+        [localized]="!panel.custom"
       />
     </section>
   }

@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { buttons, clickButton } from '../testing/controls';
 import { ModuleSummary } from '../domain/modules';
@@ -73,6 +74,16 @@ describe('ModulesSettings', () => {
     expect(buttons(root(), 'Update SQL Server')).toHaveLength(1);
     // A development build is not removed from Nexo.
     expect(buttons(root(), 'Remove test')).toHaveLength(0);
+  });
+
+  it('says what a known engine is in the language of the interface', async () => {
+    TestBed.inject(TranslocoService).setActiveLang('es');
+    await settle();
+    const text = root().textContent ?? '';
+    expect(text).toContain('Microsoft SQL Server y Azure SQL Database.');
+    expect(text).not.toContain('The SQL Server driver');
+    // A module without a profile keeps the description of its manifest.
+    expect(text).toContain('The test driver');
   });
 
   it('asks before downloading, follows the download and announces it', async () => {

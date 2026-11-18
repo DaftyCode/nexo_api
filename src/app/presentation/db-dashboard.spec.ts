@@ -1,3 +1,5 @@
+import { TestBed } from '@angular/core/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { describe, expect, it } from 'vitest';
 import { DbPanelTest, driverHello, startDbPanel } from '../testing/db-panel';
 
@@ -80,6 +82,18 @@ describe('DbDashboard', () => {
     await panel.settle(10);
     expect(panel.calls('db.disconnect').some((call) => call['session'] === 'dashboard:c1')).toBe(
       true,
+    );
+  });
+
+  it('names the driver’s panels in the language of the interface', async () => {
+    const panel = await dashboardTab();
+    TestBed.inject(TranslocoService).setActiveLang('es');
+    await panel.settle(10);
+    expect(titles(panel)).toEqual(['Sesiones', 'Tamaño']);
+    const sessions = view(panel).querySelector('.db-dash-card')!;
+    expect(sessions.getAttribute('aria-label')).toBe('Sesiones');
+    expect(sessions.querySelector('svg, .chart-value')?.getAttribute('aria-label')).toContain(
+      'activo: 3 sesiones',
     );
   });
 

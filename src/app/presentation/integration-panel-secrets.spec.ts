@@ -36,7 +36,7 @@ describe('IntegrationPanel', () => {
   });
 
   it('saves, edits and removes vault secrets with their allowed domains', async () => {
-    await clickButton(fixture, 'vault');
+    await clickButton(fixture, 'Vault');
     await settle();
     expect(root().textContent).toContain('No secrets saved yet.');
     await type('Secret name', 'api_token');
@@ -83,7 +83,7 @@ describe('IntegrationPanel', () => {
       status: 200,
       body: { access_token: 'abcdefghijklmnopqrstuvwxyz', token_type: 'Bearer', expires_in: 60 },
     };
-    await clickButton(fixture, 'oauth');
+    await clickButton(fixture, 'OAuth');
     await clickButton(fixture, 'Get token and use in request');
     await settle();
     expect(root().textContent).toContain('Enter the full token endpoint URL');

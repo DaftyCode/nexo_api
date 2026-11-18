@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { testProviders } from '../../testing/providers';
 import { Chart } from './chart';
@@ -55,6 +56,24 @@ describe('Chart', () => {
     expect(root().querySelector('.chart-tip')).toBeNull();
     width = 0;
     svg.dispatchEvent(new MouseEvent('pointermove', { clientX: 10 }));
+  });
+
+  it('names the series and the unit of a panel of Nexo in the language of the interface', async () => {
+    TestBed.inject(TranslocoService).setActiveLang('es');
+    await set({ series, localized: true });
+    const svg = root().querySelector('svg')!;
+    expect(svg.getAttribute('aria-label')).toBe(
+      'Sessions. activo: 6 sesiones. inactivo: 1 sesiones',
+    );
+    expect(root().querySelector('.chart-legend')?.textContent).toContain('activo');
+    // Bytes keep their own format, whatever the language.
+    await set({ unit: 'bytes', series: [{ name: 'size', points: [{ at: 1, value: 2048 }] }] });
+    expect(root().querySelector('svg')?.getAttribute('aria-label')).toBe(
+      'Sessions. tamaño: 2.0 KB',
+    );
+    // A panel of the person's own shows its names as written.
+    await set({ localized: false, unit: 'sessions', series });
+    expect(root().querySelector('.chart-legend')?.textContent).toContain('active');
   });
 
   it('draws areas, bars and a single value, per second when it is', async () => {

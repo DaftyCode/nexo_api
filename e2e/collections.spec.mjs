@@ -11,7 +11,7 @@ test('API definitions are linted, explored and compared with their saved version
     .getByRole('navigation', { name: 'Workspace sections' })
     .getByRole('button', { name: 'Settings' })
     .click();
-  await page.getByRole('button', { name: 'apis', exact: true }).click();
+  await page.getByRole('button', { name: 'APIs', exact: true }).click();
   const definitions = page.getByRole('region', { name: 'API definitions' });
   const editor = definitions.getByLabel('OpenAPI definition');
   await definitions.getByLabel('Name', { exact: true }).fill('Orders API');

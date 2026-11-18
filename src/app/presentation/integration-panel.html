@@ -149,7 +149,22 @@
             track t
           ) {
             <button class="button" [class.selected]="tab() === t" (click)="tab.set(t)">
-              {{ t }}
+              {{
+                (t === 'general'
+                  ? 'General'
+                  : t === 'modules'
+                    ? 'Modules'
+                    : t === 'vault'
+                      ? 'Vault'
+                      : t === 'oauth'
+                        ? 'OAuth'
+                        : t === 'revisions'
+                          ? 'Revisions'
+                          : t === 'apis'
+                            ? 'APIs'
+                            : 'Performance'
+                ) | transloco
+              }}
             </button>
           }
         </div>

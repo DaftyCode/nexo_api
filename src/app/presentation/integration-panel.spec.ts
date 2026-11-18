@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { buttons, change, clickButton, fill } from '../testing/controls';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { newRequest } from '../domain/models';
@@ -136,11 +137,38 @@ describe('IntegrationPanel', () => {
     expect(state.notice()).toBeTruthy();
   });
 
+  it('names the settings tabs in the language of the interface', async () => {
+    await state.initialize();
+    await fixture.whenStable();
+    const tabs = () =>
+      [...root().querySelectorAll('.settings-nav button')].map((tab) => tab.textContent?.trim());
+    expect(tabs()).toEqual([
+      'General',
+      'Modules',
+      'Vault',
+      'OAuth',
+      'Revisions',
+      'APIs',
+      'Performance',
+    ]);
+    TestBed.inject(TranslocoService).setActiveLang('es');
+    await settle();
+    expect(tabs()).toEqual([
+      'General',
+      'Módulos',
+      'Vault',
+      'OAuth',
+      'Revisiones',
+      'APIs',
+      'Rendimiento',
+    ]);
+  });
+
   it('lists the revisions of a document and restores one', async () => {
     await state.createCollection('Orders');
     const [collection] = state.collections();
     api.revisions = async () => [{ revision: 1, changed_at: 0, value: collection }];
-    await clickButton(fixture, 'revisions');
+    await clickButton(fixture, 'Revisions');
     await clickButton(fixture, 'Load revisions');
     await settle();
     expect(root().textContent).toContain('Choose a resource');
@@ -159,7 +187,7 @@ describe('IntegrationPanel', () => {
   });
 
   it('shows the API definitions', async () => {
-    await clickButton(fixture, 'apis');
+    await clickButton(fixture, 'APIs');
     expect(root().querySelector('app-api-definitions')).not.toBeNull();
   });
 
@@ -175,7 +203,7 @@ describe('IntegrationPanel', () => {
             summary: { requests: 10, errors: 1, average: 12, p95: 30, rps: 5 },
           }
         : { id: 'load-1' };
-    await clickButton(fixture, 'performance');
+    await clickButton(fixture, 'Performance');
     await clickButton(fixture, 'Start run');
     await settle();
     expect(root().textContent).toContain('Open a request first');

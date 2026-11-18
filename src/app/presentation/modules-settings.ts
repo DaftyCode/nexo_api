@@ -1,6 +1,7 @@
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { MODULES } from '../composition/providers';
+import { engineProfile } from '../domain/db/engines';
 import { ModuleState, ModuleSummary, connectionsOf } from '../domain/modules';
 import { formatBytes } from '../domain/sizes';
 import { ModuleDownload } from './module-download';
@@ -38,6 +39,9 @@ export class ModulesSettings {
   protected readonly autoUpdate = signal(this.modules.autoUpdate());
   protected readonly bytes = formatBytes;
   protected readonly stateLabel = (state: ModuleState) => STATES[state];
+  /** What a known engine is, in the language of the interface; the manifest's English text otherwise. */
+  protected readonly summary = (module: ModuleSummary) =>
+    engineProfile(module.id, module.name).summary;
 
   constructor() {
     void this.load();

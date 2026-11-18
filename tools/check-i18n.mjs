@@ -8,6 +8,7 @@ import {
   parseTemplate,
 } from '@angular/compiler';
 import ts from 'typescript';
+import { untranslatedTexts } from './i18n-untranslated.mjs';
 const path = 'src/app/infrastructure/i18n/';
 const en = JSON.parse(await readFile(`${path}en.json`, 'utf8'));
 const es = JSON.parse(await readFile(`${path}es.json`, 'utf8'));
@@ -65,7 +66,10 @@ function checkTemplate(source, file) {
     }
   }
   result.nodes.forEach(visit);
+  for (const text of untranslatedTexts(result.nodes)) shown.push({ file, text });
 }
+/** Text a template shows without transloco, with the file that shows it. */
+const shown = [];
 const presentation = await readdir('src/app/presentation', { recursive: true });
 for (const name of presentation.map((each) => each.replaceAll('\\', '/'))) {
   const file = `src/app/presentation/${name}`;
@@ -89,6 +93,17 @@ for (const name of presentation.map((each) => each.replaceAll('\\', '/'))) {
     visit(ast);
   }
 }
+// Every text on screen is in every language. What reads the same in all of them (a protocol,
+// a format, code, an example) is listed once, on purpose, in i18n-same-text.json.
+const same = new Set(JSON.parse(await readFile('tools/i18n-same-text.json', 'utf8')).texts);
+const untranslated = shown.filter(({ text }) => !same.has(text));
+assert.deepEqual(
+  untranslated.map(({ file, text }) => `${file}: "${text}"`),
+  [],
+  'Text shown without translation. Put it through transloco with its entry in en.json and es.json; if it reads the same in every language (a protocol, a format, code, an example), add it to tools/i18n-same-text.json.',
+);
+const stale = [...same].filter((text) => !shown.some((each) => each.text === text));
+assert.deepEqual(stale, [], 'tools/i18n-same-text.json lists texts no template shows any more');
 console.log(
-  `English and Spanish: ${Object.keys(en).length} complete messages; interpolation parameters match.`,
+  `English and Spanish: ${Object.keys(en).length} complete messages; interpolation parameters match; ${same.size} texts read the same in every language.`,
 );

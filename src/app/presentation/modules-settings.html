@@ -39,7 +39,9 @@
           <span class="module-state" [attr.data-state]="module.state">{{
             stateLabel(module.state) | transloco
           }}</span>
-          @if (module.description) {
+          @if (summary(module); as key) {
+            <p class="muted">{{ key | transloco }}</p>
+          } @else if (module.description) {
             <p class="muted">{{ module.description }}</p>
           }
           @if (module.state !== 'development') {

@@ -199,7 +199,7 @@ test('a vault secret limited to some domains is not sent anywhere else', async (
     .getByRole('navigation', { name: 'Workspace sections' })
     .getByRole('button', { name: 'Settings' })
     .click();
-  await page.getByRole('button', { name: 'vault', exact: true }).click();
+  await page.getByRole('button', { name: 'Vault', exact: true }).click();
   await page.getByLabel('Secret name').fill('e2e_limited');
   await page.getByLabel('Value', { exact: true }).fill('e2e-limited-value');
   await page.getByLabel('Allowed domains').fill('127.0.0.1');

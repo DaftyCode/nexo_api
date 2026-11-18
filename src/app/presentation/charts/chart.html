@@ -18,7 +18,7 @@
         <tbody>
           @for (each of latest(); track each.name) {
             <tr>
-              <th scope="row">{{ each.name }}</th>
+              <th scope="row">{{ name(each.name) }}</th>
               <td>{{ format(each.value) }}</td>
             </tr>
           }
@@ -28,7 +28,7 @@
           <tr>
             <th scope="col">{{ 'Time' | transloco }}</th>
             @for (each of series(); track each.name) {
-              <th scope="col">{{ each.name }}</th>
+              <th scope="col">{{ name(each.name) }}</th>
             }
           </tr>
         </thead>
@@ -81,7 +81,7 @@
             [attr.width]="bar.width"
             [attr.height]="bar.height"
           >
-            <title>{{ bar.name }}: {{ format(bar.value) }}</title>
+            <title>{{ name(bar.name) }}: {{ format(bar.value) }}</title>
           </rect>
         }
       </g>
@@ -144,7 +144,7 @@
       <p class="chart-tip" role="status">
         {{ timeLabel(at.at) }}
         @for (value of at.values; track value.name) {
-          · {{ value.name }}: {{ format(value.value) }}
+          · {{ name(value.name) }}: {{ format(value.value) }}
         }
       </p>
     }
@@ -154,7 +154,7 @@
       <ul class="chart-legend">
         @for (each of latest(); track each.name; let index = $index) {
           <li [class]="color(index)">
-            <span class="chart-swatch" aria-hidden="true"></span>{{ each.name }}
+            <span class="chart-swatch" aria-hidden="true"></span>{{ name(each.name) }}
             <strong>{{ format(each.value) }}</strong>
           </li>
         }

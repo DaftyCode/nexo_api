@@ -1,5 +1,5 @@
-import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import {
   FRAME,
   Series,
@@ -37,6 +37,12 @@ export class Chart {
   readonly perSecond = input(false);
   /** What the chart shows, for its accessible name. */
   readonly label = input.required<string>();
+  /**
+   * Its series names and unit are words of Nexo (a driver's own panels), shown in the
+   * language of the interface; a chart of the person's own shows them as written.
+   */
+  readonly localized = input(false);
+  private readonly i18n = inject(TranslocoService);
   protected readonly frame = FRAME;
   protected readonly table = signal(false);
   protected readonly hoverAt = signal<number | undefined>(undefined);
@@ -80,13 +86,22 @@ export class Chart {
   });
   /** What a screen reader hears of the chart: its last values. */
   protected readonly summary = computed(() =>
-    [this.label(), ...this.latest().map((each) => `${each.name}: ${this.format(each.value)}`)].join(
-      '. ',
-    ),
+    [
+      this.label(),
+      ...this.latest().map((each) => `${this.name(each.name)}: ${this.format(each.value)}`),
+    ].join('. '),
   );
 
   protected format(value: number | undefined) {
-    return value === undefined ? '—' : formatValue(value, this.unit(), this.perSecond());
+    if (value === undefined) return '—';
+    // `bytes` is formatted as B, KB, MB…; any other unit is a word, translated after.
+    const unit = this.unit();
+    const shown = this.localized() && unit && unit !== 'bytes' ? this.i18n.translate(unit) : unit;
+    return formatValue(value, shown, this.perSecond());
+  }
+  /** A series as it is called on screen. */
+  protected name(name: string) {
+    return this.localized() ? this.i18n.translate(name) : name;
   }
   protected color(index: number) {
     return `chart-series-${index % COLORS}`;

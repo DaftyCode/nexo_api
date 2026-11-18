@@ -14,7 +14,7 @@ test('a database module is downloaded after asking, installed and removed', asyn
     .getByRole('navigation', { name: 'Workspace sections' })
     .getByRole('button', { name: 'Settings' })
     .click();
-  await page.getByRole('button', { name: 'modules', exact: true }).click();
+  await page.getByRole('button', { name: 'Modules', exact: true }).click();
   const modules = page.getByRole('region', { name: 'Database modules' });
   // The PostgreSQL module is listed too when its driver is built.
   const settings = modules.getByRole('listitem').filter({ hasText: 'Test database' });
