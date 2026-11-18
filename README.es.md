@@ -155,7 +155,8 @@ Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de
 
 En el orden previsto:
 
-1. **Más bases de datos** (en curso):
+1. **Mejoras de la parte de APIs** (lo siguiente, para dejar terminada esa parte): túnel SSH y proxy SOCKS5, entornos protegidos (color, confirmación y solo lectura), ejecuciones programadas, comparar respuestas entre ejecuciones o entornos, exportar a Excel o CSV con datos enmascarados, inferir el JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
+2. **Más bases de datos:**
    - Backup y restore con el cliente nativo de cada motor.
    - Comparar y sincronizar datos y esquemas.
    - Conexión avanzada: túnel SSH, ajustes de red, arranque de la conexión e importar conexiones de otras herramientas.
@@ -165,8 +166,7 @@ En el orden previsto:
    - SQL desde los scripts de las peticiones (`nx.sql`), herramientas MCP de solo lectura y el código de una consulta en varios lenguajes.
    - Motores nuevos: Cassandra y ScyllaDB, Redis y Valkey, Elasticsearch y OpenSearch, y Apache Drill. Oracle espera a la versión estable de su driver de Rust; DB2, Apache Hive y Apache Ignite están en evaluación.
    - MongoDB pasará a ser un módulo descargable más, en el mismo árbol que el resto.
-2. **Asistente de IA** con la clave personal de cada usuario.
-3. **Mejoras de la parte de APIs:** túnel SSH y proxy SOCKS5, entornos protegidos (color, confirmación y solo lectura), ejecuciones programadas, comparar respuestas entre ejecuciones o entornos, exportar a Excel o CSV con datos enmascarados, inferir el JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
+3. **Asistente de IA** con la clave personal de cada usuario.
 4. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
 5. **Temas personalizados** desde la app, sobre los tokens de diseño.
 6. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.

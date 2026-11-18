@@ -155,7 +155,8 @@ Current limits include 5 seconds and 128 MB of memory per script evaluation, eig
 
 In the planned order:
 
-1. **More databases** (in progress):
+1. **API client improvements** (next, to finish that part): SSH tunnels and SOCKS5 proxies, protected environments (colour, confirmation and read-only), scheduled runs, comparing responses between runs or environments, Excel or CSV export with masked data, inferring the JSON Schema of responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
+2. **More databases:**
    - Backup and restore with each engine's native client.
    - Comparing and syncing data and schemas.
    - Advanced connections: SSH tunnels, network settings, connection startup and importing connections from other tools.
@@ -165,8 +166,7 @@ In the planned order:
    - SQL from request scripts (`nx.sql`), read-only MCP tools and a query's code in several languages.
    - New engines: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, and Apache Drill. Oracle waits for a stable release of its Rust driver; DB2, Apache Hive and Apache Ignite are being evaluated.
    - MongoDB will become one more downloadable module, in the same tree as the rest.
-2. **An AI assistant** using each user's own API key.
-3. **API client improvements:** SSH tunnels and SOCKS5 proxies, protected environments (colour, confirmation and read-only), scheduled runs, comparing responses between runs or environments, Excel or CSV export with masked data, inferring the JSON Schema of responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
+3. **An AI assistant** using each user's own API key.
 4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
 5. **Custom themes** from the app, built on the design tokens.
 6. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
