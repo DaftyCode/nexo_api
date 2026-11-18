@@ -1,0 +1,71 @@
+<section id="scripts">
+  <h2>{{ 'Scripts and tests' | transloco }}</h2>
+  <p>
+    {{
+      'In Scripts, write JavaScript that runs before the request (Pre-request) or after the response (Post-response tests). Test results appear with the response, and console.log output in Console.'
+        | transloco
+    }}
+  </p>
+  <pre>
+nx.test('Successful response', () => {{ '{' }}
+  nx.expect(nx.response.code).to.be.within(200, 299);
+{{ '}' }});</pre>
+  <ul>
+    <li>
+      {{ '+ Status assertion writes a test of the response status for you.' | transloco }}
+    </li>
+    <li>
+      <code>nx.environment</code>
+      {{ 'reads and changes variables, and' | transloco }}
+      <code>nx.sendRequest</code>
+      {{ 'sends another request from a script.' | transloco }}
+    </li>
+    <li>
+      {{
+        'Scripts run in a sandbox: 5 seconds and 128 MB at most, with no access to your files or to the secrets of the vault.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="runner">
+  <h2>{{ 'Collection runner' | transloco }}</h2>
+  <p>
+    {{
+      'In Runner, choose a collection, the number of iterations and, if you want, a JSON or CSV file with one row per iteration. Pause, resume or cancel the run; when it ends, Export PDF prints its report.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'The variables a run changes are saved, and each workspace keeps its last 20 runs.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="import">
+  <h2>{{ 'Import and export' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Import, in the bar under the top bar, opens Nexo and Postman collections, environments, OpenAPI or Swagger in JSON or YAML, HAR files and cURL commands.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The menu of a collection exports it as portable JSON, without literal secrets, or prints its documentation as PDF.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="code">
+  <h2>{{ 'Code generation' | transloco }}</h2>
+  <p>
+    {{
+      'Code, next to Save, turns the active request into a snippet for cURL, JavaScript (Fetch), Python, Java, Go, C#, Rust or PowerShell.'
+        | transloco
+    }}
+  </p>
+</section>

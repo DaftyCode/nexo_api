@@ -1,5 +1,7 @@
+/* Text in the colours of the template chosen in the app, not of the page root. */
 .website {
   background: var(--nexo-color-bg);
+  color: var(--nexo-color-text);
   min-height: 100vh;
 }
 .site-nav {
@@ -191,37 +193,4 @@
 }
 .site-footer > span:first-child {
   color: var(--nexo-color-text-muted);
-}
-.docs {
-  max-width: 850px;
-  margin: auto;
-  padding: var(--nexo-space-40) var(--nexo-space-18);
-}
-.docs h1 {
-  font-size: var(--nexo-font-size-display-sm);
-  letter-spacing: var(--nexo-tracking-tighter);
-}
-.docs .lead {
-  font-size: var(--nexo-font-size-3xl);
-  color: var(--nexo-color-text-muted);
-  margin-bottom: var(--nexo-space-28);
-}
-.docs section {
-  margin: var(--nexo-space-18) 0;
-}
-.docs section h2 {
-  font-size: var(--nexo-font-size-4xl);
-}
-.docs section p {
-  font-size: var(--nexo-font-size-lg);
-  line-height: var(--nexo-line-height-loose);
-  color: var(--nexo-color-text-muted);
-}
-.docs section pre {
-  padding: var(--nexo-space-10);
-  background: var(--nexo-color-surface);
-  border: var(--nexo-border-width) solid var(--nexo-color-border);
-  border-radius: var(--nexo-radius-md);
-  color: var(--nexo-color-code-text);
-  font-size: var(--nexo-font-size-sm);
 }

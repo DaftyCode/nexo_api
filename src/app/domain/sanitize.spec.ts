@@ -1,4 +1,10 @@
-import { exportableCollection, historyRequest, historyResponse, masked } from './sanitize';
+import {
+  exportableCollection,
+  historyRequest,
+  historyResponse,
+  masked,
+  storedRun,
+} from './sanitize';
 import { newRequest, ExecutionResponse } from './models';
 
 describe('sanitize', () => {
@@ -36,6 +42,29 @@ describe('sanitize', () => {
     expect(saved.truncated).toBe(true);
     expect(saved.headers[0].value).toBe(masked);
     expect('variables' in saved).toBe(false);
+  });
+
+  it('keeps a finished run with each response cut and its cookies hidden, as the history', () => {
+    const response = {
+      status: 200,
+      body: 'y'.repeat(20),
+      headers: [{ key: 'Cookie', value: 'session=1', enabled: true }],
+    } as unknown as ExecutionResponse;
+    const run = {
+      id: 'run',
+      state: 'finished',
+      results: [response, response],
+      assertions: [],
+      logs: [],
+    };
+    const kept = storedRun(run, 5);
+    expect(kept.id).toBe('run');
+    expect(kept.results.map((result) => [result.body, result.truncated])).toEqual([
+      ['yyyyy', true],
+      ['yyyyy', true],
+    ]);
+    expect(kept.results[0].headers[0].value).toBe(masked);
+    expect(storedRun(run).results[0].body).toHaveLength(20);
   });
 
   it('prepares collections for Git without literal secrets', () => {

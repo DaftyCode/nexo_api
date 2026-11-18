@@ -23,7 +23,7 @@ pub(crate) use std::sync::{Arc, Mutex};
 #[derive(Default)]
 pub(crate) struct Fake {
     pub(crate) executed: Mutex<Vec<(String, Value)>>,
-    pub(crate) pruned: Mutex<Vec<usize>>,
+    pub(crate) pruned: Mutex<Vec<ports::Retention>>,
     pub(crate) workspaces: Mutex<Vec<Workspace>>,
     pub(crate) connections: Mutex<Vec<DatabaseConnection>>,
     pub(crate) finds: Mutex<Vec<ports::FindRequest>>,
@@ -105,8 +105,13 @@ impl WorkspaceRepository for Fake {
     async fn revisions(&self, _: &DocumentId) -> Result<Vec<Revision>> {
         Ok(vec![])
     }
-    async fn prune(&self, _: &WorkspaceId, _: DocumentKind, keep: usize) -> Result<usize> {
-        self.pruned.lock().unwrap().push(keep);
+    async fn prune(
+        &self,
+        _: &WorkspaceId,
+        _: DocumentKind,
+        retention: ports::Retention,
+    ) -> Result<usize> {
+        self.pruned.lock().unwrap().push(retention);
         Ok(0)
     }
 }

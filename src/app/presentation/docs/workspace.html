@@ -1,0 +1,150 @@
+<section id="vault">
+  <h2>{{ 'Vault and security' | transloco }}</h2>
+  <p>
+    {{
+      'Settings → Vault keeps secrets encrypted, with the key in the credential store of your system, and limits each one to the domains it may be sent to. To use one, write'
+        | transloco
+    }}
+    <code>{{ '{{vault:name}}' }}</code>{{
+      '. Secrets are hidden in results, logs and exports.' | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Requests leave from your computer. With NEXO_EGRESS=deny-private, Nexo refuses private and loopback addresses, except your own mocks.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="workspaces">
+  <h2>{{ 'Workspaces and revisions' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Create and switch workspaces with the selector under the top bar; each one has its own collections, environments, history and cookies.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Every save keeps a revision. Settings → Revisions loads the last 25 of a document and restores one as a new revision, so nothing is lost.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Saving checks the revision, so two windows never overwrite each other’s changes.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="appearance">
+  <h2>{{ 'Templates, languages and layout' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Template chooses the look: Aurora (white, the default), Aurora full color, Studio or Canvas. Nexo opens with the last one you chose, and this documentation takes its colours.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Drag the dividers to resize the panels; ↺, next to Template, gives them back their size.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Choose English or Spanish in the language selector; the whole interface changes at once.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="storage">
+  <h2>{{ 'What Nexo keeps on your computer' | transloco }}</h2>
+  <p>
+    {{
+      'Nexo keeps what you create. What it keeps by itself has a limit, so it never fills your disk:'
+        | transloco
+    }}
+  </p>
+  <ul>
+    <li>
+      {{
+        'Request history: 200 entries and 20 MB per workspace, each response cut at 256 KB.'
+          | transloco
+      }}
+    </li>
+    <li>{{ 'Collection runs: the last 20, and 20 MB, per workspace.' | transloco }}</li>
+    <li>{{ 'SQL history: 500 statements. MongoDB query history: 100.' | transloco }}</li>
+    <li>
+      {{
+        'Revisions: 25 per document. Cookies: 180 per domain and 3000 per workspace.' | transloco
+      }}
+    </li>
+    <li>
+      {{ 'Desktop log: nexo.log and the one before it, 10 MB at most.' | transloco }}
+    </li>
+  </ul>
+  <p>
+    {{
+      'Database results and protocol messages are not kept: they are fetched again. The database of the app gives the disk back the room of what you delete.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="shortcuts">
+  <h2>{{ 'Keyboard shortcuts' | transloco }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">{{ 'Shortcut' | transloco }}</th>
+        <th scope="col">{{ 'Action' | transloco }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><kbd>Ctrl+Enter</kbd></td>
+        <td>{{ 'Send the request; in SQL, run the statement' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+S</kbd></td>
+        <td>{{ 'Save' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+K</kbd></td>
+        <td>{{ 'Search requests' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+Shift+PageUp</kbd> <kbd>Ctrl+Shift+PageDown</kbd></td>
+        <td>{{ 'Move the active tab' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Alt+↑</kbd> <kbd>Alt+↓</kbd></td>
+        <td>{{ 'Move a section of the side menu' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+H</kbd></td>
+        <td>{{ 'Search the databases' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Alt+X</kbd></td>
+        <td>{{ 'Run the SQL script' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+Shift+F</kbd></td>
+        <td>{{ 'Format the SQL' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>Ctrl+Shift+E</kbd></td>
+        <td>{{ 'Explain the statement' | transloco }}</td>
+      </tr>
+      <tr>
+        <td><kbd>F5</kbd></td>
+        <td>{{ 'Refresh a node of the database navigator' | transloco }}</td>
+      </tr>
+    </tbody>
+  </table>
+</section>

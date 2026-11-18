@@ -4,8 +4,9 @@ import { ResolveFn } from '@angular/router';
 let loading: Promise<boolean> | undefined;
 
 /**
- * The visual templates are a separate stylesheet, so pages outside the workspace skip it.
- * The workspace route waits for it, which avoids a flash of unstyled content.
+ * The visual templates are a separate stylesheet, loaded once. Every page waits for it: the
+ * workspace for its layouts, and the website (home and documentation) for the colours of the
+ * template chosen in the app. Waiting avoids a flash of unstyled content.
  */
 export const templateStyles: ResolveFn<boolean> = () => {
   const document = inject(DOCUMENT);

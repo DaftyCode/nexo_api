@@ -1,4 +1,4 @@
-<div class="website">
+<div class="website" [attr.data-theme]="appearance.current()" [class.docs-site]="docs">
   <nav class="site-nav">
     <a class="brand" routerLink="/"
       ><span class="brand-mark">{{ 'n' | transloco }}</span
@@ -14,69 +14,7 @@
     </div>
   </nav>
   @if (docs) {
-    <main class="docs">
-      <span class="eyebrow">{{ 'NEXO DOCUMENTATION' | transloco }}</span>
-      <h1>{{ 'A workspace that works your way.' | transloco }}</h1>
-      <p class="lead">
-        {{
-          'One workflow on your computer, in the app or in your browser. Your collections stay portable.'
-            | transloco
-        }}
-      </p>
-      <section>
-        <h2>{{ 'Send a request' | transloco }}</h2>
-        <p>
-          {{
-            'Open the workspace, enter an HTTP URL, choose a method and click Send. Add headers, query parameters, authentication and a body. Inspect the response, headers, cookies and test results below the editor.'
-              | transloco
-          }}
-        </p>
-      </section>
-      <section>
-        <h2>{{ 'Collections and environments' | transloco }}</h2>
-        <p>
-          {{
-            'Create a collection or import a portable collection, an environment, OpenAPI, HAR or a cURL command. Save requests into folders. Choose an environment to resolve variables such as'
-              | transloco
-          }}
-          <code>{{ '{{base_url}}' }}</code>{{ '. Export your collection at any time.' | transloco }}
-        </p>
-      </section>
-      <section>
-        <h2>{{ 'Scripts and collection runs' | transloco }}</h2>
-        <p>
-          {{ 'Write JavaScript pre-request and post-response scripts with' | transloco }}
-          <code>nx.test</code>, <code>nx.expect</code>
-          {{
-            'and scoped variables. The runner executes collections with iterations and JSON data, records assertions, and supports cancellation.'
-              | transloco
-          }}
-        </p>
-        <pre>
-nx.test('Successful response', () => {{ '{' }}
-  nx.expect(nx.response.code).to.be.within(200, 299);
-{{ '}' }});</pre>
-      </section>
-      <section>
-        <h2>{{ 'Protocols and local services' | transloco }}</h2>
-        <p>
-          {{
-            'Use the Protocols panel for WebSocket, Socket.IO, MQTT and gRPC. Provide a .proto definition for gRPC. Mocks listen on the machine running the engine; datasets accept JSON and CSV and can be queried with SQL. Git exports live in your Nexo project directory.'
-              | transloco
-          }}
-        </p>
-      </section>
-      <section>
-        <h2>{{ 'Desktop and web' | transloco }}</h2>
-        <p>
-          {{
-            'Nexo runs on your computer for you alone. Use the desktop app or, when installing apps is not allowed, the web version that the launcher opens in your browser with a one-time link. Requests always run from your computer and your data never leaves it.'
-              | transloco
-          }}
-        </p>
-      </section>
-      <a class="button primary" routerLink="/workspace">{{ 'Start building ↗' | transloco }}</a>
-    </main>
+    <app-docs-page />
   } @else {
     <main class="site-hero">
       <div class="hero-copy">

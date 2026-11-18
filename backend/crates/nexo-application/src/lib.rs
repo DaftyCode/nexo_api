@@ -24,6 +24,11 @@ pub use vault::vault_references;
 
 /// History entries kept per workspace; older ones are deleted when a new one is saved.
 pub const HISTORY_LIMIT: usize = 200;
+/// Room for a workspace's request history, responses included: the oldest entries go first.
+pub const HISTORY_BYTES: usize = 20 * 1024 * 1024;
+/// Finished collection runs kept per workspace, and the room they have together.
+pub const RUN_LIMIT: usize = 20;
+pub const RUN_BYTES: usize = 20 * 1024 * 1024;
 /// MongoDB queries kept in a workspace's query history.
 pub const QUERY_HISTORY_LIMIT: usize = 100;
 /// Statements kept in a workspace's SQL history.

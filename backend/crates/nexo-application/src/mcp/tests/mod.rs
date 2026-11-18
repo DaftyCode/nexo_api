@@ -94,7 +94,12 @@ impl WorkspaceRepository for Store {
     async fn revisions(&self, _: &DocumentId) -> Result<Vec<Revision>> {
         Ok(vec![])
     }
-    async fn prune(&self, _: &WorkspaceId, _: DocumentKind, _: usize) -> Result<usize> {
+    async fn prune(
+        &self,
+        _: &WorkspaceId,
+        _: DocumentKind,
+        _: crate::ports::Retention,
+    ) -> Result<usize> {
         Ok(0)
     }
 }

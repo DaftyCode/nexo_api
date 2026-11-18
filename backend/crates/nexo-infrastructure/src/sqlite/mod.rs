@@ -2,7 +2,7 @@ mod repository;
 
 use crate::{infrastructure as err, now};
 use async_trait::async_trait;
-use nexo_application::ports::WorkspaceRepository;
+use nexo_application::ports::{Retention, WorkspaceRepository};
 use nexo_domain::{
     Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, Workspace,
     WorkspaceId,
@@ -19,7 +19,14 @@ use std::{
 use uuid::Uuid;
 
 /// Number of revisions kept per document; older ones are removed on save.
-const REVISIONS_KEPT: i64 = 100;
+const REVISIONS_KEPT: i64 = 25;
+/// The revisions beyond the kept number of each document, left by older versions of Nexo
+/// that kept more of them.
+const TRIM_REVISIONS: &str = "DELETE FROM revisions WHERE rowid IN (
+       SELECT rowid FROM (
+         SELECT rowid, ROW_NUMBER() OVER (PARTITION BY document_id ORDER BY revision DESC) AS n
+         FROM revisions)
+       WHERE n > ?1)";
 
 /// Ordered schema migrations; `PRAGMA user_version` records how many were applied.
 const MIGRATIONS: [&str; 3] = [
@@ -43,6 +50,8 @@ const MIGRATIONS: [&str; 3] = [
 ];
 
 const READERS: usize = 4;
+/// `PRAGMA auto_vacuum` of a file that gives free pages back on `incremental_vacuum`.
+const INCREMENTAL: i64 = 2;
 
 /// One writer connection and a few read-only connections: with WAL, reads run in parallel
 /// with each other and with the writer.
@@ -64,6 +73,7 @@ impl SqliteStore {
             .execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")
             .map_err(err)?;
         Self::migrate(&mut connection)?;
+        Self::reclaim(&connection)?;
         // An in-memory database is private to its connection, so it has no readers.
         let mut readers = Vec::new();
         if path != Path::new(":memory:") {
@@ -116,6 +126,32 @@ impl SqliteStore {
                 [],
             )
             .map_err(err)?;
+        Ok(())
+    }
+    /// Gives the disk back the room of deleted data. The file is made incrementally
+    /// vacuumable once (a full `VACUUM` on a database made before, the first time only); then
+    /// revisions beyond the kept number go and the free pages are returned, here and on close.
+    fn reclaim(connection: &Connection) -> Result<()> {
+        connection
+            .execute(TRIM_REVISIONS, [REVISIONS_KEPT])
+            .map_err(err)?;
+        let mode: i64 = connection
+            .query_row("PRAGMA auto_vacuum", [], |row| row.get(0))
+            .map_err(err)?;
+        if mode != INCREMENTAL {
+            connection
+                .execute_batch("PRAGMA auto_vacuum=INCREMENTAL; VACUUM;")
+                .map_err(err)?;
+        }
+        Self::return_free_pages(connection)
+    }
+    /// `incremental_vacuum` frees one page per step, each step a row: every row is read.
+    fn return_free_pages(connection: &Connection) -> Result<()> {
+        let mut statement = connection
+            .prepare("PRAGMA incremental_vacuum")
+            .map_err(err)?;
+        let mut pages = statement.query([]).map_err(err)?;
+        while pages.next().map_err(err)?.is_some() {}
         Ok(())
     }
     /// Runs a database task on the blocking pool so SQLite never blocks the async runtime.
@@ -197,6 +233,7 @@ impl Drop for SqliteStore {
         if Arc::strong_count(&self.connection) == 1
             && let Ok(connection) = self.connection.lock()
         {
+            let _ = Self::return_free_pages(&connection);
             let _ = connection.execute_batch("PRAGMA optimize; PRAGMA wal_checkpoint(TRUNCATE);");
         }
     }

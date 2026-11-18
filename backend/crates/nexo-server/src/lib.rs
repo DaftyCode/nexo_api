@@ -16,6 +16,7 @@ use std::{
 use tokio::{sync::oneshot, task::JoinHandle};
 
 pub mod config;
+pub mod log_file;
 
 #[derive(Clone, Debug)]
 pub struct Config {

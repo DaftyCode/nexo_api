@@ -37,27 +37,31 @@ impl Jars {
             crate::hex::encode(digest::digest(&digest::SHA256, scope.as_bytes()))
         ))
     }
-    /// The jar of a workspace, loaded from disk the first time. Expired cookies stay behind.
+    /// The jar of a workspace, loaded from disk the first time. Expired cookies stay behind,
+    /// and so do those beyond the limits of a jar.
     pub fn get(&self, scope: &str) -> CookieJar {
         let mut jars = self.jars.lock().unwrap_or_else(|e| e.into_inner());
         jars.entry(scope.to_string())
             .or_insert_with(|| {
-                let store = std::fs::File::open(self.path(scope))
+                let mut store = std::fs::File::open(self.path(scope))
                     .ok()
                     .and_then(|file| {
                         cookie_store::serde::json::load(std::io::BufReader::new(file)).ok()
                     })
                     .unwrap_or_default();
+                limits::apply(&mut store);
                 Arc::new(Mutex::new(store))
             })
             .clone()
     }
-    /// Writes the jar, session cookies included; the expired ones are dropped when it loads.
+    /// Writes the jar, session cookies included, within the limits of a jar: the expired
+    /// cookies and the extra ones are dropped first.
     pub fn save(&self, scope: &str) {
         let jar = self.get(scope);
         let mut buffer = Vec::new();
         let saved = {
-            let store = jar.lock().unwrap_or_else(|e| e.into_inner());
+            let mut store = jar.lock().unwrap_or_else(|e| e.into_inner());
+            limits::apply(&mut store);
             cookie_store::serde::json::save_incl_expired_and_nonpersistent(&store, &mut buffer)
                 .is_ok()
         };
@@ -255,5 +259,6 @@ fn parse(input: &Value, now: u64) -> Result<(Cookie<'static>, Url)> {
     Ok((cookie, url))
 }
 
+mod limits;
 #[cfg(test)]
 mod tests;

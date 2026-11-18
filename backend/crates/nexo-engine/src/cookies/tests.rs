@@ -163,3 +163,65 @@ fn clearing_removes_the_jar_from_disk() {
     assert!(Jars::new(directory.clone()).list("w1").is_empty());
     let _ = std::fs::remove_dir_all(directory);
 }
+
+/// A jar with the cookies each address set: `(address, Set-Cookie)`.
+fn filled(cookies: &[(&str, &str)]) -> CookieStore {
+    let mut store = CookieStore::default();
+    for (url, header) in cookies {
+        store.parse(header, &Url::parse(url).unwrap()).unwrap();
+    }
+    store
+}
+fn names(store: &CookieStore) -> Vec<String> {
+    let mut names: Vec<String> = store.iter_any().map(|c| c.name().to_string()).collect();
+    names.sort();
+    names
+}
+
+#[test]
+fn a_domain_past_its_limit_drops_the_cookies_that_expire_soonest_and_keeps_sessions() {
+    let mut store = filled(&[
+        ("https://a.test/", "session=1"),
+        ("https://a.test/", "soon=1; Max-Age=50"),
+        ("https://a.test/", "later=1; Max-Age=100"),
+        ("https://a.test/", "last=1; Max-Age=500"),
+        ("https://b.test/", "other=1; Max-Age=10"),
+    ]);
+    assert_eq!(limits::within(&mut store, 2, 100), 2);
+    assert_eq!(names(&store), ["last", "other", "session"]);
+}
+
+#[test]
+fn a_jar_past_its_limit_drops_the_cookies_that_expire_soonest_of_any_domain() {
+    let mut store = filled(&[
+        ("https://a.test/", "a1=1; Max-Age=300"),
+        ("https://a.test/", "a2=1; Max-Age=20"),
+        ("https://b.test/", "b1=1; Max-Age=200"),
+        ("https://b.test/", "b2=1"),
+    ]);
+    assert_eq!(limits::within(&mut store, 10, 2), 2);
+    assert_eq!(names(&store), ["a1", "b2"]);
+    assert_eq!(limits::within(&mut store, 10, 2), 0);
+}
+
+#[test]
+fn a_saved_jar_keeps_what_a_browser_keeps_for_one_domain() {
+    let (first, directory) = jars();
+    {
+        let jar = first.get("workspace:local");
+        let mut store = jar.lock().unwrap();
+        for index in 0..limits::PER_DOMAIN + 20 {
+            store
+                .parse(
+                    &format!("c{index}=v"),
+                    &Url::parse("https://api.test/").unwrap(),
+                )
+                .unwrap();
+        }
+    }
+    first.save("workspace:local");
+    let again = Jars::new(directory.clone());
+    assert_eq!(again.list("workspace:local").len(), limits::PER_DOMAIN);
+    assert_eq!(limits::IN_ALL, 3000);
+    let _ = std::fs::remove_dir_all(directory);
+}

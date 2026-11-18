@@ -1,5 +1,5 @@
 import { computed, signal } from '@angular/core';
-import { historyRequest, historyResponse } from '../../domain/sanitize';
+import { historyRequest, historyResponse, storedRun } from '../../domain/sanitize';
 import { ExecutionResponse, RequestDraft, Run, WorkspaceDocument } from '../../domain/models';
 import { CollectionsStore } from './collections-store';
 import { DocumentsStore } from './documents-store';
@@ -96,7 +96,7 @@ export class RequestsStore {
     this.context.section.set('collections');
     this.context.tabs.setResponse(tab, value.response);
   }
-  /** Saves the variables a finished run changed and keeps the run as a document. */
+  /** Saves the variables a finished run changed and keeps the run, its responses cut as in the history. */
   async recordRun(run: Run, collectionId: string) {
     const saved = await this.variables.persist(
       { environment: run.environment, globals: run.globals, collection: run.collectionVariables },
@@ -107,7 +107,7 @@ export class RequestsStore {
       this.context.workspaceId(),
       'run',
       `Collection run ${new Date().toLocaleString()}`,
-      run,
+      storedRun(run),
     );
     this.documents.applySaved([...saved, document]);
   }

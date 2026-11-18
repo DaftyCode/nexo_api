@@ -1,0 +1,114 @@
+<section id="start">
+  <h2>{{ 'Get started' | transloco }}</h2>
+  <p>
+    {{
+      'Open the workspace, type a URL, choose a method and press Send (Ctrl+Enter). The response appears below the request, with its body, headers, cookies, test results and console.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Nexo runs on your computer for you alone. Use the desktop app or, when installing apps is not allowed, the web version that the launcher opens in your browser with a one-time link. Requests always run from your computer and your data never leaves it.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="requests">
+  <h2>{{ 'Requests' | transloco }}</h2>
+  <p>{{ 'Each tab holds one request. Under its URL:' | transloco }}</p>
+  <ul>
+    <li>
+      {{
+        'Params: the query parameters, and the values of the :name segments of the URL (path variables).'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Body: raw text (JSON, XML, HTML, JavaScript or plain), form fields, multipart with files, a binary file, or GraphQL with a schema explorer and autocompletion.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Authorization, Headers, Scripts and Settings of the request, each in its own tab.'
+          | transloco
+      }}
+    </li>
+  </ul>
+  <p>
+    {{
+      'Paste a cURL command into the URL to fill the whole request. Save it into a collection with Ctrl+S.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="collections">
+  <h2>{{ 'Collections, folders and tabs' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Create a collection with + in Collections, and add folders and requests from its menu. Ctrl+K searches your requests.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Drag requests, folders, collections, tabs and the sections of the side menu to put them in your order; a request can be dragged into another collection.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'A collection or a folder can hold variables, authorization and scripts that its requests inherit.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'When Nexo opens again, your tabs come back with their unsaved changes. Responses are not kept.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="variables">
+  <h2>{{ 'Environments and variables' | transloco }}</h2>
+  <p>
+    {{ 'To use a variable, write its name between double braces, such as' | transloco }}
+    <code>{{ '{{base_url}}' }}</code>{{
+      ', in a URL, a header, a body or an authorization field.' | transloco
+    }}
+  </p>
+  <ul>
+    <li>
+      {{
+        'Choose the environment in the top bar; Manage variables edits its values and the global ones.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{ 'Environment values override collection variables, which override globals.' | transloco }}
+    </li>
+    <li>
+      {{
+        'Mark a value as secret to hide it on screen. For credentials, use the vault.' | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="auth">
+  <h2>{{ 'Authorization' | transloco }}</h2>
+  <p>
+    {{
+      'In the Authorization tab, choose a type: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0, AWS Signature, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE or Netrc. A request can also inherit the authorization of its folder or collection.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'With OAuth 2.0, Get new access token signs you in (in its own window in the desktop app) and keeps the token in the vault; Nexo refreshes it, or gets a new one, when it expires.'
+        | transloco
+    }}
+  </p>
+</section>

@@ -236,17 +236,30 @@ impl WorkspaceRepository for SqliteStore {
         &self,
         workspace: &WorkspaceId,
         kind: DocumentKind,
-        keep: usize,
+        retention: Retention,
     ) -> Result<usize> {
         let workspace = workspace.clone();
+        let bytes = retention.bytes.map_or(i64::MAX, |bytes| bytes as i64);
         self.with(move |connection| {
             let tx = connection.transaction().map_err(err)?;
+            // Newest first: a document goes when it is past the number kept or when, with the
+            // newer ones, it no longer fits in the room given to the kind.
             let removed = tx
                 .execute(
                     "DELETE FROM documents WHERE id IN (
-                       SELECT id FROM documents WHERE workspace_id=?1 AND kind=?2
-                       ORDER BY updated_at DESC, id DESC LIMIT -1 OFFSET ?3)",
-                    params![workspace.as_str(), kind.as_str(), keep as i64],
+                       SELECT id FROM (
+                         SELECT id,
+                           ROW_NUMBER() OVER newest AS position,
+                           SUM(length(CAST(value AS BLOB))) OVER newest AS used
+                         FROM documents WHERE workspace_id=?1 AND kind=?2
+                         WINDOW newest AS (ORDER BY updated_at DESC, id DESC))
+                       WHERE position > ?3 OR used > ?4)",
+                    params![
+                        workspace.as_str(),
+                        kind.as_str(),
+                        retention.entries as i64,
+                        bytes
+                    ],
                 )
                 .map_err(err)?;
             tx.execute(

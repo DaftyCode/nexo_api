@@ -1,4 +1,4 @@
-import { ExecutionResponse, RequestDraft } from './models';
+import { ExecutionResponse, RequestDraft, Run } from './models';
 
 export const masked = '••••••';
 const sensitiveHeader =
@@ -51,6 +51,11 @@ export function historyResponse(
     body: (rest.body ?? '').length > maxBody ? rest.body.slice(0, maxBody) : (rest.body ?? ''),
     truncated: rest.truncated || (rest.body ?? '').length > maxBody,
   };
+}
+
+/** A finished run as it is kept: each of its responses as the history keeps one. */
+export function storedRun(run: Run, maxBody?: number): Run {
+  return { ...run, results: run.results.map((response) => historyResponse(response, maxBody)) };
 }
 
 const secretAuthKeys = new Set([

@@ -2,10 +2,13 @@
  * Aurora themes, on the same arrangement. Aurora, the default, is white and clear with a violet
  * accent; Aurora full color is a deep blue night with that accent, which Studio shares, changing
  * only the areas it lays out differently. Only tokens here; the rules are in the other files.
+ * The website (home and documentation) takes the same tokens through `.website[data-theme]`.
  */
 @layer nexo-tokens {
   .studio[data-theme='aurora-color'],
-  .studio[data-template='studio'] {
+  .studio[data-template='studio'],
+  .website[data-theme='aurora-color'],
+  .website[data-theme='studio'] {
     color-scheme: dark;
     --nexo-font-size-body: 13px;
 
@@ -82,7 +85,8 @@
     --nexo-tabbar-bg: #0c1426;
   }
   /* Aurora: a white workspace with dark text, light code editors and the violet accent. */
-  .studio[data-theme='aurora'] {
+  .studio[data-theme='aurora'],
+  .website[data-theme='aurora'] {
     color-scheme: light;
     --nexo-font-size-body: 13px;
 

@@ -157,7 +157,10 @@ async fn statements_name_an_open_session_and_are_recorded() {
         fake.pruned
             .lock()
             .unwrap()
-            .contains(&crate::SQL_HISTORY_LIMIT)
+            .contains(&crate::ports::Retention {
+                entries: crate::SQL_HISTORY_LIMIT,
+                bytes: None
+            })
     );
 
     let tree = application

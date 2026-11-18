@@ -5,7 +5,8 @@
  */
 @layer nexo-tokens {
   :root,
-  .studio {
+  .studio,
+  .website {
     /* Accent fills */
     --nexo-gradient-accent: var(--nexo-color-accent);
     --nexo-gradient-accent-line: var(--nexo-color-accent);

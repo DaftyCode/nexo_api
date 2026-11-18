@@ -73,6 +73,9 @@ colours. A theme whose code editors are light says so in `visualTemplates`
 (`src/app/domain/appearance.ts`), so CodeMirror draws its selection and cursor for a light
 background.
 
+The website (home and documentation) declares the same tokens on `.website` and takes the chosen
+template through `.website[data-theme]`, so a theme colours it too.
+
 Write overrides on `.studio`, not on `:root`. The templates declare their tokens on `.studio`,
 so a value set on `:root` is hidden by the template's own. The derived tokens (tints, shadows,
 spacing steps) are declared on `.studio` too, so they follow an overridden base token.

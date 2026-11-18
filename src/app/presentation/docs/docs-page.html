@@ -1,0 +1,202 @@
+<div class="docs-layout">
+  <nav class="docs-index" [attr.aria-label]="'Documentation contents' | transloco">
+    <p>{{ 'Contents' | transloco }}</p>
+    <ol>
+      <li>
+        <span>{{ 'First steps' | transloco }}</span>
+        <ol>
+          <li>
+            <a href="#start" [class.active]="active() === 'start'" (click)="go($event, 'start')">{{
+              'Get started' | transloco
+            }}</a>
+          </li>
+          <li>
+            <a
+              href="#requests"
+              [class.active]="active() === 'requests'"
+              (click)="go($event, 'requests')"
+              >{{ 'Requests' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#collections"
+              [class.active]="active() === 'collections'"
+              (click)="go($event, 'collections')"
+              >{{ 'Collections, folders and tabs' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#variables"
+              [class.active]="active() === 'variables'"
+              (click)="go($event, 'variables')"
+              >{{ 'Environments and variables' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a href="#auth" [class.active]="active() === 'auth'" (click)="go($event, 'auth')">{{
+              'Authorization' | transloco
+            }}</a>
+          </li>
+        </ol>
+      </li>
+      <li>
+        <span>{{ 'Test and automate' | transloco }}</span>
+        <ol>
+          <li>
+            <a
+              href="#scripts"
+              [class.active]="active() === 'scripts'"
+              (click)="go($event, 'scripts')"
+              >{{ 'Scripts and tests' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#runner"
+              [class.active]="active() === 'runner'"
+              (click)="go($event, 'runner')"
+              >{{ 'Collection runner' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#import"
+              [class.active]="active() === 'import'"
+              (click)="go($event, 'import')"
+              >{{ 'Import and export' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a href="#code" [class.active]="active() === 'code'" (click)="go($event, 'code')">{{
+              'Code generation' | transloco
+            }}</a>
+          </li>
+        </ol>
+      </li>
+      <li>
+        <span>{{ 'Protocols and tools' | transloco }}</span>
+        <ol>
+          <li>
+            <a
+              href="#protocols"
+              [class.active]="active() === 'protocols'"
+              (click)="go($event, 'protocols')"
+              >{{ 'Protocols' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a href="#mocks" [class.active]="active() === 'mocks'" (click)="go($event, 'mocks')">{{
+              'Mocks, datasets and API definitions' | transloco
+            }}</a>
+          </li>
+          <li>
+            <a href="#git" [class.active]="active() === 'git'" (click)="go($event, 'git')">{{
+              'Git' | transloco
+            }}</a>
+          </li>
+          <li>
+            <a href="#mcp" [class.active]="active() === 'mcp'" (click)="go($event, 'mcp')">{{
+              'MCP' | transloco
+            }}</a>
+          </li>
+        </ol>
+      </li>
+      <li>
+        <span>{{ 'Data' | transloco }}</span>
+        <ol>
+          <li>
+            <a
+              href="#mongodb"
+              [class.active]="active() === 'mongodb'"
+              (click)="go($event, 'mongodb')"
+              >{{ 'MongoDB' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#databases"
+              [class.active]="active() === 'databases'"
+              (click)="go($event, 'databases')"
+              >{{ 'Databases' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a href="#sql" [class.active]="active() === 'sql'" (click)="go($event, 'sql')">{{
+              'SQL editor and results' | transloco
+            }}</a>
+          </li>
+          <li>
+            <a
+              href="#structure"
+              [class.active]="active() === 'structure'"
+              (click)="go($event, 'structure')"
+              >{{ 'Structure, diagrams and administration' | transloco }}</a
+            >
+          </li>
+        </ol>
+      </li>
+      <li>
+        <span>{{ 'Your workspace' | transloco }}</span>
+        <ol>
+          <li>
+            <a href="#vault" [class.active]="active() === 'vault'" (click)="go($event, 'vault')">{{
+              'Vault and security' | transloco
+            }}</a>
+          </li>
+          <li>
+            <a
+              href="#workspaces"
+              [class.active]="active() === 'workspaces'"
+              (click)="go($event, 'workspaces')"
+              >{{ 'Workspaces and revisions' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#appearance"
+              [class.active]="active() === 'appearance'"
+              (click)="go($event, 'appearance')"
+              >{{ 'Templates, languages and layout' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#storage"
+              [class.active]="active() === 'storage'"
+              (click)="go($event, 'storage')"
+              >{{ 'What Nexo keeps on your computer' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
+              href="#shortcuts"
+              [class.active]="active() === 'shortcuts'"
+              (click)="go($event, 'shortcuts')"
+              >{{ 'Keyboard shortcuts' | transloco }}</a
+            >
+          </li>
+        </ol>
+      </li>
+    </ol>
+  </nav>
+  <main class="docs">
+    <header>
+      <span class="eyebrow">{{ 'NEXO DOCUMENTATION' | transloco }}</span>
+      <h1>{{ 'A workspace that works your way.' | transloco }}</h1>
+      <p class="lead">
+        {{
+          'One workflow on your computer, in the app or in your browser. Your collections stay portable.'
+            | transloco
+        }}
+      </p>
+    </header>
+    <app-docs-start />
+    <app-docs-testing />
+    <app-docs-tools />
+    <app-docs-data />
+    <app-docs-workspace />
+    <a class="button primary" routerLink="/workspace">{{ 'Start building ↗' | transloco }}</a>
+  </main>
+</div>

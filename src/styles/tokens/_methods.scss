@@ -6,7 +6,8 @@
  */
 @layer nexo-tokens {
   :root,
-  .studio {
+  .studio,
+  .website {
     --nexo-method-get: #6bdd9a;
     --nexo-method-post: #ffe47e;
     --nexo-method-put: #74aef6;

@@ -1,0 +1,110 @@
+<section id="mongodb">
+  <h2>{{ 'MongoDB' | transloco }}</h2>
+  <p>
+    {{
+      'In MongoDB, paste a connection string (its password goes to the vault) and test it. Then:'
+        | transloco
+    }}
+  </p>
+  <ul>
+    <li>
+      {{
+        'Browse databases and collections, query with a filter, a projection and a sort, and edit documents with a confirmation before each write.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Build aggregations stage by stage, explore the schema of a collection, and manage indexes, explain plans and the profiler.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Import and export JSON or CSV, follow change streams, use the shell, generate code, query with SQL, and compare or sync two collections.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="databases">
+  <h2>{{ 'Databases' | transloco }}</h2>
+  <p>
+    {{
+      'Databases holds your PostgreSQL, SQL Server, MySQL, MariaDB and SQLite connections. The first connection of an engine downloads its driver, which is checked before every start; Settings → Modules lists the drivers and installs one from a file.'
+        | transloco
+    }}
+  </p>
+  <ul>
+    <li>
+      {{
+        '+ Connection opens the wizard: paste a URL (JDBC too) or fill in the fields, choose TLS and the connection type (production shows in red), and Test connection.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'In the navigator, a click expands a row and a double click opens a table on its data. F5 refreshes a node, Shift+F10 opens its actions and Ctrl+H searches objects, data and saved scripts.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="sql">
+  <h2>{{ 'SQL editor and results' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Ctrl+Enter runs the statement at the cursor or the selection, Ctrl+\\ runs it in a new result tab and Alt+X runs the whole script. Each tab has its own session.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The editor completes from the schema, formats (Ctrl+Shift+F), explains the plan (Ctrl+Shift+E) and asks for the :name parameters before sending them.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'In the grid, edit cells and save every change together; copy rows as TSV, JSON, CSV, Markdown, IN or INSERT; open the Value, Metadata, Calc and Grouping panels.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'In manual commit mode, statements wait in a transaction until you commit (Ctrl+Alt+Shift+K) or roll back (Ctrl+Alt+Shift+R).'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Export results to eight formats, import CSV or JSON, and copy data between connections of different engines.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="structure">
+  <h2>{{ 'Structure, diagrams and administration' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'The tab of an object shows its properties, its DDL and its data, filtered and ordered on the server. Tables are created and changed with forms or in their Columns view, with the DDL shown before it runs.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Entity-relationship diagrams show a table with its neighbours or a whole schema, in IDEF1X, crow’s foot or UML; save them with notes and export them to SVG, PNG or PDF.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The session and lock managers show who is connected and who waits for whom; users and roles show their memberships and privileges; the dashboard of each server draws its activity every few seconds.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>

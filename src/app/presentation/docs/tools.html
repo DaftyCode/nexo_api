@@ -1,0 +1,65 @@
+<section id="protocols">
+  <h2>{{ 'Protocols' | transloco }}</h2>
+  <p>
+    {{
+      'Protocols opens WebSocket, Socket.IO, MQTT, Kafka, gRPC and GraphQL subscriptions (over WebSocket or SSE): connect, send messages and follow what arrives in the list of messages.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'For gRPC, load a .proto file or let Nexo ask the server through reflection, then choose the service and the method.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="mocks">
+  <h2>{{ 'Mocks, datasets and API definitions' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'Mocks answer requests on a local port with the examples you define, and list the calls they receive.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{ 'Datasets load a JSON or CSV file that you query with read-only SQL.' | transloco }}
+    </li>
+    <li>
+      {{ 'Settings → Apis keeps OpenAPI definitions and checks them with its linter.' | transloco }}
+    </li>
+    <li>
+      {{
+        'Cookies, next to Save, lists the cookies of the workspace and adds, edits or deletes them.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
+<section id="git">
+  <h2>{{ 'Git' | transloco }}</h2>
+  <p>
+    {{
+      'Git exports your collections to a repository, commits them, and pushes or pulls them through HTTPS or SSH remotes; Clone into a new workspace brings a repository in. Nexo signs in with your Git credential manager or SSH agent and never stores Git credentials.'
+        | transloco
+    }}
+  </p>
+</section>
+<section id="mcp">
+  <h2>{{ 'MCP' | transloco }}</h2>
+  <ul>
+    <li>
+      {{
+        'As a client, MCP connects to an MCP server so you can browse and use its tools, resources and prompts.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{ 'As a server, Nexo answers MCP at' | transloco }} <code>/mcp</code>
+      {{
+        'of its local service: an agent can read your collections, your environments with their secrets hidden, and the last request. A database connection is shared only when you let MCP agents read it, and never for writing.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>

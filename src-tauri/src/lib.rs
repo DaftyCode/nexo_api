@@ -1,4 +1,8 @@
-use nexo_server::{Config, Mode, Running, random_token, serve};
+use nexo_server::{
+    Config, Mode, Running,
+    log_file::{LOG_LIMIT, RotatingLog},
+    random_token, serve,
+};
 use serde::Serialize;
 use std::sync::Mutex;
 use tauri::{Manager, RunEvent};
@@ -29,19 +33,13 @@ fn desktop_info(state: tauri::State<'_, Backend>) -> Result<DesktopInfo, String>
     state.info.clone()
 }
 
-/// Writes logs, including execution engine errors, to the app log directory.
+/// Writes logs, including execution engine errors, to the app log directory: `nexo.log`
+/// and the one before it, 10 MB at most between both.
 fn start_logging(app: &tauri::App) {
     let Ok(directory) = app.path().app_log_dir() else {
         return;
     };
-    if std::fs::create_dir_all(&directory).is_err() {
-        return;
-    }
-    let Ok(file) = std::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(directory.join("nexo.log"))
-    else {
+    let Ok(file) = RotatingLog::open(&directory, "nexo.log", LOG_LIMIT) else {
         return;
     };
     let _ = tracing_subscriber::fmt()

@@ -1,0 +1,137 @@
+/* The documentation: the index on the left, always in view, and the text at the full width. */
+.docs-site :is(.site-nav, .site-footer) {
+  max-width: none;
+}
+.docs-site .site-footer {
+  margin: 0 var(--nexo-space-20);
+}
+.docs-layout {
+  display: grid;
+  grid-template-columns: 270px minmax(0, 1fr);
+  gap: var(--nexo-space-28);
+  padding: 0 var(--nexo-space-20);
+}
+.docs-index {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: var(--nexo-space-20) var(--nexo-space-10) var(--nexo-space-20) 0;
+  border-right: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  font-size: var(--nexo-font-size-sm);
+}
+.docs-index ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.docs-index > p {
+  margin: 0 0 var(--nexo-space-4);
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+  font-weight: var(--nexo-font-weight-semibold);
+  letter-spacing: var(--nexo-tracking-caps);
+  text-transform: uppercase;
+}
+.docs-index li > span {
+  display: block;
+  margin: var(--nexo-space-8) 0 var(--nexo-space-2);
+  color: var(--nexo-color-text);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.docs-index a {
+  display: block;
+  padding: var(--nexo-space-2) var(--nexo-space-5);
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-text-muted);
+  text-decoration: none;
+}
+.docs-index a:hover {
+  background: var(--nexo-color-hover);
+  color: var(--nexo-color-text);
+}
+.docs-index a.active {
+  background: var(--nexo-color-accent-soft);
+  color: var(--nexo-color-accent);
+}
+.docs {
+  min-width: 0;
+  padding: var(--nexo-space-28) 0 var(--nexo-space-40);
+}
+.docs h1 {
+  font-size: var(--nexo-font-size-display-sm);
+  letter-spacing: var(--nexo-tracking-tighter);
+}
+.docs .lead {
+  font-size: var(--nexo-font-size-3xl);
+  color: var(--nexo-color-text-muted);
+  margin-bottom: var(--nexo-space-24);
+}
+.docs section {
+  margin: var(--nexo-space-24) 0;
+  padding-top: var(--nexo-space-10);
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  scroll-margin-top: var(--nexo-space-10);
+}
+.docs section h2 {
+  font-size: var(--nexo-font-size-4xl);
+}
+.docs section :is(p, li, td) {
+  font-size: var(--nexo-font-size-lg);
+  line-height: var(--nexo-line-height-loose);
+  color: var(--nexo-color-text-muted);
+}
+.docs section ul {
+  padding-left: var(--nexo-space-12);
+}
+.docs code {
+  padding: 0 var(--nexo-space-2);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-2);
+  color: var(--nexo-color-text);
+  font-family: var(--nexo-font-mono);
+}
+.docs section pre {
+  padding: var(--nexo-space-10);
+  background: var(--nexo-color-code-bg);
+  border: var(--nexo-border-width) solid var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  color: var(--nexo-color-code-text);
+  font-size: var(--nexo-font-size-sm);
+}
+.docs table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.docs th {
+  text-align: left;
+  color: var(--nexo-color-text);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.docs :is(th, td) {
+  padding: var(--nexo-space-4) var(--nexo-space-6);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+}
+.docs kbd {
+  padding: var(--nexo-space-1) var(--nexo-space-3);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-2);
+  color: var(--nexo-color-text);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .docs-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .docs-index {
+    position: static;
+    max-height: none;
+    padding-right: 0;
+    border-right: 0;
+    border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  }
+}

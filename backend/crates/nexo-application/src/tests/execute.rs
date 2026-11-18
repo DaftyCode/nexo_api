@@ -124,7 +124,13 @@ async fn history_is_pruned_and_the_last_workspace_is_kept() {
         })
         .await
         .unwrap();
-    assert_eq!(fake.pruned.lock().unwrap().as_slice(), [HISTORY_LIMIT]);
+    assert_eq!(
+        fake.pruned.lock().unwrap().as_slice(),
+        [ports::Retention {
+            entries: HISTORY_LIMIT,
+            bytes: Some(crate::HISTORY_BYTES)
+        }]
+    );
     let local = WorkspaceId::parse("local").unwrap();
     assert!(matches!(
         application.delete_workspace(&local).await,
@@ -165,4 +171,40 @@ async fn mcp_initializes_lists_tools_and_calls_use_cases() {
     assert_eq!(batch[2]["result"]["isError"], true);
     assert_eq!(batch[3]["error"]["code"], -32601);
     assert_eq!(fake.executed.lock().unwrap()[0].0, "request");
+}
+
+#[tokio::test]
+async fn what_grows_with_use_is_kept_within_bounds_and_what_the_person_writes_is_kept_whole() {
+    let (application, fake) = application();
+    for (index, (kind, value)) in [
+        (DocumentKind::Run, json!({})),
+        (DocumentKind::Collection, json!({"item": []})),
+        (DocumentKind::Environment, json!({"values": []})),
+        (DocumentKind::Settings, json!({})),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        application
+            .save_document(Document {
+                id: DocumentId::parse(format!("d{index}")).unwrap(),
+                workspace_id: WorkspaceId::parse("local").unwrap(),
+                kind,
+                name: format!("{kind:?}"),
+                revision: 0,
+                updated_at: 0,
+                value,
+            })
+            .await
+            .unwrap();
+    }
+    assert_eq!(
+        fake.pruned.lock().unwrap().as_slice(),
+        [ports::Retention {
+            entries: crate::RUN_LIMIT,
+            bytes: Some(crate::RUN_BYTES)
+        }]
+    );
+    assert_eq!(crate::HISTORY_BYTES, 20 * 1024 * 1024);
+    assert_eq!((crate::RUN_LIMIT, crate::RUN_BYTES), (20, 20 * 1024 * 1024));
 }

@@ -3,7 +3,8 @@
  * the other files. The code editors stay dark, as in the other templates.
  */
 @layer nexo-tokens {
-  .studio[data-template='canvas'] {
+  .studio[data-template='canvas'],
+  .website[data-theme='canvas'] {
     color-scheme: light;
     --nexo-font-size-body: 13px;
 

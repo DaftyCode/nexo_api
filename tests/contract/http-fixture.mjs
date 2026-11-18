@@ -17,6 +17,17 @@ before(async () => {
       return response.end(Buffer.from(`Espa\xf1a ${request.headers['x-a']}`, 'latin1'));
     }
     if (request.url === '/login') response.setHeader('set-cookie', 'session=abc; Path=/');
+    // Fifty cookies per response (a response has at most 100 headers): /cookies/0 to /cookies/3
+    // set more than a browser keeps for one domain.
+    const batch = /^\/cookies\/(\d)$/.exec(request.url ?? '');
+    if (batch)
+      response.setHeader(
+        'set-cookie',
+        Array.from({ length: 50 }, (_, offset) => {
+          const index = Number(batch[1]) * 50 + offset;
+          return `c${index}=v; Path=/; Max-Age=${1000 + index}`;
+        }),
+      );
     response.setHeader('content-type', 'application/json');
     response.end(
       JSON.stringify({

@@ -45,13 +45,21 @@ pub trait WorkspaceRepository: Send + Sync {
     async fn save(&self, document: Document) -> Result<Document>;
     async fn delete(&self, id: &DocumentId, revision: i64) -> Result<()>;
     async fn revisions(&self, id: &DocumentId) -> Result<Vec<Revision>>;
-    /// Keeps the newest `keep` documents of a kind and deletes the rest; returns how many.
+    /// Keeps the newest documents of a kind that `retention` allows and deletes the rest;
+    /// returns how many.
     async fn prune(
         &self,
         workspace: &WorkspaceId,
         kind: DocumentKind,
-        keep: usize,
+        retention: Retention,
     ) -> Result<usize>;
+}
+/// How much of a kind of document a workspace keeps: the newest `entries`, and of those
+/// only the newest that fit together in `bytes`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Retention {
+    pub entries: usize,
+    pub bytes: Option<usize>,
 }
 #[async_trait]
 pub trait ExecutionGateway: Send + Sync {

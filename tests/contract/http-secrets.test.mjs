@@ -14,6 +14,19 @@ test('cookies persist per workspace and can be listed and cleared', async () => 
   assert.deepEqual((await server.execute('cookies.list')).cookies, []);
 });
 
+test('a jar keeps what a browser keeps for one domain: those that expire latest', async () => {
+  for (const batch of [0, 1, 2, 3]) {
+    const result = await server.execute('request', {
+      request: { url: `${echo.url}/cookies/${batch}` },
+    });
+    assert.equal(result.status, 200);
+  }
+  const names = (await server.execute('cookies.list')).cookies.map((cookie) => cookie.name);
+  assert.equal(names.length, 180);
+  assert.ok(names.includes('c199') && !names.includes('c19'), 'the soonest to expire went');
+  await server.execute('cookies.clear');
+});
+
 test('the cookie manager adds, edits and deletes cookies that the next request sends', async () => {
   const domain = new URL(echo.url).hostname;
   const cookieOf = async () =>

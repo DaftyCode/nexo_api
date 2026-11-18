@@ -1,10 +1,27 @@
 //! Workspaces, their documents and the vault's secrets.
-use crate::{Application, HISTORY_LIMIT, QUERY_HISTORY_LIMIT, SQL_HISTORY_LIMIT, database};
+use crate::{
+    Application, HISTORY_BYTES, HISTORY_LIMIT, QUERY_HISTORY_LIMIT, RUN_BYTES, RUN_LIMIT,
+    SQL_HISTORY_LIMIT, database, ports::Retention,
+};
 use nexo_domain::{
     Document, DocumentId, DocumentKind, DocumentSummary, Error, Result, Revision, SecretSummary,
     Workspace, WorkspaceId, hosts::AllowedHosts,
 };
 use serde_json::Value;
+
+/// What a workspace keeps of the kinds of documents that grow with use, so they never fill
+/// the disk; `None` for what the person writes, which is kept whole.
+pub(crate) fn retention(kind: DocumentKind) -> Option<Retention> {
+    let (entries, bytes) = match kind {
+        DocumentKind::History => (HISTORY_LIMIT, Some(HISTORY_BYTES)),
+        DocumentKind::Run => (RUN_LIMIT, Some(RUN_BYTES)),
+        DocumentKind::DatabaseChange => (database::CHANGE_LIMIT, None),
+        DocumentKind::SqlHistory => (SQL_HISTORY_LIMIT, None),
+        DocumentKind::QueryHistory => (QUERY_HISTORY_LIMIT, None),
+        _ => return None,
+    };
+    Some(Retention { entries, bytes })
+}
 
 impl Application {
     // Workspaces
@@ -100,29 +117,8 @@ impl Application {
         self.require_workspace(&document.workspace_id).await?;
         let (workspace, kind) = (document.workspace_id.clone(), document.kind);
         let saved = self.workspaces.save(document).await?;
-        if kind == DocumentKind::History {
-            self.workspaces
-                .prune(&workspace, DocumentKind::History, HISTORY_LIMIT)
-                .await?;
-        }
-        if kind == DocumentKind::DatabaseChange {
-            self.workspaces
-                .prune(
-                    &workspace,
-                    DocumentKind::DatabaseChange,
-                    database::CHANGE_LIMIT,
-                )
-                .await?;
-        }
-        if kind == DocumentKind::SqlHistory {
-            self.workspaces
-                .prune(&workspace, DocumentKind::SqlHistory, SQL_HISTORY_LIMIT)
-                .await?;
-        }
-        if kind == DocumentKind::QueryHistory {
-            self.workspaces
-                .prune(&workspace, DocumentKind::QueryHistory, QUERY_HISTORY_LIMIT)
-                .await?;
+        if let Some(retention) = retention(kind) {
+            self.workspaces.prune(&workspace, kind, retention).await?;
         }
         Ok(saved)
     }

@@ -97,7 +97,17 @@ async fn summaries_omit_values_and_history_is_pruned() {
         5
     );
     assert_eq!(
-        store.prune(&local, DocumentKind::History, 2).await.unwrap(),
+        store
+            .prune(
+                &local,
+                DocumentKind::History,
+                Retention {
+                    entries: 2,
+                    bytes: None
+                }
+            )
+            .await
+            .unwrap(),
         3
     );
     assert_eq!(store.summaries(&local, None).await.unwrap().len(), 2);
@@ -157,5 +167,134 @@ async fn multi_user_databases_migrate_to_a_single_user() {
         .unwrap();
     assert_eq!(tables, 0);
     drop(store);
+    let _ = std::fs::remove_dir_all(directory);
+}
+/// A history entry or a run of about `size` bytes.
+fn sized(id: &str, kind: DocumentKind, size: usize) -> Document {
+    Document {
+        value: json!({ "body": "x".repeat(size) }),
+        ..fixture(id, kind, 0)
+    }
+}
+#[tokio::test]
+async fn the_newest_documents_that_fit_in_their_room_are_kept() {
+    let store = SqliteStore::open(Path::new(":memory:")).unwrap();
+    let local = WorkspaceId::parse("local").unwrap();
+    for index in 0..5 {
+        store
+            .save(sized(&format!("h{index}"), DocumentKind::History, 1000))
+            .await
+            .unwrap();
+    }
+    let room = Retention {
+        entries: 200,
+        bytes: Some(2500),
+    };
+    assert_eq!(
+        store
+            .prune(&local, DocumentKind::History, room)
+            .await
+            .unwrap(),
+        3
+    );
+    let mut kept: Vec<String> = store
+        .summaries(&local, None)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|summary| summary.id.as_str().to_string())
+        .collect();
+    kept.sort();
+    assert_eq!(kept, ["h3", "h4"]);
+    // A run bigger than all its room is not kept, so the room is never exceeded.
+    store
+        .save(sized("r0", DocumentKind::Run, 4000))
+        .await
+        .unwrap();
+    assert_eq!(
+        store.prune(&local, DocumentKind::Run, room).await.unwrap(),
+        1
+    );
+}
+#[tokio::test]
+async fn each_document_keeps_its_last_25_revisions_also_from_older_databases() {
+    let directory = std::env::temp_dir().join(format!("nexo-revisions-{}", Uuid::new_v4()));
+    let path = directory.join("nexo.sqlite");
+    let store = SqliteStore::open(&path).unwrap();
+    let mut document = fixture("c1", DocumentKind::Collection, 0);
+    for _ in 0..30 {
+        document = store.save(document).await.unwrap();
+    }
+    assert_eq!(store.revisions(&id("c1")).await.unwrap().len(), 25);
+    // An older Nexo kept 100: the extra ones go when the database opens.
+    store
+        .with(|connection| {
+            for revision in 100..140 {
+                connection
+                    .execute(
+                        "INSERT INTO revisions VALUES('c1',?1,0,'local','{}')",
+                        [revision],
+                    )
+                    .map_err(err)?;
+            }
+            Ok(())
+        })
+        .await
+        .unwrap();
+    drop(store);
+    let store = SqliteStore::open(&path).unwrap();
+    let revisions = store.revisions(&id("c1")).await.unwrap();
+    assert_eq!(revisions.len(), 25);
+    assert!(revisions.iter().all(|revision| revision.revision >= 115));
+    drop(store);
+    let _ = std::fs::remove_dir_all(directory);
+}
+#[tokio::test]
+async fn the_file_gives_back_the_room_of_deleted_documents() {
+    let directory = std::env::temp_dir().join(format!("nexo-vacuum-{}", Uuid::new_v4()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("nexo.sqlite");
+    // A database made before auto-vacuum, as older versions of Nexo left them.
+    Connection::open(&path)
+        .unwrap()
+        .execute_batch(MIGRATIONS[0])
+        .unwrap();
+    let local = WorkspaceId::parse("local").unwrap();
+    let store = SqliteStore::open(&path).unwrap();
+    let mode: i64 = store
+        .with(|c| {
+            c.query_row("PRAGMA auto_vacuum", [], |r| r.get(0))
+                .map_err(err)
+        })
+        .await
+        .unwrap();
+    assert_eq!(mode, INCREMENTAL);
+    for index in 0..40 {
+        store
+            .save(sized(
+                &format!("h{index}"),
+                DocumentKind::History,
+                64 * 1024,
+            ))
+            .await
+            .unwrap();
+    }
+    drop(store);
+    let full = std::fs::metadata(&path).unwrap().len();
+    let store = SqliteStore::open(&path).unwrap();
+    let nothing = Retention {
+        entries: 0,
+        bytes: None,
+    };
+    assert_eq!(
+        store
+            .prune(&local, DocumentKind::History, nothing)
+            .await
+            .unwrap(),
+        40
+    );
+    drop(store);
+    let emptied = std::fs::metadata(&path).unwrap().len();
+    assert!(emptied * 4 < full, "{emptied} bytes left of {full}");
     let _ = std::fs::remove_dir_all(directory);
 }
