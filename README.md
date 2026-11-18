@@ -149,7 +149,7 @@ Build on the operating system and CPU architecture you want to distribute: the s
 
 The current version is **0.9.0**, with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in the «Databases» section and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, real PostgreSQL, SQL Server, MySQL and MariaDB servers and SQLite files, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary. The interface's unit tests cover at least 90% of its statements, branches, functions and lines (`npm run test:coverage`, which CI runs): every change comes with its tests. It is built with Rust 1.100, Angular 22.2 and Tauri 2.12, with every dependency at the latest version they accept. The audit of the production dependencies in CI (`npm run audit:check`) accepts only the exceptions of `tools/audit-exceptions.json`, each with a reason and an expiry date: today one, picomatch, used only by the build tools and with no fixed release yet, until 2026-12-17.
 
-Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. MQTT 5, Socket.IO 2.x (Engine.IO v3) and Kafka consumer groups, transactions and Schema Registry are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
+Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. MQTT 5, Socket.IO 2.x (Engine.IO v3) and Kafka consumer groups, transactions and Schema Registry are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Error messages from the engine and the drivers still arrive in English. Protocol and format support will grow alongside reproducible test cases.
 
 What Nexo keeps by itself is capped, so it never fills the disk: the request history (200 entries and 20 MB per workspace, each response cut at 256 KB), the last 20 collection runs (20 MB), 500 SQL statements and 100 MongoDB queries, 25 revisions per document, 180 cookies per domain and 3000 per workspace, and the desktop log (`nexo.log` and the one before it, 10 MB at most). Database results and protocol messages are not kept: they are fetched again. The app's database gives the disk back the room of what is deleted.
 
@@ -169,10 +169,11 @@ In the planned order:
    - New engines: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, and Apache Drill. Oracle waits for a stable release of its Rust driver; DB2, Apache Hive and Apache Ignite are being evaluated.
    - MongoDB will become one more downloadable module, in the same tree as the rest.
 3. **An AI assistant** using each user's own API key.
-4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
-5. **Custom themes** from the app, built on the design tokens.
-6. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
-7. **Reproducible benchmarks** of startup, memory and latency.
+4. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
+5. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
+6. **Custom themes** from the app, built on the design tokens.
+7. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
+8. **Reproducible benchmarks** of startup, memory and latency.
 
 This section is updated with every change, always in both READMEs (`README.md` and `README.es.md`) at once:
 

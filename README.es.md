@@ -149,7 +149,7 @@ Compila en el sistema operativo y la arquitectura de CPU que quieras distribuir:
 
 La versión actual es la **0.9.0**, con PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en la sección «Bases de datos» y el cliente MongoDB completo. Las pruebas cubren peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, todos los tipos de autorización (con vectores oficiales y servidores que verifican), gRPC unary y streaming con proto o reflexión, WebSocket, Socket.IO, MQTT, Kafka, subscriptions GraphQL, MongoDB y FerretDB reales, servidores reales de PostgreSQL, SQL Server, MySQL y MariaDB y ficheros SQLite, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor. Las pruebas unitarias de la interfaz cubren al menos el 90 % de sus sentencias, ramas, funciones y líneas (`npm run test:coverage`, que ejecuta la CI): cada cambio llega con sus pruebas. Se compila con Rust 1.100, Angular 22.2 y Tauri 2.12, con cada dependencia en la última versión que admiten. El audit de las dependencias de producción en la CI (`npm run audit:check`) solo admite las excepciones de `tools/audit-exceptions.json`, cada una con su motivo y su fecha de caducidad: hoy una, picomatch, que solo usan las herramientas de compilación y aún no tiene versión corregida, hasta el 17-12-2026.
 
-Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de script, ocho ejecuciones activas y respuestas limitadas para la interfaz. Las cookies se guardan por workspace en la carpeta de datos. Aún no se admiten MQTT 5, Socket.IO 2.x (Engine.IO v3) ni consumer groups, transacciones o Schema Registry en Kafka. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los tipos de autorización desconocidos se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
+Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de script, ocho ejecuciones activas y respuestas limitadas para la interfaz. Las cookies se guardan por workspace en la carpeta de datos. Aún no se admiten MQTT 5, Socket.IO 2.x (Engine.IO v3) ni consumer groups, transacciones o Schema Registry en Kafka. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los tipos de autorización desconocidos se rechazan expresamente. Los mensajes de error del motor y de los drivers todavía llegan en inglés. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
 
 Lo que Nexo guarda por su cuenta tiene tope, para que nunca llene el disco: el historial de peticiones (200 entradas y 20 MB por workspace, con cada respuesta cortada a 256 KB), las 20 últimas ejecuciones de colección (20 MB), 500 sentencias SQL y 100 consultas de MongoDB, 25 revisiones por documento, 180 cookies por dominio y 3000 por workspace, y el log de escritorio (`nexo.log` y el anterior, 10 MB como mucho). Los resultados de bases de datos y los mensajes de los protocolos no se guardan: se vuelven a pedir. La base de datos de la app devuelve al disco el espacio de lo que se borra.
 
@@ -169,10 +169,11 @@ En el orden previsto:
    - Motores nuevos: Cassandra y ScyllaDB, Redis y Valkey, Elasticsearch y OpenSearch, y Apache Drill. Oracle espera a la versión estable de su driver de Rust; DB2, Apache Hive y Apache Ignite están en evaluación.
    - MongoDB pasará a ser un módulo descargable más, en el mismo árbol que el resto.
 3. **Asistente de IA** con la clave personal de cada usuario.
-4. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
-5. **Temas personalizados** desde la app, sobre los tokens de diseño.
-6. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.
-7. **Mediciones** reproducibles de arranque, memoria y latencia.
+4. **Mensajes del motor traducidos:** los errores y avisos del backend y de los drivers, en todos los idiomas, con códigos y parámetros; la interfaz ya está traducida entera.
+5. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
+6. **Temas personalizados** desde la app, sobre los tokens de diseño.
+7. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.
+8. **Mediciones** reproducibles de arranque, memoria y latencia.
 
 Esta sección se actualiza con cada cambio, siempre en los dos README (`README.md` y `README.es.md`) a la vez:
 
