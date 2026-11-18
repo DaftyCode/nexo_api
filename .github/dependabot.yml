@@ -18,6 +18,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # The PostgreSQL driver reads arrays and hstore through the iterators of
+      # postgres-protocol, which implement fallible-iterator 0.2 (still in 0.6.12): it moves
+      # when postgres-protocol does, not before.
+      - dependency-name: fallible-iterator
+        update-types: ['version-update:semver-major', 'version-update:semver-minor']
   - package-ecosystem: github-actions
     directory: /
     schedule:
