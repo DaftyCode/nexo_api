@@ -36,7 +36,7 @@ impl Polling {
             // A long poll is held until the server has packets or pings, every 25 s by default.
             timeout: Duration::from_secs(60),
             trust_redirect_credentials: false,
-            transport: json!({"caPem": task.payload["caPem"]}),
+            transport: json!({"caPem": task.payload["caPem"], "route": task.payload["route"], "proxy": task.payload["proxy"]}),
             egress: task.egress.clone(),
             loopback_ports: task.loopback_ports.clone(),
         };

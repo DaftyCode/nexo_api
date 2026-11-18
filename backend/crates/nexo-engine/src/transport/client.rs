@@ -29,34 +29,32 @@ impl Transport {
                 })?;
             builder = builder.identity(identity);
         }
-        let mut proxied = None;
-        let proxy = &settings["proxy"];
-        if proxy.is_object() && proxy["disabled"] != true {
-            let uri = proxy["uri"].as_str().map(String::from).unwrap_or_else(|| {
-                format!(
-                    "{}://{}:{}",
-                    proxy["protocol"].as_str().unwrap_or("http"),
-                    proxy["host"].as_str().unwrap_or(""),
-                    string(proxy.get("port"))
-                )
-            });
-            let mut configured = reqwest::Proxy::all(&uri)
-                .map_err(|error| Error::Validation(format!("Invalid proxy: {error}")))?;
-            if let Some(user) = proxy["username"].as_str() {
-                configured = configured.basic_auth(user, proxy["password"].as_str().unwrap_or(""));
+        // The route of the settings: directly, or through an HTTP or SOCKS5 proxy.
+        let route = crate::route::Route::from_settings(settings)?;
+        match route.proxy_url() {
+            Some(url) => {
+                let mut configured = reqwest::Proxy::all(&url)
+                    .map_err(|error| Error::Validation(format!("Invalid proxy: {error}")))?;
+                if let Some(credentials) = route.credentials() {
+                    configured =
+                        configured.basic_auth(&credentials.username, &credentials.password);
+                }
+                builder = builder.proxy(configured);
             }
-            builder = builder.proxy(configured);
-            proxied = Some(uri);
-        } else {
-            builder = builder.no_proxy();
+            None => builder = builder.no_proxy(),
         }
+        let dialer = crate::route::Dialer::new(
+            route,
+            options.egress.clone(),
+            options.loopback_ports.clone(),
+        );
         Ok(Self {
             client: builder
                 .build()
                 .map_err(|error| Error::Infrastructure(error.to_string()))?,
             options,
             jar,
-            proxied,
+            dialer,
         })
     }
 

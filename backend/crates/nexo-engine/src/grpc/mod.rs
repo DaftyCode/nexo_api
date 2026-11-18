@@ -17,10 +17,7 @@ use prost_reflect::{
 };
 use protox::file::{ChainFileResolver, File, FileResolver, GoogleFileResolver};
 use serde_json::{Value, json};
-use std::{
-    net::SocketAddr,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 use tonic::{
     Status,
     client::Grpc,

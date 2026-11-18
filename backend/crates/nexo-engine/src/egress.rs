@@ -69,6 +69,30 @@ impl Policy {
         }
         Ok(())
     }
+    /// Checks a destination that another computer reaches for Nexo (a proxy or an SSH
+    /// server). With every destination allowed nothing is resolved here, so the name stays
+    /// with that computer; otherwise the name must be allowed or resolve here to public
+    /// addresses, and a name that does not resolve here cannot be checked and is refused.
+    pub async fn check_remote(&self, host: &str, port: u16, loopback_ports: &[u16]) -> Result<()> {
+        let Self::DenyPrivate { allow } = self else {
+            return Ok(());
+        };
+        let name = host.trim_matches(['[', ']']).to_lowercase();
+        if allow.contains(&name) {
+            return Ok(());
+        }
+        self.resolve(host, port, loopback_ports)
+            .await
+            .map(|_| ())
+            .map_err(|error| match error {
+                Error::Validation(message) if message.starts_with("Cannot resolve") => {
+                    Error::Validation(format!(
+                        "{name} cannot be checked against the egress policy here; add it to NEXO_EGRESS_ALLOW to reach it through a proxy"
+                    ))
+                }
+                other => other,
+            })
+    }
     /// Resolves `host` and checks every address; returns the addresses to connect to.
     pub async fn resolve(
         &self,

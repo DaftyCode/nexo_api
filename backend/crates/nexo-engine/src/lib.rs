@@ -35,6 +35,7 @@ mod oauth2_sign_in;
 pub mod oauth2_tokens;
 pub mod performance;
 pub mod realtime;
+pub mod route;
 pub mod runner;
 pub mod scripts;
 pub mod secret_hosts;

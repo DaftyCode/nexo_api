@@ -36,6 +36,7 @@ fn settings(port: u16) -> Settings {
         client_id: "nexo-test".into(),
         egress: Policy::AllowAll,
         loopback_ports: Vec::new(),
+        route: crate::route::Route::Direct,
         restricted: Vec::new(),
     }
 }

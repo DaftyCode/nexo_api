@@ -178,16 +178,14 @@ impl Task {
             }
         }
     }
-    /// Opens TCP, TLS or WebSocket to the addresses the egress policy approved.
+    /// Opens TCP, TLS or WebSocket to the server, directly or through the route's proxy.
     pub(super) async fn open_mqtt(&self) -> Result<mqtt::Connection> {
         if matches!(self.url.scheme(), "ws" | "wss") {
             let socket = self.open_socket(&self.url, &["mqtt".to_string()]).await?;
             return Ok(mqtt::Connection::new(mqtt::Link::Socket(Box::new(socket))));
         }
         let connect = async {
-            let stream = tokio::net::TcpStream::connect(&self.addresses[..])
-                .await
-                .map_err(|error| invalid(error.to_string()))?;
+            let stream = self.dialer.connect(&self.host, self.port).await?;
             let Some(config) = self.tls.clone() else {
                 return Ok(mqtt::Link::Stream(Box::new(stream)));
             };

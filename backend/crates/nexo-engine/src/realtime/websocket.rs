@@ -6,7 +6,7 @@ impl Task {
         self.events.emit("error", json!(message));
         self.events.set("error");
     }
-    /// Opens a WebSocket to the address the egress policy approved.
+    /// Opens a WebSocket to the server, directly or through the route's proxy.
     pub(super) async fn open_socket(&self, url: &Url, protocols: &[String]) -> Result<Socket> {
         self.open_socket_with(url, protocols, &[]).await
     }
@@ -39,9 +39,7 @@ impl Task {
                 .insert("sec-websocket-protocol", value);
         }
         let connect = async {
-            let stream = tokio::net::TcpStream::connect(&self.addresses[..])
-                .await
-                .map_err(|error| invalid(error.to_string()))?;
+            let stream = self.dialer.connect(&self.host, self.port).await?;
             let config = WebSocketConfig::default()
                 .max_message_size(Some(MAX_MESSAGE))
                 .max_frame_size(Some(MAX_MESSAGE));

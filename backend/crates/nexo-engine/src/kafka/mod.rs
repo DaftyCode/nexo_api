@@ -81,6 +81,8 @@ pub struct Settings {
     pub client_id: String,
     pub egress: Policy,
     pub loopback_ports: Vec<u16>,
+    /// Directly or through a proxy: every broker, also those the metadata names.
+    pub route: crate::route::Route,
     /// Vault secrets in the credentials that may only go to some hosts.
     restricted: Vec<Restricted>,
 }
@@ -136,6 +138,7 @@ impl Settings {
                 .to_string(),
             egress,
             loopback_ports,
+            route: crate::route::Route::from_settings(payload)?,
             restricted,
         })
     }

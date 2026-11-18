@@ -158,7 +158,10 @@ impl Realtime {
             _ => 1883,
         });
         let ports = (self.loopback_ports)();
-        let addresses = self.egress.resolve(&host, port, &ports).await?;
+        // Directly or through the proxy of `route`, checked now so a refusal is answered at once.
+        let route = crate::route::Route::from_settings(payload)?;
+        let dialer = crate::route::Dialer::new(route, self.egress.clone(), ports.clone());
+        dialer.check(&host, port).await?;
         let id = uuid::Uuid::new_v4().to_string();
         let events = Events(Arc::new(Mutex::new(Log {
             state: "connecting".into(),
@@ -178,7 +181,9 @@ impl Realtime {
             commands: receiver,
             stop: stop.clone(),
             tls,
-            addresses,
+            dialer,
+            host,
+            port,
             id: id.clone(),
             egress: self.egress.clone(),
             loopback_ports: ports,
@@ -252,7 +257,10 @@ struct Task {
     commands: mpsc::UnboundedReceiver<Command>,
     stop: CancellationToken,
     tls: Option<Arc<rustls::ClientConfig>>,
-    addresses: Vec<std::net::SocketAddr>,
+    /// The route to the server: directly or through a proxy, within the egress policy.
+    dialer: crate::route::Dialer,
+    host: String,
+    port: u16,
     id: String,
     /// For HTTP long polling, which checks every request against the policy itself.
     egress: Policy,

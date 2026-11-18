@@ -32,6 +32,8 @@ payload! {
             operation_name "operationName": String => "string",
             graphql_protocol "graphqlProtocol": String => "string",
             connection_params "connectionParams": Value => "unknown",
+            // How to reach the server: directly or through an HTTP or SOCKS5 proxy (route/).
+            route "route": Map<String, Value> => "{ via?: 'direct' | 'http' | 'socks5'; host?: string; port?: number | string; username?: string; password?: string; remoteDns?: boolean }",
         }
     }
 }
@@ -89,6 +91,7 @@ payload! {
             messages "messages": Vec<Value> => "readonly unknown[]",
             metadata "metadata": Value => "unknown",
             timeout "timeout": u64 => "number",
+            route "route": Map<String, Value> => "{ via?: 'direct' | 'http' | 'socks5'; host?: string; port?: number | string; username?: string; password?: string; remoteDns?: boolean }",
         }
     }
 }

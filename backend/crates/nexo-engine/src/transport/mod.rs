@@ -150,7 +150,8 @@ pub struct Transport {
     client: reqwest::Client,
     options: Options,
     jar: CookieJar,
-    proxied: Option<String>,
+    /// The route of the requests: the proxy and the destination both pass the egress policy.
+    dialer: crate::route::Dialer,
 }
 
 pub fn parse_url(text: &str) -> Result<Url> {

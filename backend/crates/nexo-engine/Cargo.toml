@@ -14,7 +14,10 @@ serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
 tokio.workspace = true
-reqwest.workspace = true
+# `socks` lets HTTP requests use the SOCKS5 proxies of a route; it brings tokio-socks, which
+# the other protocols use for the same handshake (route/handshake.rs).
+reqwest = { workspace = true, features = ["socks"] }
+tokio-socks = "0.5.3"
 rusqlite.workspace = true
 # SQL read by the MongoDB SQL query (M-12). Without its default features: no `recursive`
 # (which brings `stacker` and a C build); the engine limits the size of the SQL instead.

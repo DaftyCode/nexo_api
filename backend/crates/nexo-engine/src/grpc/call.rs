@@ -113,8 +113,8 @@ pub async fn request(payload: &Value, egress: &Policy, loopback_ports: &[u16]) -
     invoke(client, method, payload, timeout).await
 }
 
-/// A client for the server address, through the addresses the egress policy approved, with
-/// TLS, a custom CA and a client certificate when asked for.
+/// A client for the server address, directly or through the proxy of the payload's route,
+/// within the egress policy, with TLS, a custom CA and a client certificate when asked for.
 pub(super) async fn connect(
     payload: &Value,
     egress: &Policy,
@@ -137,7 +137,12 @@ pub(super) async fn connect(
         .ok_or_else(|| invalid("Enter the gRPC server address (host:port)"))?
         .to_string();
     let port = parsed.port_or_known_default().unwrap_or(443);
-    let addresses: Vec<SocketAddr> = egress.resolve(&host, port, loopback_ports).await?;
+    let dialer = crate::route::Dialer::new(
+        crate::route::Route::from_settings(payload)?,
+        egress.clone(),
+        loopback_ports.to_vec(),
+    );
+    dialer.check(&host, port).await?;
     let timeout = Duration::from_millis(
         payload["timeout"]
             .as_u64()
@@ -163,13 +168,16 @@ pub(super) async fn connect(
             .tls_config(config)
             .map_err(|error| invalid(error.to_string()))?;
     }
-    // Connect only to the addresses the egress policy approved.
+    // Every connection of the channel takes the route, within the egress policy.
+    let target = host.clone();
     let connector = tower::service_fn(move |_: http::Uri| {
-        let addresses = addresses.clone();
+        let (dialer, host) = (dialer.clone(), target.clone());
         async move {
-            tokio::net::TcpStream::connect(&addresses[..])
+            dialer
+                .connect(&host, port)
                 .await
                 .map(TokioIo::new)
+                .map_err(std::io::Error::other)
         }
     });
     let channel = endpoint

@@ -36,18 +36,14 @@ impl Connection {
     /// Connects, negotiates the API versions and authenticates.
     pub async fn open(settings: &Settings, host: &str, port: u16) -> Result<Self> {
         settings.check_host(host)?;
-        let addresses = settings
-            .egress
-            .resolve(host, port, &settings.loopback_ports)
-            .await?;
-        let tcp = tokio::time::timeout(
-            CONNECT_TIMEOUT,
-            tokio::net::TcpStream::connect(&addresses[..]),
-        )
-        .await
-        .map_err(|_| invalid(format!("Connecting to {host}:{port} timed out")))?
-        .map_err(|error| invalid(format!("Cannot connect to {host}:{port}: {error}")))?;
-        let _ = tcp.set_nodelay(true);
+        let dialer = crate::route::Dialer::new(
+            settings.route.clone(),
+            settings.egress.clone(),
+            settings.loopback_ports.clone(),
+        );
+        let tcp = tokio::time::timeout(CONNECT_TIMEOUT, dialer.connect(host, port))
+            .await
+            .map_err(|_| invalid(format!("Connecting to {host}:{port} timed out")))??;
         let stream: Box<dyn Stream> = match &settings.tls {
             Some(config) => {
                 let name = rustls_pki_types::ServerName::try_from(host.to_string())

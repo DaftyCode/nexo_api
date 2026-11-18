@@ -147,6 +147,14 @@ export interface RealtimeConnectPayload {
   operationName?: string;
   graphqlProtocol?: string;
   connectionParams?: unknown;
+  route?: {
+    via?: 'direct' | 'http' | 'socks5';
+    host?: string;
+    port?: number | string;
+    username?: string;
+    password?: string;
+    remoteDns?: boolean;
+  };
 }
 
 export interface RealtimeSendPayload {
@@ -190,6 +198,14 @@ export interface GrpcPayload {
   messages?: readonly unknown[];
   metadata?: unknown;
   timeout?: number;
+  route?: {
+    via?: 'direct' | 'http' | 'socks5';
+    host?: string;
+    port?: number | string;
+    username?: string;
+    password?: string;
+    remoteDns?: boolean;
+  };
 }
 
 export interface MockStartPayload {

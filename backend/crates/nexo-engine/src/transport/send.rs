@@ -144,25 +144,9 @@ impl Transport {
         let url = hop.url;
         let host = url.host_str().unwrap_or("").to_string();
         let port = url.port_or_known_default().unwrap_or(80);
-        match &self.proxied {
-            Some(proxy) => {
-                let proxy_url = parse_url(proxy)?;
-                self.options
-                    .egress
-                    .resolve(
-                        proxy_url.host_str().unwrap_or(""),
-                        proxy_url.port_or_known_default().unwrap_or(80),
-                        &self.options.loopback_ports,
-                    )
-                    .await?;
-            }
-            None => {
-                self.options
-                    .egress
-                    .resolve(&host, port, &self.options.loopback_ports)
-                    .await?;
-            }
-        }
+        // Directly, the destination's addresses; through a proxy, the proxy and the
+        // destination behind it.
+        self.dialer.check(&host, port).await?;
         crate::secret_hosts::check_hop(
             secrets,
             &crate::secret_hosts::Hop {

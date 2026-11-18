@@ -127,7 +127,7 @@ impl Task {
             // A subscription stays open as long as it is wanted.
             timeout: Duration::from_secs(24 * 3600),
             trust_redirect_credentials: false,
-            transport: json!({"caPem": self.payload["caPem"]}),
+            transport: json!({"caPem": self.payload["caPem"], "route": self.payload["route"], "proxy": self.payload["proxy"]}),
             egress: self.egress.clone(),
             loopback_ports: self.loopback_ports.clone(),
         };
