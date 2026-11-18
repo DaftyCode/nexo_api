@@ -9,45 +9,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { WebSocketServer } from 'ws';
 import { moduleReleases } from './modules-fixture.mjs';
-
-/** A small GraphQL schema, as introspection answers it. */
-const scalar = (name) => ({ kind: 'SCALAR', name, ofType: null });
-const introspection = {
-  data: {
-    __schema: {
-      queryType: { name: 'Query' },
-      mutationType: null,
-      subscriptionType: { name: 'Subscription' },
-      types: [
-        {
-          kind: 'OBJECT',
-          name: 'Query',
-          fields: [
-            {
-              name: 'user',
-              description: 'A user by ID',
-              args: [{ name: 'id', type: { kind: 'NON_NULL', name: null, ofType: scalar('ID') } }],
-              type: { kind: 'OBJECT', name: 'User', ofType: null },
-            },
-          ],
-        },
-        {
-          kind: 'OBJECT',
-          name: 'Subscription',
-          fields: [{ name: 'ticks', args: [], type: scalar('Int') }],
-        },
-        {
-          kind: 'OBJECT',
-          name: 'User',
-          fields: [{ name: 'name', args: [], type: scalar('String') }],
-        },
-        scalar('ID'),
-        scalar('Int'),
-        scalar('String'),
-      ],
-    },
-  },
-};
+import { closeSessions, recordSessions } from './database-sessions.mjs';
+import { introspection } from './graphql-schema.mjs';
 
 const executable = `nexo-server${process.platform === 'win32' ? '.exe' : ''}`;
 const binary = resolve(
@@ -67,6 +30,15 @@ export const test = base.extend({
   // left, names it: `test.use({ ownServer: 'structure' })`. Playwright runs the files of each
   // value in a worker of their own, so every file gives its own name.
   ownServer: ['', { scope: 'worker', option: true }],
+  // Each test closes the database sessions it opened (database-sessions.mjs).
+  databaseSessions: [
+    async ({ context, nexo }, use) => {
+      const opened = recordSessions(context);
+      await use(opened);
+      await nexo.closeSessions(opened);
+    },
+    { auto: true },
+  ],
   // One server per worker.
   nexo: [
     async ({ ownServer: _ownServer }, use) => {
@@ -275,6 +247,7 @@ export const test = base.extend({
           await page.goto(base + path);
           await page.waitForURL(/\/workspace/);
         },
+        closeSessions: (sessions) => closeSessions(base, token, sessions),
       });
       subscriptions.close();
       echo.close();

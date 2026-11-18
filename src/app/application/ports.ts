@@ -60,6 +60,16 @@ export type ExecuteArgs = {
 export interface ExecutionPort {
   execute<T>(...args: ExecuteArgs): Promise<T>;
 }
+/** The person leaving the page: closing its tab or window, reloading it or going elsewhere. */
+export interface PageExitPort {
+  /**
+   * Calls `leave` as the page goes. It answers whether it closed something the page would
+   * still show if it came back from the browser's back-forward cache.
+   */
+  onExit(leave: () => boolean): void;
+  /** Sends an operation that must reach the backend while the page goes, without an answer. */
+  send(...args: ExecuteArgs): void;
+}
 export interface VersionControlPort {
   git<T>(operation: GitOperation, payload: GitPayload): Promise<T>;
 }

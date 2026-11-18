@@ -9,7 +9,8 @@ import { DatabaseSearchCases } from './database-use-cases/search';
 import { DatabaseStructureCases } from './database-use-cases/structure';
 import { DatabaseTransferCases } from './database-use-cases/transfer';
 import { DatabaseStatementCases, StatementPorts } from './database-use-cases/statements';
-import { PreferencePort } from './ports';
+import { DbOpenSessions } from './database-use-cases/open-sessions';
+import { PageExitPort, PreferencePort } from './ports';
 
 export {
   DatabaseConnectionCases,
@@ -63,8 +64,10 @@ function memory(): PreferencePort {
 /**
  * The database section's use cases, by area: saved connections with their secrets in the
  * vault, the navigator with its sessions, the SQL editor and the plans of its statements.
+ * Every session they open is closed when the person leaves the page (`exit`).
  */
 export class DatabaseUseCases {
+  readonly sessions: DbOpenSessions;
   readonly connections: DatabaseConnectionCases;
   readonly navigator: DatabaseNavigatorCases;
   readonly statements: DatabaseStatementCases;
@@ -77,7 +80,22 @@ export class DatabaseUseCases {
   readonly admin: DatabaseAdminCases;
   readonly dashboards: DatabaseDashboardCases;
 
-  constructor(api: DatabasePorts & StatementPorts, preferences: PreferencePort = memory()) {
+  constructor(
+    engine: DatabasePorts & StatementPorts,
+    preferences: PreferencePort = memory(),
+    exit?: PageExitPort,
+  ) {
+    const sessions = new DbOpenSessions(engine);
+    this.sessions = sessions;
+    const api: DatabasePorts & StatementPorts = {
+      execute: (...args) => sessions.execute(...args),
+      save: (document) => engine.save(document),
+      remove: (document) => engine.remove(document),
+      document: (id) => engine.document(id),
+      putSecret: (name, value, hosts) => engine.putSecret(name, value, hosts),
+      removeSecret: (name) => engine.removeSecret(name),
+    };
+    exit?.onExit(() => sessions.leave(exit) > 0);
     this.connections = new DatabaseConnectionCases(api);
     this.navigator = new DatabaseNavigatorCases(api);
     this.statements = new DatabaseStatementCases(api, preferences);

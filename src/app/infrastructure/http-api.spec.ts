@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { vi } from 'vitest';
 import { ApiFailure } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
 import { HttpApi } from './http-api';
@@ -125,5 +126,46 @@ describe('HttpApi', () => {
       detail: { position: 10 },
     });
     expect([syntax?.code, syntax?.detail]).toEqual(['database.syntax', { position: 10 }]);
+  });
+
+  it('sends an operation as the page goes with a request that outlives it', async () => {
+    const fetch = vi.fn(async () => {
+      throw new TypeError('The page is gone');
+    });
+    vi.stubGlobal('fetch', fetch);
+    try {
+      api.executeOnExit('db.disconnect', { session: 'tree:c1', workspace: 'w' });
+      // The desktop window sends its token to the service's address.
+      Object.assign(api, { base: 'http://127.0.0.1:5000', token: 'run-token' });
+      api.executeOnExit('db.disconnect', { session: 'editor:t1' });
+      await Promise.resolve();
+      expect(fetch.mock.calls).toEqual([
+        [
+          '/api/execute/db.disconnect',
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-nexo-client': 'nexo' },
+            body: '{"session":"tree:c1","workspace":"w"}',
+            keepalive: true,
+          },
+        ],
+        [
+          'http://127.0.0.1:5000/api/execute/db.disconnect',
+          expect.objectContaining({
+            headers: {
+              'content-type': 'application/json',
+              'x-nexo-client': 'nexo',
+              authorization: 'Bearer run-token',
+            },
+            keepalive: true,
+          }),
+        ],
+      ]);
+      // Without fetch there is nothing to send it with.
+      vi.stubGlobal('fetch', undefined);
+      expect(() => api.executeOnExit('db.disconnect', { session: 's' })).not.toThrow();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

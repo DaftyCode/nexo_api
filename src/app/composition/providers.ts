@@ -14,6 +14,7 @@ import type { DatabaseUseCases } from '../application/database-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
+import { BrowserPageExit } from '../infrastructure/browser-page-exit';
 import type { DatabaseFilesPort, TransferFilesPort } from '../application/ports';
 import { transferFiles } from '../infrastructure/transfer-files';
 import { databaseFiles } from '../infrastructure/database-files';
@@ -42,6 +43,7 @@ export const workspaceProviders = [
   BrowserAppearance,
   DesktopSignInWindow,
   BrowserPrinter,
+  BrowserPageExit,
   { provide: REPORTS, useFactory: () => new ReportUseCases(inject(BrowserPrinter)) },
   { provide: APPEARANCE, useFactory: () => new AppearanceUseCases(inject(BrowserAppearance)) },
   { provide: INTEGRATION, useFactory: () => new IntegrationUseCases(inject(HttpApi)) },
@@ -78,10 +80,12 @@ export const workspaceProviders = [
     useFactory: (): DatabaseLoader => {
       const api = inject(HttpApi);
       const preferences = inject(BrowserPreferences);
+      // Leaving the page closes the sessions it opened on the databases.
+      const exit = inject(BrowserPageExit);
       let loaded: Promise<DatabaseUseCases> | undefined;
       return () =>
         (loaded ??= import('../application/database-use-cases').then(
-          ({ DatabaseUseCases }) => new DatabaseUseCases(api, preferences),
+          ({ DatabaseUseCases }) => new DatabaseUseCases(api, preferences, exit),
         ));
     },
   },

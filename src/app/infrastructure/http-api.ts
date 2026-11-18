@@ -99,6 +99,25 @@ export class HttpApi implements ApiPort {
   execute<T>(...[operation, payload]: ExecuteArgs) {
     return this.request<T>('POST', `/execute/${encodeURIComponent(operation)}`, payload);
   }
+  /**
+   * An operation sent as the page goes: the browser keeps the request alive after the page
+   * is gone (`keepalive`, which only `fetch` has), and nobody waits for its answer.
+   */
+  executeOnExit(...[operation, payload]: ExecuteArgs) {
+    const headers: Record<string, string> = {
+      'content-type': 'application/json',
+      'x-nexo-client': 'nexo',
+    };
+    if (this.token) headers['authorization'] = `Bearer ${this.token}`;
+    void globalThis
+      .fetch?.(`${this.base}/api/execute/${encodeURIComponent(operation)}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        keepalive: true,
+      })
+      .catch(() => undefined);
+  }
   git<T>(operation: GitOperation, payload: GitPayload) {
     return this.request<T>('POST', `/git/${encodeURIComponent(operation)}`, payload);
   }
