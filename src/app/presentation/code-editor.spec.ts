@@ -5,9 +5,11 @@ import { completionStatus, currentCompletions, startCompletion } from '@codemirr
 import { syntaxTree } from '@codemirror/language';
 import { diagnosticCount, forEachDiagnostic } from '@codemirror/lint';
 import { openSearchPanel, searchPanelOpen } from '@codemirror/search';
+import { EditorView } from '@codemirror/view';
 import { vi } from 'vitest';
 import { CodeEditor, languageSupport } from './code-editor';
 import { CodeLanguage, CodeMark, bodyLanguage } from './code-language';
+import { CodeScheme } from './code-scheme';
 
 @Component({
   imports: [CodeEditor],
@@ -178,6 +180,17 @@ describe('CodeEditor', () => {
       'environment',
     );
     expect((await suggest('// pm.')).map((option) => option.label)).not.toContain('environment');
+  });
+
+  it('is dark until a template answers, then light or dark with it while it stays open', async () => {
+    expect(view().state.facet(EditorView.darkTheme)).toBe(true);
+    const dark = signal(false);
+    TestBed.inject(CodeScheme).follow(dark);
+    await fixture.whenStable();
+    expect(view().state.facet(EditorView.darkTheme)).toBe(false);
+    dark.set(true);
+    await fixture.whenStable();
+    expect(view().state.facet(EditorView.darkTheme)).toBe(true);
   });
 
   it('chooses the language of a raw body from its type', () => {

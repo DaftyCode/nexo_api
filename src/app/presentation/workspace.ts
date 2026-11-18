@@ -131,7 +131,7 @@ export class Workspace {
   }
   closeNavigation() {
     this.navigationOpen.set(false);
-    if (this.appearance.current() === 'canvas' && this.state.section() === 'history') {
+    if (this.appearance.arrangement() === 'canvas' && this.state.section() === 'history') {
       this.state.section.set('collections');
     }
   }

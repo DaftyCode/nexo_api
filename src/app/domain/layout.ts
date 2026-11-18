@@ -1,4 +1,4 @@
-import { VisualTemplateId, visualTemplates } from './appearance';
+import { TemplateArrangement, templateArrangements } from './appearance';
 
 /**
  * Sizes, in pixels, the person gave to the workspace panels by dragging their dividers.
@@ -15,8 +15,11 @@ export interface PanelLayout {
   context?: number;
 }
 export type PanelName = keyof PanelLayout;
-/** One layout per template: their panels differ in place and default size. */
-export type PanelLayouts = Partial<Record<VisualTemplateId, PanelLayout>>;
+/**
+ * One layout per arrangement: their panels differ in place and default size. Templates that
+ * differ only in colour share theirs.
+ */
+export type PanelLayouts = Partial<Record<TemplateArrangement, PanelLayout>>;
 
 const limits: Record<PanelName, readonly [number, number]> = {
   sidebar: [160, 640],
@@ -31,11 +34,11 @@ export function clampPanel(name: PanelName, size: number): number {
   return Math.round(Math.min(max, Math.max(min, size)));
 }
 
-/** Stored layouts, keeping only known templates, panels and finite sizes. */
+/** Stored layouts, keeping only known arrangements, panels and finite sizes. */
 export function resolvePanelLayouts(value: unknown): PanelLayouts {
   if (!value || typeof value !== 'object') return {};
   const layouts: PanelLayouts = {};
-  for (const { id } of visualTemplates) {
+  for (const id of templateArrangements) {
     const stored = (value as Record<string, unknown>)[id];
     if (!stored || typeof stored !== 'object') continue;
     const layout: PanelLayout = {};
@@ -51,14 +54,14 @@ export function resolvePanelLayouts(value: unknown): PanelLayouts {
 /** The layouts with one panel resized, or back to the template size without `size`. */
 export function resizePanel(
   layouts: PanelLayouts,
-  template: VisualTemplateId,
+  arrangement: TemplateArrangement,
   name: PanelName,
   size?: number,
 ): PanelLayouts {
-  const { [name]: _previous, ...rest } = layouts[template] ?? {};
+  const { [name]: _previous, ...rest } = layouts[arrangement] ?? {};
   const layout: PanelLayout =
     size === undefined ? rest : { ...rest, [name]: clampPanel(name, size) };
-  return { ...layouts, [template]: layout };
+  return { ...layouts, [arrangement]: layout };
 }
 
 /**

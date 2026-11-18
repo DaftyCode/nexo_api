@@ -23,7 +23,7 @@ import {
 } from '@codemirror/state';
 import { Decoration, EditorView, keymap } from '@codemirror/view';
 import { foldGutter, foldKeymap } from '@codemirror/language';
-import { baseExtensions, wordCompletions } from './code-editor-setup';
+import { baseExtensions, followCodeScheme, wordCompletions } from './code-editor-setup';
 import { SqlAssistSource, sqlAssist } from './db-panel/sql-assist';
 
 /** What the keys of the SQL editor ask for, with DBeaver's shortcuts. */
@@ -134,6 +134,7 @@ export class DbSqlCode {
   private view: EditorView | undefined;
   private readonly language = new Compartment();
   private readonly completions = new Compartment();
+  private readonly darkCode = followCodeScheme(() => this.view);
 
   constructor() {
     afterNextRender(() => this.create());
@@ -181,6 +182,7 @@ export class DbSqlCode {
             label: this.label(),
             placeholder: '',
             changed: (text) => this.changed.emit(text),
+            dark: this.darkCode(),
           }),
           foldGutter(),
           keymap.of(foldKeymap),

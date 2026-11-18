@@ -19,28 +19,41 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 
 ## Qué puedes hacer
 
-| Área               | Disponible                                                                                                                           |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Peticiones         | HTTP/HTTPS, métodos, parámetros y variables de ruta, cabeceras y respuestas; cuerpos raw, JSON, formularios, archivos en multipart y binario, y GraphQL con explorador y autocompletado. |
-| Organización       | Colecciones y carpetas, pestañas, entornos, variables, historial y documentos persistidos en SQLite. Arrastra pestañas, colecciones, carpetas, peticiones (también a otra colección) y las secciones del menú; al abrir, todo sigue en tu orden y las pestañas vuelven con sus cambios sin guardar. |
+| Área               | Disponible                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Peticiones         | HTTP/HTTPS, métodos, parámetros y variables de ruta, cabeceras y respuestas; cuerpos raw, JSON, formularios, archivos en multipart y binario, y GraphQL con explorador y autocompletado.                                                                                                                                                                                           |
+| Organización       | Colecciones y carpetas, pestañas, entornos, variables, historial y documentos persistidos en SQLite. Arrastra pestañas, colecciones, carpetas, peticiones (también a otra colección) y las secciones del menú; al abrir, todo sigue en tu orden y las pestañas vuelven con sus cambios sin guardar.                                                                                |
 | Autenticación HTTP | Todos los tipos de Postman, Bruno e Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (todos los flujos, PKCE, ventana de inicio de sesión en el escritorio como la de Postman, tokens en el vault, renovación y obtención automáticas), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc; heredada de carpetas y colecciones. |
-| Scripts y pruebas  | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones. |
-| Runner             | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, pausa, cancelación, informes PDF y reportes JSON/JUnit desde CLI. |
-| Protocolos         | WebSocket, Socket.IO, MQTT, Kafka, gRPC (con proto o por reflexión) y subscriptions GraphQL por WebSocket o SSE.                     |
-| MongoDB            | Conexiones, explorador, consultas, edición de documentos con salvaguardas, índices, explain, profiler, agregaciones por etapas, esquema, importar y exportar JSON/CSV, change streams, shell, generación de código, SQL y comparar/sincronizar. |
-| Bases de datos     | Sección «Bases de datos» al estilo de DBeaver: cada motor es un módulo que se descarga al dar de alta su primera conexión (hoy PostgreSQL y SQL Server). Asistente con URL pegada (también JDBC), TLS, ajustes del driver y tipo de conexión (producción en rojo), «Probar conexión», navegador con teclado, filtros, vista simple, marcadores y carpetas. Editor SQL con la sesión propia de cada pestaña, la sentencia del cursor, una selección o el script con los atajos de DBeaver, confirmaciones antes de enviar, una pestaña de resultado por consulta (fijar, volver a ejecutar, separar, leer más, repetir; una por cada resultado de un procedimiento), mensajes con la línea de un error, transacciones, scripts guardados e historial. Rejilla de datos virtualizada (100 000 filas y 200 columnas, teclado, buscar, modo registro, copiar como TSV, JSON, CSV, Markdown, `IN` o `INSERT`, paneles Valor, Metadatos, Cálculo y Agrupación, formatos en Ajustes). Ficha de objeto con propiedades, secciones, DDL y datos filtrados y ordenados en el servidor, con las claves foráneas en los dos sentidos. Las pestañas vuelven al reabrir, sin resultados. |
-| Importación        | Colecciones JSON portables, entornos, OpenAPI/Swagger JSON o YAML, HAR y cURL.                                                       |
-| Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                             |
-| Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, gestor de cookies, definiciones de API con linter, Git con remotos y cliente/servidor MCP. |
-| Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}`, dominios permitidos por secreto y redacción de secretos en resultados.    |
-| Workspaces         | Varios workspaces locales, historial de documentos y revisiones para evitar sobrescrituras.                                          |
-| Escritorio y web   | Aplicación de escritorio con Tauri o la misma interfaz en el navegador mediante un lanzador local si no puedes instalar la app.       |
+| Scripts y pruebas  | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones.                                                                                                                                                                                                                                               |
+| Runner             | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, pausa, cancelación, informes PDF y reportes JSON/JUnit desde CLI.                                                                                                                                                                                                                                       |
+| Protocolos         | WebSocket, Socket.IO, MQTT, Kafka, gRPC (con proto o por reflexión) y subscriptions GraphQL por WebSocket o SSE.                                                                                                                                                                                                                                                                   |
+| MongoDB            | Conexiones, explorador, consultas, edición de documentos con salvaguardas, índices, explain, profiler, agregaciones por etapas, esquema, importar y exportar JSON/CSV, change streams, shell, generación de código, SQL y comparar/sincronizar.                                                                                                                                    |
+| Bases de datos     | PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en una sección al estilo de DBeaver: editor SQL, rejilla de datos editable, ficha y estructura de objetos, diagramas entidad-relación, sesiones, bloqueos y paneles del servidor. Cada motor es un módulo que se descarga al crear su primera conexión. Detalle en [Bases de datos](#bases-de-datos).                              |
+| Importación        | Colecciones JSON portables, entornos, OpenAPI/Swagger JSON o YAML, HAR y cURL.                                                                                                                                                                                                                                                                                                     |
+| Código             | Generadores propios para cURL, JavaScript/Node, Python, Java, Go, Rust, C# y PowerShell.                                                                                                                                                                                                                                                                                           |
+| Herramientas       | Mocks HTTP locales, datasets JSON/CSV con consultas SQL de lectura, gestor de cookies, definiciones de API con linter, Git con remotos y cliente/servidor MCP.                                                                                                                                                                                                                     |
+| Secretos           | Vault cifrado con AES-GCM, referencias `{{vault:nombre}}`, dominios permitidos por secreto y redacción de secretos en resultados.                                                                                                                                                                                                                                                  |
+| Workspaces         | Varios workspaces locales, historial de documentos y revisiones para evitar sobrescrituras.                                                                                                                                                                                                                                                                                        |
+| Escritorio y web   | Aplicación de escritorio con Tauri o la misma interfaz en el navegador mediante un lanzador local si no puedes instalar la app.                                                                                                                                                                                                                                                    |
 
 Las peticiones salen desde tu equipo. Con `NEXO_EGRESS=deny-private` se rechazan destinos privados y de loopback, salvo tus propios mocks; `NEXO_EGRESS_ALLOW` define excepciones.
 
+### Bases de datos
+
+- **Módulos bajo demanda:** Nexo se instala como cliente de APIs. El driver de cada motor se descarga de GitHub Releases al crear la primera conexión de ese tipo, se comprueba con el SHA-256 que lleva la app y se ejecuta como un proceso aparte. La galería de motores muestra el icono de cada driver, qué es, si es de los más usados y si ya está instalado.
+- **Conexiones y navegador:** asistente con URL pegada (también JDBC), TLS, ajustes del driver y tipo de conexión (producción en rojo) y «Probar conexión». Navegador con teclado, iconos y recuentos, filtros, vista simple, marcadores y carpetas: un clic despliega una fila y un doble clic abre la tabla en sus datos. Ctrl+H busca objetos, datos y scripts guardados.
+- **Editor SQL:** cada pestaña con su propia sesión; la sentencia del cursor, una selección o el script con los atajos de DBeaver y confirmaciones antes de enviar. Completa con el esquema (las columnas de un alias, el join de una clave foránea), formatea, tiene plantillas, pide los parámetros `:nombre` y los envía enlazados, genera el SQL de una tabla y tiene una consola SQL. Una pestaña de resultado por consulta (fijar, volver a ejecutar, separar, leer más, repetir; una por cada resultado de un procedimiento), mensajes con la línea de un error, planes de ejecución estimados o medidos, scripts guardados e historial.
+- **Transacciones manuales:** cuentan sus sentencias, guardan su registro y se listan, con commit inteligente y una pregunta antes de cerrar una pestaña con cambios.
+- **Rejilla de datos:** virtualizada (100 000 filas y 200 columnas), con filas alternas, menús por columna y fila, barra de estado y filas que se leen al desplazarse. Teclado, buscar, modo registro, copiar como TSV, JSON, CSV, Markdown, `IN` o `INSERT`, paneles Valor, Metadatos, Cálculo y Agrupación y formatos en Ajustes. Las filas se editan con sus cambios pendientes hasta guardarlos todos juntos.
+- **Mover datos:** exportar a ocho formatos, importar CSV y JSON y copiar datos entre conexiones de motores distintos.
+- **Objetos y estructura:** ficha con sus cifras y vistas, propiedades en tarjetas, secciones, DDL y datos filtrados y ordenados en el servidor, con las claves foráneas en los dos sentidos. Las tablas se crean y se cambian con formularios o en su vista Columnas, con todos los tipos del motor y su DDL a la vista antes de ejecutarlo. Vistas, rutinas y otros objetos empiezan con una plantilla de su motor.
+- **Diagramas entidad-relación:** una tabla con sus vecinas o todas las de un esquema, en IDEF1X, pata de gallo o UML. Se mueven con el ratón o el teclado, se guardan como diagramas propios con notas y se exportan a SVG, PNG o PDF.
+- **Administración:** gestores de sesiones y de bloqueos (quién está conectado y quién espera a quién; cancelar una consulta o terminar una sesión tras preguntar), usuarios y roles con sus pertenencias y permisos, y un panel por servidor que dibuja sesiones, transacciones, lecturas, tamaño y bloqueos cada pocos segundos, con paneles propios a partir de consultas de solo lectura.
+- **Sesión de trabajo:** las pestañas vuelven al reabrir, sin resultados. Al cerrar, recargar o abandonar la página se cierran las conexiones que abrió, y la app de escritorio las cierra al salir.
+
 ### Plantillas del workspace
 
-El código incluye tres plantillas, seleccionables desde **Template**: **Aurora** (la oscura predeterminada), **Studio** (tres columnas con contexto del entorno y de la petición) y **Canvas** (clara, con petición y respuesta en paralelo). Todas comparten colecciones, entornos, variables, historial y herramientas. Cambiar de plantilla conserva la petición abierta y guarda tu preferencia en ese dispositivo. En Canvas se accede a la navegación desde **Tools** y **Browse collections**. Classic se ha retirado. Cada método HTTP tiene su color en todas las plantillas (GET verde, POST amarillo, PUT azul, PATCH morado, DELETE rojo); los colores y tamaños se pueden cambiar con [variables CSS](#estilos-tokens-de-diseño).
+El código incluye cuatro plantillas, seleccionables desde **Template**: **Aurora** (la predeterminada: fondo blanco, texto oscuro y editores de código claros), **Aurora full color** (la misma distribución en azul noche y violeta), **Studio** (tres columnas con contexto del entorno y de la petición) y **Canvas** (clara, con petición y respuesta en paralelo). Todas comparten colecciones, entornos, variables, historial y herramientas; las dos Aurora comparten también el tamaño de los paneles. Cambiar de plantilla conserva la petición abierta, los editores de código pasan a claro u oscuro al momento y la preferencia se guarda en ese dispositivo: la app se abre siempre con la última plantilla elegida. En Canvas se accede a la navegación desde **Tools** y **Browse collections**. Classic se ha retirado. Cada método HTTP tiene su color en todas las plantillas (GET verde, POST amarillo, PUT azul, PATCH morado, DELETE rojo); los colores y tamaños se pueden cambiar con [variables CSS](#estilos-tokens-de-diseño).
 
 ### Idiomas de la interfaz
 
@@ -58,7 +71,7 @@ Las versiones se publican en [GitHub Releases](https://github.com/DaftyCode/nexo
 | macOS   | Apple Silicon e Intel, por separado | Aplicación `.app` dentro de `.dmg`.                |
 | Linux   | x64                                 | `.deb`, `.rpm` y `.AppImage`.                      |
 
-Cada compilación se realiza en un runner del sistema correspondiente. Los instaladores son autosuficientes: los usuarios finales no necesitan instalar Node ni Rust.
+Cada compilación se realiza en un runner del sistema correspondiente. Los instaladores son autosuficientes: los usuarios finales no necesitan instalar Node ni Rust. Cada versión publica también los drivers de bases de datos, que la app descarga sola cuando hacen falta, y un `SHA256SUMS` para comprobar las descargas.
 
 ### Microsoft Store
 
@@ -72,6 +85,8 @@ Nexo API está en Microsoft Store: la Store firma el paquete, lo instala y manti
 
 Nexo funciona para una persona en su equipo. El escritorio inicia un servicio Rust en un puerto aleatorio de loopback y se autentica con un token propio de cada ejecución. La versión web usa el mismo servicio: su lanzador solo escucha en loopback y abre el navegador con un enlace de un solo uso que se convierte en una cookie de sesión HttpOnly. Las peticiones necesitan un Host de loopback, un Origin permitido y la cabecera del cliente Nexo, de modo que otras webs y otros equipos no pueden usar el servicio. Los datos se guardan en la carpeta de datos de la aplicación; los secretos se cifran con una clave guardada en el almacén de credenciales del sistema.
 
+Cada base de datos tiene su driver en un proceso aparte. Su SHA-256 se comprueba al instalarlo y otra vez antes de cada arranque. El driver recibe las contraseñas solo por su entrada estándar y pide al servicio cada destino de red, así que sus conexiones también pasan por la política de salida.
+
 ## Arquitectura que queremos mantener
 
 ### Backend: hexagonal
@@ -82,12 +97,16 @@ backend/crates/
   nexo-application/     Casos de uso y puertos
   nexo-infrastructure/  Adaptadores SQLite, Git y almacén de credenciales
   nexo-engine/          Adaptador de ejecución: HTTP, scripts QuickJS, protocolos, mocks, datasets, vault
+  nexo-mongo/           Adaptador de MongoDB
+  nexo-modules/         Instala los módulos de bases de datos, arranca cada driver y habla con él
+  nexo-driver-sdk/      Lo que comparten un driver y la app: protocolo, valores tipados y runtime del driver
   nexo-http/            Adaptador HTTP
   nexo-server/          Raíz de composición y CLI
+backend/drivers/       Un ejecutable por motor (PostgreSQL, SQL Server, MySQL y MariaDB, SQLite), que solo depende del SDK
 src-tauri/             Raíz de composición de escritorio
 ```
 
-El dominio no conoce HTTP, bases de datos ni interfaz gráfica. Los casos de uso dependen de contratos; los adaptadores implementan esos contratos. Tauri y el servidor componen las mismas capacidades.
+El dominio no conoce HTTP, bases de datos ni interfaz gráfica. Los casos de uso dependen de contratos; los adaptadores implementan esos contratos. Tauri y el servidor componen las mismas capacidades. Los drivers nunca son dependencias de la app ni van en sus instaladores.
 
 ### Frontend: Clean Architecture
 
@@ -128,20 +147,36 @@ Compila en el sistema operativo y la arquitectura de CPU que quieras distribuir:
 
 ## Estado y siguientes pasos
 
-La versión actual es la **0.9.0**, con PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en la sección «Bases de datos» (con diagramas entidad-relación, gestores de sesiones y bloqueos y paneles del servidor) y el cliente MongoDB completo. Las pruebas cubren peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, todos los tipos de autorización (con vectores oficiales y servidores que verifican), gRPC unary y streaming con proto o reflexión, WebSocket, Socket.IO, MQTT, Kafka, subscriptions GraphQL, MongoDB y FerretDB reales, servidores reales de PostgreSQL, SQL Server, MySQL y MariaDB y ficheros SQLite, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor. Las pruebas unitarias de la interfaz cubren al menos el 90 % de sus sentencias, ramas, funciones y líneas (`npm run test:coverage`, que ejecuta la CI): cada cambio llega con sus pruebas. Al cerrar, recargar o abandonar la página se cierran las conexiones a bases de datos que abrió, y la app de escritorio las cierra al salir. Se compila con Rust 1.100, Angular 22.2 y Tauri 2.12, con cada dependencia en la última versión que admiten. El audit de las dependencias de producción en la CI (`npm run audit:check`) solo admite las excepciones de `tools/audit-exceptions.json`, cada una con su motivo y su fecha de caducidad: hoy una, picomatch, que solo usan las herramientas de compilación y aún no tiene versión corregida, hasta el 17-12-2026.
-
-Siguientes pasos:
-
-- Visor y editor de bases de datos como módulos descargables (PostgreSQL, SQL Server, MySQL con MariaDB y SQLite funcionan de principio a fin: conexiones, navegador, editor SQL, rejilla de datos y ficha de objeto; el propietario probó los dos primeros y se afinó lo que encontró: la sección tiene un diseño nuevo, con iconos y recuentos en el árbol, una cabecera del objeto con sus cifras y vistas, una vista de propiedades en tarjetas, una rejilla de filas alternas con menús por columna y fila, una barra de estado y filas que se leen al desplazarse, en el navegador un clic despliega una fila y un doble clic abre la tabla en sus datos, la galería para elegir el motor muestra el icono que trae cada driver, qué es, si es de los más usados y si ya está instalado, las transacciones manuales cuentan sus sentencias, guardan su registro y se listan, con commit inteligente y una pregunta antes de cerrar una pestaña con cambios, las filas se editan en la rejilla con sus cambios pendientes hasta guardarlos como uno, y el editor SQL completa con el esquema (columnas de un alias, el join de una clave foránea), formatea, tiene plantillas, pide los parámetros `:nombre` y los envía enlazados, genera SQL de una tabla y tiene una consola SQL, las sentencias se explican con su plan de ejecución estimado o medido, y los datos se exportan a ocho formatos, se importan de CSV y JSON y se copian entre conexiones de motores distintos, Ctrl+H busca objetos, datos y scripts guardados, y las tablas se crean y se cambian con formularios o en su propia vista Columnas, con el DDL del motor a la vista antes de ejecutarlo, mientras que vistas, rutinas y otros objetos empiezan con una plantilla de su motor, y los diagramas entidad-relación muestran una tabla con sus vecinas o todas las de un esquema, en IDEF1X, pata de gallo o UML, se mueven con el ratón o el teclado, se guardan como diagramas propios con notas y se exportan a SVG, PNG o PDF, y el gestor de sesiones y el de bloqueos muestran quién está conectado y quién espera a quién, cancelan una consulta o terminan una sesión tras preguntar, mientras usuarios y roles se ven con sus pertenencias y permisos, y el panel de cada servidor dibuja sus sesiones, transacciones, lecturas, tamaño y bloqueos cada pocos segundos, con gráficos propios de solo lectura), de modo que Nexo se instala como cliente de APIs y el driver de cada base de datos solo se descarga al crear una conexión de ese tipo: después Cassandra, Redis, Elasticsearch y Apache Drill (Oracle espera a la versión estable del driver de Rust de Oracle), con backup y restore con el cliente nativo, comparar y sincronizar datos y esquemas, y conexión avanzada por SSH. MongoDB pasará a ser uno de esos módulos.
-- Asistente de IA con la clave personal de cada usuario.
-- Túnel SSH y proxy SOCKS5, entornos protegidos, ejecuciones programadas, comparar respuestas, exportar a Excel/CSV con datos enmascarados, inferir JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
-- Temas personalizados desde la app, sobre los tokens de diseño.
-- Quitar el Node que queda en las herramientas de desarrollo: pruebas de contrato y scripts de compilación en Rust.
-- Distribución: WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak; firma fuera de la Store en Windows y notarización en macOS; validar los instaladores en máquinas limpias.
-- Publicar mediciones de arranque, memoria y latencia.
-- Más bases de datos después de esas (se están evaluando DB2, Apache Hive y Apache Ignite).
+La versión actual es la **0.9.0**, con PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en la sección «Bases de datos» y el cliente MongoDB completo. Las pruebas cubren peticiones reales, variables, scripts, aserciones, cancelación, cookies, redacción de secretos, importación OpenAPI, código generado ejecutable, runner con datos, todos los tipos de autorización (con vectores oficiales y servidores que verifican), gRPC unary y streaming con proto o reflexión, WebSocket, Socket.IO, MQTT, Kafka, subscriptions GraphQL, MongoDB y FerretDB reales, servidores reales de PostgreSQL, SQL Server, MySQL y MariaDB y ficheros SQLite, política de salida, control de acceso local y revisiones. Las pruebas de contrato de `tests/contract` usan el binario real del servidor. Las pruebas unitarias de la interfaz cubren al menos el 90 % de sus sentencias, ramas, funciones y líneas (`npm run test:coverage`, que ejecuta la CI): cada cambio llega con sus pruebas. Se compila con Rust 1.100, Angular 22.2 y Tauri 2.12, con cada dependencia en la última versión que admiten. El audit de las dependencias de producción en la CI (`npm run audit:check`) solo admite las excepciones de `tools/audit-exceptions.json`, cada una con su motivo y su fecha de caducidad: hoy una, picomatch, que solo usan las herramientas de compilación y aún no tiene versión corregida, hasta el 17-12-2026.
 
 Los límites actuales incluyen 5 segundos y 128 MB de memoria por evaluación de script, ocho ejecuciones activas y respuestas limitadas para la interfaz. Las cookies se guardan por workspace en la carpeta de datos. Aún no se admiten MQTT 5, Socket.IO 2.x (Engine.IO v3) ni consumer groups, transacciones o Schema Registry en Kafka. Los `$ref` externos de OpenAPI deben agruparse antes de importar. Los tipos de autorización desconocidos se rechazan expresamente. La compatibilidad de protocolos y formatos seguirá creciendo con casos de prueba reproducibles.
+
+### Siguientes pasos
+
+En el orden previsto:
+
+1. **Más bases de datos** (en curso):
+   - Backup y restore con el cliente nativo de cada motor.
+   - Comparar y sincronizar datos y esquemas.
+   - Conexión avanzada: túnel SSH, ajustes de red, arranque de la conexión e importar conexiones de otras herramientas.
+   - Constructor visual de consultas, generador de datos de prueba, gráficos de resultados y visor de datos espaciales.
+   - Ficheros como base de datos (CSV, JSON, Parquet y Excel).
+   - Tareas de bases de datos guardadas, compuestas y programadas.
+   - SQL desde los scripts de las peticiones (`nx.sql`), herramientas MCP de solo lectura y el código de una consulta en varios lenguajes.
+   - Motores nuevos: Cassandra y ScyllaDB, Redis y Valkey, Elasticsearch y OpenSearch, y Apache Drill. Oracle espera a la versión estable de su driver de Rust; DB2, Apache Hive y Apache Ignite están en evaluación.
+   - MongoDB pasará a ser un módulo descargable más, en el mismo árbol que el resto.
+2. **Asistente de IA** con la clave personal de cada usuario.
+3. **Mejoras de la parte de APIs:** túnel SSH y proxy SOCKS5, entornos protegidos (color, confirmación y solo lectura), ejecuciones programadas, comparar respuestas entre ejecuciones o entornos, exportar a Excel o CSV con datos enmascarados, inferir el JSON Schema de las respuestas e importar de Insomnia, Bruno, Hoppscotch y Thunder Client.
+4. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
+5. **Temas personalizados** desde la app, sobre los tokens de diseño.
+6. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.
+7. **Mediciones** reproducibles de arranque, memoria y latencia.
+
+Esta sección se actualiza con cada cambio, siempre en los dos README (`README.md` y `README.es.md`) a la vez:
+
+- Lo que se termina sale de «Siguientes pasos» y pasa a [Qué puedes hacer](#qué-puedes-hacer) o al estado actual.
+- Cada tarea nueva entra en «Siguientes pasos», en el lugar que le toque según el orden previsto.
+- Lo que se descarta se quita de la lista.
 
 ## Colaborar
 
@@ -151,7 +186,8 @@ Puedes abrir una [issue](https://github.com/DaftyCode/nexo_api/issues), proponer
 2. Mantén cada cambio centrado en un problema y respeta las capas y responsabilidades.
 3. Añade pruebas de comportamiento cuando cambies reglas o adaptadores. Incluye un caso que reproduzca el fallo si corriges uno.
 4. Ejecuta las comprobaciones relevantes y explica en la PR el problema, el resultado y cómo lo verificaste.
-5. Conserva los avisos y licencias de las dependencias. Evita incluir datos locales, credenciales o artefactos generados.
+5. Si tu cambio termina o añade algo, actualiza [Estado y siguientes pasos](#estado-y-siguientes-pasos) en los dos README.
+6. Conserva los avisos y licencias de las dependencias. Evita incluir datos locales, credenciales o artefactos generados.
 
 ### Commits
 

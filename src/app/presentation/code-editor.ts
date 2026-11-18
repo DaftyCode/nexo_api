@@ -15,7 +15,13 @@ import { FormValueControl } from '@angular/forms/signals';
 import { Diagnostic, setDiagnostics } from '@codemirror/lint';
 import { Compartment, EditorState, Extension } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
-import { baseExtensions, lineSpan, readOnly, wordCompletions } from './code-editor-setup';
+import {
+  baseExtensions,
+  followCodeScheme,
+  lineSpan,
+  readOnly,
+  wordCompletions,
+} from './code-editor-setup';
 import { CodeLanguage, CodeMark } from './code-language';
 
 export type { CodeLanguage, CodeMark } from './code-language';
@@ -102,6 +108,7 @@ export class CodeEditor implements FormValueControl<string> {
   private readonly languages = new Compartment();
   private readonly editable = new Compartment();
   private readonly completions = new Compartment();
+  private readonly darkCode = followCodeScheme(() => this.view);
   /** The language last asked for, so a slow load never replaces a newer one. */
   private wanted: CodeLanguage = 'text';
 
@@ -147,6 +154,7 @@ export class CodeEditor implements FormValueControl<string> {
             placeholder: this.placeholder(),
             changed: (text) => this.value.set(text),
             line: this.size() === 'line',
+            dark: this.darkCode(),
           }),
           this.languages.of([]),
           this.editable.of(readOnly(this.readonly())),

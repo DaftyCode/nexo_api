@@ -1,3 +1,4 @@
+import { Signal, effect, inject, untracked } from '@angular/core';
 import {
   CompletionContext,
   autocompletion,
@@ -14,7 +15,7 @@ import {
 } from '@codemirror/language';
 import { lintKeymap } from '@codemirror/lint';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
-import { EditorState, Extension } from '@codemirror/state';
+import { Compartment, EditorState, Extension } from '@codemirror/state';
 import {
   EditorView,
   drawSelection,
@@ -24,6 +25,7 @@ import {
   placeholder,
 } from '@codemirror/view';
 import { tags } from '@lezer/highlight';
+import { CodeScheme } from './code-scheme';
 
 /** Colours of the code editors, from the theme's syntax tokens. */
 export const highlight = HighlightStyle.define([
@@ -40,7 +42,6 @@ export const highlight = HighlightStyle.define([
   { tag: tags.punctuation, color: 'var(--nexo-color-syntax-comment)' },
 ]);
 
-/** The look of the code editors, as the `.code-editor` text areas had. */
 /** A line of code inside something that already frames it, such as a statement's condition. */
 const lineTheme = EditorView.theme({
   '&': { border: 'none', background: 'transparent', fontSize: 'var(--nexo-font-size-md)' },
@@ -49,63 +50,84 @@ const lineTheme = EditorView.theme({
   '.cm-activeLine': { background: 'transparent' },
 });
 
-export const theme = EditorView.theme(
-  {
-    '&': {
-      background: 'var(--nexo-color-code-bg)',
-      color: 'var(--nexo-color-code-text)',
-      border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
-      borderRadius: 'var(--nexo-radius-md)',
-      fontSize: 'var(--nexo-font-size-xs)',
-      height: '100%',
-    },
-    '&.cm-focused': {
-      outline: 'var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring)',
-      outlineOffset: 'calc(-1 * var(--nexo-border-width))',
-    },
-    '.cm-scroller': {
-      fontFamily: 'var(--nexo-font-mono)',
-      lineHeight: 'var(--nexo-line-height-loose)',
-      overflow: 'auto',
-    },
-    '.cm-content': { caretColor: 'var(--nexo-color-code-text)', padding: 'var(--nexo-space-5) 0' },
-    '.cm-gutters': {
-      background: 'var(--nexo-color-code-bg)',
-      color: 'var(--nexo-color-syntax-comment)',
-      border: 'none',
-    },
-    '.cm-activeLine, .cm-activeLineGutter': { background: 'var(--nexo-color-hover)' },
-    '.cm-placeholder': { color: 'var(--nexo-color-syntax-comment)' },
-    '.cm-selectionMatch': {
-      background: 'color-mix(in srgb, var(--nexo-color-highlight) 8%, transparent)',
-    },
-    '.cm-searchMatch': {
-      background: 'color-mix(in srgb, var(--nexo-color-warning) 25%, transparent)',
-      outline:
-        'var(--nexo-border-width) solid color-mix(in srgb, var(--nexo-color-warning) 50%, transparent)',
-    },
-    '.cm-panels': { background: 'var(--nexo-color-surface)', color: 'var(--nexo-color-text)' },
-    '.cm-panel.cm-search input, .cm-panel.cm-search button': {
-      fontSize: 'var(--nexo-font-size-xs)',
-    },
-    '.cm-tooltip': {
-      background: 'var(--nexo-color-surface)',
-      color: 'var(--nexo-color-text)',
-      border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
-    },
-    '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
-      background: 'color-mix(in srgb, var(--nexo-color-accent) 35%, transparent)',
-      color: 'var(--nexo-color-text)',
-    },
-    '.cm-completionDetail': {
-      color: 'var(--nexo-color-text-muted)',
-      fontStyle: 'normal',
-      marginLeft: '1em',
-    },
-    '.cm-completionInfo': { maxWidth: '320px', padding: 'var(--nexo-space-3) var(--nexo-space-4)' },
+/** The look of the code editors, as the `.code-editor` text areas had. */
+const themeSpec = {
+  '&': {
+    background: 'var(--nexo-color-code-bg)',
+    color: 'var(--nexo-color-code-text)',
+    border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
+    borderRadius: 'var(--nexo-radius-md)',
+    fontSize: 'var(--nexo-font-size-xs)',
+    height: '100%',
   },
-  { dark: true },
-);
+  '&.cm-focused': {
+    outline: 'var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring)',
+    outlineOffset: 'calc(-1 * var(--nexo-border-width))',
+  },
+  '.cm-scroller': {
+    fontFamily: 'var(--nexo-font-mono)',
+    lineHeight: 'var(--nexo-line-height-loose)',
+    overflow: 'auto',
+  },
+  '.cm-content': { caretColor: 'var(--nexo-color-code-text)', padding: 'var(--nexo-space-5) 0' },
+  '.cm-gutters': {
+    background: 'var(--nexo-color-code-bg)',
+    color: 'var(--nexo-color-syntax-comment)',
+    border: 'none',
+  },
+  '.cm-activeLine, .cm-activeLineGutter': { background: 'var(--nexo-color-hover)' },
+  '.cm-placeholder': { color: 'var(--nexo-color-syntax-comment)' },
+  '.cm-selectionMatch': {
+    background: 'color-mix(in srgb, var(--nexo-color-highlight) 8%, transparent)',
+  },
+  '.cm-searchMatch': {
+    background: 'color-mix(in srgb, var(--nexo-color-warning) 25%, transparent)',
+    outline:
+      'var(--nexo-border-width) solid color-mix(in srgb, var(--nexo-color-warning) 50%, transparent)',
+  },
+  '.cm-panels': { background: 'var(--nexo-color-surface)', color: 'var(--nexo-color-text)' },
+  '.cm-panel.cm-search input, .cm-panel.cm-search button': {
+    fontSize: 'var(--nexo-font-size-xs)',
+  },
+  '.cm-tooltip': {
+    background: 'var(--nexo-color-surface)',
+    color: 'var(--nexo-color-text)',
+    border: 'var(--nexo-border-width) solid var(--nexo-color-border)',
+  },
+  '.cm-tooltip-autocomplete > ul > li[aria-selected]': {
+    background: 'color-mix(in srgb, var(--nexo-color-accent) 35%, transparent)',
+    color: 'var(--nexo-color-text)',
+  },
+  '.cm-completionDetail': {
+    color: 'var(--nexo-color-text-muted)',
+    fontStyle: 'normal',
+    marginLeft: '1em',
+  },
+  '.cm-completionInfo': { maxWidth: '320px', padding: 'var(--nexo-space-3) var(--nexo-space-4)' },
+};
+/**
+ * The same look on a dark or a light template: CodeMirror draws the selection, the cursor and its
+ * own panels for one or the other.
+ */
+const themes = {
+  dark: EditorView.theme(themeSpec, { dark: true }),
+  light: EditorView.theme(themeSpec, { dark: false }),
+};
+const scheme = new Compartment();
+const schemeTheme = (dark: boolean) => (dark ? themes.dark : themes.light);
+
+/**
+ * Keeps an editor dark or light as the template asks, also when the person changes template
+ * with the editor open. Call it from an injection context; it gives the answer for creating it.
+ */
+export function followCodeScheme(view: () => EditorView | undefined): Signal<boolean> {
+  const dark = inject(CodeScheme).dark;
+  effect(() => {
+    const theme = schemeTheme(dark());
+    untracked(() => view()?.dispatch({ effects: scheme.reconfigure(theme) }));
+  });
+  return dark;
+}
 
 /**
  * What every code editor has: line numbers, undo, search (Ctrl+F), brackets, colours, a name
@@ -118,6 +140,8 @@ export function baseExtensions(options: {
   changed: (text: string) => void;
   /** Without line numbers nor frame: a line of code inside something that frames it. */
   line?: boolean;
+  /** Dark (the default) or light, from `followCodeScheme`. */
+  dark?: boolean;
 }): Extension[] {
   return [
     ...(options.line ? [lineTheme] : [lineNumbers()]),
@@ -149,7 +173,7 @@ export function baseExtensions(options: {
     EditorView.updateListener.of((update) => {
       if (update.docChanged) options.changed(update.state.doc.toString());
     }),
-    theme,
+    scheme.of(schemeTheme(options.dark ?? true)),
   ];
 }
 

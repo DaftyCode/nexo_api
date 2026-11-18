@@ -19,28 +19,41 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 
 ## What you can do
 
-| Area                | Available features                                                                                                        |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Requests            | HTTP/HTTPS, methods, query and path parameters, headers and responses; raw, JSON and form bodies, multipart and binary file uploads, and GraphQL with an explorer and autocompletion. |
-| Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite. Drag tabs, collections, folders, requests (also into another collection) and the sections of the menu; on start, everything keeps your order and tabs reopen with their unsaved changes. |
+| Area                | Available features                                                                                                                                                                                                                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Requests            | HTTP/HTTPS, methods, query and path parameters, headers and responses; raw, JSON and form bodies, multipart and binary file uploads, and GraphQL with an explorer and autocompletion.                                                                                                                                                                      |
+| Organization        | Collections and folders, tabs, environments, variables, history and documents persisted in SQLite. Drag tabs, collections, folders, requests (also into another collection) and the sections of the menu; on start, everything keeps your order and tabs reopen with their unsaved changes.                                                                |
 | HTTP authentication | Every type of Postman, Bruno and Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (all grants, PKCE, sign-in window in the desktop app like Postman's, tokens in the vault, auto-refresh and auto-fetch), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc; inherited from folders and collections. |
-| Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. |
-| Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI. |
-| Protocols           | WebSocket, Socket.IO, MQTT, Kafka, gRPC (with a proto or through reflection) and GraphQL subscriptions over WebSocket or SSE. |
-| MongoDB             | Connections, explorer, queries, document editing with safeguards, indexes, explain, profiler, stage-by-stage aggregations, schema, JSON/CSV import and export, change streams, shell, code generation, SQL and compare/sync. |
-| Databases           | A «Databases» section in DBeaver's style: each engine is a module downloaded when its first connection is added (PostgreSQL and SQL Server today). A wizard with a pasted URL (JDBC too), TLS, driver settings and connection type (production in red), «Test connection», a keyboard-driven navigator with filters, a simple view, bookmarks and folders. A SQL editor with each tab on its own session, the statement at the cursor, a selection or the script with DBeaver's keys, confirmations before sending, a result tab per query (pin, run again, detach, read more, repeat; one per result of a procedure), messages with the line of an error, transactions, saved scripts and history. A virtualized data grid (100 000 rows and 200 columns, keyboard, find, record view, copy as TSV, JSON, CSV, Markdown, `IN` or `INSERT`, Value, Metadata, Calc and Grouping panels, formats in Settings). An object's sheet with its properties, sections, DDL and data filtered and ordered on the server, foreign keys followed both ways. Tabs come back when reopened, without results. |
-| Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                      |
-| Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                 |
-| Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, cookie manager, API definitions with a linter, Git with remotes and MCP client/server support. |
-| Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references, allowed domains per secret and secret redaction in results.         |
-| Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                       |
-| Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.       |
+| Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results.                                                                                                                                                                                                                                  |
+| Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI.                                                                                                                                                                                                               |
+| Protocols           | WebSocket, Socket.IO, MQTT, Kafka, gRPC (with a proto or through reflection) and GraphQL subscriptions over WebSocket or SSE.                                                                                                                                                                                                                              |
+| MongoDB             | Connections, explorer, queries, document editing with safeguards, indexes, explain, profiler, stage-by-stage aggregations, schema, JSON/CSV import and export, change streams, shell, code generation, SQL and compare/sync.                                                                                                                               |
+| Databases           | PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in a DBeaver-style section: SQL editor, editable data grid, object sheets and structure, entity-relationship diagrams, sessions, locks and server dashboards. Each engine is a module downloaded when its first connection is created. Details in [Databases](#databases).                               |
+| Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL.                                                                                                                                                                                                                                                                       |
+| Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                                                                                                                                                                                                                                                  |
+| Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, cookie manager, API definitions with a linter, Git with remotes and MCP client/server support.                                                                                                                                                                                             |
+| Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references, allowed domains per secret and secret redaction in results.                                                                                                                                                                                                                                          |
+| Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                                                                                                                                                                                                                                                        |
+| Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.                                                                                                                                                                                                                                         |
 
 Requests leave from your computer. Set `NEXO_EGRESS=deny-private` to refuse private and loopback destinations, except your own mocks; `NEXO_EGRESS_ALLOW` lists exceptions.
 
+### Databases
+
+- **Modules on demand:** Nexo installs as an API client. Each engine's driver is downloaded from GitHub Releases when the first connection of that type is created, checked against the SHA-256 the app carries and run as a separate process. The engine gallery shows each driver's icon, what it is, whether it is one of the most used and whether it is already installed.
+- **Connections and navigator:** a wizard with a pasted URL (JDBC too), TLS, driver settings and connection type (production in red), and «Test connection». A keyboard-driven navigator with icons and counts, filters, a simple view, bookmarks and folders: a click expands a row and a double click opens the table on its data. Ctrl+H searches objects, data and saved scripts.
+- **SQL editor:** each tab on its own session; the statement at the cursor, a selection or the script with DBeaver's keys, and confirmations before sending. It completes from the schema (an alias's columns, the join of a foreign key), formats, has templates, asks for `:name` parameters and sends them bound, generates a table's SQL and has a SQL console. A result tab per query (pin, run again, detach, read more, repeat; one per result of a procedure), messages with the line of an error, estimated or measured execution plans, saved scripts and history.
+- **Manual transactions:** they count their statements, keep their log and are listed, with smart commit and a question before closing a tab with changes.
+- **Data grid:** virtualized (100 000 rows and 200 columns), with striped rows, column and row menus, a status bar and rows read while scrolling. Keyboard, find, record view, copy as TSV, JSON, CSV, Markdown, `IN` or `INSERT`, Value, Metadata, Calc and Grouping panels, and formats in Settings. Rows are edited with their pending changes until they are all saved together.
+- **Moving data:** export to eight formats, import CSV and JSON, and copy data between connections of different engines.
+- **Objects and structure:** an object's sheet with its figures and views, properties in cards, sections, DDL and data filtered and ordered on the server, with foreign keys followed both ways. Tables are created and changed with forms or in their Columns view, with every type of the engine and its DDL shown before it runs. Views, routines and other objects start from a template of their engine.
+- **Entity-relationship diagrams:** a table with its neighbours or every table of a schema, in IDEF1X, crow's foot or UML. They move with the mouse or the keyboard, are saved as your own diagrams with notes and export to SVG, PNG or PDF.
+- **Administration:** session and lock managers (who is connected and who waits for whom; cancel a query or end a session after asking), users and roles with their memberships and privileges, and a dashboard per server that draws sessions, transactions, reads, size and locks every few seconds, with your own panels from read-only queries.
+- **Working session:** tabs come back when reopened, without results. Closing, reloading or leaving the page closes the connections it opened, and the desktop app closes them on exit.
+
 ### Workspace layouts
 
-The source includes three layouts, selectable from **Template**: **Aurora** (the default dark workspace), **Studio** (three columns with environment and request context), and **Canvas** (a light workspace with request and response side by side). They share the same collections, environments, variables, history and tools. Switching layouts keeps the active request and saves your preference on that device. Canvas exposes the workspace navigation through **Tools** and **Browse collections**. Classic has been retired. Every HTTP method has its own colour in all layouts (GET green, POST yellow, PUT blue, PATCH purple, DELETE red); colours and sizes can be changed through [CSS variables](#styles-design-tokens).
+The source includes four templates, selectable from **Template**: **Aurora** (the default: a white background, dark text and light code editors), **Aurora full color** (the same layout in night blue and violet), **Studio** (three columns with environment and request context), and **Canvas** (a light workspace with request and response side by side). They share the same collections, environments, variables, history and tools; both Aurora templates also share their panel sizes. Switching templates keeps the active request, turns the code editors light or dark at once and saves your preference on that device: the app always opens with the last template chosen. Canvas exposes the workspace navigation through **Tools** and **Browse collections**. Classic has been retired. Every HTTP method has its own colour in all layouts (GET green, POST yellow, PUT blue, PATCH purple, DELETE red); colours and sizes can be changed through [CSS variables](#styles-design-tokens).
 
 ### Interface languages
 
@@ -58,7 +71,7 @@ Versions are published on [GitHub Releases](https://github.com/DaftyCode/nexo_ap
 | macOS            | Apple Silicon and Intel, built separately | `.app` application inside a `.dmg`.                 |
 | Linux            | x64                                       | `.deb`, `.rpm` and `.AppImage`.                     |
 
-Each build runs on a runner for its operating system. Installers are self-contained: end users do not need to install Node or Rust.
+Each build runs on a runner for its operating system. Installers are self-contained: end users do not need to install Node or Rust. Each release also publishes the database drivers, which the app downloads by itself when they are needed, and a `SHA256SUMS` file to check the downloads.
 
 ### Microsoft Store
 
@@ -72,6 +85,8 @@ Nexo API is in the Microsoft Store: the Store signs the package, installs it and
 
 Nexo runs for one person on one computer. The desktop application starts a Rust service on a random loopback port and authenticates with a per-run token. The web version uses the same service: its launcher listens only on loopback and opens the browser with a one-time link that becomes an HttpOnly session cookie. Requests need a loopback Host header, an allowed Origin and the Nexo client header, so other websites and computers cannot use the service. Data stays in the app data directory; secrets are encrypted with a key kept in the operating system's credential store.
 
+Each database has its driver in a separate process. Its SHA-256 is checked when it is installed and again before every start. The driver receives passwords only on its standard input and asks the service for every network destination, so its connections also go through the egress policy.
+
 ## Architecture we want to preserve
 
 ### Backend: hexagonal architecture
@@ -82,12 +97,16 @@ backend/crates/
   nexo-application/     Use cases and ports
   nexo-infrastructure/  SQLite, Git and credential store adapters
   nexo-engine/          Execution adapter: HTTP, QuickJS scripts, protocols, mocks, datasets, vault
+  nexo-mongo/           MongoDB adapter
+  nexo-modules/         Installs the database modules, starts each driver and talks to it
+  nexo-driver-sdk/      What a driver and the app share: protocol, typed values and the driver runtime
   nexo-http/            HTTP adapter
   nexo-server/          Composition root and CLI
+backend/drivers/       One executable per engine (PostgreSQL, SQL Server, MySQL and MariaDB, SQLite), depending only on the SDK
 src-tauri/             Desktop composition root
 ```
 
-The domain has no knowledge of HTTP, databases or graphical interfaces. Use cases depend on contracts; adapters implement those contracts. Tauri and the server compose the same capabilities.
+The domain has no knowledge of HTTP, databases or graphical interfaces. Use cases depend on contracts; adapters implement those contracts. Tauri and the server compose the same capabilities. Drivers are never dependencies of the app and are not part of its installers.
 
 ### Frontend: Clean Architecture
 
@@ -128,20 +147,36 @@ Build on the operating system and CPU architecture you want to distribute: the s
 
 ## Current status and next steps
 
-The current version is **0.9.0**, with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in the «Databases» section (with entity-relationship diagrams, session and lock managers and server dashboards) and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, real PostgreSQL, SQL Server, MySQL and MariaDB servers and SQLite files, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary. The interface's unit tests cover at least 90% of its statements, branches, functions and lines (`npm run test:coverage`, which CI runs): every change comes with its tests. Closing, reloading or leaving the page closes the database connections it opened, and the desktop app closes them when it quits. It is built with Rust 1.100, Angular 22.2 and Tauri 2.12, with every dependency at the latest version they accept. The audit of the production dependencies in CI (`npm run audit:check`) accepts only the exceptions of `tools/audit-exceptions.json`, each with a reason and an expiry date: today one, picomatch, used only by the build tools and with no fixed release yet, until 2026-12-17.
-
-Next steps:
-
-- A database viewer and editor as downloadable modules (PostgreSQL, SQL Server, MySQL with MariaDB and SQLite work end to end: connections, navigator, SQL editor, data grid and object sheet; the owner tested the first two, and what the tests turned up was polished: the section has a new design, with icons and counts in the tree, an object header with its figures and views, a Properties view in cards, a striped grid with menus per column and row, a status bar and rows read as you scroll, in the navigator a click opens a row and a double click opens a table on its data, the gallery to choose the engine shows the icon each driver brings, what it is, whether it is among the most used and whether it is installed, manual transactions count their statements, keep their log and are listed, with smart commit and a question before closing a tab with changes, rows are edited in the grid with their changes pending until saved as one, and the SQL editor completes from the schema (columns of an alias, the join of a foreign key), formats, has templates, asks for `:name` parameters and sends them bound, generates SQL from a table and has a SQL console, statements are explained with their estimated or measured execution plan, and data is exported to eight formats, imported from CSV and JSON and copied between connections of different engines, Ctrl+H searches objects, data and saved scripts, and tables are created and changed from forms or in place in their Columns view, with the engine's DDL shown before it runs, while views, routines and other objects start from a template of their engine, and entity-relationship diagrams show a table with its neighbours or every table of a schema, in IDEF1X, crow's foot or UML, are moved with the mouse or the keyboard, are saved as your own diagrams with notes and are exported to SVG, PNG or PDF, and the session and lock managers show who is connected and who waits for whom, cancel a query or end a session after asking, while users and roles are shown with their memberships and permissions, and each server's dashboard draws its sessions, transactions, reads, size and locks every few seconds, with charts of your own that only read), so Nexo ships as the API client and each database driver is downloaded only when you add a connection for it: next Cassandra, Redis, Elasticsearch and Apache Drill (Oracle waits for a stable release of Oracle's own Rust driver), with backup and restore with the native client, comparing and syncing data and schemas, and advanced connections over SSH. MongoDB will become one of those modules.
-- An AI assistant using each user's own API key.
-- SSH tunnels and SOCKS5 proxies, protected environments, scheduled runs, response comparison, Excel/CSV export with masked data, JSON Schema inference from responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
-- Custom themes from the app, built on the design tokens.
-- Removing the Node left in the development tooling: contract tests and build scripts in Rust.
-- Distribution: WinGet, Homebrew, signed APT/YUM repositories and Flatpak; Windows signing outside the Store and macOS notarization; validating the installers on clean machines.
-- Publishing startup, memory and latency benchmarks.
-- More databases after those (DB2, Apache Hive and Apache Ignite are being evaluated).
+The current version is **0.9.0**, with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in the «Databases» section and the complete MongoDB client. Tests cover real requests, variables, scripts, assertions, cancellation, cookies, secret redaction, OpenAPI imports, executable generated code, data-driven runs, every authorization type (with official vectors and verifying servers), unary and streaming gRPC with a proto or reflection, WebSocket, Socket.IO, MQTT, Kafka, GraphQL subscriptions, real MongoDB and FerretDB, real PostgreSQL, SQL Server, MySQL and MariaDB servers and SQLite files, egress policy, local access control and revisions. Contract tests in `tests/contract` drive the real server binary. The interface's unit tests cover at least 90% of its statements, branches, functions and lines (`npm run test:coverage`, which CI runs): every change comes with its tests. It is built with Rust 1.100, Angular 22.2 and Tauri 2.12, with every dependency at the latest version they accept. The audit of the production dependencies in CI (`npm run audit:check`) accepts only the exceptions of `tools/audit-exceptions.json`, each with a reason and an expiry date: today one, picomatch, used only by the build tools and with no fixed release yet, until 2026-12-17.
 
 Current limits include 5 seconds and 128 MB of memory per script evaluation, eight active runs and response size limits for the interface. Cookies are kept per workspace in the data directory. MQTT 5, Socket.IO 2.x (Engine.IO v3) and Kafka consumer groups, transactions and Schema Registry are not supported yet. External OpenAPI `$ref` references must be bundled before import. Unknown authorization types are rejected explicitly. Protocol and format support will grow alongside reproducible test cases.
+
+### Next steps
+
+In the planned order:
+
+1. **More databases** (in progress):
+   - Backup and restore with each engine's native client.
+   - Comparing and syncing data and schemas.
+   - Advanced connections: SSH tunnels, network settings, connection startup and importing connections from other tools.
+   - A visual query builder, a test data generator, result charts and a spatial data viewer.
+   - Files as a database (CSV, JSON, Parquet and Excel).
+   - Saved, composite and scheduled database tasks.
+   - SQL from request scripts (`nx.sql`), read-only MCP tools and a query's code in several languages.
+   - New engines: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, and Apache Drill. Oracle waits for a stable release of its Rust driver; DB2, Apache Hive and Apache Ignite are being evaluated.
+   - MongoDB will become one more downloadable module, in the same tree as the rest.
+2. **An AI assistant** using each user's own API key.
+3. **API client improvements:** SSH tunnels and SOCKS5 proxies, protected environments (colour, confirmation and read-only), scheduled runs, comparing responses between runs or environments, Excel or CSV export with masked data, inferring the JSON Schema of responses, and imports from Insomnia, Bruno, Hoppscotch and Thunder Client.
+4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
+5. **Custom themes** from the app, built on the design tokens.
+6. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
+7. **Reproducible benchmarks** of startup, memory and latency.
+
+This section is updated with every change, always in both READMEs (`README.md` and `README.es.md`) at once:
+
+- What is finished leaves «Next steps» and moves to [What you can do](#what-you-can-do) or to the current status.
+- Every new task enters «Next steps», in its place in the planned order.
+- What is dropped is removed from the list.
 
 ## Contributing
 
@@ -151,7 +186,8 @@ You can open an [issue](https://github.com/DaftyCode/nexo_api/issues), propose a
 2. Keep each change focused on one problem and respect layer boundaries and responsibilities.
 3. Add behavior tests when changing rules or adapters. Include a reproduction test when fixing a bug.
 4. Run the relevant checks and explain the problem, resulting behavior and validation in your PR.
-5. Preserve dependency notices and licenses. Keep local data, credentials and generated artifacts out of Git.
+5. If your change finishes or adds something, update [Current status and next steps](#current-status-and-next-steps) in both READMEs.
+6. Preserve dependency notices and licenses. Keep local data, credentials and generated artifacts out of Git.
 
 ### Commits
 

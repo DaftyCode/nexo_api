@@ -1,5 +1,5 @@
 <div class="workspace-navigation">
-  @if (workspace().appearance.current() === 'canvas') {
+  @if (workspace().appearance.arrangement() === 'canvas') {
     <div class="canvas-navigation-heading">
       <strong>{{ 'Workspace' | transloco }}</strong><button
         class="icon-button"
@@ -10,7 +10,7 @@
       </button>
     </div>
   }
-  @if (workspace().appearance.current() === 'studio') {
+  @if (workspace().appearance.arrangement() === 'studio') {
     <div class="studio-sidebar-controls">
       <button class="button primary" (click)="workspace().state.newTab()">
         {{ '＋ New request' | transloco }}
@@ -91,7 +91,7 @@
         }}
       </div>
     </aside>
-    @if (workspace().appearance.current() === 'aurora') {
+    @if (workspace().appearance.arrangement() === 'aurora') {
       <app-splitter
         target=".sidebar"
         neighbor=".main-workspace"
@@ -103,11 +103,11 @@
       />
     }
   }
-  @if (workspace().appearance.current() !== 'aurora') {
+  @if (workspace().appearance.arrangement() !== 'aurora') {
     <app-splitter
       class="navigation-splitter"
       target=".workspace-navigation"
-      [neighbor]="workspace().appearance.current() === 'studio' ? '.main-workspace' : ''"
+      [neighbor]="workspace().appearance.arrangement() === 'studio' ? '.main-workspace' : ''"
       [neighborMin]="420"
       [label]="'Resize the sidebar' | transloco"
       (resized)="workspace().appearance.resize('sidebar', $event)"

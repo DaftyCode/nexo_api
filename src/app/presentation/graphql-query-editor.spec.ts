@@ -4,10 +4,12 @@ import { FormField, form } from '@angular/forms/signals';
 import { By } from '@angular/platform-browser';
 import { acceptCompletion, currentCompletions, startCompletion } from '@codemirror/autocomplete';
 import { diagnosticCount, forceLinting } from '@codemirror/lint';
+import { EditorView } from '@codemirror/view';
 import { buildSchema, introspectionFromSchema } from 'graphql';
 import { vi } from 'vitest';
 import { GraphQLSchema, readSchema } from '../domain/graphql-schema';
 import { introspection } from '../testing/graphql';
+import { CodeScheme } from './code-scheme';
 import { GraphqlQueryEditor, clientSchema } from './graphql-query-editor';
 
 /** The schema of a server, as an introspection would load it. */
@@ -66,6 +68,13 @@ describe('GraphqlQueryEditor', () => {
     host = fixture.componentInstance;
     await fixture.whenStable();
     editor = fixture.debugElement.query(By.directive(GraphqlQueryEditor)).componentInstance;
+  });
+
+  it('follows the light or dark code of the template', async () => {
+    expect(view().state.facet(EditorView.darkTheme)).toBe(true);
+    TestBed.inject(CodeScheme).follow(signal(false));
+    await fixture.whenStable();
+    expect(view().state.facet(EditorView.darkTheme)).toBe(false);
   });
 
   it('is named, keeps the form value in sync both ways and inserts at the cursor', async () => {

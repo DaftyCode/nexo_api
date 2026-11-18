@@ -58,7 +58,7 @@ describe('Workspace', () => {
       'select[aria-label="Language / Idioma"]',
     )!;
     const template = root.querySelector<HTMLSelectElement>('app-appearance-selector select')!;
-    for (const layout of ['aurora', 'studio', 'canvas']) {
+    for (const layout of ['aurora', 'aurora-color', 'studio', 'canvas']) {
       template.value = layout;
       template.dispatchEvent(new Event('input', { bubbles: true }));
       template.dispatchEvent(new Event('change', { bubbles: true }));
@@ -88,20 +88,30 @@ describe('Workspace', () => {
     const url = root.querySelector<HTMLInputElement>('input[aria-label="Request URL"]')!;
     const selector = root.querySelector<HTMLSelectElement>('select[aria-label="Visual template"]')!;
     expect(studio.getAttribute('data-template')).toBe('aurora');
+    expect(studio.getAttribute('data-theme')).toBe('aurora');
     url.value = 'https://example.test/keep-this-request';
     url.dispatchEvent(new Event('input', { bubbles: true }));
     await fixture.whenStable();
-    expect(Array.from(selector.options, (option) => option.value)).toEqual([
-      'aurora',
-      'studio',
-      'canvas',
+    expect(Array.from(selector.options, (option) => [option.value, option.text.trim()])).toEqual([
+      ['aurora', 'Aurora'],
+      ['aurora-color', 'Aurora full color'],
+      ['studio', 'Studio'],
+      ['canvas', 'Canvas'],
     ]);
+    selector.value = 'aurora-color';
+    selector.dispatchEvent(new Event('input', { bubbles: true }));
+    selector.dispatchEvent(new Event('change', { bubbles: true }));
+    await fixture.whenStable();
+    expect(studio.getAttribute('data-template')).toBe('aurora');
+    expect(studio.getAttribute('data-theme')).toBe('aurora-color');
+    expect(root.querySelector('.sidebar')).not.toBeNull();
     for (const template of ['studio', 'canvas']) {
       selector.value = template;
       selector.dispatchEvent(new Event('input', { bubbles: true }));
       selector.dispatchEvent(new Event('change', { bubbles: true }));
       await fixture.whenStable();
       expect(studio.getAttribute('data-template')).toBe(template);
+      expect(studio.getAttribute('data-theme')).toBe(template);
       expect(root.querySelector<HTMLInputElement>('input[aria-label="Request URL"]')?.value).toBe(
         'https://example.test/keep-this-request',
       );

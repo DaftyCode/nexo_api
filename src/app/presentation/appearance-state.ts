@@ -1,25 +1,26 @@
-import { afterNextRender, computed, effect, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal } from '@angular/core';
 import { APPEARANCE } from '../composition/providers';
-import {
-  defaultVisualTemplate,
-  resolveVisualTemplate,
-  VisualTemplateId,
-} from '../domain/appearance';
+import { resolveVisualTemplate, visualTemplate, VisualTemplateId } from '../domain/appearance';
 import { PanelLayout, PanelLayouts, PanelName, resizePanel } from '../domain/layout';
 import { moveWithin } from '../domain/ordering';
+import { CodeScheme } from './code-scheme';
 import { sectionIds, workspaceSections } from './workspace/sections';
 
 @Injectable({ providedIn: 'root' })
 export class AppearanceState {
   private readonly cases = inject(APPEARANCE);
-  private readonly initialized = signal(false);
-  readonly model = signal<{ template: VisualTemplateId }>({ template: defaultVisualTemplate });
+  /** The template chosen last time, read before the first paint so the app opens with it. */
+  readonly model = signal<{ template: VisualTemplateId }>({ template: this.cases.current() });
   readonly current = computed(() => resolveVisualTemplate(this.model().template));
-  private readonly layouts = signal<PanelLayouts>({});
-  /** Panel sizes of the current template; missing ones keep the template's own. */
-  readonly layout = computed<PanelLayout>(() => this.layouts()[this.current()] ?? {});
+  /** How the current template lays out the workspace (`data-template` of the workspace). */
+  readonly arrangement = computed(() => visualTemplate(this.current()).arrangement);
+  /** Whether the code editors of the current template are dark. */
+  readonly darkCode = computed(() => visualTemplate(this.current()).darkCode);
+  private readonly layouts = signal<PanelLayouts>(this.cases.layouts());
+  /** Panel sizes of the current arrangement; missing ones keep the template's own. */
+  readonly layout = computed<PanelLayout>(() => this.layouts()[this.arrangement()] ?? {});
   /** Ids of the side menu sections, in the order the person dragged them to. */
-  private readonly sectionOrder = signal<readonly string[]>(sectionIds);
+  private readonly sectionOrder = signal<readonly string[]>(this.cases.sectionOrder(sectionIds));
   /** The side menu sections, in that order. */
   readonly sections = computed(() =>
     this.sectionOrder().flatMap((id) => workspaceSections.filter((s) => s.id === id)),
@@ -30,31 +31,25 @@ export class AppearanceState {
   );
 
   constructor() {
-    afterNextRender(() => {
-      this.model.set({ template: this.cases.current() });
-      this.layouts.set(this.cases.layouts());
-      this.sectionOrder.set(this.cases.sectionOrder(sectionIds));
-      this.initialized.set(true);
-    });
-    effect(() => {
-      if (this.initialized()) this.cases.select(this.current());
-    });
+    inject(CodeScheme).follow(this.darkCode);
+    // Every change is kept at once, so closing the app on a template opens it there next time.
+    effect(() => this.cases.select(this.current()));
   }
 
   /** Resizes a panel of the current template while its divider is dragged. */
   resize(name: PanelName, size: number) {
-    this.layouts.update((layouts) => resizePanel(layouts, this.current(), name, size));
+    this.layouts.update((layouts) => resizePanel(layouts, this.arrangement(), name, size));
   }
   /** Gives a panel back its template size. */
   reset(name: PanelName) {
-    this.layouts.update((layouts) => resizePanel(layouts, this.current(), name));
+    this.layouts.update((layouts) => resizePanel(layouts, this.arrangement(), name));
     this.save();
   }
-  /** Whether a panel of the current template was resized. */
+  /** Whether a panel of the current arrangement was resized. */
   readonly resized = computed(() => Object.keys(this.layout()).length > 0);
   /** "Reset layout": every panel of the current template back to its size. */
   resetLayout() {
-    this.layouts.update((layouts) => ({ ...layouts, [this.current()]: {} }));
+    this.layouts.update((layouts) => ({ ...layouts, [this.arrangement()]: {} }));
     this.save();
   }
   /** Moves a section of the side menu to a position counted before the move, and keeps it. */

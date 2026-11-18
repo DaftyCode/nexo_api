@@ -1,9 +1,10 @@
 /*
- * Aurora theme: a deep blue night with a violet accent. Studio shares it and changes only the
- * areas it lays out differently. Only tokens here; the rules are in the other files.
+ * Aurora themes, on the same arrangement. Aurora, the default, is white and clear with a violet
+ * accent; Aurora full color is a deep blue night with that accent, which Studio shares, changing
+ * only the areas it lays out differently. Only tokens here; the rules are in the other files.
  */
 @layer nexo-tokens {
-  .studio[data-template='aurora'],
+  .studio[data-theme='aurora-color'],
   .studio[data-template='studio'] {
     color-scheme: dark;
     --nexo-font-size-body: 13px;
@@ -79,5 +80,106 @@
     --nexo-rail-bg: #11182b60;
     --nexo-workspace-bg: radial-gradient(ellipse at 50% -30%, #243c6450, transparent 75%), #10182b;
     --nexo-tabbar-bg: #0c1426;
+  }
+  /* Aurora: a white workspace with dark text, light code editors and the violet accent. */
+  .studio[data-theme='aurora'] {
+    color-scheme: light;
+    --nexo-font-size-body: 13px;
+
+    --nexo-color-sunken: #f2f4f9;
+    --nexo-color-bg: #fff;
+    --nexo-color-chrome: #fafbfd;
+    --nexo-color-surface: #fff;
+    --nexo-color-surface-2: #f5f6fa;
+    --nexo-color-surface-3: #eceef5;
+    --nexo-color-backdrop: #151b2d66;
+    --nexo-color-border-subtle: #e7e9f1;
+    --nexo-color-border: #dadeea;
+    --nexo-color-border-strong: #c5cbdb;
+    --nexo-color-text: #151b2d;
+    --nexo-color-text-soft: #2e3850;
+    --nexo-color-text-muted: #4c5770;
+    --nexo-color-text-dim: #5c6782;
+    --nexo-color-text-faint: #7b849b;
+    --nexo-color-accent: #6a3de8;
+    --nexo-color-accent-hover: #5a2fd4;
+    --nexo-color-accent-strong: #5b30d6;
+    --nexo-color-on-accent: #fff;
+    --nexo-color-accent-soft: #f1ecff;
+    --nexo-color-accent-border: #c9b8f8;
+    --nexo-color-success: #0d7a52;
+    --nexo-color-success-soft: #e6f5ee;
+    --nexo-color-info: #2f5bd0;
+    --nexo-color-danger: #c22d4d;
+    --nexo-color-danger-soft: #fdebef;
+    --nexo-color-warning: #94590a;
+    --nexo-color-warning-soft: #fdf3e2;
+    /* Hover tints darken on a light theme. */
+    --nexo-color-highlight: #151b2d;
+    --nexo-color-folder: #b7791f;
+    --nexo-color-modified: #8a6d3b;
+
+    --nexo-color-code-bg: #fbfbfd;
+    --nexo-color-code-text: #1f2430;
+    --nexo-color-code-inline: #8a5a00;
+    --nexo-color-syntax-keyword: #c4223a;
+    --nexo-color-syntax-variable: #0550ae;
+    --nexo-color-syntax-type: #7c3aed;
+    --nexo-color-syntax-string: #0a3069;
+    --nexo-color-syntax-number: #0550ae;
+    --nexo-color-syntax-comment: #6b7385;
+    --nexo-color-data-string: #1a7f37;
+    --nexo-color-data-number: #9a6700;
+    --nexo-color-data-date: #8250df;
+    --nexo-color-scope-environment: #0f7f66;
+    --nexo-color-scope-collection: #5b4fd6;
+    --nexo-color-scope-globals: #2c6bb8;
+    --nexo-color-scope-vault: #6b7280;
+    --nexo-method-ink-shade: 50%;
+
+    --nexo-color-shadow: #1d2747;
+    --nexo-shadow-md: 0 6px 18px color-mix(in srgb, var(--nexo-color-shadow) 12%, transparent);
+    --nexo-shadow-lg: 0 8px 25px color-mix(in srgb, var(--nexo-color-shadow) 13%, transparent);
+    --nexo-shadow-xl: 8px 12px 55px color-mix(in srgb, var(--nexo-color-shadow) 16%, transparent);
+    --nexo-shadow-up: 0 -6px 24px color-mix(in srgb, var(--nexo-color-shadow) 10%, transparent);
+    --nexo-shadow-accent: 0 4px 14px #6a3de833;
+    --nexo-shadow-glow: 0 0 6px #6a3de840;
+
+    --nexo-gradient-accent: linear-gradient(120deg, #8a4af3 0%, #6a35ee 48%, #3f3be0 100%);
+    --nexo-gradient-accent-line: linear-gradient(90deg, #9a4cf7, #6a3de8);
+    --nexo-app-bg: #fff;
+    --nexo-workspace-bg: #fff;
+    --nexo-topbar-bg: #fff;
+    --nexo-topbar-height: var(--nexo-size-35);
+    --nexo-workspace-bar-height: var(--nexo-size-22);
+    --nexo-avatar-bg: linear-gradient(135deg, #4776ff, #3933e4);
+    --nexo-avatar-text: #fff;
+    --nexo-avatar-border: #637dff;
+    --nexo-nav-active-bg: #efe9ff;
+    --nexo-nav-active-shadow: inset 0 0 0 1px #d4c6fb;
+    --nexo-search-bg: var(--nexo-color-surface-2);
+
+    --nexo-rail-bg: var(--nexo-color-chrome);
+    --nexo-rail-width: 116px;
+    --nexo-rail-active-shadow: 0 4px 12px #6a3de830;
+    --nexo-sidebar-bg: #fff;
+    --nexo-sidebar-width: 280px;
+    --nexo-art-shadow: 0 6px 16px #6a3de826;
+
+    --nexo-tabbar-bg: var(--nexo-color-sunken);
+    --nexo-tab-bg: #e9ecf4;
+    --nexo-tab-active-bg: #fff;
+    --nexo-url-bar-bg: #fff;
+    --nexo-raised-bg: var(--nexo-color-surface-2);
+
+    --nexo-panel-bg: #fff;
+    --nexo-response-code-bg: var(--nexo-color-code-bg);
+    --nexo-response-code-text: var(--nexo-color-code-text);
+    --nexo-response-art-shadow: 0 0 14px #6a3de826;
+    --nexo-statusbar-bg: var(--nexo-color-chrome);
+    --nexo-console-bg: var(--nexo-color-surface-2);
+    --nexo-modal-bg: #fff;
+    --nexo-context-bg: #fff;
+    --nexo-card-bg: var(--nexo-color-surface-2);
   }
 }

@@ -24,7 +24,7 @@ import {
 } from 'cm6-graphql';
 import { GraphQLSchema as ClientSchema, IntrospectionQuery, buildClientSchema } from 'graphql';
 import { GraphQLSchema, completeIntrospection, insertAt } from '../domain/graphql-schema';
-import { baseExtensions } from './code-editor-setup';
+import { baseExtensions, followCodeScheme } from './code-editor-setup';
 
 /** A schema for the editor from the introspection kept with ours; none if it cannot be built. */
 export function clientSchema(schema: GraphQLSchema | undefined): ClientSchema | undefined {
@@ -67,6 +67,7 @@ export class GraphqlQueryEditor implements FormValueControl<string> {
   private view: EditorView | undefined;
   /** Marks unknown fields only with a schema: without one every name would be wrong. */
   private readonly linting = new Compartment();
+  private readonly darkCode = followCodeScheme(() => this.view);
 
   constructor() {
     afterNextRender(() => this.create());
@@ -100,6 +101,7 @@ export class GraphqlQueryEditor implements FormValueControl<string> {
             label: this.label(),
             placeholder: this.placeholder(),
             changed: (text) => this.value.set(text),
+            dark: this.darkCode(),
           }),
           graphqlLanguageSupport(),
           completion,

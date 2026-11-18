@@ -32,6 +32,9 @@ describe('Appearance preferences', () => {
     expect(new AppearanceUseCases(preferences).current()).toBe('studio');
     first.select('aurora');
     expect(new AppearanceUseCases(preferences).current()).toBe('aurora');
+    expect(first.select('aurora-color')).toBe('aurora-color');
+    expect(stored).toBe('aurora-color');
+    expect(new AppearanceUseCases(preferences).current()).toBe('aurora-color');
   });
 
   it('keeps the panel sizes of each template within their limits', () => {

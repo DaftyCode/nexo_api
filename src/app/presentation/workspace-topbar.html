@@ -3,7 +3,7 @@
     <img class="aurora-brand-mark" src="/templates/aurora/mark.svg" width="44" height="38" alt="" />
     <span class="aurora-wordmark">Nexo <span>API</span></span>
   </a>
-  @if (workspace().appearance.current() === 'canvas') {
+  @if (workspace().appearance.arrangement() === 'canvas') {
     <button
       class="button canvas-tools-toggle"
       [attr.aria-label]="'Open workspace tools' | transloco"
@@ -14,7 +14,7 @@
     </button>
   }
   <div class="top-links">
-    @if (workspace().appearance.current() === 'canvas') {
+    @if (workspace().appearance.arrangement() === 'canvas') {
       <button class="top-link active" (click)="workspace().setSection('collections')">
         {{ 'API Studio' | transloco }}
       </button>

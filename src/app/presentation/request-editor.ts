@@ -103,7 +103,7 @@ export class RequestEditor {
     afterRenderEffect(() => {
       this.requestId();
       this.pathVariableCount();
-      if (this.tab() !== 'params' || this.appearance.current() === 'canvas') return;
+      if (this.tab() !== 'params' || this.appearance.arrangement() === 'canvas') return;
       const content = this.host.querySelector<HTMLElement>('.request-content');
       const main = this.host.closest('.main-workspace');
       if (!content || !main) return;

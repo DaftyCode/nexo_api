@@ -1,6 +1,7 @@
 <div
   class="studio"
-  [attr.data-template]="appearance.current()"
+  [attr.data-template]="appearance.arrangement()"
+  [attr.data-theme]="appearance.current()"
   [class.sized-sidebar]="!!appearance.layout().sidebar"
   [class.sized-request]="!!appearance.layout().request"
   [class.sized-split]="!!appearance.layout().split"
@@ -10,7 +11,7 @@
   [style.--nexo-split]="px(appearance.layout().split)"
   [style.--nexo-context]="px(appearance.layout().context)"
   [class.canvas-navigation-visible]="
-    navigationOpen() || (appearance.current() === 'canvas' && state.section() === 'history')
+    navigationOpen() || (appearance.arrangement() === 'canvas' && state.section() === 'history')
   "
 >
   <app-workspace-topbar [workspace]="this" />
@@ -101,7 +102,7 @@ bash install-web.sh  (macOS / Linux)</pre>
       <app-workspace-navigation [workspace]="this" />
       <main class="main-workspace">
         @if (
-          appearance.current() === 'canvas' &&
+          appearance.arrangement() === 'canvas' &&
           (state.section() === 'collections' || state.section() === 'history')
         ) {
           <div class="canvas-intro">
@@ -144,7 +145,7 @@ bash install-web.sh  (macOS / Linux)</pre>
               (code)="state.section.set('code')"
               (cookies)="state.manageCookies()"
             />
-            @if (appearance.current() === 'canvas') {
+            @if (appearance.arrangement() === 'canvas') {
               <app-splitter
                 class="request-splitter"
                 target=".request-configuration"
@@ -178,7 +179,7 @@ bash install-web.sh  (macOS / Linux)</pre>
           <app-tools-panel [section]="state.section()" />
         }
       </main>
-      @if (appearance.current() === 'studio') {
+      @if (appearance.arrangement() === 'studio') {
         <app-splitter
           class="context-splitter"
           target="app-workspace-context"
@@ -192,7 +193,7 @@ bash install-web.sh  (macOS / Linux)</pre>
         />
         <app-workspace-context />
       }
-      @if (appearance.current() === 'canvas') {
+      @if (appearance.arrangement() === 'canvas') {
         <app-workspace-context layout="strip" />
       }
     </div>

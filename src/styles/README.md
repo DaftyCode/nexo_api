@@ -6,13 +6,13 @@ the look of Nexo means changing those values, not the rules.
 
 ## Where the tokens live
 
-| File                                 | What it defines                                                                                                                                             |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/styles/tokens/_scale.scss`      | Global sizes: fonts, weights, line heights, tracking, spacing, element sizes, corners, lines, motion, opacity and stacking.                                 |
-| `src/styles/tokens/_palette.scss`    | The semantic colours of the default dark theme (the website and any template that does not redefine them), with the shadows and the printed report colours. |
-| `src/styles/tokens/_components.scss` | One token per area of the workspace (top bar, rail, sidebar, tabs, URL bar, panels…). By default each one points to the palette.                            |
-| `src/styles/tokens/_methods.scss`    | The HTTP method colours.                                                                                                                                    |
-| `src/styles/templates/*/_theme.scss` | A template's theme: the tokens it redefines. Aurora and Studio share `aurora/_theme.scss`; Canvas has its own.                                              |
+| File                                 | What it defines                                                                                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/styles/tokens/_scale.scss`      | Global sizes: fonts, weights, line heights, tracking, spacing, element sizes, corners, lines, motion, opacity and stacking.                                             |
+| `src/styles/tokens/_palette.scss`    | The semantic colours of the default dark theme (the website and any template that does not redefine them), with the shadows and the printed report colours.             |
+| `src/styles/tokens/_components.scss` | One token per area of the workspace (top bar, rail, sidebar, tabs, URL bar, panels…). By default each one points to the palette.                                        |
+| `src/styles/tokens/_methods.scss`    | The HTTP method colours.                                                                                                                                                |
+| `src/styles/templates/*/_theme.scss` | A template's theme: the tokens it redefines. `aurora/_theme.scss` holds the light Aurora, Aurora full color and Studio (which shares the dark one); Canvas has its own. |
 
 ## Token families
 
@@ -59,7 +59,19 @@ a more specific selector:
 .studio[data-template='canvas'] {
   --nexo-sidebar-width: 340px;
 }
+
+/* Only the light Aurora, not Aurora full color */
+.studio[data-theme='aurora'] {
+  --nexo-color-accent: #2f81f7;
+}
 ```
+
+`data-template` names how a template lays out the workspace (`aurora`, `studio` or `canvas`), so
+both Aurora templates match `[data-template='aurora']`. `data-theme` names the template chosen
+(`aurora`, `aurora-color`, `studio` or `canvas`); themes that share a layout use it for their
+colours. A theme whose code editors are light says so in `visualTemplates`
+(`src/app/domain/appearance.ts`), so CodeMirror draws its selection and cursor for a light
+background.
 
 Write overrides on `.studio`, not on `:root`. The templates declare their tokens on `.studio`,
 so a value set on `:root` is hidden by the template's own. The derived tokens (tints, shadows,
