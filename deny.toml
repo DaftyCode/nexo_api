@@ -3,6 +3,14 @@
 
 [graph]
 all-features = false
+# Only the platforms Nexo ships for (.github/workflows/desktop.yml). russh-util depends on
+# chrono only when built for wasm32, which Nexo never is.
+targets = [
+  "x86_64-pc-windows-msvc",
+  "x86_64-apple-darwin",
+  "aarch64-apple-darwin",
+  "x86_64-unknown-linux-gnu",
+]
 
 [advisories]
 # Fail on vulnerabilities and on unmaintained or yanked crates reported by RustSec.
