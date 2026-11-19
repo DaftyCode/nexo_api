@@ -64,6 +64,33 @@ nx.test('Successful response', () => {{ '{' }}
     }}
   </p>
 </section>
+<section id="compare">
+  <h2>{{ 'Compare responses' | transloco }}</h2>
+  <p>
+    {{
+      'Compare, next to Export PDF in a response, compares it with the one before it of the same request in the history. Compare responses, at the top of History and in a finished run, compares the last two responses of the history or the first two of the run.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Each response can come from a tab, the history, a collection run, or sending the request of the active tab with an environment: choose one environment on each side to see what changes between them. Sending asks first in an environment that asks, and keeps the response in the history; the variables its scripts change are not saved.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'You see the status, the headers and the body that changed. Two JSON bodies are compared field by field, whatever the order of their fields; other bodies, as text. Both bodies are shown side by side, with buttons to go from one difference to the next.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'In Fields to leave out, updatedAt leaves out that field at any depth, $.meta.id only the one under the root, items[*].id the id of every item and * any field. Headers to leave out takes names, such as Date or X-Amzn-*. Changing them compares the same responses again, without sending anything.'
+        | transloco
+    }}
+  </p>
+</section>
 <section id="import">
   <h2>{{ 'Import and export' | transloco }}</h2>
   <ul>

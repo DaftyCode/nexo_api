@@ -5,7 +5,7 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { addConnection, folder, newScript, write } from './databases-helpers.mjs';
+import { addConnection, folder, newScript, refresh, write } from './databases-helpers.mjs';
 
 // The other database files leave their sessions open, up to the limit a server allows.
 test.use({ ownServer: 'diagrams' });
@@ -36,8 +36,7 @@ SELECT count(*) AS made FROM orders`,
   await page.keyboard.press('Alt+x');
   await expect(page.getByRole('tab', { name: /AS made/ })).toBeVisible();
   const tree = page.getByRole('tree', { name: 'Connections' });
-  await tree.getByRole('treeitem', { name: /^Tienda/ }).click({ button: 'right' });
-  await page.getByRole('menuitem', { name: /^Refresh/ }).click();
+  await refresh(page, 'Tienda');
   await tree.getByRole('treeitem', { name: /^Tienda/ }).focus();
   await page.keyboard.press('ArrowRight');
   const tables = folder(tree, 'Tables');

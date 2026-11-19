@@ -110,7 +110,7 @@ describe('MongoDB comparison of two collections', { timeout: 20_000 }, () => {
     const cells = [
       ...dialog().querySelectorAll('table[aria-label="Fields that differ"] tbody tr > *'),
     ].map((cell) => cell.textContent?.trim());
-    expect(cells).toEqual(['price', '10', '12']);
+    expect(cells).toEqual(['price', 'Changed', '10', '12']);
 
     // The sync says what it writes and asks for the target name.
     expect(text()).toContain('It inserts 1, replaces 1 and deletes 0 documents');

@@ -34,6 +34,7 @@ import { VariableCases } from './workspace-use-cases/variables';
 import { SessionCases } from './workspace-use-cases/sessions';
 import { SshProfileCases } from './workspace-use-cases/ssh';
 import { MonitorCases } from './workspace-use-cases/monitors';
+import { CompareCases } from './workspace-use-cases/compare';
 
 export type {
   ExecutionContext,
@@ -66,6 +67,8 @@ export class WorkspaceUseCases {
   readonly ssh: SshProfileCases;
   /** Collections run on a schedule while Nexo is open. */
   readonly monitors: MonitorCases;
+  /** What changed between two responses. */
+  readonly compare: CompareCases;
 
   constructor(
     private readonly api: ApiPort,
@@ -80,6 +83,7 @@ export class WorkspaceUseCases {
     this.sessions = new SessionCases(api, preferences);
     this.ssh = new SshProfileCases(api);
     this.monitors = new MonitorCases(api, notifications);
+    this.compare = new CompareCases(api);
   }
 
   // Connection and session.

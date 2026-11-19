@@ -10,6 +10,7 @@ import { IntegrationPanel } from './integration-panel';
 import { CollectionSettingsPanel } from './collection-settings-panel';
 import { MongoPanel } from './mongo-panel';
 import { DbPanel } from './db-panel';
+import { ResponseCompare } from './compare/response-compare';
 
 /** Names of the sections "Back" can return to. */
 const sectionLabels: Record<string, string> = {
@@ -28,6 +29,7 @@ const sectionLabels: Record<string, string> = {
   settings: 'Settings',
   code: 'Code',
   'collection-settings': 'Collection settings',
+  compare: 'Compare responses',
 };
 
 @Component({
@@ -42,6 +44,7 @@ const sectionLabels: Record<string, string> = {
     CollectionSettingsPanel,
     MongoPanel,
     DbPanel,
+    ResponseCompare,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-tools-panel',

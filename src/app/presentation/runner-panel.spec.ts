@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { clickButton, fill, valueOf } from '../testing/controls';
 import { RunnerPanel } from './runner-panel';
 import { WorkspaceState } from './workspace-state';
+import { CompareStore } from './compare/compare-store';
 
 describe('RunnerPanel', () => {
   let component: RunnerPanel;
@@ -118,6 +119,14 @@ describe('RunnerPanel', () => {
     const report = state.report();
     expect(report?.kind).toBe('run');
     expect(report?.title).toBe('Shop');
+
+    // Two responses of the run, compared.
+    await clickButton(fixture, 'Compare responses');
+    const compare = TestBed.inject(CompareStore).model();
+    const saved = state.documents().find((d) => d.kind === 'run')!;
+    expect(state.section()).toBe('compare');
+    expect(compare.source).toMatchObject({ kind: 'run', run: saved.id, result: '0' });
+    expect(compare.target).toMatchObject({ kind: 'run', run: saved.id, result: '1' });
   });
 
   it('stops a running collection and reports polling errors', async () => {

@@ -13,6 +13,7 @@ import { ExecutionResponse, formatJson } from '../domain/models';
 import { blockedSecret } from '../domain/secrets';
 import { StudioIcon } from './studio-icon';
 import { WorkspaceState } from './workspace-state';
+import { CompareStore } from './compare/compare-store';
 
 /** Bodies above this size are shown as received; formatting them would block the interface. */
 const FORMAT_LIMIT = 2 * 1024 * 1024;
@@ -35,6 +36,7 @@ export class ResponseView {
   protected readonly blocked = blockedSecret;
   protected readonly pretty = signal(true);
   private readonly state = inject(WorkspaceState);
+  private readonly comparing = inject(CompareStore);
   protected readonly binary = computed(() => this.response()?.bodyEncoding === 'base64');
   protected readonly contentType = computed(
     () =>
@@ -62,6 +64,10 @@ export class ResponseView {
   protected readonly text = computed(() =>
     this.truncated() ? this.formatted().slice(0, DISPLAY_LIMIT) : this.formatted(),
   );
+  /** Compares this response with the one before it of the same request. */
+  protected compare() {
+    this.comparing.openTab(this.state.activeTabId());
+  }
   protected showAll() {
     this.expanded.set(this.response());
   }

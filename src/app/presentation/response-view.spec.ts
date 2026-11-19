@@ -1,7 +1,9 @@
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { buttons, clickButton } from '../testing/controls';
-import { ExecutionResponse } from '../domain/models';
+import { ExecutionResponse, WorkspaceDocument, newRequest } from '../domain/models';
+import { CompareStore } from './compare/compare-store';
+import { WorkspaceState } from './workspace-state';
 import { ResponseView } from './response-view';
 
 describe('ResponseView', () => {
@@ -78,6 +80,24 @@ describe('ResponseView', () => {
       fixture.componentRef.setInput('running', true);
       await fixture.whenStable();
       expect(root().textContent).not.toContain('Export PDF');
+    });
+
+    it('compares the response with the one before it of the same request', async () => {
+      const state = TestBed.inject(WorkspaceState);
+      const compare = TestBed.inject(CompareStore);
+      const tab = state.tabsStore.open({ ...newRequest('r'), url: 'https://api.test/users' });
+      const entry = (id: string, at: number, url = 'https://api.test/users') =>
+        ({ id, kind: 'history', name: `GET ${url}`, updated_at: at }) as WorkspaceDocument;
+      state.documents.set([entry('h1', 1), entry('h2', 3), entry('o', 2, 'https://other.test')]);
+      await show({});
+      await clickButton(fixture, 'Compare');
+      expect(state.section()).toBe('compare');
+      expect(compare.model().source).toMatchObject({ kind: 'history', history: 'h1' });
+      expect(compare.model().target).toMatchObject({ kind: 'tab', tab });
+      // Without an earlier one, the request is sent again with the active environment.
+      state.documents.set([entry('h2', 3)]);
+      await clickButton(fixture, 'Compare');
+      expect(compare.model().source).toMatchObject({ kind: 'send', environment: '' });
     });
 
     it('shows the body pretty or raw and downloads it', async () => {

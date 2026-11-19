@@ -7,7 +7,8 @@ import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 import { VariablesStore } from './variables-store';
 
-const realtimeProtocols = [
+/** Protocols that connect and keep talking: their requests are not sent and answered once. */
+export const realtimeProtocols = [
   'websocket',
   'socketio',
   'mqtt',

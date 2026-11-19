@@ -288,6 +288,7 @@ operation_payloads! {
     DbDialect => DbDriverPayload,
     MonitorStatus => MonitorStatusPayload,
     MonitorRun => MonitorRunPayload,
+    ResponseCompare => ResponseComparePayload,
 }
 
 /// Checks the payload of a Git operation.

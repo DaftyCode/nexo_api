@@ -62,6 +62,22 @@ export interface MongoCollectionRef {
   collection: string;
 }
 
+export interface ComparedHeader {
+  key: string;
+  value: string;
+  [field: string]: unknown;
+}
+
+export interface ComparedResponse {
+  status?: number;
+  statusText?: string;
+  headers?: readonly ComparedHeader[];
+  body?: string;
+  bodyEncoding?: string;
+  truncated?: boolean;
+  error?: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -887,6 +903,14 @@ export interface MonitorRunPayload {
   id: string;
 }
 
+export interface ResponseComparePayload {
+  source: ComparedResponse;
+  target: ComparedResponse;
+  workspace?: string;
+  ignore?: readonly string[];
+  ignoreHeaders?: readonly string[];
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1006,6 +1030,7 @@ export interface OperationPayloads {
   'db.dialect': DbDriverPayload;
   'monitor.status': MonitorStatusPayload;
   'monitor.run': MonitorRunPayload;
+  'response.compare': ResponseComparePayload;
 }
 
 /** The payload of an operation. */

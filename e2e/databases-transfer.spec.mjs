@@ -4,7 +4,14 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { POSTGRES, addConnection, folder, newScript, write } from './databases-helpers.mjs';
+import {
+  POSTGRES,
+  addConnection,
+  folder,
+  newScript,
+  refresh,
+  write,
+} from './databases-helpers.mjs';
 
 const environment = process.env;
 
@@ -137,8 +144,7 @@ SELECT count(*) AS stored FROM public.${table}`,
     await page.keyboard.press('Enter');
     await expect(item).toHaveAttribute('aria-expanded', 'true');
   };
-  await tree.getByRole('treeitem', { name: /^Origen/ }).click({ button: 'right' });
-  await page.getByRole('menuitem', { name: /^Refresh/ }).click();
+  await refresh(page, 'Origen');
   await open(tree.getByRole('treeitem', { name: 'shop', exact: true }).first());
   await open(folder(tree, 'Schemas'));
   await open(tree.getByRole('treeitem', { name: 'public', exact: true }));

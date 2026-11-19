@@ -7,6 +7,7 @@ import { DATA } from '../composition/providers';
 import { RunnerStore } from './runner-store';
 import { blockedSecret } from '../domain/secrets';
 import { CodeEditor } from './code-editor';
+import { CompareStore } from './compare/compare-store';
 
 @Component({
   imports: [TranslocoPipe, FormField, CodeEditor],
@@ -19,6 +20,8 @@ export class RunnerPanel {
   protected readonly state = inject(WorkspaceState);
   private readonly data = inject(DATA);
   protected readonly runner = inject(RunnerStore);
+  /** Compares two responses of the last run. */
+  protected readonly comparing = inject(CompareStore);
   /** Starting, polling and cancelling runs report their errors in this panel. */
   protected readonly task = this.runner.task;
   protected readonly blocked = blockedSecret;

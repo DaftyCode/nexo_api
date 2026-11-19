@@ -141,6 +141,7 @@ operations!(
         DbDialect => "db.dialect",
         MonitorStatus => "monitor.status",
         MonitorRun => "monitor.run",
+        ResponseCompare => "response.compare",
     }
 );
 

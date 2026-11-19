@@ -119,6 +119,8 @@ const themes = {
 };
 const scheme = new Compartment();
 const schemeTheme = (dark: boolean) => (dark ? themes.dark : themes.light);
+/** The look of the code editors, dark or light, for an editor built without `baseExtensions`. */
+export const codeScheme = (dark: boolean): Extension => scheme.of(schemeTheme(dark));
 
 /**
  * Keeps an editor dark or light as the template asks, also when the person changes template

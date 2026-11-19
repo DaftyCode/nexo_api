@@ -1,11 +1,19 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, input, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  input,
+  viewChild,
+} from '@angular/core';
 import { Splitter } from './splitter';
 import { CollectionTree } from './collection-tree';
 import { StudioIcon } from './studio-icon';
 import type { Workspace } from './workspace';
 import { ListDrag, dropIndex } from './workspace/list-drag';
+import { CompareStore } from './compare/compare-store';
 
 /**
  * The navigation of the workspace: the rail of sections and the sidebar with the collection
@@ -20,6 +28,8 @@ import { ListDrag, dropIndex } from './workspace/list-drag';
 })
 export class WorkspaceNavigation {
   readonly workspace = input.required<Workspace>();
+  /** Compares the last two responses of the history. */
+  protected readonly comparing = inject(CompareStore);
   /** The search of the collections, which Ctrl+K focuses. */
   readonly collectionSearch = viewChild<ElementRef<HTMLInputElement>>('collectionSearch');
   /** The sections of the side menu, dragged to another place. */

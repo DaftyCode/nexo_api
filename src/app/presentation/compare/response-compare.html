@@ -1,0 +1,153 @@
+@if (store.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ store.error() | transloco }}</span><button
+      class="icon-button"
+      (click)="store.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">{{ 'SPOT WHAT CHANGED.' | transloco }}</span>
+    <h1>{{ 'Compare responses' | transloco }}</h1>
+    <p>
+      {{
+        'Choose two responses, or send the request of the tab with two environments, to see what changed in the status, the headers and the body.'
+          | transloco
+      }}
+    </p>
+  </div>
+</div>
+<form (submit)="$event.preventDefault(); store.compare()">
+  <div class="compare-sides">
+    <app-compare-side [fields]="store.fields.source" [legend]="'First response' | transloco" />
+    <button
+      type="button"
+      class="icon-button compare-swap"
+      (click)="store.swap()"
+      [attr.aria-label]="'Swap the responses' | transloco"
+    >
+      ⇄
+    </button>
+    <app-compare-side [fields]="store.fields.target" [legend]="'Second response' | transloco" />
+  </div>
+  <div class="feature-card compare-options">
+    <label class="field grow"
+      >{{ 'Fields to leave out' | transloco
+      }}<input
+        [formField]="store.fields.ignore"
+        [placeholder]="'compare.ignoreExample' | transloco"
+        spellcheck="false"
+        autocomplete="off"
+        (change)="store.again()"
+        (keydown.enter)="$event.preventDefault(); store.again()"
+    /></label>
+    <label class="field grow"
+      >{{ 'Headers to leave out' | transloco
+      }}<input
+        [formField]="store.fields.ignoreHeaders"
+        [placeholder]="'compare.ignoreHeadersExample' | transloco"
+        spellcheck="false"
+        autocomplete="off"
+        (change)="store.again()"
+        (keydown.enter)="$event.preventDefault(); store.again()"
+    /></label>
+    <button type="submit" class="button primary" [disabled]="store.running()">
+      {{ (store.running() ? 'Comparing…' : 'Compare') | transloco }}
+    </button>
+  </div>
+</form>
+@if (store.compared(); as compared) {
+  <section class="feature-card compare-result" aria-live="polite">
+    <h2>
+      {{ (compared.result.same ? 'The responses are the same' : 'What changed') | transloco }}
+    </h2>
+    <dl class="compare-status">
+      <dt>{{ 'Status' | transloco }}</dt>
+      <dd>
+        <span class="status-pill" [class.failed]="!compared.result.status.same">{{
+          status(compared.result.status.source)
+        }}</span>
+        @if (!compared.result.status.same) {
+          <span aria-hidden="true">→</span>
+          <span class="status-pill failed">{{ status(compared.result.status.target) }}</span>
+        }
+        @for (
+          error of [compared.result.status.source.error, compared.result.status.target.error];
+          track $index
+        ) {
+          @if (error) {
+            <span class="danger">{{ error }}</span>
+          }
+        }
+      </dd>
+      <dt>{{ 'Headers' | transloco }}</dt>
+      <dd>
+        {{
+          compared.result.headers.length
+            ? ('compare.headersChanged' | transloco: { v0: compared.result.headers.length })
+            : ('The same' | transloco)
+        }}
+      </dd>
+      <dt>{{ 'Body' | transloco }}</dt>
+      <dd>
+        @if (compared.result.body.same) {
+          {{ 'The same' | transloco }}
+        } @else if (compared.result.body.format === 'binary') {
+          {{ 'Binary bodies that differ' | transloco }}
+        } @else if (compared.result.body.format === 'json') {
+          {{
+            'compare.fieldsChanged'
+              | transloco: { v0: compared.result.body.differences?.length ?? 0 }
+          }}
+        } @else {
+          {{ 'Text bodies that differ' | transloco }}
+        }
+      </dd>
+    </dl>
+    @if (compared.result.body.cut) {
+      <p class="editor-hint">
+        {{
+          'A body was cut (by the history, the run or its size): only the part kept is compared.'
+            | transloco
+        }}
+      </p>
+    }
+    @if (compared.result.headers.length) {
+      <h3>{{ 'Headers' | transloco }}</h3>
+      <app-field-differences
+        [differences]="headers(compared.result)"
+        [pathLabel]="'Header' | transloco"
+        [caption]="'Headers that differ' | transloco"
+        [sourceLabel]="compared.sourceLabel"
+        [targetLabel]="compared.targetLabel"
+      />
+    }
+    @if (compared.result.body.differences?.length) {
+      <h3>{{ 'Fields of the body' | transloco }}</h3>
+      @if (compared.result.body.complete === false) {
+        <p class="editor-hint">{{ 'Showing the first 1000 differences.' | transloco }}</p>
+      }
+      <app-field-differences
+        [differences]="compared.result.body.differences"
+        [pathLabel]="'Path' | transloco"
+        [caption]="'Fields that differ' | transloco"
+        [sourceLabel]="compared.sourceLabel"
+        [targetLabel]="compared.targetLabel"
+      />
+    }
+    @if (!compared.result.body.same && compared.result.body.format !== 'binary') {
+      <h3>{{ 'Side by side' | transloco }}</h3>
+      <app-diff-view
+        [source]="compared.result.body.source ?? ''"
+        [target]="compared.result.body.target ?? ''"
+        [language]="language(compared.result)"
+        [sourceLabel]="compared.sourceLabel"
+        [targetLabel]="compared.targetLabel"
+      />
+    }
+  </section>
+}

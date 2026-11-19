@@ -3,7 +3,7 @@
 // of a named parameter asked for and bound, and the console. It needs no server.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
-import { addConnection, newScript, write } from './databases-helpers.mjs';
+import { addConnection, newScript, refresh, write } from './databases-helpers.mjs';
 
 // The other database files leave their sessions open, up to the limit a server allows.
 test.use({ ownServer: 'assist' });
@@ -45,9 +45,7 @@ SELECT count(*) AS stored FROM orders`,
   await page.keyboard.press('Alt+x');
   await expect(page.getByRole('tab', { name: /AS stored/ })).toBeVisible();
   // The tree learns the new tables.
-  const tree = page.getByRole('tree', { name: 'Connections' });
-  await tree.getByRole('treeitem', { name: /^Tienda/ }).click({ button: 'right' });
-  await page.getByRole('menuitem', { name: /^Refresh/ }).click();
+  await refresh(page, 'Tienda');
 
   // The columns of an alias, and the condition of the foreign key after JOIN … ON.
   let suggestions = await suggestAt(page, 'SELECT o. FROM orders o', 'o.');
@@ -85,6 +83,7 @@ SELECT count(*) AS stored FROM orders`,
   await expect(page.getByRole('grid', { name: 'Rows' })).toContainText('2');
 
   // The console: a statement, its rows as text.
+  const tree = page.getByRole('tree', { name: 'Connections' });
   await tree.getByRole('treeitem', { name: /^Tienda/ }).click({ button: 'right' });
   await page.getByRole('menuitem', { name: 'SQL console' }).click();
   const prompt = page.getByLabel('Statement to run');

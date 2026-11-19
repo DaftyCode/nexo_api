@@ -27,6 +27,21 @@ export async function gridTool(page, entry) {
   await page.getByRole('menuitem', { name: entry, exact: true }).click();
 }
 
+/**
+ * Refreshes a connection from its menu and waits until its tree has been read again: until
+ * then the old rows may still be on the page, and a row taken from them goes away.
+ */
+export async function refresh(page, connection) {
+  const tree = page.getByRole('tree', { name: 'Connections' });
+  const read = page.waitForResponse((response) => response.url().includes('/execute/db.tree'));
+  await tree
+    .getByRole('treeitem', { name: new RegExp(`^${connection}`) })
+    .click({ button: 'right' });
+  await page.getByRole('menuitem', { name: /^Refresh/ }).click();
+  await read;
+  await expect(tree.getByText(/^Loading/)).toHaveCount(0);
+}
+
 /** Opens a new SQL script on the connection last chosen, with the tab bar's `+`. */
 export async function newScript(page) {
   await page.getByRole('button', { name: /^New SQL script/ }).click();

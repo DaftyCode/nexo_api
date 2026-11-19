@@ -1,0 +1,22 @@
+<div class="diff-toolbar">
+  <strong class="diff-label">{{ sourceLabel() }}</strong>
+  <div class="diff-nav">
+    <span class="muted" role="status">
+      @if (!total()) {
+        {{ 'The texts are equal' | transloco }}
+      } @else if (shown()) {
+        {{ 'diff.position' | transloco: { v0: shown(), v1: total() } }}
+      } @else {
+        {{ 'diff.total' | transloco: { v0: total() } }}
+      }
+    </span>
+    <button type="button" class="button" [disabled]="shown() <= 1" (click)="go(-1)">
+      {{ '↑ Previous difference' | transloco }}
+    </button>
+    <button type="button" class="button" [disabled]="shown() >= total()" (click)="go(1)">
+      {{ '↓ Next difference' | transloco }}
+    </button>
+  </div>
+  <strong class="diff-label">{{ targetLabel() }}</strong>
+</div>
+<div #host class="diff-host"></div>

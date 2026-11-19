@@ -14,6 +14,7 @@ use std::{path::Path, sync::Arc, time::Duration};
 pub mod api_spec;
 pub mod auth;
 pub mod collection;
+pub mod compare;
 pub mod cookies;
 pub mod datasets;
 pub mod egress;

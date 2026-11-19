@@ -61,6 +61,7 @@ impl ExecutionGateway for Engine {
             Operation::Import => interchange::import(&payload),
             Operation::ApiInspect => api_spec::inspect(&payload),
             Operation::ApiDiff => api_spec::compare(&payload),
+            Operation::ResponseCompare => compare::responses(&payload),
             Operation::Codegen => interchange::generate(&payload),
             Operation::RealtimeConnect => self.realtime.connect(&payload).await,
             Operation::RealtimeSend => self.realtime.send(&payload),

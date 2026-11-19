@@ -107,6 +107,7 @@ export const EXECUTION_OPERATIONS = [
   'db.dialect',
   'monitor.status',
   'monitor.run',
+  'response.compare',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

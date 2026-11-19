@@ -1,0 +1,80 @@
+<fieldset class="feature-card compare-side">
+  <legend>{{ legend() }}</legend>
+  <label class="field"
+    >{{ 'Take it from' | transloco
+    }}<select [formField]="fields().kind">
+      <option value="send">{{ 'Sending the request of the tab' | transloco }}</option>
+      <option value="tab">{{ 'The response of a tab' | transloco }}</option>
+      <option value="history">{{ 'The history' | transloco }}</option>
+      <option value="run">{{ 'A collection run' | transloco }}</option>
+    </select></label
+  >
+  @switch (fields().kind().value()) {
+    @case ('send') {
+      <label class="field"
+        >{{ 'Environment' | transloco
+        }}<select [formField]="fields().environment">
+          <option value="">{{ 'No environment' | transloco }}</option>
+          @for (environment of state.environments(); track environment.id) {
+            <option [value]="environment.id">{{ environment.name }}</option>
+          }
+        </select></label
+      >
+      <p class="editor-hint">
+        @if (state.active(); as tab) {
+          {{ 'compare.sends' | transloco: { v0: tab.request.name || tab.request.url } }}
+        } @else {
+          {{ 'Open the request to send in a tab' | transloco }}
+        }
+      </p>
+    }
+    @case ('tab') {
+      <label class="field"
+        >{{ 'Request tab' | transloco
+        }}<select [formField]="fields().tab">
+          <option value="">{{ 'Choose a tab with a response' | transloco }}</option>
+          @for (tab of store.tabs(); track tab.id) {
+            <option [value]="tab.id">{{ tabName(tab.id) }}</option>
+          }
+        </select></label
+      >
+    }
+    @case ('history') {
+      <label class="field"
+        >{{ 'Response' | transloco
+        }}<select [formField]="fields().history">
+          <option value="">{{ 'Choose a response of the history' | transloco }}</option>
+          @for (entry of store.history(); track entry.id) {
+            <option [value]="entry.id">
+              {{ entry.updated_at * 1000 | date: 'short' }} · {{ entry.name }}
+            </option>
+          }
+        </select></label
+      >
+    }
+    @case ('run') {
+      <label class="field"
+        >{{ 'Collection run' | transloco
+        }}<select [formField]="fields().run">
+          <option value="">{{ 'Choose a collection run' | transloco }}</option>
+          @for (run of store.savedRuns(); track run.id) {
+            <option [value]="run.id">{{ run.updated_at * 1000 | date: 'short' }}</option>
+          }
+        </select></label
+      >
+      @if (fields().run().value()) {
+        <label class="field"
+          >{{ 'Response' | transloco
+          }}<select [formField]="fields().result">
+            @for (result of store.results(fields().run().value()); track result.index) {
+              <option [value]="'' + result.index">
+                {{ 'compare.runResult' | transloco: { v0: result.name, v1: result.iteration } }}
+                · {{ result.status || 'ERR' }}
+              </option>
+            }
+          </select></label
+        >
+      }
+    }
+  }
+</fieldset>

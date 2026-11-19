@@ -70,6 +70,14 @@
           </li>
           <li>
             <a
+              href="#compare"
+              [class.active]="active() === 'compare'"
+              (click)="go($event, 'compare')"
+              >{{ 'Compare responses' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
               href="#import"
               [class.active]="active() === 'import'"
               (click)="go($event, 'import')"

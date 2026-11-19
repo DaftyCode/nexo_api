@@ -45,7 +45,19 @@
           workspace().state.section() === 'history'
             ? ('History' | transloco)
             : ('Collections' | transloco)
-        }}</strong><button
+        }}</strong>
+        @if (workspace().state.section() === 'history') {
+          <button
+            class="icon-button history-compare"
+            (click)="comparing.openHistory()"
+            [disabled]="workspace().state.history().length < 2"
+            [attr.aria-label]="'Compare responses' | transloco"
+            [title]="'Compare responses' | transloco"
+          >
+            ⇄
+          </button>
+        }
+        <button
           class="icon-button"
           (click)="workspace().dialogs.set('collection')"
           [attr.aria-label]="'Create collection' | transloco"

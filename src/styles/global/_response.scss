@@ -140,6 +140,15 @@
   color: var(--nexo-color-danger);
   background: var(--nexo-color-danger-soft);
 }
+/* What a comparison found: only in the second response, only in the first, or changed. */
+.status-pill.removed {
+  color: var(--nexo-color-danger);
+  background: var(--nexo-color-danger-soft);
+}
+.status-pill.changed {
+  color: var(--nexo-color-warning);
+  background: var(--nexo-color-warning-soft);
+}
 /* What did not run (a skipped or paused monitor). */
 .status-pill.skipped {
   color: var(--nexo-color-text-muted);

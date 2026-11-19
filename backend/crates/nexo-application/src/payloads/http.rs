@@ -95,6 +95,52 @@ payload! {
 }
 
 payload! {
+    /// A header of a compared response.
+    open ComparedHeader {
+        required {
+            key "key": String => "string",
+            value "value": String => "string",
+        }
+        optional {}
+    }
+}
+
+payload! {
+    /// One of the responses `response.compare` compares, as a tab, the history or a run
+    /// keeps it. `truncated` says its body was cut; `bodyEncoding: "base64"`, that it is
+    /// binary.
+    closed ComparedResponse {
+        required {}
+        optional {
+            status "status": u64 => "number",
+            status_text "statusText": String => "string",
+            headers "headers": Vec<ComparedHeader> => "readonly ComparedHeader[]",
+            body "body": String => "string",
+            body_encoding "bodyEncoding": String => "string",
+            truncated "truncated": bool => "boolean",
+            error "error": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// `response.compare`: what changed from `source` to `target` (status, headers and
+    /// body, field by field when both bodies are JSON), leaving out the body paths of
+    /// `ignore` and the headers of `ignoreHeaders`.
+    closed ResponseComparePayload {
+        required {
+            source "source": ComparedResponse => "ComparedResponse",
+            target "target": ComparedResponse => "ComparedResponse",
+        }
+        optional {
+            workspace "workspace": String => "string",
+            ignore "ignore": Vec<String> => "readonly string[]",
+            ignore_headers "ignoreHeaders": Vec<String> => "readonly string[]",
+        }
+    }
+}
+
+payload! {
     /// `codegen`: code that sends `request` in `language`.
     closed CodegenPayload {
         required {}

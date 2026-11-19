@@ -25,6 +25,10 @@ export class TabsStore {
     this.activeId.set(id);
     return id;
   }
+  /** The last response of a tab, which may not be the active one. */
+  responseOf(id: string): ExecutionResponse | undefined {
+    return this.responses()[id];
+  }
   /** Keeps the response of a tab, which may no longer be the active one. */
   setResponse(id: string, response: ExecutionResponse | undefined) {
     this.responses.update((all) => {

@@ -5,6 +5,7 @@ import { shellText } from '../domain/bson';
 import type { CompareResult, DifferenceKind } from '../application/mongo-use-cases';
 import type { Comparison } from './mongo-compare/comparison';
 import type { MongoComparisons } from './mongo-compare/comparisons';
+import { FieldDifferences } from './diff/field-differences';
 
 const KIND_LABELS: Record<DifferenceKind, string> = {
   onlySource: 'Only in this collection',
@@ -17,7 +18,7 @@ const KIND_LABELS: Record<DifferenceKind, string> = {
  * kind with the fields of the one chosen side by side, and the sync of the other collection.
  */
 @Component({
-  imports: [TranslocoPipe, FormField],
+  imports: [TranslocoPipe, FormField, FieldDifferences],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-compare',
   styleUrls: [

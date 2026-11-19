@@ -18,6 +18,14 @@
     @case ('monitors') {
       <app-monitors-panel />
     }
+    @case ('compare') {
+      <!-- Its own chunk, loaded when two responses are compared. -->
+      @defer (on immediate) {
+        <app-response-compare />
+      } @placeholder {
+        <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+      }
+    }
     @case ('realtime') {
       <app-protocol-panel />
     }

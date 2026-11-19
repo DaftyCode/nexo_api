@@ -115,24 +115,14 @@
         }
       </ul>
       @if (chosen()?.fields; as fields) {
-        <table class="mongo-schema-table" [attr.aria-label]="'Fields that differ' | transloco">
-          <thead>
-            <tr>
-              <th scope="col">{{ 'Field' | transloco }}</th>
-              <th scope="col">{{ 'This collection' | transloco }}</th>
-              <th scope="col">{{ 'The other' | transloco }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (field of fields; track field.path) {
-              <tr>
-                <th scope="row">{{ field.path }}</th>
-                <td>{{ text(field.source) }}</td>
-                <td>{{ text(field.target) }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <app-field-differences
+          [differences]="fields"
+          [pathLabel]="'Field' | transloco"
+          [caption]="'Fields that differ' | transloco"
+          [sourceLabel]="'This collection' | transloco"
+          [targetLabel]="'The other' | transloco"
+          [format]="text"
+        />
       }
       @if (draft().synced(); as synced) {
         <p class="muted" role="status">
