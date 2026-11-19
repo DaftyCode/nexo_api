@@ -25,24 +25,25 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 - Pre-request and test scripts in a sandbox, with assertions and logs
 - Collection runner with iterations and JSON/CSV data
 - WebSocket, Socket.IO, MQTT, Kafka and gRPC clients
+- Reach servers through HTTP and SOCKS5 proxies or SSH tunnels with reusable profiles
 - MongoDB: explorer, aggregations, schema, indexes, shell, SQL, import/export and compare
 - PostgreSQL, SQL Server, MySQL, MariaDB and SQLite: navigator, SQL editor, data grid, structure editor, data transfer, ER diagrams, session and lock managers and server dashboards
 - Local mock servers and SQL queries over JSON/CSV datasets
 - Import cURL, OpenAPI/Swagger, HAR and portable collections; generate code in 8 languages
-- Works offline, without an account; English and Spanish; three visual themes
+- Works offline, without an account; English and Spanish; four visual themes
 
 ### What's new in this version
 
-See your databases, and what your servers are doing.
+Reach the servers that only a bastion or a proxy sees, in a new light look.
 
-- Entity-relationship diagrams of a table and its neighbours or of a whole schema, in IDEF1X, crow's foot or UML, moved with the mouse or the keyboard, saved as your own diagrams with notes, and exported to SVG, PNG or PDF.
-- A session manager that shows who is connected and what each session runs, and cancels a query or ends a session after asking.
-- A lock manager that shows who waits for whom, and ends the session that blocks.
-- Users and roles with their memberships and permissions, and the permissions of every table.
-- A dashboard for each server, with its sessions, transactions, reads and writes, size and locks drawn every few seconds, and charts of your own from read-only queries.
-- The type of a column is chosen from every type of the engine.
-- Menus always fit in the window.
-- Many fixes and accessibility improvements.
+- Connect through an HTTP proxy, a SOCKS5 proxy (also letting the proxy resolve names) or an SSH tunnel, in requests, collections and folders, WebSocket, Socket.IO, MQTT, Kafka, gRPC, GraphQL subscriptions and MongoDB connections.
+- Reusable SSH profiles in Settings → SSH, with the password or private key kept in the vault. Test signs in once and shows the server's key to trust; a key that changes later blocks the connection.
+- Collections and folders choose how their requests connect, and requests and folders inherit it, like authorization.
+- The egress policy checks both the proxy or SSH server and the final destination.
+- A light Aurora is the new default template; the dark one stays as Aurora full color, and the app opens with the last template you chose.
+- The documentation has an index, a short guide to every part and the colours of your template.
+- What Nexo keeps by itself has a cap: logs, cookies, history, runs and revisions never fill the disk.
+- Every text of the interface is translated, settings and database dashboards included.
 
 ### Search terms
 
@@ -88,24 +89,25 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 - Scripts previos y de pruebas en un entorno aislado, con aserciones y registros
 - Runner de colecciones con iteraciones y datos JSON/CSV
 - Clientes de WebSocket, Socket.IO, MQTT, Kafka y gRPC
+- Llega a los servidores por proxies HTTP y SOCKS5 o túneles SSH con perfiles reutilizables
 - MongoDB: explorador, agregaciones, esquema, índices, shell, SQL, importar/exportar y comparar
 - PostgreSQL, SQL Server, MySQL, MariaDB y SQLite: navegador, editor SQL, rejilla de datos, editor de estructura, transferencia de datos, diagramas ER, gestores de sesiones y bloqueos y paneles del servidor
 - Servidores mock locales y consultas SQL sobre datasets JSON/CSV
 - Importa cURL, OpenAPI/Swagger, HAR y colecciones portables; genera código en 8 lenguajes
-- Funciona sin conexión y sin cuenta; en español e inglés; tres temas visuales
+- Funciona sin conexión y sin cuenta; en español e inglés; cuatro temas visuales
 
 ### Novedades de esta versión
 
-Mira tus bases de datos, y lo que hacen tus servidores.
+Llega a los servidores que solo ve un bastión o un proxy, con un nuevo aspecto claro.
 
-- Diagramas entidad-relación de una tabla y sus vecinas o de un esquema entero, en IDEF1X, pata de gallo o UML, que se mueven con el ratón o el teclado, se guardan como diagramas propios con notas y se exportan a SVG, PNG o PDF.
-- Un gestor de sesiones que muestra quién está conectado y qué ejecuta cada sesión, y cancela una consulta o termina una sesión tras preguntar.
-- Un gestor de bloqueos que muestra quién espera a quién y termina la sesión que bloquea.
-- Usuarios y roles con sus pertenencias y permisos, y los permisos de cada tabla.
-- Un panel para cada servidor, con sus sesiones, transacciones, lecturas y escrituras, tamaño y bloqueos dibujados cada pocos segundos, y gráficos propios a partir de consultas de solo lectura.
-- El tipo de una columna se elige entre todos los tipos del motor.
-- Los menús siempre caben en la ventana.
-- Muchas correcciones y mejoras de accesibilidad.
+- Conecta a través de un proxy HTTP, un proxy SOCKS5 (también dejando que el proxy resuelva los nombres) o un túnel SSH, en peticiones, colecciones y carpetas, WebSocket, Socket.IO, MQTT, Kafka, gRPC, subscriptions GraphQL y conexiones MongoDB.
+- Perfiles SSH reutilizables en Ajustes → SSH, con la contraseña o la clave privada en el vault. Probar inicia sesión una vez y enseña la clave del servidor para confiar en ella; una clave que cambie después bloquea la conexión.
+- Las colecciones y carpetas eligen cómo conectan sus peticiones, y las peticiones y carpetas lo heredan, como la autorización.
+- La política de salida comprueba el proxy o el servidor SSH y también el destino final.
+- Un Aurora claro es la nueva plantilla por defecto; la oscura sigue como Aurora full color, y la app se abre con la última plantilla que elegiste.
+- La documentación tiene índice, una guía breve de cada parte y los colores de tu plantilla.
+- Lo que Nexo guarda por su cuenta tiene tope: logs, cookies, historial, ejecuciones y revisiones nunca llenan el disco.
+- Todos los textos de la interfaz están traducidos, también los ajustes y los paneles de bases de datos.
 
 ### Términos de búsqueda
 
