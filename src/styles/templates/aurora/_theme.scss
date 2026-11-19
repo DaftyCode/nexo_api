@@ -131,7 +131,8 @@
     --nexo-color-syntax-type: #7c3aed;
     --nexo-color-syntax-string: #0a3069;
     --nexo-color-syntax-number: #0550ae;
-    --nexo-color-syntax-comment: #6b7385;
+    // Also the placeholder of code editors: at least 4.8:1 on every light surface (WCAG AA).
+    --nexo-color-syntax-comment: #5c6782;
     --nexo-color-data-string: #1a7f37;
     --nexo-color-data-number: #9a6700;
     --nexo-color-data-date: #8250df;
