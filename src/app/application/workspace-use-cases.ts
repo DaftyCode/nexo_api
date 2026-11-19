@@ -147,6 +147,7 @@ export class WorkspaceUseCases {
     // The backend finds `{{vault:name}}` references itself and resolves them for this actor.
     return this.api.execute<ExecutionResponse>('request', {
       ...(context.workspace ? { workspace: context.workspace } : {}),
+      ...(context.environmentId ? { environment: context.environmentId } : {}),
       id,
       // The engine receives the same collection item that saving would store.
       request: toItem(request),

@@ -11,6 +11,17 @@
   padding: var(--nexo-space-1) var(--nexo-space-2) var(--nexo-space-1) var(--nexo-space-5);
   background: var(--nexo-color-surface);
 }
+// The active environment's colour, set from its document (`--nexo-environment-mark`).
+.environment-control.environment-marked {
+  border-color: var(--nexo-environment-mark);
+  box-shadow: inset var(--nexo-size-1) 0 0 var(--nexo-environment-mark);
+}
+.environment-badge {
+  white-space: nowrap;
+  font-size: var(--nexo-font-size-2xs);
+  font-weight: var(--nexo-font-weight-semibold);
+  color: var(--nexo-color-text);
+}
 .environment-label {
   font-size: var(--nexo-font-size-2xs);
   letter-spacing: var(--nexo-tracking-caps);

@@ -45,6 +45,8 @@ export interface LoadTest {
   variables: ReturnType<typeof toPortableRows>;
   globals: ReturnType<typeof toPortableRows>;
   ancestors: readonly RequestAncestor[];
+  /** The active environment, by id: a read-only one refuses what may change data. */
+  environmentId?: string;
 }
 export interface TokenRequest {
   url: string;
@@ -184,6 +186,7 @@ export class IntegrationUseCases {
       request: toItem(test.request),
       variables: test.variables,
       globals: test.globals,
+      ...(test.environmentId ? { environment: test.environmentId } : {}),
       context: { ancestors: test.ancestors },
       strictSSL: test.request.strictSSL,
       followRedirects: test.request.followRedirects,

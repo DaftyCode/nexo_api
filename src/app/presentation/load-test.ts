@@ -1,4 +1,5 @@
 import { TranslocoPipe } from '@jsverse/transloco';
+import { mayChangeData, readEnvironmentSettings } from '../domain/environment-protection';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -44,6 +45,12 @@ export class LoadTestRun {
     void this.task.run(async () => {
       const request = this.state.active()?.request;
       if (!request) throw new Error('Open a request first');
+      const environment = this.state.environmentDocument();
+      const asks = readEnvironmentSettings(environment?.value).protection === 'confirm';
+      if (environment && asks && mayChangeData(request)) {
+        const params = { v0: environment.name, v1: request.method, v2: request.url };
+        if (!this.state.confirm('environment.confirmLoadTest', params)) return;
+      }
       const m = this.model();
       const result = await this.integration.startLoadTest(this.state.workspaceId(), {
         users: m.users,
@@ -53,6 +60,7 @@ export class LoadTestRun {
         variables: this.state.variables(),
         globals: toPortableRows(this.state.globalRows()),
         ancestors: this.state.activeAncestors(),
+        environmentId: this.state.environmentId(),
       });
       this.id = result.id;
       this.status.set({ state: 'running' });

@@ -1,4 +1,5 @@
 import { WorkspaceDocument } from '../../domain/models';
+import { EnvironmentSettings } from '../../domain/environment-protection';
 import { VariableRow } from '../../domain/variables';
 import { DocumentsStore } from './documents-store';
 import { SessionStore } from './session-store';
@@ -98,10 +99,11 @@ export class SavesStore {
     id: string,
     name: string,
     rows: readonly VariableRow[],
+    settings?: EnvironmentSettings,
   ): Promise<VariablesSave> {
     let saved: WorkspaceDocument | undefined;
     const ok = await this.announce('The environment could not be saved', async () => {
-      saved = await this.variables.saveEnvironment(id, name, rows);
+      saved = await this.variables.saveEnvironment(id, name, rows, settings);
       return saved ? named('Environment saved', saved.name) : variablesReloaded;
     });
     return ok ? { saved } : undefined;

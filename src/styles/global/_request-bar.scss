@@ -35,6 +35,13 @@
   top: 0;
   background: var(--nexo-color-accent);
 }
+// The tabs take the active environment's colour (`--nexo-environment-mark`).
+.request-tabbar.environment-marked {
+  border-bottom-color: var(--nexo-environment-mark);
+}
+.request-tabbar.environment-marked .request-tab.active:before {
+  background: var(--nexo-environment-mark);
+}
 .request-tab > button:first-child {
   display: flex;
   align-items: center;

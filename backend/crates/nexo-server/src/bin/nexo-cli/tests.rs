@@ -49,3 +49,19 @@ fn files_are_read_next_to_the_collection_once_per_use() {
     );
     std::fs::remove_dir_all(folder).unwrap();
 }
+#[test]
+fn a_read_only_environment_file_names_itself() {
+    assert_eq!(
+        read_only(&json!({"name": "Production", "protection": "readonly", "values": []})),
+        Some("Production".into())
+    );
+    assert_eq!(
+        read_only(&json!({"protection": "readonly"})),
+        Some("environment".into())
+    );
+    assert_eq!(
+        read_only(&json!({"name": "Dev", "protection": "confirm"})),
+        None
+    );
+    assert_eq!(read_only(&json!({"name": "Dev"})), None);
+}

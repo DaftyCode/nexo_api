@@ -34,6 +34,7 @@ mod oauth2_prepare;
 mod oauth2_sign_in;
 pub mod oauth2_tokens;
 pub mod performance;
+pub mod protection;
 pub mod realtime;
 pub mod route;
 pub mod runner;

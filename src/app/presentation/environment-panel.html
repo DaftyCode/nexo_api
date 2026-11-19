@@ -21,7 +21,15 @@
     <span class="list-label">{{ 'Environments' | transloco }}</span>
     @for (env of state.environments(); track env.id) {
       <button [class.active]="model().id === env.id" (click)="load(env.id)">
-        <span aria-hidden="true">◫</span>{{ env.name }}
+        @if (settingsOf(env.value); as settings) {
+          <span
+            aria-hidden="true"
+            class="environment-mark"
+            [style.color]="settings.color || null"
+            >{{ settings.protection === 'none' ? '◫' : '🔒' }}</span
+          >
+        }
+        {{ env.name }}
         <small>{{
           env.id === state.environmentId()
             ? ('Active' | transloco)
@@ -54,6 +62,46 @@
         {{ isGlobals() ? ('Save globals' | transloco) : ('Save environment' | transloco) }}
       </button>
     </div>
+    @if (!isGlobals()) {
+      <div class="environment-protection">
+        <div class="field">
+          <span>{{ 'Color' | transloco }}</span>
+          <div class="environment-colors" role="group" [attr.aria-label]="'Color' | transloco">
+            <button
+              type="button"
+              class="environment-swatch none"
+              [attr.aria-pressed]="!model().color"
+              [attr.aria-label]="'No color' | transloco"
+              (click)="setColor('')"
+            ></button>
+            @for (color of colors; track color; let index = $index) {
+              <button
+                type="button"
+                class="environment-swatch"
+                [style.background]="color"
+                [attr.aria-pressed]="model().color === color"
+                [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
+                (click)="setColor(color)"
+              ></button>
+            }
+          </div>
+        </div>
+        <label class="field"
+          >{{ 'Protection' | transloco
+          }}<select [formField]="fields.protection" (change)="dirty.set(true)">
+            <option value="none">{{ 'None' | transloco }}</option>
+            <option value="confirm">{{ 'Ask before sending changes' | transloco }}</option>
+            <option value="readonly">{{ 'Read-only: never send changes' | transloco }}</option>
+          </select></label
+        >
+      </div>
+      <p class="editor-hint">
+        {{
+          'The color marks the workspace bar and the tabs while this environment is active. Changes are POST, PUT, PATCH, DELETE and other methods that are not GET, HEAD, OPTIONS or TRACE, and GraphQL mutations; a read-only environment refuses them in scripts and runs too.'
+            | transloco
+        }}
+      </p>
+    }
     @if (!isGlobals() && model().id) {
       <div class="environment-status" [class.active]="model().id === state.environmentId()">
         @if (model().id === state.environmentId()) {

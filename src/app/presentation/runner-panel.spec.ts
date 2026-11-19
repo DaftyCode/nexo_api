@@ -187,4 +187,62 @@ describe('RunnerPanel', () => {
     await settle();
     expect(api.calls.at(-1)?.operation).toBe('cancel');
   });
+
+  it('asks before a run that may change data in an environment that asks first', async () => {
+    await api.save({
+      id: 'stage',
+      workspace_id: 'local',
+      kind: 'environment',
+      name: 'Staging',
+      revision: 0,
+      updated_at: 0,
+      value: { name: 'Staging', values: [], protection: 'confirm' },
+    });
+    await api.save({
+      id: 'shop',
+      workspace_id: 'local',
+      kind: 'collection',
+      name: 'Shop',
+      revision: 0,
+      updated_at: 0,
+      value: {
+        info: { name: 'Shop', schema: 's' },
+        item: [
+          { name: 'List', request: { method: 'GET', url: 'https://shop.test' } },
+          { name: 'Remove', request: { method: 'DELETE', url: 'https://shop.test/1' } },
+        ],
+      },
+    });
+    await state.refresh();
+    state.selectEnvironment('stage');
+    await settle();
+    api.responses['run'] = ({ action }: Record<string, unknown>) =>
+      action === 'status'
+        ? {
+            id: 'run-4',
+            state: 'finished',
+            results: [],
+            assertions: [],
+            logs: [],
+            counts: { results: 0, assertions: 0, logs: 0 },
+          }
+        : { id: 'run-4', state: 'running' };
+    const asked: unknown[] = [];
+    state.confirm = (message, params) => {
+      asked.push([message, params]);
+      return false;
+    };
+    await clickButton(fixture, 'Run collection');
+    await settle();
+    expect(asked).toEqual([['environment.confirmRun', { v0: 'Staging', v1: 'Shop', v2: '1' }]]);
+    expect(api.calls.some((call) => call.operation === 'run')).toBe(false);
+    state.confirm = () => true;
+    await clickButton(fixture, 'Run collection');
+    await settle();
+    expect(api.calls.find((call) => call.operation === 'run')?.payload['environment']).toBe(
+      'stage',
+    );
+    await waitPoll();
+    await settle();
+  });
 });

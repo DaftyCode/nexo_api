@@ -1,5 +1,6 @@
 import { DestroyRef, Injectable, inject, signal } from '@angular/core';
 import { WORKSPACE } from '../composition/providers';
+import { changingRequests, readEnvironmentSettings } from '../domain/environment-protection';
 import { Run, asCollection, mergeRun } from '../domain/models';
 import { toPortableRows } from '../domain/variables';
 import { WorkspaceState } from './workspace-state';
@@ -23,11 +24,15 @@ export class RunnerStore {
     await this.task.run(async () => {
       const collection = this.state.collections().find((d) => d.id === collectionId);
       if (!collection) throw new Error('Choose a collection');
+      const value = asCollection(collection.value);
+      if (!this.confirmed(collection.name, value.item)) return;
+      const environment = this.state.environmentId();
       const started = await this.cases.execute<{ id: string; state: string }>(
         this.state.workspaceId(),
         'run',
         {
-          collection: asCollection(collection.value),
+          collection: value,
+          ...(environment ? { environment } : {}),
           variables: this.state.variables(),
           globals: toPortableRows(this.state.globalRows()),
           iterations,
@@ -40,6 +45,21 @@ export class RunnerStore {
       this.stopPolling();
       this.schedule(started.id);
     });
+  }
+  /** In an environment that asks first: before a run with requests that may change data. */
+  private confirmed(collection: string, items: unknown) {
+    const environment = this.state.environmentDocument();
+    if (!environment || readEnvironmentSettings(environment.value).protection !== 'confirm')
+      return true;
+    const changing = changingRequests(items);
+    return (
+      !changing ||
+      this.state.confirm('environment.confirmRun', {
+        v0: environment.name,
+        v1: collection,
+        v2: String(changing),
+      })
+    );
   }
   /** Name of the collection of the last run started here. */
   collectionName() {

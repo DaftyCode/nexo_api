@@ -20,6 +20,8 @@ export type WorkspaceExecuteArgs = {
 export interface ExecutionContext {
   /** Workspace that scopes the execution, such as its cookie jar. */
   workspace?: string;
+  /** The active environment, by id: the engine refuses writes while it is read-only. */
+  environmentId?: string;
   environment: readonly VariableRow[];
   globals: readonly VariableRow[];
   ancestors: readonly RequestAncestor[];

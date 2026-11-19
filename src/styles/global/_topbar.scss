@@ -93,6 +93,10 @@
   background: var(--nexo-color-surface);
   flex-shrink: 0;
 }
+// The active environment's colour (`--nexo-environment-mark`, from its document).
+.workspace-bar.environment-marked {
+  border-bottom: var(--nexo-size-1) solid var(--nexo-environment-mark);
+}
 .workspace-icon {
   color: var(--nexo-color-text-soft);
   font-size: var(--nexo-font-size-3xl);

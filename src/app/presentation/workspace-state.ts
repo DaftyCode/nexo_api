@@ -43,10 +43,10 @@ export type { VariablesSave } from './state/saves-store';
 export class WorkspaceState {
   readonly cases = inject(WORKSPACE);
   private readonly i18n = inject(TranslocoService);
-  /** Asks the user to confirm a destructive action; replaced in tests. */
-  confirm: (message: string) => boolean = (message) =>
+  /** Asks the user to confirm a destructive action, with its `params`; replaced in tests. */
+  confirm: (message: string, params?: Record<string, string>) => boolean = (message, params) =>
     typeof globalThis.confirm === 'function'
-      ? globalThis.confirm(this.i18n.translate(message))
+      ? globalThis.confirm(this.i18n.translate(message, params))
       : true;
 
   readonly workspaceId = signal('');
@@ -68,7 +68,7 @@ export class WorkspaceState {
     tabs: this.tabsStore,
     workspaceId: this.workspaceId,
     section: this.section,
-    confirm: (message) => this.confirm(message),
+    confirm: (message, params) => this.confirm(message, params),
   };
   private readonly store = new DocumentsStore(this.context);
   private readonly variableStore = new VariablesStore(this.context, this.store);

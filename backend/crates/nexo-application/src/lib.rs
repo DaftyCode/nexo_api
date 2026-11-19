@@ -1,6 +1,7 @@
 //! Use cases depend only on domain types and outbound ports.
 mod database;
 mod datasource;
+mod environments;
 mod execute;
 pub mod mcp;
 mod modules;

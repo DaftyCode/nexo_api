@@ -131,6 +131,7 @@ impl Task {
             egress: self.egress.clone(),
             loopback_ports: self.loopback_ports.clone(),
             profiles: self.payload["sshProfiles"].clone(),
+            read_only: None,
         };
         let transport = match crate::transport::Transport::new(options, Arc::default()) {
             Ok(transport) => transport,

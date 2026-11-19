@@ -10,8 +10,9 @@ use nexo_domain::{Error, Result, WorkspaceId};
 use serde_json::{Map, Value};
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 7] = [
+const INTERNAL_FIELDS: [&str; 8] = [
     "sshProfiles",
+    "readOnlyEnvironment",
     "secretNames",
     "resolvedSecrets",
     "secretHosts",
@@ -103,6 +104,19 @@ impl Application {
                 .map(String::from);
             if let Some(profiles) = self.ssh_profiles(workspace.as_deref(), &named).await? {
                 payload.insert("sshProfiles".into(), profiles);
+            }
+        }
+        // A read-only environment: the engine refuses what may change data (environments.rs).
+        if matches!(
+            operation,
+            Operation::Request | Operation::Run | Operation::Performance
+        ) {
+            let workspace = payload.get("workspace").and_then(Value::as_str);
+            if let Some(name) = self
+                .read_only_environment(workspace, payload.get("environment"))
+                .await?
+            {
+                payload.insert("readOnlyEnvironment".into(), Value::String(name));
             }
         }
         if matches!(

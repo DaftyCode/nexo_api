@@ -105,6 +105,6 @@ export interface StateContext {
   readonly workspaceId: ReturnType<typeof signal<string>>;
   /** Visible workspace section. */
   readonly section: ReturnType<typeof signal<string>>;
-  /** Asks the user to confirm a destructive action. */
-  confirm(message: string): boolean;
+  /** Asks the user to confirm a destructive action; `params` fill its placeholders. */
+  confirm(message: string, params?: Record<string, string>): boolean;
 }

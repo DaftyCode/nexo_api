@@ -225,4 +225,40 @@ describe('IntegrationPanel', () => {
       payload: { id: 'load-1' },
     });
   });
+
+  it('asks before a load test that may change data in an environment that asks first', async () => {
+    api.responses['performance'] = { id: 'load-2' };
+    await api.save({
+      id: 'stage',
+      workspace_id: 'local',
+      kind: 'environment',
+      name: 'Staging',
+      revision: 0,
+      updated_at: 0,
+      value: { name: 'Staging', values: [], protection: 'confirm' },
+    });
+    await state.refresh();
+    state.selectEnvironment('stage');
+    state.newTab({ ...newRequest('r2'), method: 'POST', url: 'https://api.example.com' });
+    await clickButton(fixture, 'Performance');
+    const asked: unknown[] = [];
+    state.confirm = (message, params) => {
+      asked.push([message, params]);
+      return false;
+    };
+    await clickButton(fixture, 'Start run');
+    await settle();
+    expect(asked).toEqual([
+      ['environment.confirmLoadTest', { v0: 'Staging', v1: 'POST', v2: 'https://api.example.com' }],
+    ]);
+    expect(api.calls.some((call) => call.operation === 'performance')).toBe(false);
+    state.confirm = () => true;
+    await clickButton(fixture, 'Start run');
+    await settle();
+    expect(api.calls.find((call) => call.operation === 'performance')?.payload).toMatchObject({
+      environment: 'stage',
+    });
+    await clickButton(fixture, 'Stop');
+    await settle();
+  });
 });

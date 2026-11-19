@@ -11,6 +11,7 @@ import {
 import { WorkspaceState } from './workspace-state';
 import { VariableRow, isSensitive, toVariableRows } from '../domain/variables';
 import { asCollection } from '../domain/models';
+import { readEnvironmentSettings } from '../domain/environment-protection';
 
 interface ScopeView {
   id: 'environment' | 'collection' | 'globals';
@@ -31,6 +32,10 @@ export class VariableQuickLook {
   protected readonly state = inject(WorkspaceState);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly open = signal(false);
+  /** The colour and protection of the active environment, shown next to its name. */
+  protected readonly mark = computed(() =>
+    readEnvironmentSettings(this.state.environmentDocument()?.value),
+  );
   protected readonly revealed = signal(false);
   protected readonly scopes = computed<ScopeView[]>(() => {
     const collection = this.state.activeCollection();

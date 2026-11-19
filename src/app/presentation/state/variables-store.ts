@@ -2,6 +2,7 @@ import { computed, signal } from '@angular/core';
 import { failureCode } from '../../application/ports';
 import { ExecutionResponse, WorkspaceDocument } from '../../domain/models';
 import { VariableRow, toPortableRows, toVariableRows } from '../../domain/variables';
+import { EnvironmentSettings, readEnvironmentSettings } from '../../domain/environment-protection';
 import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 
@@ -21,6 +22,10 @@ export class VariablesStore {
   );
   /** Environment rows in the portable shape the runtime expects. */
   readonly variables = computed(() => toPortableRows(this.environmentRows()));
+  /** The colour and protection of the active environment. */
+  readonly environmentSettings = computed(() =>
+    readEnvironmentSettings(this.environmentDocument()?.value),
+  );
 
   constructor(
     private readonly context: StateContext,
@@ -51,16 +56,20 @@ export class VariablesStore {
    * Saves an environment. Returns `undefined` when it changed elsewhere and the person
    * chose to keep that version.
    */
-  async saveEnvironment(id: string, name: string, rows: readonly VariableRow[]) {
+  async saveEnvironment(
+    id: string,
+    name: string,
+    rows: readonly VariableRow[],
+    settings?: EnvironmentSettings,
+  ) {
     const workspace = this.context.workspaceId();
     const existing = this.documents.environments().find((d) => d.id === id);
+    const variables = this.context.cases.variables;
     const saved = await this.overLatest(
-      () => this.context.cases.variables.saveEnvironment(workspace, existing, name, rows),
+      () => variables.saveEnvironment(workspace, existing, name, rows, settings),
       () => {
         const latest = this.documents.environments().find((d) => d.id === id);
-        return (
-          latest && this.context.cases.variables.saveEnvironment(workspace, latest, name, rows)
-        );
+        return latest && variables.saveEnvironment(workspace, latest, name, rows, settings);
       },
     );
     if (saved && !existing && !this.environmentId()) this.select(saved.id);

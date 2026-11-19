@@ -95,4 +95,24 @@ describe('VariableQuickLook', () => {
     await fixture.whenStable();
     expect(dialog()).toBeNull();
   });
+
+  it('shows the colour and protection of the active environment', async () => {
+    state.documents.set([
+      stored('prod', 'environment', { values: [], color: '#e5534b', protection: 'readonly' }),
+      stored('stage', 'environment', { values: [], protection: 'confirm' }),
+    ]);
+    const control = () => root().querySelector<HTMLElement>('.environment-control')!;
+    state.selectEnvironment('prod');
+    await fixture.whenStable();
+    expect(control().classList).toContain('environment-marked');
+    expect(control().style.getPropertyValue('--nexo-environment-mark')).toBe('#e5534b');
+    expect(root().querySelector('.environment-badge')?.textContent).toContain('Read-only');
+    state.selectEnvironment('stage');
+    await fixture.whenStable();
+    expect(control().classList).not.toContain('environment-marked');
+    expect(root().querySelector('.environment-badge')?.textContent).toContain('Asks first');
+    state.selectEnvironment('');
+    await fixture.whenStable();
+    expect(root().querySelector('.environment-badge')).toBeNull();
+  });
 });

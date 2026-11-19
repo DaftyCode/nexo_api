@@ -149,6 +149,8 @@ impl Performance {
             "strictSSL",
             "followRedirects",
             "workspace",
+            "sshProfiles",
+            "readOnlyEnvironment",
         ] {
             if let Some(value) = payload.get(key) {
                 iteration[key] = value.clone();

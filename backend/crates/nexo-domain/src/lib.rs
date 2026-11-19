@@ -143,6 +143,9 @@ impl Document {
         {
             return Err(Error::Validation("Variables need a values list".into()));
         }
+        if self.kind == DocumentKind::Environment {
+            validate_protection(&self.value)?;
+        }
         if self.kind == DocumentKind::Session {
             if self.id.as_str() != Self::session_id(&self.workspace_id) {
                 return Err(Error::Validation(
@@ -242,6 +245,31 @@ pub struct Revision {
     pub revision: i64,
     pub changed_at: i64,
     pub value: Value,
+}
+
+/// An environment's protection (`none`, `confirm` before what may change data, or
+/// `readonly`, which the engine enforces) and its colour (`#rrggbb`), when it has them.
+fn validate_protection(value: &Value) -> Result<()> {
+    if let Some(protection) = value.get("protection").filter(|v| !v.is_null())
+        && !matches!(protection.as_str(), Some("none" | "confirm" | "readonly"))
+    {
+        return Err(Error::Validation(
+            "The protection of an environment is none, confirm or readonly".into(),
+        ));
+    }
+    if let Some(color) = value.get("color").filter(|v| !v.is_null()) {
+        let valid = color.as_str().is_some_and(|text| {
+            text.len() == 7
+                && text.starts_with('#')
+                && text[1..].chars().all(|c| c.is_ascii_hexdigit())
+        });
+        if !valid {
+            return Err(Error::Validation(
+                "The colour of an environment is written #rrggbb".into(),
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

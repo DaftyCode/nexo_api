@@ -1,6 +1,6 @@
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { clickButton, exerciseControls } from '../testing/controls';
+import { clickButton, exerciseControls, fill } from '../testing/controls';
 import { EnvironmentPanel } from './environment-panel';
 import { WorkspaceState } from './workspace-state';
 
@@ -153,5 +153,39 @@ describe('EnvironmentPanel', () => {
     await settle();
     expect(state.globalRows().map((row) => row.key)).toEqual(['mine']);
     expect(root().textContent).not.toContain('Unsaved changes');
+  });
+
+  it('marks an environment with a color and protects it, kept when duplicated', async () => {
+    const name = root().querySelector<HTMLInputElement>('label input')!;
+    name.value = 'Production';
+    name.dispatchEvent(new Event('input'));
+    await clickButton(fixture, 'Color 1');
+    await fill(fixture, 'Protection', 'readonly');
+    expect(root().textContent).toContain('Unsaved changes');
+    await clickButton(fixture, 'Save environment');
+    await settle();
+    expect(state.environments()[0].value).toMatchObject({
+      color: '#e5534b',
+      protection: 'readonly',
+    });
+    expect(root().querySelector('.environment-mark')?.textContent).toContain('🔒');
+
+    await clickButton(fixture, 'New environment');
+    expect(component['model']()).toMatchObject({ color: '', protection: 'none' });
+    await clickButton(fixture, 'Production');
+    expect(component['model']()).toMatchObject({ color: '#e5534b', protection: 'readonly' });
+    await clickButton(fixture, 'Duplicate');
+    await settle();
+    const copy = state.environments().find((env) => env.name === 'Production copy');
+    expect(copy?.value).toMatchObject({ color: '#e5534b', protection: 'readonly' });
+
+    await clickButton(fixture, 'Production copy');
+    await clickButton(fixture, 'No color');
+    await fill(fixture, 'Protection', 'none');
+    await clickButton(fixture, 'Save environment');
+    await settle();
+    const plain = state.environments().find((env) => env.name === 'Production copy')!.value;
+    expect(plain).not.toHaveProperty('color');
+    expect(plain).not.toHaveProperty('protection');
   });
 });

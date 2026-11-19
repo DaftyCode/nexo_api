@@ -12,6 +12,11 @@ import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState } from './workspace-state';
 import { VariableEditor } from './variable-editor';
 import { VariableRow, emptyVariable, toVariableRows } from '../domain/variables';
+import {
+  ENVIRONMENT_COLORS,
+  EnvironmentProtection,
+  readEnvironmentSettings,
+} from '../domain/environment-protection';
 
 /** Identifier of the workspace globals entry in the list of variable sets. */
 export const GLOBALS = '__globals';
@@ -26,7 +31,13 @@ export const GLOBALS = '__globals';
 export class EnvironmentPanel {
   protected readonly state = inject(WorkspaceState);
   protected readonly globalsId = GLOBALS;
-  protected readonly model = signal({ id: '', name: 'New environment' });
+  protected readonly colors = ENVIRONMENT_COLORS;
+  protected readonly model = signal({
+    id: '',
+    name: 'New environment',
+    color: '',
+    protection: 'none' as EnvironmentProtection,
+  });
   protected readonly rows = signal<VariableRow[]>([
     emptyVariable('base_url', 'http://localhost:8080'),
   ]);
@@ -57,7 +68,7 @@ export class EnvironmentPanel {
   load(id: string) {
     this.dirty.set(false);
     if (id === GLOBALS) {
-      this.model.set({ id: GLOBALS, name: 'Globals' });
+      this.model.set({ id: GLOBALS, name: 'Globals', color: '', protection: 'none' });
       this.loadedRevision.set(this.state.globalsDocument()?.revision ?? 0);
       const rows = this.state.globalRows();
       this.rows.set(rows.length ? rows : [emptyVariable()]);
@@ -65,19 +76,31 @@ export class EnvironmentPanel {
     }
     const document = this.state.environments().find((x) => x.id === id);
     if (!document) {
-      this.model.set({ id: '', name: 'New environment' });
+      this.model.set({ id: '', name: 'New environment', color: '', protection: 'none' });
       this.loadedRevision.set(0);
       this.rows.set([emptyVariable()]);
       return;
     }
     const rows = toVariableRows((document.value as { values?: unknown })?.values);
-    this.model.set({ id: document.id, name: document.name });
+    this.model.set({ id: document.id, name: document.name, ...this.settingsOf(document.value) });
     this.loadedRevision.set(document.revision);
     this.rows.set(rows.length ? rows : [emptyVariable()]);
   }
   /** Discards the edits and shows the latest values. */
   protected reload() {
     this.load(this.model().id);
+  }
+  /** The colour and protection of an environment, for its entry in the list too. */
+  protected settingsOf(value: unknown) {
+    return readEnvironmentSettings(value);
+  }
+  protected setColor(color: string) {
+    this.model.update((model) => ({ ...model, color }));
+    this.dirty.set(true);
+  }
+  private settings() {
+    const { color, protection } = this.model();
+    return { color, protection };
   }
   protected editRows(rows: VariableRow[]) {
     this.rows.set(rows);
@@ -99,7 +122,7 @@ export class EnvironmentPanel {
     const result =
       m.id === GLOBALS
         ? await this.state.saveGlobals(this.rows())
-        : await this.state.saveEnvironment(m.id, m.name, this.rows());
+        : await this.state.saveEnvironment(m.id, m.name, this.rows(), this.settings());
     // A failure keeps the edits, and a toast says why.
     if (!result) return;
     // Saved, or kept as changed elsewhere: the editor shows what is stored now.
@@ -107,7 +130,8 @@ export class EnvironmentPanel {
   }
   protected async duplicate() {
     const m = this.model();
-    const saved = (await this.state.saveEnvironment('', `${m.name} copy`, this.rows()))?.saved;
+    const copy = `${m.name} copy`;
+    const saved = (await this.state.saveEnvironment('', copy, this.rows(), this.settings()))?.saved;
     if (saved) this.load(saved.id);
   }
   protected activate() {

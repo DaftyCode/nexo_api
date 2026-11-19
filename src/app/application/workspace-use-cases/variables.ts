@@ -1,6 +1,10 @@
 import { ApiPort, FilePort, PreferencePort } from '../ports';
 import { itemAt } from '../../domain/collection-tree';
 import { GroupSettings } from '../../domain/collection-settings';
+import {
+  EnvironmentSettings,
+  storedEnvironmentSettings,
+} from '../../domain/environment-protection';
 import { Collection, WorkspaceDocument, asCollection } from '../../domain/models';
 import { StoredRoute } from '../../domain/route';
 import {
@@ -32,25 +36,36 @@ export class VariableCases {
     if (workspace) this.preferences.write(`environment.${workspace}`, environment);
   }
 
-  /** Saves an environment, creating it when `existing` is undefined. */
+  /**
+   * Saves an environment, creating it when `existing` is undefined. Its colour and protection
+   * change only when `settings` are given; otherwise they stay as stored.
+   */
   saveEnvironment(
     workspace: string,
     existing: WorkspaceDocument | undefined,
     name: string,
     rows: readonly VariableRow[],
+    settings?: EnvironmentSettings,
   ) {
     const values = toPortableRows(rows);
     if (!name.trim()) throw new Error('A name is required');
-    return existing
-      ? this.api.save({
-          ...existing,
-          name: name.trim(),
-          value: { ...(existing.value as Record<string, unknown>), name: name.trim(), values },
-        })
-      : createDocument(this.api, this.files.id(), workspace, 'environment', name, {
-          name: name.trim(),
-          values,
-        });
+    if (!existing)
+      return createDocument(this.api, this.files.id(), workspace, 'environment', name, {
+        name: name.trim(),
+        values,
+        ...(settings ? storedEnvironmentSettings(settings) : {}),
+      });
+    const {
+      color: _color,
+      protection: _protection,
+      ...rest
+    } = existing.value as Record<string, unknown>;
+    const kept = settings ? { ...rest, ...storedEnvironmentSettings(settings) } : existing.value;
+    return this.api.save({
+      ...existing,
+      name: name.trim(),
+      value: { ...(kept as Record<string, unknown>), name: name.trim(), values },
+    });
   }
 
   /** Globals are a single document per workspace, created on first save. */

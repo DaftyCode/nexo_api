@@ -14,6 +14,8 @@ payload! {
             collection "collection": Map<String, Value> => "object",
             variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
             globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            // The active environment, by id: a read-only one is enforced (environments.rs).
+            environment "environment": String => "string",
             context "context": ExecutionContext => "ExecutionContext",
             timeout "timeout": u64 => "number",
             strict_ssl "strictSSL": bool => "boolean",
@@ -39,6 +41,8 @@ payload! {
             collection "collection": Map<String, Value> => "object",
             variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
             globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            // The active environment, by id: a read-only one is enforced (environments.rs).
+            environment "environment": String => "string",
             context "context": ExecutionContext => "ExecutionContext",
             data "data": Vec<Value> => "readonly unknown[]",
             iterations "iterations": u64 => "number",
@@ -118,6 +122,8 @@ payload! {
             profile "profile": String => "string",
             variables "variables": Vec<VariableRow> => "readonly VariableRow[]",
             globals "globals": Vec<VariableRow> => "readonly VariableRow[]",
+            // The active environment, by id: a read-only one is enforced (environments.rs).
+            environment "environment": String => "string",
             context "context": ExecutionContext => "ExecutionContext",
             strict_ssl "strictSSL": bool => "boolean",
             follow_redirects "followRedirects": bool => "boolean",

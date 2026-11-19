@@ -21,6 +21,7 @@ impl Transport {
         input: &Value,
         secrets: &[crate::secret_hosts::Placement],
     ) -> Result<Value> {
+        crate::protection::check(self.options.read_only.as_deref(), input)?;
         let started = Instant::now();
         let mut url = parse_url(&request_url(&input["url"]))?;
         let mut method = crate::collection::http_method(input["method"].as_str().unwrap_or("GET"))?;

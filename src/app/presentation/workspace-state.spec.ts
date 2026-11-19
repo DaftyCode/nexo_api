@@ -30,8 +30,8 @@ const collection: WorkspaceDocument = {
   },
 };
 
-function setup() {
-  let documents = [environment, collection];
+function setup(initial: WorkspaceDocument[] = [environment, collection]) {
+  let documents = initial;
   const executed: { operation: string; payload: Record<string, unknown> }[] = [];
   const preferences = new Map<string, string>();
   const api = {
@@ -139,6 +139,39 @@ describe('WorkspaceState variables', () => {
     ).toEqual(['host', 'token']);
     expect(documents().some((d) => d.kind === 'history')).toBe(true);
     expect(state.error()).toBe('');
+  });
+});
+
+describe('WorkspaceState protected environments', () => {
+  it('asks once before sending what may change data, and sends the environment', async () => {
+    const guarded = { ...(environment.value as object), protection: 'confirm' };
+    const asking = { ...environment, value: guarded };
+    const { state, executed } = setup([asking, collection]);
+    await state.initialize();
+    state.selectEnvironment('dev');
+    const asked: unknown[] = [];
+    let answer = false;
+    state.confirm = (message, params) => {
+      asked.push([message, params]);
+      return answer;
+    };
+    const remove = { name: 'Remove', request: { method: 'DELETE', url: '{{host}}/users/1' } };
+    state.openItem(collection, remove as never, [1]);
+    await state.send();
+    expect(asked).toEqual([
+      ['environment.confirmSend', { v0: 'Dev', v1: 'DELETE', v2: '{{host}}/users/1' }],
+    ]);
+    expect(executed.some((entry) => entry.operation === 'request')).toBe(false);
+    answer = true;
+    await state.send();
+    expect(asked).toHaveLength(2);
+    const sent = executed.find((entry) => entry.operation === 'request')!;
+    expect(sent.payload['environment']).toBe('dev');
+
+    const value = collection.value as { item: { name: string }[] };
+    state.openItem(collection, value.item[0] as never, [0]);
+    await state.send();
+    expect(asked).toHaveLength(2);
   });
 });
 

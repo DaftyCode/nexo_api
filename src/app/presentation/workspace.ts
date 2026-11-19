@@ -2,6 +2,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   inject,
   afterNextRender,
   signal,
@@ -21,6 +22,7 @@ import { WorkspaceDialogs } from './workspace-dialogs';
 import { WorkspaceNavigation } from './workspace-navigation';
 import { WorkspaceTopbar } from './workspace-topbar';
 import { withOAuth2Token } from '../domain/auth';
+import { readEnvironmentSettings } from '../domain/environment-protection';
 import { AppearanceState } from './appearance-state';
 import { Splitter } from './splitter';
 import { LanguageState } from './language-state';
@@ -70,6 +72,10 @@ export class Workspace {
     { document: WorkspaceDocument; path: number[] } | undefined
   >(undefined);
   readonly navigationOpen = signal(false);
+  /** The colour and protection of the active environment, marking the workspace bar. */
+  protected readonly environmentMark = computed(() =>
+    readEnvironmentSettings(this.state.environmentDocument()?.value),
+  );
   protected readonly formModel = signal({
     name: '',
     content: '',

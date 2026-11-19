@@ -1,4 +1,8 @@
-<div class="environment-control">
+<div
+  class="environment-control"
+  [class.environment-marked]="!!mark().color"
+  [style.--nexo-environment-mark]="mark().color || null"
+>
   <label class="environment-label" for="active-environment">{{ 'Environment' | transloco }}</label>
   <select id="active-environment" class="environment-picker" (change)="select($event)">
     <option value="" [selected]="!state.environmentId()">{{ 'No environment' | transloco }}</option>
@@ -6,6 +10,11 @@
       <option [value]="env.id" [selected]="env.id === state.environmentId()">{{ env.name }}</option>
     }
   </select>
+  @if (mark().protection !== 'none') {
+    <span class="environment-badge" role="status">
+      🔒 {{ (mark().protection === 'readonly' ? 'Read-only' : 'Asks first') | transloco }}
+    </span>
+  }
   <button
     class="icon-button quick-look-toggle"
     type="button"

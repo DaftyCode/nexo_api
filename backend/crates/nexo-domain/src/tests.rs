@@ -66,6 +66,19 @@ fn collections_need_items() {
                 .is_ok()
         );
     }
+    let environment = |value| document(DocumentKind::Environment, value).validate();
+    assert!(
+        environment(
+            serde_json::json!({"values": [], "protection": "readonly", "color": "#e5534B"})
+        )
+        .is_ok()
+    );
+    assert!(
+        environment(serde_json::json!({"values": [], "protection": null, "color": null})).is_ok()
+    );
+    assert!(environment(serde_json::json!({"values": [], "protection": "locked"})).is_err());
+    assert!(environment(serde_json::json!({"values": [], "color": "red"})).is_err());
+    assert!(environment(serde_json::json!({"values": [], "color": "#12345g"})).is_err());
 }
 #[test]
 fn a_workspace_keeps_one_session_with_its_tabs() {

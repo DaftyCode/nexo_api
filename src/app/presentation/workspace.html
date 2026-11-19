@@ -57,7 +57,11 @@ bash install-web.sh  (macOS / Linux)</pre>
       </div>
     </main>
   } @else {
-    <div class="workspace-bar">
+    <div
+      class="workspace-bar"
+      [class.environment-marked]="!!environmentMark().color"
+      [style.--nexo-environment-mark]="environmentMark().color || null"
+    >
       <div class="row">
         <span class="workspace-icon" aria-hidden="true">◈</span
         ><select

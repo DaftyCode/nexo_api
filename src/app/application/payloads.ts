@@ -70,6 +70,7 @@ export interface RequestPayload {
   collection?: object;
   variables?: readonly VariableRow[];
   globals?: readonly VariableRow[];
+  environment?: string;
   context?: ExecutionContext;
   timeout?: number;
   strictSSL?: boolean;
@@ -89,6 +90,7 @@ export interface RunPayload {
   collection?: object;
   variables?: readonly VariableRow[];
   globals?: readonly VariableRow[];
+  environment?: string;
   context?: ExecutionContext;
   data?: readonly unknown[];
   iterations?: number;
@@ -335,6 +337,7 @@ export interface PerformancePayload {
   profile?: string;
   variables?: readonly VariableRow[];
   globals?: readonly VariableRow[];
+  environment?: string;
   context?: ExecutionContext;
   strictSSL?: boolean;
   followRedirects?: boolean;

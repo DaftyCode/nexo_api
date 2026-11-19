@@ -1,4 +1,8 @@
-<div class="request-tabbar">
+<div
+  class="request-tabbar"
+  [class.environment-marked]="!!environmentColor()"
+  [style.--nexo-environment-mark]="environmentColor() || null"
+>
   @for (tab of state.tabs(); track tab.id) {
     <div
       class="request-tab"

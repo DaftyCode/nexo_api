@@ -5,6 +5,16 @@ pub(super) fn read_json(path: &str) -> Result<Value, Box<dyn std::error::Error>>
     let text = std::fs::read_to_string(path).map_err(|e| format!("Cannot read {path}: {e}"))?;
     Ok(serde_json::from_str(&text).map_err(|e| format!("{path} is not valid JSON: {e}"))?)
 }
+/// The name of an environment file whose protection is `readonly`, as Nexo exports it.
+pub(super) fn read_only(environment: &Value) -> Option<String> {
+    (environment["protection"] == "readonly").then(|| {
+        environment["name"]
+            .as_str()
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or("environment")
+            .to_string()
+    })
+}
 /// The files a collection or request sends (form-data `file` fields and binary bodies), read
 /// from `folder` when their paths are relative, as `files` for the engine. A request uses each
 /// entry once, so a name referenced twice in one request is sent twice.

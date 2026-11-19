@@ -2,7 +2,7 @@ mod inputs;
 mod report;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD};
-use inputs::{execute, files, read_json};
+use inputs::{execute, files, read_json, read_only};
 use nexo_application::{operations::Operation, payloads, ports::ExecutionGateway};
 use nexo_engine::Engine;
 use report::{junit, rows};
@@ -103,10 +103,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .await?
             }
             _ => {
-                let mut variables = match args.flag("--environment") {
-                    Some(path) => rows(read_json(&path)?),
-                    None => json!([]),
+                let environment = match args.flag("--environment") {
+                    Some(path) => Some(read_json(&path)?),
+                    None => None,
                 };
+                // A read-only environment is enforced by the engine here too.
+                let protected = environment.as_ref().and_then(read_only);
+                let mut variables = environment.map(rows).unwrap_or_else(|| json!([]));
                 for pair in args.all("--env-var") {
                     let (key, value) = pair
                         .split_once('=')
@@ -144,14 +147,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 };
                 let collection: Value = serde_json::from_str(&source)
                     .map_err(|e| format!("{source_path} is not valid JSON: {e}"))?;
-                let started = execute(
-                    &engine,
-                    Operation::Run,
-                    json!({"collection":collection,"variables":variables,"globals":globals,
-                            "data":data,"iterations":iterations,"strictSSL":strict,
-                            "globalTimeout":timeout * 1000,"files":files(&collection, &folder)}),
-                )
-                .await?;
+                let mut run = json!({"collection":collection,"variables":variables,"globals":globals,
+                        "data":data,"iterations":iterations,"strictSSL":strict,
+                        "globalTimeout":timeout * 1000,"files":files(&collection, &folder)});
+                if let Some(name) = protected {
+                    run["readOnlyEnvironment"] = json!(name);
+                }
+                let started = execute(&engine, Operation::Run, run).await?;
                 let deadline = Instant::now() + Duration::from_secs(timeout + 5);
                 loop {
                     tokio::time::sleep(Duration::from_millis(100)).await;

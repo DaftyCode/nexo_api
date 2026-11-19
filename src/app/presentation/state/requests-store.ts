@@ -1,4 +1,5 @@
 import { computed, signal } from '@angular/core';
+import { mayChangeData } from '../../domain/environment-protection';
 import { historyRequest, historyResponse, storedRun } from '../../domain/sanitize';
 import { ExecutionResponse, RequestDraft, Run, WorkspaceDocument } from '../../domain/models';
 import { CollectionsStore } from './collections-store';
@@ -37,6 +38,7 @@ export class RequestsStore {
     const { tabs, cases, status, section } = this.context;
     const tab = tabs.active();
     if (!tab || this.executions()[tab.id]) return;
+    if (!this.confirmed(tab.request)) return;
     const execution = cases.files.id();
     this.executions.update((all) => ({ ...all, [tab.id]: execution }));
     status.error.set('');
@@ -51,6 +53,7 @@ export class RequestsStore {
         tab.request,
         {
           workspace: this.context.workspaceId(),
+          environmentId: this.variables.environmentId(),
           environment: this.variables.environmentRows(),
           globals: this.variables.globalRows(),
           ancestors: this.collections.activeAncestors(),
@@ -73,6 +76,20 @@ export class RequestsStore {
     } finally {
       this.finish(tab.id);
     }
+  }
+  /**
+   * In an environment that asks first, once per send, before what may change data. Realtime
+   * protocols connect elsewhere and are not asked about.
+   */
+  private confirmed(request: RequestDraft) {
+    const environment = this.variables.environmentDocument();
+    if (this.variables.environmentSettings().protection !== 'confirm' || !environment) return true;
+    if (realtimeProtocols.includes(request.protocol) || !mayChangeData(request)) return true;
+    return this.context.confirm('environment.confirmSend', {
+      v0: environment.name,
+      v1: request.protocol === 'graphql' ? 'GraphQL' : request.method.toUpperCase(),
+      v2: request.url,
+    });
   }
   private finish(tab: string) {
     this.executions.update((all) => {
