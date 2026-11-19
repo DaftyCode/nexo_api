@@ -1,0 +1,159 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span><button
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="feature-heading">
+  <div>
+    <span class="eyebrow">{{ 'SCHEDULED. LOCAL. WATCHFUL.' | transloco }}</span>
+    <h1>{{ 'Monitors' | transloco }}</h1>
+    <p>{{ 'Run a collection on a schedule and be told when it fails.' | transloco }}</p>
+  </div>
+</div>
+<p class="monitor-notice" role="note">
+  {{
+    'Monitors run only while Nexo is open: nothing stays running in the background when you close it.'
+      | transloco
+  }}
+  @if (permission() === 'default') {
+    <button type="button" class="text-button" (click)="allowNotifications()">
+      {{ 'Allow notifications' | transloco }}
+    </button>
+  } @else if (permission() === 'denied') {
+    <span class="muted">{{
+      'Notifications are blocked for Nexo in this browser.' | transloco
+    }}</span>
+  }
+</p>
+<div class="feature-columns">
+  <section class="feature-card monitor-list" [attr.aria-label]="'Monitors' | transloco">
+    <div class="row between">
+      <h2>{{ 'Monitors' | transloco }}</h2>
+      <button
+        type="button"
+        class="button primary"
+        (click)="create()"
+        [disabled]="!state.collections().length"
+      >
+        {{ '＋ New monitor' | transloco }}
+      </button>
+    </div>
+    <ul>
+      @for (monitor of store.monitors(); track monitor.id) {
+        <li>
+          <button
+            type="button"
+            class="monitor-item"
+            [class.selected]="monitor.id === selectedId()"
+            [attr.aria-current]="monitor.id === selectedId() ? 'true' : null"
+            (click)="select(monitor)"
+          >
+            <strong>{{ monitor.name }}</strong>
+            <span class="muted">{{
+              schedule(monitor).key | transloco: schedule(monitor).params
+            }}</span>
+            @if (store.live(monitor.id)?.running) {
+              <span class="status-pill">{{ 'Running' | transloco }}</span>
+            } @else if (monitor.paused) {
+              <span class="status-pill skipped">{{ 'Paused' | transloco }}</span>
+            }
+          </button>
+        </li>
+      } @empty {
+        <li class="muted">
+          {{
+            (state.collections().length
+              ? 'No monitors yet.'
+              : 'Create a collection first: a monitor runs one.'
+            ) | transloco
+          }}
+        </li>
+      }
+    </ul>
+  </section>
+  <section class="grow">
+    @if (editing()) {
+      <app-monitor-form
+        [initial]="initial()"
+        [creating]="editing() === 'new'"
+        (save)="save($event)"
+        (cancelled)="editing.set('')"
+      />
+    } @else if (selected(); as monitor) {
+      <div class="feature-card">
+        <div class="row between">
+          <h2>{{ monitor.name }}</h2>
+          <div class="button-grid">
+            <button
+              type="button"
+              class="button primary"
+              (click)="runNow(monitor)"
+              [disabled]="store.live(monitor.id)?.running"
+            >
+              {{ '▷ Run now' | transloco }}
+            </button>
+            <button type="button" class="button" (click)="setPaused(monitor, !monitor.paused)">
+              {{ (monitor.paused ? 'Resume schedule' : 'Pause schedule') | transloco }}
+            </button>
+            <button type="button" class="button" (click)="edit(monitor)">
+              {{ 'Edit' | transloco }}
+            </button>
+            <button type="button" class="text-button danger" (click)="remove(monitor)">
+              {{ 'Delete' | transloco }}
+            </button>
+          </div>
+        </div>
+        <dl class="monitor-facts">
+          <dt>{{ 'Runs' | transloco }}</dt>
+          <dd>
+            {{
+              collectionName(monitor.collection) ?? ('The collection no longer exists' | transloco)
+            }}
+            @if (monitor.folder) {
+              <span class="muted">· {{ 'One folder' | transloco }}</span>
+            }
+          </dd>
+          <dt>{{ 'Environment' | transloco }}</dt>
+          <dd>{{ environmentName(monitor.environment) ?? ('No environment' | transloco) }}</dd>
+          <dt>{{ 'Schedule' | transloco }}</dt>
+          <dd>{{ schedule(monitor).key | transloco: schedule(monitor).params }}</dd>
+          <dt>{{ 'Next run' | transloco }}</dt>
+          <dd>
+            @if (store.live(monitor.id)?.next; as next) {
+              <time>{{ next | date: 'medium' }}</time>
+            } @else {
+              {{ (monitor.paused ? 'Paused' : 'Not scheduled') | transloco }}
+            }
+          </dd>
+          <dt>{{ 'When it fails' | transloco }}</dt>
+          <dd>
+            {{ (monitor.notify ? 'A notification' : 'Only its history') | transloco }}
+            @if (monitor.allowChanges) {
+              <span class="status-pill failed">{{
+                'Sends changes without asking' | transloco
+              }}</span>
+            }
+          </dd>
+        </dl>
+        <app-monitor-history [runs]="history()" />
+      </div>
+    } @else {
+      <div class="feature-card empty-response">
+        <span class="large-symbol" aria-hidden="true">◔</span>
+        <h3>{{ 'Keep an eye on your API' | transloco }}</h3>
+        <p>
+          {{
+            'A monitor runs a collection every few minutes or hours and keeps its last runs.'
+              | transloco
+          }}
+        </p>
+      </div>
+    }
+  </section>
+</div>

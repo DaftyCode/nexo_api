@@ -5,6 +5,7 @@ mod environments;
 mod execute;
 pub mod mcp;
 mod modules;
+mod monitors;
 pub mod operations;
 pub mod payloads;
 pub mod ports;
@@ -22,6 +23,7 @@ use ports::{
 };
 use std::sync::Arc;
 
+pub use monitors::MONITOR_HISTORY_LIMIT;
 pub use vault::vault_references;
 
 /// History entries kept per workspace; older ones are deleted when a new one is saved.
@@ -48,6 +50,8 @@ pub struct Application {
     datasources: Option<Arc<dyn DataSources>>,
     /// The sessions open on them.
     sql_sessions: datasource::Sessions,
+    /// What the monitors are doing now.
+    monitors: monitors::Board,
 }
 impl Application {
     pub fn new(
@@ -66,6 +70,7 @@ impl Application {
             modules: None,
             datasources: None,
             sql_sessions: datasource::Sessions::default(),
+            monitors: monitors::Board::default(),
         }
     }
     /// Adds the databases of the modules.

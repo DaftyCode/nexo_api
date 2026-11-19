@@ -140,6 +140,11 @@
   color: var(--nexo-color-danger);
   background: var(--nexo-color-danger-soft);
 }
+/* What did not run (a skipped or paused monitor). */
+.status-pill.skipped {
+  color: var(--nexo-color-text-muted);
+  background: var(--nexo-color-hover);
+}
 .assertion {
   display: flex;
   gap: var(--nexo-space-6);

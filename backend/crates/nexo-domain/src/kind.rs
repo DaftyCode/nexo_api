@@ -13,6 +13,7 @@ pub enum DocumentKind {
     Mock,
     Dataset,
     Api,
+    /// A collection, or a folder of it, run on a schedule while Nexo is open (`monitor`).
     Monitor,
     Comment,
     Settings,
@@ -58,9 +59,13 @@ pub enum DocumentKind {
     /// signs in; its password or private key (and passphrase) stay in the vault.
     #[serde(rename = "ssh-profile")]
     SshProfile,
+    /// The last runs of a monitor (`monitor`), newest first: when each one started, how long
+    /// it took, its state and its failed assertions, never its responses. One per monitor.
+    #[serde(rename = "monitor-history")]
+    MonitorHistory,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 23] = [
+    pub const ALL: [DocumentKind; 24] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -84,6 +89,7 @@ impl DocumentKind {
         Self::DbDiagram,
         Self::Session,
         Self::SshProfile,
+        Self::MonitorHistory,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -110,6 +116,7 @@ impl DocumentKind {
             Self::DbDiagram => "db-diagram",
             Self::Session => "session",
             Self::SshProfile => "ssh-profile",
+            Self::MonitorHistory => "monitor-history",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -130,6 +137,7 @@ impl DocumentKind {
                 | Self::DatabaseChange
                 | Self::SqlHistory
                 | Self::Session
+                | Self::MonitorHistory
         )
     }
     /// Request history and run reports grow with use, so a workspace lists them without
@@ -138,6 +146,10 @@ impl DocumentKind {
     pub fn listed_whole(self) -> bool {
         // A statement of the SQL history may be a whole script: listed by its name (its first
         // line) and read when opened.
-        !matches!(self, Self::History | Self::Run | Self::SqlHistory)
+        // The history of a monitor is read when the monitor is opened.
+        !matches!(
+            self,
+            Self::History | Self::Run | Self::SqlHistory | Self::MonitorHistory
+        )
     }
 }

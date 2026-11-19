@@ -94,6 +94,7 @@ mod mongo_compare;
 mod mongo_read;
 mod mongo_schema;
 mod mongo_write;
+mod monitors;
 mod protocols;
 mod ssh;
 #[cfg(test)]
@@ -111,6 +112,7 @@ pub use mongo_compare::*;
 pub use mongo_read::*;
 pub use mongo_schema::*;
 pub use mongo_write::*;
+pub use monitors::*;
 pub use protocols::*;
 pub use ssh::*;
 pub use typescript::typescript_contract;
@@ -284,6 +286,8 @@ operation_payloads! {
     DbDashboardRead => DbDashboardReadPayload,
     DbSplit => DbSplitPayload,
     DbDialect => DbDriverPayload,
+    MonitorStatus => MonitorStatusPayload,
+    MonitorRun => MonitorRunPayload,
 }
 
 /// Checks the payload of a Git operation.

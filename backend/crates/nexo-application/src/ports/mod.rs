@@ -7,6 +7,7 @@ use nexo_domain::{
 };
 use serde_json::Value;
 
+mod clock;
 mod database;
 mod datasource;
 mod modules;
@@ -16,6 +17,7 @@ mod scripts;
 mod watch;
 mod writes;
 
+pub use clock::*;
 pub use database::*;
 pub use datasource::*;
 pub use modules::*;

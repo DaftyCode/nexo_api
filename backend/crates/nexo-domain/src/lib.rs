@@ -8,6 +8,7 @@ pub use kind::DocumentKind;
 
 pub mod diff;
 pub mod hosts;
+pub mod monitor;
 pub mod schema;
 pub mod sql;
 pub mod ssh;
@@ -173,6 +174,9 @@ impl Document {
         }
         if self.kind == DocumentKind::SshProfile {
             ssh::validate_profile(&self.value)?;
+        }
+        if self.kind == DocumentKind::Monitor {
+            monitor::validate(&self.value)?;
         }
         if matches!(
             self.kind,

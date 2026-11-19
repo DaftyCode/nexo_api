@@ -164,3 +164,18 @@ export interface PreferencePort {
   read(key: string): string | undefined;
   write(key: string, value: string): void;
 }
+/** Whether the system shows notifications: allowed, refused, not asked yet or unavailable. */
+export type NotificationPermission = 'granted' | 'denied' | 'default' | 'unsupported';
+/** System notifications (the desktop's own, through the web `Notification` API). */
+export interface NotificationPort {
+  permission(): NotificationPermission;
+  /** Asks the person once; browsers allow it only right after a click. */
+  request(): Promise<NotificationPermission>;
+  show(title: string, body: string): void;
+}
+/** Where there are no notifications (tests, servers). */
+export const noNotifications: NotificationPort = {
+  permission: () => 'unsupported',
+  request: () => Promise.resolve('unsupported'),
+  show: () => undefined,
+};

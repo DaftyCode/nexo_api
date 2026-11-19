@@ -139,6 +139,8 @@ operations!(
         DbDashboardRead => "db.dashboard.read",
         DbSplit => "db.split",
         DbDialect => "db.dialect",
+        MonitorStatus => "monitor.status",
+        MonitorRun => "monitor.run",
     }
 );
 

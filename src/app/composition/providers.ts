@@ -15,6 +15,7 @@ import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
 import { BrowserPageExit } from '../infrastructure/browser-page-exit';
+import { BrowserNotifications } from '../infrastructure/browser-notifications';
 import type { DatabaseFilesPort, TransferFilesPort } from '../application/ports';
 import { transferFiles } from '../infrastructure/transfer-files';
 import { databaseFiles } from '../infrastructure/database-files';
@@ -44,6 +45,7 @@ export const workspaceProviders = [
   DesktopSignInWindow,
   BrowserPrinter,
   BrowserPageExit,
+  BrowserNotifications,
   { provide: REPORTS, useFactory: () => new ReportUseCases(inject(BrowserPrinter)) },
   { provide: APPEARANCE, useFactory: () => new AppearanceUseCases(inject(BrowserAppearance)) },
   { provide: INTEGRATION, useFactory: () => new IntegrationUseCases(inject(HttpApi)) },
@@ -97,6 +99,7 @@ export const workspaceProviders = [
         inject(BrowserFiles),
         inject(BrowserPreferences),
         inject(DesktopSignInWindow),
+        inject(BrowserNotifications),
       ),
   },
 ];

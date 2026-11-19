@@ -49,9 +49,9 @@ pub struct Options {
     pub loopback_ports: Vec<u16>,
     /// The SSH profiles a route may name (`sshProfiles`, filled in by the application).
     pub profiles: Value,
-    /// The read-only environment active, by name: requests that may change data are refused
-    /// (`readOnlyEnvironment`, filled in by the application; see `protection`).
-    pub read_only: Option<String>,
+    /// The protected environment active: requests that may change data are refused
+    /// (filled in by the application; see `protection`).
+    pub protection: Option<crate::protection::Rule>,
 }
 impl Options {
     pub fn from_payload(
@@ -74,10 +74,7 @@ impl Options {
             egress,
             loopback_ports,
             profiles: payload["sshProfiles"].clone(),
-            read_only: payload["readOnlyEnvironment"]
-                .as_str()
-                .filter(|name| !name.trim().is_empty())
-                .map(String::from),
+            protection: crate::protection::Rule::from_payload(payload),
         }
     }
 }

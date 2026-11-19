@@ -3,6 +3,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { WorkspaceState } from './workspace-state';
 import { EnvironmentPanel } from './environment-panel';
 import { RunnerPanel } from './runner-panel';
+import { MonitorsPanel } from './monitors-panel';
 import { ProtocolPanel } from './protocol-panel';
 import { DataPanel } from './data-panel';
 import { IntegrationPanel } from './integration-panel';
@@ -16,6 +17,7 @@ const sectionLabels: Record<string, string> = {
   environments: 'Environments',
   history: 'History',
   runner: 'Runner',
+  monitors: 'Monitors',
   realtime: 'Protocols',
   mocks: 'Mocks',
   datasets: 'Datasets',
@@ -33,6 +35,7 @@ const sectionLabels: Record<string, string> = {
     TranslocoPipe,
     EnvironmentPanel,
     RunnerPanel,
+    MonitorsPanel,
     ProtocolPanel,
     DataPanel,
     IntegrationPanel,

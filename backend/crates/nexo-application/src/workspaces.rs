@@ -123,7 +123,17 @@ impl Application {
         Ok(saved)
     }
     pub async fn delete_document(&self, id: &DocumentId, revision: i64) -> Result<()> {
-        self.workspaces.delete(id, revision).await
+        let monitor = self
+            .workspaces
+            .document(id)
+            .await
+            .is_ok_and(|document| document.kind == DocumentKind::Monitor);
+        self.workspaces.delete(id, revision).await?;
+        // A monitor's history goes with it.
+        if monitor {
+            self.forget_monitor(id).await?;
+        }
+        Ok(())
     }
     pub async fn revisions(&self, id: &DocumentId) -> Result<Vec<Revision>> {
         self.workspaces.revisions(id).await

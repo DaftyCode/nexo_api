@@ -5,7 +5,8 @@ use nexo_engine::Engine;
 use nexo_http::{AccessConfig, router};
 pub use nexo_http::{Mode, Sessions};
 use nexo_infrastructure::{
-    git::GitAdapter, infrastructure as err, sqlite::SqliteStore, vault::desktop_master_key,
+    clock::SystemClock, git::GitAdapter, infrastructure as err, sqlite::SqliteStore,
+    vault::desktop_master_key,
 };
 use nexo_modules::{HostConfig, Modules, StoreConfig};
 use nexo_mongo::MongoAdapter;
@@ -123,6 +124,8 @@ pub struct Running {
     pub sessions: Arc<Sessions>,
     shutdown: Option<oneshot::Sender<()>>,
     task: JoinHandle<()>,
+    /// The monitors' scheduler, which runs while the service does.
+    monitors: JoinHandle<()>,
     engine: Arc<Engine>,
 }
 impl Running {
@@ -130,6 +133,7 @@ impl Running {
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
+        self.monitors.abort();
         let _ = tokio::time::timeout(std::time::Duration::from_secs(10), &mut self.task).await;
         self.engine.close();
     }
@@ -166,6 +170,8 @@ pub async fn serve(config: Config, address: &str) -> Result<Running> {
         web_root: config.web_root.clone(),
     };
     let sessions = Arc::new(Sessions::default());
+    // Monitors run on their schedules only while Nexo is open: no service outlives it.
+    let monitors = tokio::spawn(app.clone().run_monitors(Arc::new(SystemClock)));
     let routes = router(app, access, sessions.clone());
     let (shutdown, signal) = oneshot::channel::<()>();
     let task = tokio::spawn(async move {
@@ -181,6 +187,7 @@ pub async fn serve(config: Config, address: &str) -> Result<Running> {
         sessions,
         shutdown: Some(shutdown),
         task,
+        monitors,
         engine,
     })
 }

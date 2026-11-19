@@ -105,6 +105,8 @@ export const EXECUTION_OPERATIONS = [
   'db.dashboard.read',
   'db.split',
   'db.dialect',
+  'monitor.status',
+  'monitor.run',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

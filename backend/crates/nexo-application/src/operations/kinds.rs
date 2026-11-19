@@ -46,6 +46,10 @@ impl Operation {
                 | Self::DbDialect
         )
     }
+    /// Operations on the monitors, which the application schedules, not the engine.
+    pub fn is_monitor(self) -> bool {
+        matches!(self, Self::MonitorStatus | Self::MonitorRun)
+    }
     /// Operations of the document database adapter (MongoDB), not of the engine.
     pub fn is_database(self) -> bool {
         matches!(
@@ -140,6 +144,8 @@ impl Operation {
                 | Self::MongoShell
                 | Self::MongoSync
                 | Self::DbConnect
+                | Self::MonitorStatus
+                | Self::MonitorRun
         )
     }
 }

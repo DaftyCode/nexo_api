@@ -122,6 +122,7 @@ describe('Workspace', () => {
         'Environments',
         'History',
         'Runner',
+        'Monitors',
         'Protocols',
         'Mocks',
         'Datasets',

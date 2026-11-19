@@ -40,7 +40,7 @@ impl Polling {
             egress: task.egress.clone(),
             loopback_ports: task.loopback_ports.clone(),
             profiles: task.payload["sshProfiles"].clone(),
-            read_only: None,
+            protection: None,
         };
         let transport = Arc::new(crate::transport::Transport::new(options, jar.clone())?);
         let mut url = base.clone();

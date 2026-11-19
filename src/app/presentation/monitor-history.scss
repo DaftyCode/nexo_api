@@ -1,0 +1,19 @@
+.monitor-run {
+  border-top: var(--nexo-border-width) solid var(--nexo-color-border);
+  padding: var(--nexo-space-4) 0;
+}
+.monitor-run summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-5);
+  cursor: pointer;
+  font-size: var(--nexo-font-size-sm);
+}
+.monitor-failure {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-3);
+  margin: var(--nexo-space-3) 0 0 var(--nexo-space-8);
+  font-size: var(--nexo-font-size-sm);
+}

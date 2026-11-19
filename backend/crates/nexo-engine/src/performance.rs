@@ -151,6 +151,7 @@ impl Performance {
             "workspace",
             "sshProfiles",
             "readOnlyEnvironment",
+            "unattendedEnvironment",
         ] {
             if let Some(value) = payload.get(key) {
                 iteration[key] = value.clone();

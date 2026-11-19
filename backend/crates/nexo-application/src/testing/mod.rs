@@ -99,7 +99,11 @@ impl WorkspaceRepository for Fake {
         documents.push(document.clone());
         Ok(document)
     }
-    async fn delete(&self, _: &DocumentId, _: i64) -> Result<()> {
+    async fn delete(&self, id: &DocumentId, _: i64) -> Result<()> {
+        self.documents
+            .lock()
+            .unwrap()
+            .retain(|stored| &stored.id != id);
         Ok(())
     }
     async fn revisions(&self, _: &DocumentId) -> Result<Vec<Revision>> {

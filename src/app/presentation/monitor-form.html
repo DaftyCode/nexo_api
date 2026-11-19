@@ -1,0 +1,114 @@
+<form class="feature-card monitor-form" (submit)="$event.preventDefault(); submit()">
+  <h2>{{ (creating() ? 'New monitor' : 'Edit monitor') | transloco }}</h2>
+  <label class="field"
+    >{{ 'Name' | transloco
+    }}<input [formField]="fields.name" [placeholder]="'Nightly checks' | transloco"
+  /></label>
+  <div class="row">
+    <label class="field grow"
+      >{{ 'Collection' | transloco
+      }}<select [formField]="fields.collection">
+        <option value="">{{ 'Choose a collection' | transloco }}</option>
+        @for (collection of state.collections(); track collection.id) {
+          <option [value]="collection.id">{{ collection.name }}</option>
+        }
+      </select></label
+    ><label class="field grow"
+      >{{ 'Folder' | transloco
+      }}<select [formField]="fields.folder">
+        <option value="">{{ 'The whole collection' | transloco }}</option>
+        @for (folder of folders(); track folder.id) {
+          <option [value]="folder.id">{{ folder.path }}</option>
+        }
+      </select></label
+    >
+  </div>
+  <label class="field"
+    >{{ 'Environment' | transloco
+    }}<select [formField]="fields.environment">
+      <option value="">{{ 'No environment' | transloco }}</option>
+      @for (environment of state.environments(); track environment.id) {
+        <option [value]="environment.id">{{ environment.name }}</option>
+      }
+    </select></label
+  >
+  @if (protection() === 'readonly') {
+    <p class="editor-hint">
+      {{
+        'This environment is read-only: the monitor sends no requests that change data.' | transloco
+      }}
+    </p>
+  } @else if (protection() === 'confirm') {
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.allowChanges" />{{
+        'Send changes without asking: this environment asks first, and a monitor cannot ask'
+          | transloco
+      }}</label
+    >
+  }
+  <fieldset class="monitor-schedule">
+    <legend>{{ 'Schedule' | transloco }}</legend>
+    <div class="row">
+      <label class="field"
+        >{{ 'Run' | transloco
+        }}<select [formField]="fields.unit">
+          <option value="minutes">{{ 'Every few minutes' | transloco }}</option>
+          <option value="hours">{{ 'Every few hours' | transloco }}</option>
+          <option value="cron">{{ 'On a cron expression' | transloco }}</option>
+        </select></label
+      >
+      @if (model().unit === 'cron') {
+        <label class="field grow"
+          >{{ 'Cron expression' | transloco
+          }}<input [formField]="fields.cron" spellcheck="false" placeholder="0 9 * * 1-5"
+        /></label>
+      } @else {
+        <label class="field"
+          >{{ (model().unit === 'hours' ? 'Hours' : 'Minutes') | transloco
+          }}<select [formField]="fields.every">
+            @for (value of model().unit === 'hours' ? everyHours : everyMinutes; track value) {
+              <option [value]="'' + value">{{ value }}</option>
+            }
+          </select></label
+        >
+      }
+    </div>
+    <p class="editor-hint">
+      {{
+        (model().unit === 'cron'
+          ? 'Minute, hour, day of the month, month and day of the week, in the time of this computer.'
+          : 'From midnight, in the time of this computer: every 15 minutes runs at :00, :15, :30 and :45.'
+        ) | transloco
+      }}
+    </p>
+  </fieldset>
+  <div class="row">
+    <label class="field"
+      >{{ 'Iterations' | transloco }}<input type="number" [formField]="fields.iterations"
+    /></label>
+    <label class="field"
+      >{{ 'Delay between requests (ms)' | transloco
+      }}<input type="number" [formField]="fields.delay"
+    /></label>
+  </div>
+  <label class="field"
+    >{{ 'Iteration data (JSON array)' | transloco
+    }}<textarea [formField]="fields.data" rows="3" spellcheck="false" placeholder="[]"></textarea>
+  </label>
+  <label class="check-field"
+    ><input type="checkbox" [formField]="fields.notify" />{{
+      'Notify me when a run fails' | transloco
+    }}</label
+  >
+  @if (problem(); as problem) {
+    <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+  }
+  <div class="button-grid">
+    <button type="submit" class="button primary" [disabled]="!!problem()">
+      {{ 'Save monitor' | transloco }}
+    </button>
+    <button type="button" class="button" (click)="cancelled.emit()">
+      {{ 'Cancel' | transloco }}
+    </button>
+  </div>
+</form>

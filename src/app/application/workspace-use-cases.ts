@@ -2,8 +2,10 @@ import {
   ApiPort,
   ExecuteArgs,
   FilePort,
+  NotificationPort,
   PreferencePort,
   SignInWindowPort,
+  noNotifications,
   noSignInWindow,
 } from './ports';
 import { GraphQLSchema, INTROSPECTION_QUERY, readSchema } from '../domain/graphql-schema';
@@ -31,6 +33,7 @@ import {
 import { VariableCases } from './workspace-use-cases/variables';
 import { SessionCases } from './workspace-use-cases/sessions';
 import { SshProfileCases } from './workspace-use-cases/ssh';
+import { MonitorCases } from './workspace-use-cases/monitors';
 
 export type {
   ExecutionContext,
@@ -61,18 +64,22 @@ export class WorkspaceUseCases {
   readonly sessions: SessionCases;
   /** SSH profiles to tunnel requests and connections through a bastion. */
   readonly ssh: SshProfileCases;
+  /** Collections run on a schedule while Nexo is open. */
+  readonly monitors: MonitorCases;
 
   constructor(
     private readonly api: ApiPort,
     readonly files: FilePort,
     preferences: PreferencePort = memoryPreferences(),
     signInWindow: SignInWindowPort = noSignInWindow,
+    notifications: NotificationPort = noNotifications,
   ) {
     this.oauth2 = new OAuth2Cases(api, signInWindow);
     this.cookies = new CookieCases(api);
     this.variables = new VariableCases(api, files, preferences);
     this.sessions = new SessionCases(api, preferences);
     this.ssh = new SshProfileCases(api);
+    this.monitors = new MonitorCases(api, notifications);
   }
 
   // Connection and session.

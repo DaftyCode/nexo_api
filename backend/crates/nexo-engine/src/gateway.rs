@@ -186,6 +186,9 @@ impl ExecutionGateway for Engine {
             | Operation::DbDashboardRead
             | Operation::DbSplit
             | Operation::DbDialect
+            // The application schedules the monitors and runs them through `run`.
+            | Operation::MonitorStatus
+            | Operation::MonitorRun
             => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),

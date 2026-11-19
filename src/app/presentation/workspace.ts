@@ -15,6 +15,7 @@ import { WorkspaceState } from './workspace-state';
 import { RequestEditor } from './request-editor';
 import { ResponseView } from './response-view';
 import { ToolsPanel } from './tools-panel';
+import { MonitorsStore } from './monitors-store';
 import { WorkspaceDocument } from '../domain/models';
 import { FloatingMenus } from './workspace/floating-menus';
 import { CollectionTreeView } from './workspace/tree-view';
@@ -88,6 +89,8 @@ export class Workspace {
   readonly menus = new FloatingMenus(this.host.nativeElement);
   constructor() {
     afterNextRender(() => void this.state.initialize());
+    // Failing monitors are notified wherever the workspace is.
+    inject(MonitorsStore);
   }
   @HostListener('window:keydown', ['$event']) protected shortcuts(event: KeyboardEvent) {
     const target = event.target as HTMLElement | null;

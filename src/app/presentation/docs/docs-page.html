@@ -62,6 +62,14 @@
           </li>
           <li>
             <a
+              href="#monitors"
+              [class.active]="active() === 'monitors'"
+              (click)="go($event, 'monitors')"
+              >{{ 'Monitors' | transloco }}</a
+            >
+          </li>
+          <li>
+            <a
               href="#import"
               [class.active]="active() === 'import'"
               (click)="go($event, 'import')"

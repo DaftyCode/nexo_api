@@ -85,6 +85,8 @@ fn start_backend(app: &tauri::App) -> Result<(DesktopInfo, Running), String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let application = tauri::Builder::default()
+        // `window.Notification` shows system notifications (monitors that fail).
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             start_logging(app);
             let backend = match start_backend(app) {

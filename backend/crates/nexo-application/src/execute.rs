@@ -2,6 +2,7 @@
 //! vault values it references, immediately before it runs.
 use crate::{
     Application,
+    environments::Sender,
     operations::{GitOperation, Operation},
     payloads,
     vault::{is_oauth2_token, vault_references},
@@ -10,9 +11,10 @@ use nexo_domain::{Error, Result, WorkspaceId};
 use serde_json::{Map, Value};
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 8] = [
+const INTERNAL_FIELDS: [&str; 9] = [
     "sshProfiles",
     "readOnlyEnvironment",
+    "unattendedEnvironment",
     "secretNames",
     "resolvedSecrets",
     "secretHosts",
@@ -29,6 +31,29 @@ impl Application {
     /// Runs an engine operation. Internal fields from clients are discarded, datasets are
     /// scoped to their workspace and vault references are resolved immediately before.
     pub async fn execute(&self, operation: Operation, payload: Value) -> Result<Value> {
+        let payload = self.checked(operation, payload).await?;
+        if operation.is_module() {
+            return self.module(operation, &payload).await;
+        }
+        if operation.is_datasource() {
+            return self.datasource(operation, Value::Object(payload)).await;
+        }
+        if operation.is_database() {
+            return self.database(operation, Value::Object(payload)).await;
+        }
+        if operation.is_monitor() {
+            return self.monitor(operation, &payload).await;
+        }
+        self.engine(operation, payload, Sender::Person).await
+    }
+
+    /// The payload of an operation without the fields only the backend sets, checked against
+    /// the operation's type and scoped to its workspace.
+    pub(crate) async fn checked(
+        &self,
+        operation: Operation,
+        payload: Value,
+    ) -> Result<Map<String, Value>> {
         let mut payload = match payload {
             Value::Object(map) => map,
             Value::Null => Map::new(),
@@ -63,15 +88,17 @@ impl Application {
                 "Choose a workspace for this operation".into(),
             ));
         }
-        if operation.is_module() {
-            return self.module(operation, &payload).await;
-        }
-        if operation.is_datasource() {
-            return self.datasource(operation, Value::Object(payload)).await;
-        }
-        if operation.is_database() {
-            return self.database(operation, Value::Object(payload)).await;
-        }
+        Ok(payload)
+    }
+
+    /// Runs a checked operation of the engine for `sender`: the person, or a monitor that
+    /// cannot be asked.
+    pub(crate) async fn engine(
+        &self,
+        operation: Operation,
+        mut payload: Map<String, Value>,
+        sender: Sender,
+    ) -> Result<Value> {
         // Change streams are sessions of the database, read like the engine's connections.
         if let Some(answer) = self.realtime_watch(operation, &payload).await? {
             return Ok(answer);
@@ -106,18 +133,12 @@ impl Application {
                 payload.insert("sshProfiles".into(), profiles);
             }
         }
-        // A read-only environment: the engine refuses what may change data (environments.rs).
+        // A protected environment: the engine refuses what may change data (environments.rs).
         if matches!(
             operation,
             Operation::Request | Operation::Run | Operation::Performance
         ) {
-            let workspace = payload.get("workspace").and_then(Value::as_str);
-            if let Some(name) = self
-                .read_only_environment(workspace, payload.get("environment"))
-                .await?
-            {
-                payload.insert("readOnlyEnvironment".into(), Value::String(name));
-            }
+            self.protect_environment(&mut payload, sender).await?;
         }
         if matches!(
             operation,

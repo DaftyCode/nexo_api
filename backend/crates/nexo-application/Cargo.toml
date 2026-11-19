@@ -16,5 +16,8 @@ tracing.workspace = true
 uuid.workspace = true
 # Already in the workspace: module files chosen by the person arrive in base64.
 base64.workspace = true
-[dev-dependencies]
+# The monitors' scheduler: timers and the tasks of their runs.
 tokio.workspace = true
+[dev-dependencies]
+# Monitor tests move a paused clock (`tokio::time::pause`).
+tokio = { workspace = true, features = ["test-util"] }

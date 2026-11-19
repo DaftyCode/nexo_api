@@ -25,9 +25,10 @@ export class DocumentsStore {
 
   async refresh() {
     const all = await this.context.cases.documents(this.context.workspaceId());
-    // The session is not a resource of the workspace: it says how to show the others.
+    // The session is not a resource of the workspace: it says how to show the others. The
+    // history of a monitor is read when the monitor is opened.
     this.session.set(all.find((d) => d.kind === 'session'));
-    this.documents.set(all.filter((d) => d.kind !== 'session'));
+    this.documents.set(all.filter((d) => d.kind !== 'session' && d.kind !== 'monitor-history'));
   }
   /** Replaces saved documents locally so the UI does not reload the whole workspace. */
   applySaved(saved: WorkspaceDocument[]) {

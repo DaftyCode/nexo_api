@@ -1,17 +1,52 @@
 //! Read-only environments. While one is active the engine refuses every request that may
 //! change data, wherever it comes from: the request sent, a collection run, a load test or
 //! `nx.sendRequest` in a script. The application names the environment in
-//! `readOnlyEnvironment`; the CLI does it from the environment file.
+//! `readOnlyEnvironment`; the CLI does it from the environment file. A monitor, which
+//! cannot ask, gets an environment that asks first in `unattendedEnvironment` and is
+//! refused the same.
 use nexo_domain::{Error, Result};
 use serde_json::Value;
+
+/// Why requests that may change data are refused, with the name of the environment.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Rule {
+    ReadOnly(String),
+    /// An environment that asks before changes, in a run nobody can be asked in.
+    Unattended(String),
+}
+impl Rule {
+    /// The rule the application put in a payload, if any.
+    pub fn from_payload(payload: &Value) -> Option<Self> {
+        let name = |field: &str| {
+            payload[field]
+                .as_str()
+                .filter(|name| !name.trim().is_empty())
+                .map(String::from)
+        };
+        name("readOnlyEnvironment")
+            .map(Self::ReadOnly)
+            .or_else(|| name("unattendedEnvironment").map(Self::Unattended))
+    }
+    fn refuse(&self, what: &str) -> Error {
+        Error::Validation(match self {
+            Self::ReadOnly(environment) => {
+                format!("The environment «{environment}» is read-only: {what} are not sent")
+            }
+            Self::Unattended(environment) => format!(
+                "The environment «{environment}» asks before sending changes and a monitor \
+                 cannot ask: {what} are not sent"
+            ),
+        })
+    }
+}
 
 /// Methods that only read (RFC 9110, safe methods); any other may change data.
 const SAFE: [&str; 4] = ["GET", "HEAD", "OPTIONS", "TRACE"];
 
-/// Refuses `request` (collection format) when `environment` is read-only and it may change
-/// data: a method that is not safe, or a GraphQL mutation even when sent with GET.
-pub fn check(environment: Option<&str>, request: &Value) -> Result<()> {
-    let Some(environment) = environment else {
+/// Refuses `request` (collection format) under `rule` when it may change data: a method
+/// that is not safe, or a GraphQL mutation even when sent with GET.
+pub fn check(rule: Option<&Rule>, request: &Value) -> Result<()> {
+    let Some(rule) = rule else {
         return Ok(());
     };
     let method = request["method"]
@@ -23,18 +58,14 @@ pub fn check(environment: Option<&str>, request: &Value) -> Result<()> {
     let graphql = body["mode"] == "graphql";
     if graphql {
         if mutation(body["graphql"]["query"].as_str().unwrap_or_default()) {
-            return Err(Error::Validation(format!(
-                "The environment «{environment}» is read-only: GraphQL mutations are not sent"
-            )));
+            return Err(rule.refuse("GraphQL mutations"));
         }
         return Ok(());
     }
     if SAFE.contains(&method.as_str()) {
         return Ok(());
     }
-    Err(Error::Validation(format!(
-        "The environment «{environment}» is read-only: {method} requests are not sent"
-    )))
+    Err(rule.refuse(&format!("{method} requests")))
 }
 
 /// Whether a GraphQL document defines a mutation. Comments and strings are skipped, so a
@@ -100,7 +131,8 @@ mod tests {
 
     #[test]
     fn a_read_only_environment_refuses_what_may_change_data() {
-        let env = Some("Production");
+        let rule = Rule::ReadOnly("Production".into());
+        let env = Some(&rule);
         for method in ["GET", "head", "OPTIONS", "TRACE"] {
             assert!(check(env, &json!({"method": method})).is_ok(), "{method}");
         }
@@ -120,7 +152,8 @@ mod tests {
 
     #[test]
     fn graphql_queries_pass_and_mutations_do_not() {
-        let env = Some("Production");
+        let rule = Rule::ReadOnly("Production".into());
+        let env = Some(&rule);
         assert!(check(env, &graphql("query Orders { orders { id } }")).is_ok());
         assert!(
             check(
@@ -143,5 +176,28 @@ mod tests {
         assert!(!mutation("subscription { mutationCount }"));
         // A GraphQL query sent with GET in the URL is a read; a raw POST is a write.
         assert!(check(env, &json!({"method": "POST", "body": {"mode": "raw"}})).is_err());
+    }
+
+    #[test]
+    fn a_monitor_is_refused_changes_where_the_environment_asks_first() {
+        let payload = |field: &str| serde_json::json!({ field: "Staging", "request": {} });
+        let rule = Rule::from_payload(&payload("unattendedEnvironment")).unwrap();
+        assert_eq!(rule, Rule::Unattended("Staging".into()));
+        assert_eq!(
+            check(Some(&rule), &json!({"method": "POST"}))
+                .unwrap_err()
+                .to_string(),
+            "The environment «Staging» asks before sending changes and a monitor cannot ask: \
+             POST requests are not sent"
+        );
+        assert!(check(Some(&rule), &json!({"method": "GET"})).is_ok());
+        assert_eq!(
+            Rule::from_payload(&payload("readOnlyEnvironment")),
+            Some(Rule::ReadOnly("Staging".into()))
+        );
+        assert_eq!(
+            Rule::from_payload(&json!({"readOnlyEnvironment": " "})),
+            None
+        );
     }
 }

@@ -877,6 +877,16 @@ export interface DbDriverPayload {
   workspace?: string;
 }
 
+export interface MonitorStatusPayload {
+  workspace: string;
+  after?: number;
+}
+
+export interface MonitorRunPayload {
+  workspace: string;
+  id: string;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -994,6 +1004,8 @@ export interface OperationPayloads {
   'db.dashboard.read': DbDashboardReadPayload;
   'db.split': DbSplitPayload;
   'db.dialect': DbDriverPayload;
+  'monitor.status': MonitorStatusPayload;
+  'monitor.run': MonitorRunPayload;
 }
 
 /** The payload of an operation. */

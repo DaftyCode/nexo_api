@@ -4,6 +4,7 @@ export const workspaceSections = [
   { id: 'environments', icon: '◫', label: 'Environments' },
   { id: 'history', icon: '◷', label: 'History' },
   { id: 'runner', icon: '▷', label: 'Runner' },
+  { id: 'monitors', icon: '◔', label: 'Monitors' },
   { id: 'realtime', icon: '⇄', label: 'Protocols' },
   { id: 'mocks', icon: '◇', label: 'Mocks' },
   { id: 'datasets', icon: '▦', label: 'Datasets' },

@@ -27,7 +27,7 @@ import { DatabaseUseCases } from '../application/database-use-cases';
 import { IntegrationUseCases } from '../application/integration-use-cases';
 import { AppearanceUseCases } from '../application/appearance-use-cases';
 import { WorkspaceUseCases } from '../application/workspace-use-cases';
-import { ApiPort, FilePort } from '../application/ports';
+import { ApiFailure, ApiPort, FilePort } from '../application/ports';
 import { WorkspaceDocument } from '../domain/models';
 import { TestTransferFiles } from './mongo-transfer';
 
@@ -107,7 +107,7 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     },
     async document(id) {
       const found = documents.find((d) => d.id === id);
-      if (!found) throw new Error('Not found');
+      if (!found) throw new ApiFailure('Not found', 'not_found', 404);
       return found;
     },
     async remove(document) {

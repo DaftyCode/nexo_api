@@ -43,6 +43,27 @@ nx.test('Successful response', () => {{ '{' }}
     }}
   </p>
 </section>
+<section id="monitors">
+  <h2>{{ 'Monitors' | transloco }}</h2>
+  <p>
+    {{
+      'In Monitors, choose a collection or one of its folders, an environment and when it runs: every few minutes or hours from midnight, or on a cron expression in the time of this computer. Run now, Pause schedule and Delete act on the monitor shown.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Monitors run only while Nexo is open, never two runs of one monitor at a time: a run that would overlap the previous one is skipped and noted. Each monitor keeps its last 100 runs, with their failed assertions and requests but not their responses.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'With Notify me when a run fails, a failure shows a system notification; in the browser, allow notifications first. A monitor cannot ask before sending changes: in an environment that asks first it sends none unless you allow it, and a read-only environment never sends them.'
+        | transloco
+    }}
+  </p>
+</section>
 <section id="import">
   <h2>{{ 'Import and export' | transloco }}</h2>
   <ul>
