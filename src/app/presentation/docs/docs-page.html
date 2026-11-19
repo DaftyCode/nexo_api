@@ -87,6 +87,14 @@
             >
           </li>
           <li>
+            <a
+              href="#routes"
+              [class.active]="active() === 'routes'"
+              (click)="go($event, 'routes')"
+              >{{ 'Proxies and SSH tunnels' | transloco }}</a
+            >
+          </li>
+          <li>
             <a href="#mocks" [class.active]="active() === 'mocks'" (click)="go($event, 'mocks')">{{
               'Mocks, datasets and API definitions' | transloco
             }}</a>

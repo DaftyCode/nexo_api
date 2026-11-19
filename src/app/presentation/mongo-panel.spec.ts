@@ -138,8 +138,31 @@ describe('MongoPanel', () => {
         '&authSource=admin&tls=true&tlsAllowInvalidCertificates=true&w=majority&retryWrites=false' +
         '&appName=reports',
     );
-    await tab('SSH tunnel');
-    expect(text()).toContain('SSH tunnels and SOCKS5 proxies arrive in a later version');
+  });
+
+  it('reaches the servers through a SOCKS5 proxy, never an HTTP one', async () => {
+    await tab('Connect through');
+    const via = [...root().querySelectorAll('select')].find((select) =>
+      [...select.options].some((option) => option.value === 'socks5'),
+    )!;
+    expect([...via.options].map((option) => option.value)).toEqual(['direct', 'socks5', 'ssh']);
+    expect(text()).toContain('MongoDB goes through SOCKS5 proxies and SSH tunnels');
+    await fill(fixture, 'Connect through', 'socks5');
+    expect(text()).toContain('Enter the host of the proxy');
+    await fill(fixture, 'Proxy host', 'proxy.test');
+    await fill(fixture, 'Proxy port', '1080');
+    api.responses['mongo.test'] = report;
+    await click('Test connection');
+    const route = { via: 'socks5', host: 'proxy.test', port: '1080', remoteDns: true };
+    const call = api.calls.find((c) => c.operation === 'mongo.test')!;
+    expect(call.payload['connection']).toEqual({ uri: 'mongodb://localhost:27017/', route });
+    await click('Save connection');
+    expect(api.documentsStore[0].value).toMatchObject({ nexoRoute: route });
+    await click(/New connection/);
+    expect(valueOf(root(), 'Connection name')).toBe('Local MongoDB');
+    await click(/^Local MongoDB$/);
+    await tab('Connect through');
+    expect(valueOf(root(), 'Proxy host')).toBe('proxy.test');
   });
 
   it('tests a connection and shows each server with the egress policy', async () => {

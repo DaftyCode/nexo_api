@@ -1,5 +1,8 @@
 use super::*;
+use nexo_application::ports::{ConnectionRoute, SocksProxy};
 use nexo_domain::hosts::AllowedHosts;
+use serde_json::json;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 /// A policy that refuses the hosts named `private…`.
 struct Policy {
@@ -27,6 +30,27 @@ impl NetworkPolicy for Policy {
     }
     fn restrictive(&self) -> bool {
         self.restrictive
+    }
+    /// A route names the proxy's port; HTTP proxies are refused, as the engine does.
+    async fn socks_proxy(&self, route: &ConnectionRoute) -> Result<Option<SocksProxy>> {
+        match route.route["via"].as_str() {
+            Some("socks5") => Ok(Some(SocksProxy {
+                host: "127.0.0.1".into(),
+                port: route.route["port"].as_u64().unwrap_or(1080) as u16,
+                credentials: Some(("ana".into(), "pw".into())),
+            })),
+            Some("http") => Err(Error::Validation("No HTTP proxies here".into())),
+            _ => Ok(None),
+        }
+    }
+    /// Names behind the proxy are checked as the far side sees them: `hidden…` is refused.
+    async fn check_routed_destination(&self, host: &str, _: u16) -> Result<()> {
+        if host.starts_with("hidden") {
+            return Err(Error::Validation(format!(
+                "{host} is refused behind the proxy"
+            )));
+        }
+        Ok(())
     }
 }
 fn adapter(restrictive: bool) -> MongoAdapter {
@@ -115,4 +139,88 @@ fn tls_prefers_post_quantum_key_exchange() {
         provider.kx_groups[0].name(),
         rustls::NamedGroup::X25519MLKEM768
     );
+}
+
+/// A SOCKS5 proxy that signs in `ana`/`pw`, records each destination asked for and then
+/// hangs up, as if the destination did not answer.
+async fn recording_proxy() -> (u16, Arc<Mutex<Vec<String>>>) {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let asked = Arc::new(Mutex::new(Vec::new()));
+    let recorded = asked.clone();
+    tokio::spawn(async move {
+        while let Ok((mut stream, _)) = listener.accept().await {
+            let recorded = recorded.clone();
+            tokio::spawn(async move {
+                let mut head = [0u8; 2];
+                stream.read_exact(&mut head).await?;
+                let mut methods = vec![0u8; head[1] as usize];
+                stream.read_exact(&mut methods).await?;
+                stream.write_all(&[5, 2]).await?;
+                let mut version = [0u8; 2];
+                stream.read_exact(&mut version).await?;
+                let mut user = vec![0u8; version[1] as usize];
+                stream.read_exact(&mut user).await?;
+                let mut length = [0u8; 1];
+                stream.read_exact(&mut length).await?;
+                let mut password = vec![0u8; length[0] as usize];
+                stream.read_exact(&mut password).await?;
+                let ok = user == b"ana" && password == b"pw";
+                stream.write_all(&[1, if ok { 0 } else { 1 }]).await?;
+                let mut request = [0u8; 5];
+                stream.read_exact(&mut request).await?;
+                let mut name = vec![0u8; request[4] as usize + 2];
+                stream.read_exact(&mut name).await?;
+                let port = u16::from_be_bytes([name[name.len() - 2], name[name.len() - 1]]);
+                let host = String::from_utf8_lossy(&name[..name.len() - 2]).to_string();
+                recorded.lock().unwrap().push(format!("{host}:{port}"));
+                Ok::<_, std::io::Error>(())
+            });
+        }
+    });
+    (port, asked)
+}
+
+#[tokio::test]
+async fn connections_with_a_route_go_through_its_proxy_by_name() {
+    let (port, asked) = recording_proxy().await;
+    let routed = |uri: &str, route: serde_json::Value| DatabaseConnection {
+        uri: uri.into(),
+        route: ConnectionRoute {
+            route,
+            profiles: serde_json::Value::Null,
+        },
+        ..Default::default()
+    };
+    let socks = json!({"via": "socks5", "port": port});
+    let uri = "mongodb://db.internal:27017/?serverSelectionTimeoutMS=300&connectTimeoutMS=300";
+    let error = adapter(false)
+        .test(routed(uri, socks.clone()))
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(error.starts_with("No server answered:"), "{error}");
+    assert!(
+        asked
+            .lock()
+            .unwrap()
+            .contains(&"db.internal:27017".to_string()),
+        "{asked:?}"
+    );
+
+    let hidden = adapter(false)
+        .test(routed("mongodb://hidden.internal", socks))
+        .await
+        .unwrap_err()
+        .to_string();
+    assert_eq!(
+        hidden,
+        "Nexo may not connect to hidden.internal:27017: hidden.internal is refused behind the proxy"
+    );
+    let http = adapter(false)
+        .test(routed("mongodb://db.internal", json!({"via": "http"})))
+        .await
+        .unwrap_err()
+        .to_string();
+    assert_eq!(http, "No HTTP proxies here");
 }

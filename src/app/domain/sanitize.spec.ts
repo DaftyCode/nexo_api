@@ -74,6 +74,7 @@ describe('sanitize', () => {
         {
           name: 'r',
           nexoTransport: '{"clientTls":{}}',
+          nexoRoute: { via: 'ssh', profile: 'p1' },
           request: {
             auth: {
               type: 'basic',
@@ -89,6 +90,7 @@ describe('sanitize', () => {
     const text = JSON.stringify(exported);
     expect(text).not.toContain('live-token');
     expect(text).not.toContain('nexoTransport');
+    expect(text).not.toContain('nexoRoute');
     expect(text).toContain('{{password}}');
     expect(text).toContain('ada');
   });

@@ -190,3 +190,49 @@ async fn explains_finds_and_pipelines_and_reads_the_profiler() {
         .unwrap();
     assert_eq!(indexes["indexes"][0]["name"], "orders_id_");
 }
+
+#[tokio::test]
+async fn a_connection_through_ssh_gets_its_profile_and_nothing_a_client_sent() {
+    let (application, fake) = application();
+    fake.documents.lock().unwrap().push(Document {
+        id: DocumentId::parse("p1").unwrap(),
+        workspace_id: WorkspaceId::parse("local").unwrap(),
+        kind: DocumentKind::SshProfile,
+        name: "Bastion".into(),
+        revision: 1,
+        updated_at: 0,
+        value: json!({"host": "bastion", "port": 22, "username": "ana",
+            "auth": "password", "secret": "ssh-p1"}),
+    });
+    let route = json!({"via": "ssh", "profile": "p1"});
+    let forged = json!({"p1": {"host": "evil", "username": "x", "auth": "password"}});
+    application
+        .execute(
+            Operation::MongoTest,
+            json!({"workspace": "local", "connection": {
+                "uri": "mongodb://db.internal", "route": route, "sshProfiles": forged,
+            }}),
+        )
+        .await
+        .unwrap();
+    let connection = fake.connections.lock().unwrap().remove(0);
+    assert_eq!(connection.route.route, route);
+    assert_eq!(
+        connection.route.profiles,
+        json!({"p1": {"host": "bastion", "port": 22, "username": "ana",
+            "auth": "password", "password": "secret-of-ssh-p1"}})
+    );
+    assert!(!format!("{connection:?}").contains("secret-of-ssh-p1"));
+
+    // Without a route nothing is filled, and what a client sent is dropped all the same.
+    application
+        .execute(
+            Operation::MongoTest,
+            json!({"connection": {"uri": "mongodb://db.test", "sshProfiles": forged}}),
+        )
+        .await
+        .unwrap();
+    let direct = fake.connections.lock().unwrap().remove(0);
+    assert!(direct.route.is_direct());
+    assert_eq!(direct.route.profiles, Value::Null);
+}

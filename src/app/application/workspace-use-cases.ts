@@ -30,6 +30,7 @@ import {
 } from './workspace-use-cases/types';
 import { VariableCases } from './workspace-use-cases/variables';
 import { SessionCases } from './workspace-use-cases/sessions';
+import { SshProfileCases } from './workspace-use-cases/ssh';
 
 export type {
   ExecutionContext,
@@ -58,6 +59,8 @@ export class WorkspaceUseCases {
   readonly variables: VariableCases;
   /** The tabs and the order of collections a workspace opens with. */
   readonly sessions: SessionCases;
+  /** SSH profiles to tunnel requests and connections through a bastion. */
+  readonly ssh: SshProfileCases;
 
   constructor(
     private readonly api: ApiPort,
@@ -69,6 +72,7 @@ export class WorkspaceUseCases {
     this.cookies = new CookieCases(api);
     this.variables = new VariableCases(api, files, preferences);
     this.sessions = new SessionCases(api, preferences);
+    this.ssh = new SshProfileCases(api);
   }
 
   // Connection and session.

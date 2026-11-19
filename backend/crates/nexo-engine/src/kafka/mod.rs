@@ -138,7 +138,7 @@ impl Settings {
                 .to_string(),
             egress,
             loopback_ports,
-            route: crate::route::Route::from_settings(payload)?,
+            route: crate::route::Route::with_profiles(payload, &payload["sshProfiles"])?,
             restricted,
         })
     }

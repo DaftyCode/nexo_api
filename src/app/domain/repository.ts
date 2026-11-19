@@ -1,5 +1,5 @@
 import { WorkspaceDocument } from './models';
-import { exportableCollection, masked } from './sanitize';
+import { LOCAL_SETTINGS, exportableCollection, masked } from './sanitize';
 
 /** A collection of a workspace Git project, as `export` wrote it. */
 export interface RepositoryFile {
@@ -40,7 +40,7 @@ export function stableJson(value: unknown): string {
 
 /**
  * The repository version of a collection with what the export left out taken from the local
- * one: credentials it masked and the local transport settings. Rows are matched by `key`
+ * one: credentials it masked, the local transport settings and routes. Rows are matched by `key`
  * when they have one, else by position.
  */
 export function restoreLocalValues(repository: unknown, local: unknown): unknown {
@@ -59,8 +59,8 @@ export function restoreLocalValues(repository: unknown, local: unknown): unknown
   const restored: Record<string, unknown> = Object.fromEntries(
     Object.entries(repository).map(([key, item]) => [key, restoreLocalValues(item, before[key])]),
   );
-  if ('nexoTransport' in before && !('nexoTransport' in repository))
-    restored['nexoTransport'] = before['nexoTransport'];
+  for (const key of LOCAL_SETTINGS)
+    if (key in before && !(key in repository)) restored[key] = before[key];
   return restored;
 }
 

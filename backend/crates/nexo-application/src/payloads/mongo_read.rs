@@ -12,6 +12,9 @@ payload! {
             ca_pem "caPem": String => "string",
             cert_pem "certPem": String => "string",
             key_pem "keyPem": String => "string",
+            route "route": Map<String, Value> => "{\n    via?: 'direct' | 'http' | 'socks5' | 'ssh';\n    host?: string;\n    port?: number | string;\n    username?: string;\n    password?: string;\n    remoteDns?: boolean;\n    profile?: string;\n  }",
+            // Filled by the application from the SSH profile the route names (ssh.rs).
+            ssh_profiles "sshProfiles": Map<String, Value> => "never",
         }
     }
 }

@@ -1,0 +1,63 @@
+<div class="route-fields">
+  <label class="field"
+    >{{ 'Connect through' | transloco
+    }}<select [formField]="fields.via">
+      @if (inheritable() || route().via === 'inherit') {
+        <option value="inherit">{{ 'Inherit from parent' | transloco }}</option>
+      }
+      <option value="direct">{{ 'Directly' | transloco }}</option>
+      @if (allowHttp() || route().via === 'http') {
+        <option value="http">{{ 'HTTP proxy' | transloco }}</option>
+      }
+      <option value="socks5">{{ 'SOCKS5 proxy' | transloco }}</option>
+      <option value="ssh">{{ 'SSH tunnel' | transloco }}</option>
+    </select></label
+  >
+  @switch (route().via) {
+    @case ('inherit') {}
+    @case ('direct') {}
+    @case ('ssh') {
+      <label class="field"
+        >{{ 'SSH profile' | transloco
+        }}<select [formField]="fields.profile">
+          <option value="">{{ 'Choose a profile' | transloco }}</option>
+          @for (profile of profiles(); track profile.id) {
+            <option [value]="profile.id">{{ profile.name }}</option>
+          }
+        </select></label
+      >
+    }
+    @default {
+      <label class="field"
+        >{{ 'Proxy host' | transloco }}<input [formField]="fields.host" spellcheck="false"
+      /></label>
+      <label class="field"
+        >{{ 'Proxy port' | transloco
+        }}<input
+          [formField]="fields.port"
+          inputmode="numeric"
+          [placeholder]="route().via === 'socks5' ? '1080' : '8080'"
+      /></label>
+      <label class="field"
+        >{{ 'Proxy user' | transloco
+        }}<input [formField]="fields.username" spellcheck="false" autocomplete="off"
+      /></label>
+      <label class="field"
+        >{{ 'Proxy password' | transloco
+        }}<input type="password" [formField]="fields.password" autocomplete="off"
+      /></label>
+      @if (route().via === 'socks5') {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.remoteDns" />
+          {{ 'The proxy resolves names (socks5h)' | transloco }}</label
+        >
+      }
+    }
+  }
+</div>
+@if (route().via === 'ssh' && !profiles().length) {
+  <p class="editor-hint">{{ 'Create SSH profiles in Settings → SSH.' | transloco }}</p>
+}
+@if (problem(); as problem) {
+  <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+}

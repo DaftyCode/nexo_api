@@ -20,9 +20,12 @@ import {
   CollectionSettingsModel,
   collectionAuth,
   collectionEvents,
+  collectionRoute,
   readCollectionSettings,
 } from '../domain/collection-settings';
+import { Route } from '../domain/route';
 import { CodeEditor } from './code-editor';
+import { RoutePicker } from './route-picker';
 
 /** The collection, and the folder of it when one is being edited. */
 interface Target {
@@ -33,12 +36,12 @@ interface Target {
 }
 
 /**
- * Variables, authorization and scripts that the requests of a collection or of one of its
- * folders inherit. Folders can also inherit the authorization of the folder or collection
- * above them, as in Postman.
+ * Variables, authorization, scripts and the way to the servers that the requests of a
+ * collection or of one of its folders inherit. Folders can also inherit the authorization
+ * and the route of the folder or collection above them, as auth does in Postman.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, VariableEditor, AuthEditor, CodeEditor],
+  imports: [TranslocoPipe, FormField, VariableEditor, AuthEditor, CodeEditor, RoutePicker],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-collection-settings-panel',
   styleUrl: './collection-settings-panel.scss',
@@ -109,6 +112,10 @@ export class CollectionSettingsPanel {
     this.model.update((m) => ({ ...m, auth }));
     this.dirty.set(true);
   }
+  protected editRoute(route: Route) {
+    this.model.update((m) => ({ ...m, route }));
+    this.dirty.set(true);
+  }
   /** "Get new access token" or "Refresh", with the variables of this collection or folder. */
   protected async requestToken(refresh: boolean) {
     const target = this.target();
@@ -134,6 +141,7 @@ export class CollectionSettingsPanel {
         variables: this.rows(),
         auth: collectionAuth(m, folder),
         event: collectionEvents(m, (target.folder ?? target.collection)['event']),
+        route: collectionRoute(m, folder),
       },
       target.path,
     );

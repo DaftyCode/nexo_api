@@ -1,15 +1,27 @@
 import { AuthDraft, readAuth, writeAuth } from './auth';
+import { Route, StoredRoute, ownRoute, readRoute, storedRoute } from './route';
+import { VariableRow } from './variables';
 
 /**
- * A collection root or a folder: both hold `variable`, `auth` and `event` (scripts).
+ * A collection root or a folder: both hold `variable`, `auth`, `event` (scripts) and
+ * `nexoRoute` (how their requests reach their servers).
  */
 export type SettingsGroup = Readonly<Record<string, unknown>>;
 
-/** Editable view of the authorization and scripts of a collection or a folder. */
+/** Editable view of the authorization, scripts and route of a collection or a folder. */
 export interface CollectionSettingsModel {
   auth: AuthDraft;
   prerequest: string;
   tests: string;
+  route: Route;
+}
+
+/** What is saved in a collection or a folder; whatever is undefined is removed. */
+export interface GroupSettings {
+  variables: readonly VariableRow[];
+  auth?: unknown;
+  event?: unknown;
+  route?: StoredRoute;
 }
 
 function scriptText(group: SettingsGroup | undefined, listen: string): string {
@@ -25,7 +37,8 @@ function scriptText(group: SettingsGroup | undefined, listen: string): string {
 
 /**
  * Reads the settings of a collection root or, with `folder`, of a folder. Without a stored
- * authorization a folder inherits its parent's, while a collection has none.
+ * authorization or route a folder inherits its parent's, while a collection has none and
+ * its requests go directly.
  */
 export function readCollectionSettings(
   group: SettingsGroup | undefined,
@@ -35,7 +48,19 @@ export function readCollectionSettings(
     auth: readAuth(group?.['auth'], folder ? 'inherit' : 'noauth'),
     prerequest: scriptText(group, 'prerequest'),
     tests: scriptText(group, 'test'),
+    route: readRoute(group?.['nexoRoute'], folder ? 'inherit' : 'direct'),
   };
+}
+
+/**
+ * The route to store, or `undefined` to store none: a folder then inherits its parent's
+ * and a collection root goes directly. A folder keeps going directly, over its parent's.
+ */
+export function collectionRoute(
+  model: CollectionSettingsModel,
+  folder = false,
+): StoredRoute | undefined {
+  return folder ? ownRoute(model.route) : storedRoute(model.route);
 }
 
 /**

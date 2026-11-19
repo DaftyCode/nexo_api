@@ -1,6 +1,8 @@
 import { ApiPort, FilePort, PreferencePort } from '../ports';
 import { itemAt } from '../../domain/collection-tree';
+import { GroupSettings } from '../../domain/collection-settings';
 import { Collection, WorkspaceDocument, asCollection } from '../../domain/models';
+import { StoredRoute } from '../../domain/route';
 import {
   VariableRow,
   applyScriptValues,
@@ -67,12 +69,12 @@ export class VariableCases {
   }
 
   /**
-   * Variables, auth and scripts of the collection root or, with a `folder` path, of that
-   * folder. A folder without variables stores none.
+   * Variables, auth, scripts and route of the collection root or, with a `folder` path, of
+   * that folder. A folder without variables stores none.
    */
   async saveCollectionSettings(
     document: WorkspaceDocument,
-    settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+    settings: GroupSettings,
     folder: readonly number[] = [],
   ) {
     const value: Collection = structuredClone(asCollection(document.value));
@@ -88,6 +90,8 @@ export class VariableCases {
     else group['auth'] = settings.auth;
     if (settings.event === undefined) delete group['event'];
     else group['event'] = settings.event;
+    if (settings.route === undefined) delete group['nexoRoute'];
+    else group['nexoRoute'] = settings.route;
     return this.api.save({ ...document, value });
   }
 
@@ -125,6 +129,7 @@ export class VariableCases {
             variables: next,
             auth: collection['auth'],
             event: collection['event'],
+            route: collection['nexoRoute'] as StoredRoute | undefined,
           }),
         );
     }

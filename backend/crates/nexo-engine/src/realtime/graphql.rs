@@ -130,6 +130,7 @@ impl Task {
             transport: json!({"caPem": self.payload["caPem"], "route": self.payload["route"], "proxy": self.payload["proxy"]}),
             egress: self.egress.clone(),
             loopback_ports: self.loopback_ports.clone(),
+            profiles: self.payload["sshProfiles"].clone(),
         };
         let transport = match crate::transport::Transport::new(options, Arc::default()) {
             Ok(transport) => transport,

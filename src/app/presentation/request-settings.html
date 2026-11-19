@@ -22,15 +22,16 @@
     </select></label
   >
 </div>
+<app-route-picker [route]="route()" (routeChange)="setRoute($event)" [inheritable]="true" />
 <div class="field">
-  <span>{{ 'Proxy and client TLS (JSON)' | transloco }}</span>
+  <span>{{ 'Transport settings (JSON)' | transloco }}</span>
   @defer (on immediate) {
     <app-code-editor
       [formField]="fields().transport"
       language="json"
       size="small"
       [label]="'Transport configuration' | transloco"
-      [placeholder]="'Optional proxy, caPem and clientTls settings' | transloco"
+      [placeholder]="'Optional route, caPem and clientTls settings' | transloco"
     />
   } @placeholder {
     <div class="code-editor small" aria-hidden="true"></div>
@@ -38,7 +39,7 @@
 </div>
 <p class="editor-hint">
   {{
-    'Proxy: host and port. Client TLS: certPem, keyPem, passphrase and matches. Certificates are supplied in memory; server file paths are never read.'
+    'The route above is kept here too. Client TLS: certPem, keyPem, passphrase and matches. Certificates are supplied in memory; server file paths are never read.'
       | transloco
   }}
 </p>

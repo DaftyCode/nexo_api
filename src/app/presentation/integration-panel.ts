@@ -77,6 +77,8 @@ export type IntegrationModel = typeof defaultModel;
 import { SessionSettings } from './session-settings';
 import { ModulesSettings } from './modules-settings';
 import { GridFormatSettings } from './grid-format-settings';
+import { SettingsTabs } from './settings-tabs';
+import { SshProfiles } from './ssh-profiles';
 import { DocumentRevisions } from './document-revisions';
 @Component({
   imports: [
@@ -94,6 +96,8 @@ import { DocumentRevisions } from './document-revisions';
     ModulesSettings,
     GridFormatSettings,
     DocumentRevisions,
+    SettingsTabs,
+    SshProfiles,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',

@@ -51,3 +51,15 @@ fn many_documents_need_their_count_and_everything_needs_the_name() {
     );
     assert!(confirmed(None, "shop", "database").is_err());
 }
+
+#[test]
+fn a_saved_connection_keeps_its_route_for_scripts() {
+    let route = json!({"via": "socks5", "host": "proxy.test", "port": 1080});
+    let saved = super::saved_connection(
+        &json!({"uri": "mongodb://db.test", "nexoRoute": route}),
+        &serde_json::Map::new(),
+    );
+    assert_eq!(saved, json!({"uri": "mongodb://db.test", "route": route}));
+    let direct = super::saved_connection(&json!({"uri": "mongodb://db.test"}), &Default::default());
+    assert!(direct.get("route").is_none());
+}

@@ -187,7 +187,7 @@ impl Task {
         let connect = async {
             let stream = self.dialer.connect(&self.host, self.port).await?;
             let Some(config) = self.tls.clone() else {
-                return Ok(mqtt::Link::Stream(Box::new(stream)));
+                return Ok::<_, nexo_domain::Error>(mqtt::Link::Stream(Box::new(stream)));
             };
             let host = self.url.host_str().unwrap_or_default().to_string();
             let name = rustls_pki_types::ServerName::try_from(host)

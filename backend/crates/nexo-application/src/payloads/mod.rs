@@ -95,6 +95,7 @@ mod mongo_read;
 mod mongo_schema;
 mod mongo_write;
 mod protocols;
+mod ssh;
 #[cfg(test)]
 mod tests;
 mod typescript;
@@ -111,6 +112,7 @@ pub use mongo_read::*;
 pub use mongo_schema::*;
 pub use mongo_write::*;
 pub use protocols::*;
+pub use ssh::*;
 pub use typescript::typescript_contract;
 
 fn check<T: DeserializeOwned + Serialize>(
@@ -193,6 +195,8 @@ operation_payloads! {
     RealtimePoll => RealtimePollPayload,
     RealtimeList => WorkspacePayload,
     Grpc => GrpcPayload,
+    SshTest => SshTestPayload,
+    SshTrust => SshTrustPayload,
     MockStart => MockStartPayload,
     MockStop => IdPayload,
     MockList => WorkspacePayload,

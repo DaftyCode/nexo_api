@@ -50,6 +50,8 @@ operations!(
         RealtimePoll => "realtime.poll",
         RealtimeList => "realtime.list",
         Grpc => "grpc",
+        SshTest => "ssh.test",
+        SshTrust => "ssh.trust",
         MockStart => "mock.start",
         MockStop => "mock.stop",
         MockList => "mock.list",

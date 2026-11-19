@@ -91,6 +91,8 @@ fn every_operation_has_a_payload_type() {
                     | Operation::ModulesInstallFile
                     | Operation::ModulesProgress
                     | Operation::ModulesRemove
+                    | Operation::SshTest
+                    | Operation::SshTrust
             )
             // Every database operation names its session, script or driver; only a test may
             // name nothing yet (and is refused afterwards), and the list of open transactions

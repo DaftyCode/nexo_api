@@ -150,7 +150,7 @@
                     ? ('TLS' | transloco)
                     : t === 'options'
                       ? ('Options' | transloco)
-                      : ('SSH tunnel' | transloco)
+                      : ('Connect through' | transloco)
             }}
           </button>
         }
@@ -189,13 +189,13 @@
             [keyStored]="keyStored()"
           />
         }
-        @case ('ssh') {
-          <p class="muted">
-            {{
-              'SSH tunnels and SOCKS5 proxies arrive in a later version. Until then, open the tunnel outside Nexo and connect to its local port.'
-                | transloco
-            }}
-          </p>
+        @case ('route') {
+          <app-mongo-connection-settings
+            tab="route"
+            [fields]="fields"
+            [passwordStored]="passwordStored()"
+            [keyStored]="keyStored()"
+          />
         }
       }
 

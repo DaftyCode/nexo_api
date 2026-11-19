@@ -47,6 +47,8 @@ pub struct Options {
     pub transport: Value,
     pub egress: Policy,
     pub loopback_ports: Vec<u16>,
+    /// The SSH profiles a route may name (`sshProfiles`, filled in by the application).
+    pub profiles: Value,
 }
 impl Options {
     pub fn from_payload(
@@ -68,6 +70,7 @@ impl Options {
             transport: transport.clone(),
             egress,
             loopback_ports,
+            profiles: payload["sshProfiles"].clone(),
         }
     }
 }

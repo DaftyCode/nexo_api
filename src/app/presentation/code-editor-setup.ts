@@ -103,6 +103,10 @@ const themeSpec = {
     fontStyle: 'normal',
     marginLeft: '1em',
   },
+  // On the accent of the chosen option muted text is too faint on light templates.
+  '.cm-tooltip-autocomplete > ul > li[aria-selected] .cm-completionDetail': {
+    color: 'inherit',
+  },
   '.cm-completionInfo': { maxWidth: '320px', padding: 'var(--nexo-space-3) var(--nexo-space-4)' },
 };
 /**

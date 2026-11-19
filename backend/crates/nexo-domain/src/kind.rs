@@ -54,9 +54,13 @@ pub enum DocumentKind {
     /// (the files chosen for them by name only), the active tab, the section shown and the
     /// order of its collections. Never responses.
     Session,
+    /// A reusable SSH profile to reach servers through a bastion: host, port, user and how it
+    /// signs in; its password or private key (and passphrase) stay in the vault.
+    #[serde(rename = "ssh-profile")]
+    SshProfile,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 22] = [
+    pub const ALL: [DocumentKind; 23] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -79,6 +83,7 @@ impl DocumentKind {
         Self::SqlHistory,
         Self::DbDiagram,
         Self::Session,
+        Self::SshProfile,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -104,6 +109,7 @@ impl DocumentKind {
             Self::SqlHistory => "sql-history",
             Self::DbDiagram => "db-diagram",
             Self::Session => "session",
+            Self::SshProfile => "ssh-profile",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

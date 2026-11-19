@@ -17,7 +17,7 @@ mod writes;
 
 use crate::{Application, operations::Operation, vault::redact_error};
 use nexo_domain::{Error, Result};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[cfg(test)]
 pub(crate) use aggregate::written;
@@ -44,10 +44,52 @@ fn confirmed(confirm: Option<&str>, name: &str, what: &str) -> Result<()> {
     Ok(())
 }
 
+/// The connections of a payload: its `connection` and those of the sides it compares.
+fn connections(payload: &mut Value) -> Vec<&mut Map<String, Value>> {
+    let mut found = Vec::new();
+    if let Value::Object(fields) = payload {
+        for (key, value) in fields.iter_mut() {
+            let Value::Object(object) = value else {
+                continue;
+            };
+            if key == "connection" {
+                found.push(object);
+            } else if let Some(Value::Object(connection)) = object.get_mut("connection") {
+                found.push(connection);
+            }
+        }
+    }
+    found
+}
+
 impl Application {
+    /// Gives each connection of a payload the SSH profiles its route names, with their
+    /// secrets; whatever a client sent there is dropped first.
+    async fn route_connections(&self, payload: &mut Value) -> Result<()> {
+        let workspace = payload["workspace"].as_str().map(String::from);
+        let mut routes = Vec::new();
+        for connection in connections(payload) {
+            connection.remove("sshProfiles");
+            if let Some(route) = connection.get("route") {
+                routes.push(route.clone());
+            }
+        }
+        let Some(profiles) = self
+            .ssh_profiles(workspace.as_deref(), &Value::Array(routes))
+            .await?
+        else {
+            return Ok(());
+        };
+        for connection in connections(payload) {
+            connection.insert("sshProfiles".into(), profiles.clone());
+        }
+        Ok(())
+    }
+
     /// Runs a document database operation and removes the connection's secret values from
     /// its errors.
-    pub(crate) async fn database(&self, operation: Operation, payload: Value) -> Result<Value> {
+    pub(crate) async fn database(&self, operation: Operation, mut payload: Value) -> Result<Value> {
+        self.route_connections(&mut payload).await?;
         let mut values = Vec::new();
         let result = if operation.is_database_write() {
             self.database_write(operation, payload, &mut values).await

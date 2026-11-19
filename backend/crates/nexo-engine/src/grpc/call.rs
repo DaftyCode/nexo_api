@@ -138,7 +138,7 @@ pub(super) async fn connect(
         .to_string();
     let port = parsed.port_or_known_default().unwrap_or(443);
     let dialer = crate::route::Dialer::new(
-        crate::route::Route::from_settings(payload)?,
+        crate::route::Route::with_profiles(payload, &payload["sshProfiles"])?,
         egress.clone(),
         loopback_ports.to_vec(),
     );

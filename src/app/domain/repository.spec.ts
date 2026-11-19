@@ -26,6 +26,7 @@ describe('repository', () => {
       info: { name: 'Shop' },
       auth: { type: 'bearer', bearer: [{ key: 'token', value: 'secret' }] },
       nexoTransport: { timeout: 5 },
+      nexoRoute: { via: 'socks5', host: 'proxy' },
       item: [{ request: { auth: { basic: [{ key: 'password', value: 'p' }] } } }],
       list: ['local'],
     };
@@ -56,6 +57,7 @@ describe('repository', () => {
       // Nothing local to restore: it stays masked.
       added: masked,
       nexoTransport: { timeout: 5 },
+      nexoRoute: { via: 'socks5', host: 'proxy' },
     });
   });
 

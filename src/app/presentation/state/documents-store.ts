@@ -1,6 +1,6 @@
 import { computed, signal } from '@angular/core';
 import { WorkspaceDocument } from '../../domain/models';
-import { VariableRow } from '../../domain/variables';
+import { GroupSettings } from '../../domain/collection-settings';
 import { ordered } from '../../domain/ordering';
 import { StateContext } from './state-context';
 
@@ -62,7 +62,7 @@ export class DocumentsStore {
   }
   async saveCollectionSettings(
     id: string,
-    settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
+    settings: GroupSettings,
     folder: readonly number[] = [],
   ) {
     const document = this.collections().find((d) => d.id === id);

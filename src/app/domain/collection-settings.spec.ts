@@ -1,4 +1,9 @@
-import { collectionAuth, collectionEvents, readCollectionSettings } from './collection-settings';
+import {
+  collectionAuth,
+  collectionEvents,
+  collectionRoute,
+  readCollectionSettings,
+} from './collection-settings';
 import { Collection } from './models';
 
 describe('collection settings', () => {
@@ -74,5 +79,18 @@ describe('collection settings', () => {
     expect(collectionAuth(inherit, true)).toBeUndefined();
     const none = { ...inherit, auth: { ...inherit.auth, type: 'noauth' } };
     expect(collectionAuth(none, true)).toMatchObject({ type: 'noauth' });
+  });
+
+  it('reads and writes the route: folders inherit or keep their own, even going directly', () => {
+    const root = readCollectionSettings({ nexoRoute: { via: 'socks5', host: 'proxy' } });
+    expect(root.route).toMatchObject({ via: 'socks5', host: 'proxy' });
+    expect(collectionRoute(root)).toEqual({ via: 'socks5', host: 'proxy', remoteDns: true });
+    expect(collectionRoute({ ...root, route: { ...root.route, via: 'direct' } })).toBeUndefined();
+    const folder = readCollectionSettings({ name: 'Users', item: [] }, true);
+    expect(folder.route.via).toBe('inherit');
+    expect(collectionRoute(folder, true)).toBeUndefined();
+    const direct = { ...folder, route: { ...folder.route, via: 'direct' as const } };
+    expect(collectionRoute(direct, true)).toEqual({ via: 'direct' });
+    expect(readCollectionSettings(undefined).route.via).toBe('direct');
   });
 });

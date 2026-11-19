@@ -16,6 +16,8 @@ export const EXECUTION_OPERATIONS = [
   'realtime.poll',
   'realtime.list',
   'grpc',
+  'ssh.test',
+  'ssh.trust',
   'mock.start',
   'mock.stop',
   'mock.list',

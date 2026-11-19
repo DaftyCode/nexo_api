@@ -1,3 +1,5 @@
+import { emptyRoute } from '../domain/route';
+
 /** The settings of a protocol connection, as the panel starts them. */
 export const defaultProtocolSettings = {
   protocol: 'websocket',
@@ -35,6 +37,8 @@ export const defaultProtocolSettings = {
   fullDocument: 'default',
   fullDocumentBeforeChange: 'off',
   resumeAfter: '',
+  /** How the connection reaches its server: directly, a proxy or an SSH tunnel. */
+  route: emptyRoute(),
 };
 
 export type ProtocolSettings = typeof defaultProtocolSettings;

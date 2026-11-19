@@ -66,6 +66,7 @@ export function connectionPayload(
     caPem: resolve(value.caPem),
     certPem: resolve(value.certPem),
     keyPem: typed.keyPem?.trim() || value.keyPem,
+    route: value.nexoRoute,
   };
   for (const key of Object.keys(connection) as (keyof MongoConnection)[])
     if (connection[key] === undefined) delete connection[key];

@@ -77,8 +77,14 @@ const secretAuthKeys = new Set([
   'secret',
 ]);
 /**
- * Collection prepared for a shared Git repository: literal credentials in auth helpers and
- * client certificates are removed; variable references are kept.
+ * Settings that belong to this computer and never leave it with a collection: transport
+ * settings (client certificates, proxy passwords) and routes (proxies, SSH profiles).
+ */
+export const LOCAL_SETTINGS: readonly string[] = ['nexoTransport', 'nexoRoute'];
+
+/**
+ * Collection prepared for a shared Git repository: literal credentials in auth helpers,
+ * client certificates and routes are removed; variable references are kept.
  */
 export function exportableCollection(value: unknown): unknown {
   const visit = (node: unknown, key = ''): unknown => {
@@ -114,7 +120,7 @@ export function exportableCollection(value: unknown): unknown {
     if (!node || typeof node !== 'object') return node;
     return Object.fromEntries(
       Object.entries(node as Record<string, unknown>).flatMap(([name, item]) => {
-        if (name === 'nexoTransport') return [];
+        if (LOCAL_SETTINGS.includes(name)) return [];
         return [[name, visit(item, name)]];
       }),
     );

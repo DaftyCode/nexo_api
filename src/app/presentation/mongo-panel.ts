@@ -21,8 +21,9 @@ import {
   isVaultReference,
   parseMongoUri,
 } from '../domain/mongo';
+import { Route, emptyRoute, readRoute, routeProblem, storedRoute } from '../domain/route';
 
-type Tab = 'server' | 'authentication' | 'tls' | 'options' | 'ssh';
+type Tab = 'server' | 'authentication' | 'tls' | 'options' | 'route';
 
 export interface PanelModel extends ConnectionForm {
   name: string;
@@ -40,6 +41,7 @@ export interface PanelModel extends ConnectionForm {
   keyPem: string;
   /** A URI pasted to fill the form. */
   paste: string;
+  route: Route;
 }
 
 function emptyModel(): PanelModel {
@@ -56,6 +58,7 @@ function emptyModel(): PanelModel {
     certPem: '',
     keyPem: '',
     paste: '',
+    route: emptyRoute(),
   };
 }
 
@@ -74,7 +77,7 @@ export class MongoPanel {
   protected readonly state = inject(WorkspaceState);
   protected readonly task = new PanelTask(this.state);
   private readonly mongo = inject(MONGO);
-  protected readonly tabs: readonly Tab[] = ['server', 'authentication', 'tls', 'options', 'ssh'];
+  protected readonly tabs: readonly Tab[] = ['server', 'authentication', 'tls', 'options', 'route'];
   protected readonly tab = signal<Tab>('server');
   protected readonly colors = CONNECTION_COLORS;
   protected readonly model = signal<PanelModel>(emptyModel());
@@ -101,7 +104,9 @@ export class MongoPanel {
   );
   private readonly stored = computed(() => connectionValue(this.selected()?.value));
   protected readonly uri = computed(() => formatMongoUri(this.model()));
-  protected readonly problem = computed(() => connectionProblem(this.model()));
+  protected readonly problem = computed(
+    () => connectionProblem(this.model()) ?? routeProblem(this.model().route),
+  );
   protected readonly passwordStored = computed(() => !!this.stored().password);
   protected readonly keyStored = computed(() => !!this.stored().keyPem);
 
@@ -141,6 +146,7 @@ export class MongoPanel {
       mcpHidden: (value.mcpHidden ?? []).join(', '),
       caPem: value.caPem ?? '',
       certPem: value.certPem ?? '',
+      route: readRoute(value.nexoRoute),
     });
     this.report.set(undefined);
     this.notice.set({ key: '' });
@@ -173,6 +179,7 @@ export class MongoPanel {
   private value(): MongoConnectionValue {
     const model = this.model();
     const stored = this.stored();
+    const route = storedRoute(model.route);
     const hidden = model.mcpHidden
       .split(',')
       .map((name) => name.trim())
@@ -188,6 +195,7 @@ export class MongoPanel {
       ...(model.readOnly ? { readOnly: true } : {}),
       ...(model.mcp ? { mcp: true } : {}),
       ...(model.mcp && hidden.length ? { mcpHidden: hidden } : {}),
+      ...(route ? { nexoRoute: route } : {}),
     };
   }
   private typed() {

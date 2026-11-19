@@ -4,6 +4,9 @@ use serde_json::{Value, json};
 
 pub const MASKED: &str = "••••••";
 pub const REDACTED: &str = "[REDACTED]";
+/// Settings that belong to this computer: transport settings and routes (proxy passwords,
+/// SSH profiles) never leave it with a shared document.
+const LOCAL_SETTINGS: [&str; 2] = ["nexoTransport", "nexoRoute"];
 /// Authorization types whose rows may hold credentials.
 pub(super) const AUTH_TYPES: [&str; 13] = [
     "basic", "bearer", "apikey", "oauth2", "digest", "oauth1", "awsv4", "hawk", "ntlm", "jwt",
@@ -114,7 +117,7 @@ pub(super) fn visit(value: &Value, key: &str) -> Value {
         Value::Object(fields) => Value::Object(
             fields
                 .iter()
-                .filter(|(name, _)| name.as_str() != "nexoTransport")
+                .filter(|(name, _)| !LOCAL_SETTINGS.contains(&name.as_str()))
                 .map(|(name, item)| (name.clone(), visit(item, name)))
                 .collect(),
         ),

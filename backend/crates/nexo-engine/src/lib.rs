@@ -96,6 +96,8 @@ impl Engine {
             Arc::new(move || mocks.ports()) as Arc<dyn Fn() -> Vec<u16> + Send + Sync>
         };
         let vault = Arc::new(Vault::new(data.join("vault"), key, "local"));
+        // The server keys the person trusts for SSH tunnels; OpenSSH's own file is read too.
+        route::ssh::tunnels().set_known_hosts(data.join("ssh").join("known_hosts"));
         let databases = ScriptDatabases::default();
         let runs = Arc::new(Runs::new(
             Arc::new(Jars::new(data.join("cookies"))),

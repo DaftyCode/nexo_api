@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
-import { buttons, clickButton, fill } from '../testing/controls';
+import { buttons, clickButton, fill, valueOf } from '../testing/controls';
 import { asCollection } from '../domain/models';
 import { CollectionSettingsPanel } from './collection-settings-panel';
 import { WorkspaceState } from './workspace-state';
@@ -147,5 +147,49 @@ describe('CollectionSettingsPanel', () => {
     await clickButton(fixture, 'Save folder');
     await settle();
     expect(collection().item[0]['auth']).toMatchObject({ type: 'oauth2' });
+  });
+
+  it('sets how the requests of a collection and of a folder reach their servers', async () => {
+    await state.createCollection('Shop');
+    const [shop] = state.collections();
+    await state.addFolder(shop, 'Orders');
+    state.openCollectionSettings(shop.id);
+    await settle();
+    await tab('Connection');
+    const ways = () =>
+      [...root().querySelectorAll('select')].find((element) =>
+        [...element.options].some((option) => option.value === 'socks5'),
+      )!.options;
+    expect([...ways()].map((option) => option.value)).not.toContain('inherit');
+    await fill(fixture, 'Connect through', 'socks5');
+    await fill(fixture, 'Proxy host', 'proxy.test');
+    expect(root().textContent).toContain('Unsaved changes');
+    await clickButton(fixture, 'Save collection');
+    await settle();
+    expect(collection()['nexoRoute']).toEqual({
+      via: 'socks5',
+      host: 'proxy.test',
+      remoteDns: true,
+    });
+
+    // A folder inherits it until it sets its own way, even going directly.
+    state.openCollectionSettings(shop.id, [0], 'connection');
+    await settle();
+    expect(valueOf(root(), 'Connect through')).toBe('inherit');
+    await fill(fixture, 'Connect through', 'direct');
+    await clickButton(fixture, 'Save folder');
+    await settle();
+    expect(collection().item[0]['nexoRoute']).toEqual({ via: 'direct' });
+    await fill(fixture, 'Connect through', 'inherit');
+    await clickButton(fixture, 'Save folder');
+    await settle();
+    expect(collection().item[0]['nexoRoute']).toBeUndefined();
+
+    state.openCollectionSettings(shop.id, [], 'connection');
+    await settle();
+    await fill(fixture, 'Connect through', 'direct');
+    await clickButton(fixture, 'Save collection');
+    await settle();
+    expect(collection()['nexoRoute']).toBeUndefined();
   });
 });

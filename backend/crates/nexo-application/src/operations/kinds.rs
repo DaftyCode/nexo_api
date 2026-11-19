@@ -115,6 +115,7 @@ impl Operation {
         matches!(
             self,
             Self::DatasetQuery
+                | Self::SshTest
                 | Self::DatasetImport
                 | Self::DatasetSchema
                 | Self::DatasetDelete

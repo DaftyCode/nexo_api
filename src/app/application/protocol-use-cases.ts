@@ -1,3 +1,4 @@
+import { StoredRoute } from '../domain/route';
 import { ExecutionPort } from './ports';
 import { WorkspaceDocument } from '../domain/models';
 import { WatchOptions } from '../domain/mongo-watch';
@@ -66,6 +67,8 @@ export interface GrpcCall {
   message: string;
   /** JSON text of the metadata rows. */
   metadata: string;
+  /** How the call reaches its server, when not directly. */
+  route?: StoredRoute;
 }
 
 /** A method of a discovered service. */
@@ -140,14 +143,14 @@ export class ProtocolUseCases {
   /** Lists the services and methods of the proto, or of the server by reflection. */
   discoverGrpc(
     workspace: string,
-    call: Pick<GrpcCall, 'url' | 'proto' | 'reflection' | 'tls' | 'caPem' | 'metadata'>,
+    call: Pick<GrpcCall, 'url' | 'proto' | 'reflection' | 'tls' | 'caPem' | 'metadata' | 'route'>,
   ) {
     if (call.reflection && !call.url.trim())
       throw new Error('Enter the gRPC server address (host:port)');
     return this.api.execute<GrpcDiscovery>('grpc', {
       workspace,
       ...(call.reflection
-        ? { reflection: true, url: call.url, tls: call.tls }
+        ? { reflection: true, url: call.url, tls: call.tls, route: call.route }
         : { proto: call.proto }),
       ...(call.caPem?.trim() ? { caPem: call.caPem } : {}),
       metadata: json(call.metadata || '[]', 'Metadata'),

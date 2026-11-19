@@ -1,0 +1,114 @@
+<h2>{{ 'SSH profiles' | transloco }}</h2>
+<p class="muted">
+  {{
+    'Reach servers that only a bastion sees: choose an SSH profile in «Connect through» of a request, a collection, a protocol or a database connection. Passwords and keys stay in the vault.'
+      | transloco
+  }}
+</p>
+@if (task.error(); as error) {
+  <p class="global-alert" role="alert">{{ error | transloco }}</p>
+}
+<ul class="ssh-profiles">
+  @for (profile of profiles(); track profile.id) {
+    <li class="card">
+      <div class="row">
+        <strong class="grow">{{ profile.name }}</strong>
+        <code>{{ profile.username }}&#64;{{ profile.host }}:{{ profile.port }}</code>
+        <span class="muted">{{
+          (profile.auth === 'key' ? 'Private key' : 'Password') | transloco
+        }}</span>
+      </div>
+      <div class="button-grid">
+        <button type="button" class="button" (click)="test(profile)">
+          {{ 'Test' | transloco }}
+        </button>
+        <button type="button" class="button" (click)="edit(profile)">
+          {{ 'Edit' | transloco }}
+        </button>
+        <button type="button" class="text-button danger" (click)="remove(profile)">
+          {{ 'Delete' | transloco }}
+        </button>
+      </div>
+      @if (tested(); as test) {
+        @if (test.id === profile.id) {
+          <div class="ssh-test" role="status">
+            @if (test.report.trusted) {
+              <p>{{ 'Signed in. The key of the server is trusted:' | transloco }}</p>
+            } @else {
+              <p>
+                {{
+                  'Nexo does not know this server yet. Check that its key is the one you expect before trusting it:'
+                    | transloco
+                }}
+              </p>
+            }
+            <code>{{ test.report.algorithm }} {{ test.report.fingerprint }}</code>
+            @if (!test.report.trusted) {
+              <button type="button" class="button primary" (click)="trust(profile, test.report)">
+                {{ 'Trust this key' | transloco }}
+              </button>
+            }
+          </div>
+        }
+      }
+    </li>
+  } @empty {
+    <li class="muted">{{ 'No SSH profiles yet.' | transloco }}</li>
+  }
+</ul>
+@if (editing()) {
+  <form class="card" (submit)="$event.preventDefault(); save()">
+    <h3>{{ (editing() === 'new' ? 'New SSH profile' : 'Edit SSH profile') | transloco }}</h3>
+    <label class="field">{{ 'Name' | transloco }}<input [formField]="fields.name" /></label>
+    <div class="row">
+      <label class="field grow"
+        >{{ 'SSH server' | transloco
+        }}<input [formField]="fields.host" spellcheck="false" placeholder="bastion.example.com"
+      /></label>
+      <label class="field"
+        >{{ 'Port' | transloco }}<input [formField]="fields.port" inputmode="numeric"
+      /></label>
+    </div>
+    <label class="field"
+      >{{ 'User' | transloco }}<input [formField]="fields.username" spellcheck="false"
+    /></label>
+    <label class="field"
+      >{{ 'Sign in with' | transloco
+      }}<select [formField]="fields.auth">
+        <option value="password">{{ 'Password' | transloco }}</option>
+        <option value="key">{{ 'Private key' | transloco }}</option>
+      </select></label
+    >
+    @if (model().auth === 'password') {
+      <label class="field"
+        >{{ 'Password' | transloco
+        }}<input type="password" [formField]="fields.password" autocomplete="off"
+      /></label>
+    } @else {
+      <label class="field"
+        >{{ 'Private key (OpenSSH or PEM)' | transloco
+        }}<textarea [formField]="fields.privateKey" rows="5" spellcheck="false"></textarea>
+      </label>
+      <label class="field"
+        >{{ 'Passphrase of the key' | transloco
+        }}<input type="password" [formField]="fields.passphrase" autocomplete="off"
+      /></label>
+    }
+    @if (stored()) {
+      <p class="editor-hint">{{ 'Leave the secret blank to keep the stored one.' | transloco }}</p>
+    }
+    @if (problem(); as problem) {
+      <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+    }
+    <div class="button-grid">
+      <button type="submit" class="button primary" [disabled]="!!problem()">
+        {{ 'Save' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="cancel()">{{ 'Cancel' | transloco }}</button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="button" (click)="create()">
+    {{ 'New SSH profile' | transloco }}
+  </button>
+}

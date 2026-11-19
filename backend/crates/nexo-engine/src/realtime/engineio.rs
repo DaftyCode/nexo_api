@@ -39,6 +39,7 @@ impl Polling {
             transport: json!({"caPem": task.payload["caPem"], "route": task.payload["route"], "proxy": task.payload["proxy"]}),
             egress: task.egress.clone(),
             loopback_ports: task.loopback_ports.clone(),
+            profiles: task.payload["sshProfiles"].clone(),
         };
         let transport = Arc::new(crate::transport::Transport::new(options, jar.clone())?);
         let mut url = base.clone();

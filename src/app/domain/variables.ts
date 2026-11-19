@@ -31,6 +31,8 @@ export interface RequestAncestor {
   variable?: unknown;
   auth?: unknown;
   event?: unknown;
+  /** How its requests reach their servers, unless they set their own way. */
+  nexoRoute?: unknown;
 }
 
 export const dynamicVariables = ['$guid', '$randomUUID', '$timestamp', '$randomInt'] as const;
@@ -207,6 +209,7 @@ export function requestAncestors(
       variable: collection['variable'],
       auth: collection['auth'],
       event: collection['event'],
+      nexoRoute: collection['nexoRoute'],
     },
   ];
   let list: CollectionItem[] | undefined = collection.item;
@@ -218,6 +221,7 @@ export function requestAncestors(
       variable: folder['variable'],
       auth: folder['auth'],
       event: folder.event,
+      nexoRoute: folder['nexoRoute'],
     });
     list = folder.item;
   }

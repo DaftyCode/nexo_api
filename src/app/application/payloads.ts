@@ -44,6 +44,16 @@ export interface MongoConnection {
   caPem?: string;
   certPem?: string;
   keyPem?: string;
+  route?: {
+    via?: 'direct' | 'http' | 'socks5' | 'ssh';
+    host?: string;
+    port?: number | string;
+    username?: string;
+    password?: string;
+    remoteDns?: boolean;
+    profile?: string;
+  };
+  sshProfiles?: never;
 }
 
 export interface MongoCollectionRef {
@@ -148,12 +158,13 @@ export interface RealtimeConnectPayload {
   graphqlProtocol?: string;
   connectionParams?: unknown;
   route?: {
-    via?: 'direct' | 'http' | 'socks5';
+    via?: 'direct' | 'http' | 'socks5' | 'ssh';
     host?: string;
     port?: number | string;
     username?: string;
     password?: string;
     remoteDns?: boolean;
+    profile?: string;
   };
 }
 
@@ -199,13 +210,26 @@ export interface GrpcPayload {
   metadata?: unknown;
   timeout?: number;
   route?: {
-    via?: 'direct' | 'http' | 'socks5';
+    via?: 'direct' | 'http' | 'socks5' | 'ssh';
     host?: string;
     port?: number | string;
     username?: string;
     password?: string;
     remoteDns?: boolean;
+    profile?: string;
   };
+}
+
+export interface SshTestPayload {
+  profile: string;
+  workspace?: string;
+}
+
+export interface SshTrustPayload {
+  host: string;
+  port: number;
+  fingerprint: string;
+  workspace?: string;
 }
 
 export interface MockStartPayload {
@@ -878,6 +902,8 @@ export interface OperationPayloads {
   'realtime.poll': RealtimePollPayload;
   'realtime.list': WorkspacePayload;
   grpc: GrpcPayload;
+  'ssh.test': SshTestPayload;
+  'ssh.trust': SshTrustPayload;
   'mock.start': MockStartPayload;
   'mock.stop': IdPayload;
   'mock.list': WorkspacePayload;

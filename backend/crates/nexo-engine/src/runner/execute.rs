@@ -94,8 +94,18 @@ pub(super) async fn run_steps(
                 .filter(|t| !t.trim().is_empty())
                 .unwrap_or("")
                 .to_string();
-            if !transports.contains_key(&transport_key) {
-                let settings = if transport_key.is_empty() {
+            // A request without a route of its own goes the way of its nearest folder or
+            // collection that sets one (`nexoRoute`).
+            let inherited = step.inherited_route();
+            let cache_key = match inherited {
+                Some(route) => format!(
+                    "{transport_key}
+{route}"
+                ),
+                None => transport_key.clone(),
+            };
+            if !transports.contains_key(&cache_key) {
+                let mut settings = if transport_key.is_empty() {
                     transport_settings(
                         payload
                             .get("transport")
@@ -104,15 +114,21 @@ pub(super) async fn run_steps(
                 } else {
                     transport_settings(&Value::String(transport_key.clone()))?
                 };
+                if let (Some(route), Some(own)) = (inherited, settings.as_object_mut())
+                    && !own.contains_key("route")
+                    && !own.contains_key("proxy")
+                {
+                    own.insert("route".into(), route.clone());
+                }
                 let options = Options::from_payload(
                     payload,
                     &settings,
                     context.egress.clone(),
                     (context.loopback_ports)(),
                 );
-                transports.insert(transport_key.clone(), Transport::new(options, jar.clone())?);
+                transports.insert(cache_key.clone(), Transport::new(options, jar.clone())?);
             }
-            let transport = &transports[&transport_key];
+            let transport = &transports[&cache_key];
             let session = ScriptSession::new(&seed, job.cancelled.clone())?;
             let groups: Vec<&Value> = step.parents.iter().chain(std::iter::once(item)).collect();
             session.run(&scripts(&groups, "prerequest"), None)?;

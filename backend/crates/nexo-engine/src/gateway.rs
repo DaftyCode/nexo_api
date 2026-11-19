@@ -19,6 +19,21 @@ impl nexo_application::ports::NetworkPolicy for Engine {
     fn restrictive(&self) -> bool {
         matches!(self.egress, Policy::DenyPrivate { .. })
     }
+    async fn socks_proxy(
+        &self,
+        route: &nexo_application::ports::ConnectionRoute,
+    ) -> Result<Option<nexo_application::ports::SocksProxy>> {
+        let route =
+            crate::route::Route::with_profiles(&json!({"route": route.route}), &route.profiles)?;
+        crate::route::Dialer::new(route, self.egress.clone(), self.mocks.ports())
+            .socks_proxy()
+            .await
+    }
+    async fn check_routed_destination(&self, host: &str, port: u16) -> Result<()> {
+        self.egress
+            .check_remote(host, port, &self.mocks.ports())
+            .await
+    }
 }
 
 #[async_trait]
@@ -53,6 +68,10 @@ impl ExecutionGateway for Engine {
             Operation::RealtimePoll => self.realtime.poll(&payload),
             Operation::RealtimeList => Ok(self.realtime.list()),
             Operation::Grpc => grpc::request(&payload, &self.egress, &self.mocks.ports()).await,
+            Operation::SshTest => {
+                crate::route::ssh::test_profile(&payload, &self.egress, &self.mocks.ports()).await
+            }
+            Operation::SshTrust => crate::route::ssh::trust_key(&payload),
             Operation::MockStart => self.mocks.start(&payload).await,
             Operation::MockStop => self.mocks.stop(&payload),
             Operation::MockList => Ok(self.mocks.list()),

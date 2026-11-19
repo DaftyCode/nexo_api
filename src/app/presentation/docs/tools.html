@@ -13,6 +13,35 @@
     }}
   </p>
 </section>
+<section id="routes">
+  <h2>{{ 'Proxies and SSH tunnels' | transloco }}</h2>
+  <p>
+    {{
+      'Connect through says how a request, a protocol or a MongoDB connection reaches its server: directly, through an HTTP proxy, a SOCKS5 proxy or the SSH tunnel of a profile. Requests set it in their Settings tab, protocols next to their URL and MongoDB connections in their own tab.'
+        | transloco
+    }}
+  </p>
+  <ul>
+    <li>
+      {{
+        'Collections and folders set it in their Connection tab; requests and folders set to Inherit from parent go the same way.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Settings → SSH keeps the SSH profiles: server, user, and a password or a private key that stay in the vault. Test signs in once; the first time, check the key of the server and trust it. If that key changes later, Nexo refuses to connect.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'With SOCKS5 the proxy can resolve the names (socks5h), so you reach servers only the far side knows. The egress policy checks both the proxy or SSH server and the final destination.'
+          | transloco
+      }}
+    </li>
+  </ul>
+</section>
 <section id="mocks">
   <h2>{{ 'Mocks, datasets and API definitions' | transloco }}</h2>
   <ul>

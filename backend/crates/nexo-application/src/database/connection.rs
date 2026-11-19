@@ -3,7 +3,7 @@
 use crate::{
     Application,
     payloads::MongoConnection,
-    ports::DatabaseConnection,
+    ports::{ConnectionRoute, DatabaseConnection},
     vault::{replace_vault, vault_references},
 };
 use nexo_domain::{Error, Result, hosts::AllowedHosts};
@@ -75,9 +75,21 @@ impl Application {
     /// never leave in an error.
     pub(super) async fn resolve_connection(
         &self,
-        connection: MongoConnection,
+        mut connection: MongoConnection,
         values: &mut Vec<(String, String)>,
     ) -> Result<DatabaseConnection> {
+        let route = ConnectionRoute {
+            route: connection
+                .route
+                .take()
+                .map(Value::Object)
+                .unwrap_or_default(),
+            profiles: connection
+                .ssh_profiles
+                .take()
+                .map(Value::Object)
+                .unwrap_or_default(),
+        };
         let names = vault_references(
             &serde_json::to_value(&connection)
                 .map_err(|error| Error::Infrastructure(error.to_string()))?,
@@ -107,6 +119,7 @@ impl Application {
             cert_pem: field(connection.cert_pem),
             key_pem: field(connection.key_pem),
             secret_hosts,
+            route,
         })
     }
 }

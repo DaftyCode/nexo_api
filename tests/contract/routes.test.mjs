@@ -185,3 +185,57 @@ test('the egress policy refuses a private destination behind a proxy', async () 
     await strict.stop();
   }
 });
+
+test('requests go the way of their nearest folder or collection unless they set their own', async () => {
+  const outer = await socksProxy();
+  const inner = await socksProxy();
+  try {
+    const via = (proxy) => ({
+      via: 'socks5',
+      host: '127.0.0.1',
+      port: proxy.port,
+      remoteDns: true,
+    });
+    const single = await server.execute('request', {
+      request: { url: 'http://api.internal/single' },
+      context: {
+        ancestors: [
+          { name: 'API', nexoRoute: via(outer) },
+          { name: 'Internal', nexoRoute: via(inner) },
+        ],
+      },
+    });
+    assert.equal(single.status, 200);
+    assert.deepEqual(inner.asked, ['api.internal:80']);
+    assert.deepEqual(outer.asked, []);
+
+    const direct = JSON.stringify({ route: { via: 'direct' } });
+    const started = await server.execute('run', {
+      collection: {
+        nexoRoute: via(outer),
+        item: [
+          { name: 'root', request: { url: 'http://api.internal/root' } },
+          {
+            name: 'Folder',
+            nexoRoute: via(inner),
+            item: [{ name: 'nested', request: { url: 'http://api.internal/nested' } }],
+          },
+          { name: 'own', request: { url: echo.url }, nexoTransport: direct },
+        ],
+      },
+    });
+    const done = await until(async () => {
+      const current = await server.execute('run', { action: 'status', id: started.id });
+      return current.state !== 'running' && current;
+    });
+    assert.deepEqual(
+      done.results.map((result) => result.status),
+      [200, 200, 200],
+    );
+    assert.deepEqual(outer.asked, ['api.internal:80']);
+    assert.deepEqual(inner.asked, ['api.internal:80', 'api.internal:80']);
+  } finally {
+    outer.close();
+    inner.close();
+  }
+});

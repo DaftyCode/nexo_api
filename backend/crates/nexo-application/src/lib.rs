@@ -7,6 +7,7 @@ mod modules;
 pub mod operations;
 pub mod payloads;
 pub mod ports;
+mod ssh;
 #[cfg(test)]
 mod testing;
 #[cfg(test)]

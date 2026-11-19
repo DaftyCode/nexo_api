@@ -6,7 +6,7 @@ import {
   itemAt,
   staysInPlace,
 } from '../../domain/collection-tree';
-import { VariableRow } from '../../domain/variables';
+import { GroupSettings } from '../../domain/collection-settings';
 import { CollectionsStore } from './collections-store';
 import { DocumentsStore } from './documents-store';
 import { StateContext, named, success } from './state-context';
@@ -122,12 +122,8 @@ export class TreeStore {
       tree.moveTo(collection, path, folder, index),
     );
   }
-  /** Saves the variables, authorization and scripts of a collection or folder. */
-  saveSettings(
-    id: string,
-    settings: { variables: readonly VariableRow[]; auth?: unknown; event?: unknown },
-    folder: number[] = [],
-  ) {
+  /** Saves the variables, authorization, scripts and route of a collection or folder. */
+  saveSettings(id: string, settings: GroupSettings, folder: number[] = []) {
     const document = this.documents.collections().find((d) => d.id === id);
     return this.context.status.announce(
       folder.length ? 'The folder could not be saved' : 'The collection could not be saved',

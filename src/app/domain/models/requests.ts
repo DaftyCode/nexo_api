@@ -1,3 +1,4 @@
+import { StoredRoute } from '../route';
 /** Requests as the interface edits them: rows, files, protocols, settings and responses. */
 
 import { AuthDraft } from '../auth';
@@ -100,6 +101,8 @@ export interface RealtimeSettings {
   reflection?: boolean;
   /** Socket.IO: `auto` (long polling, then WebSocket), `websocket` or `polling`. */
   transports?: string;
+  /** How the connection reaches its server, when not directly. */
+  route?: StoredRoute;
   /** Kafka: SASL mechanism, record key and partition, and where reading starts. */
   saslMechanism?: string;
   key?: string;

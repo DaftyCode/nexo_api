@@ -68,8 +68,10 @@ fn inheritable(ancestor: &Value) -> Map<String, Value> {
             output.insert(key.into(), value.clone());
         }
     }
-    if let Some(auth) = ancestor.get("auth").filter(|v| v.is_object()) {
-        output.insert("auth".into(), auth.clone());
+    for key in ["auth", "nexoRoute"] {
+        if let Some(value) = ancestor.get(key).filter(|v| v.is_object()) {
+            output.insert(key.into(), value.clone());
+        }
     }
     output
 }

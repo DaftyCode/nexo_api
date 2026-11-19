@@ -143,31 +143,7 @@
         </p>
       }
       @default {
-        <div class="button-grid settings-nav">
-          @for (
-            t of ['general', 'modules', 'vault', 'oauth', 'revisions', 'apis', 'performance'];
-            track t
-          ) {
-            <button class="button" [class.selected]="tab() === t" (click)="tab.set(t)">
-              {{
-                (t === 'general'
-                  ? 'General'
-                  : t === 'modules'
-                    ? 'Modules'
-                    : t === 'vault'
-                      ? 'Vault'
-                      : t === 'oauth'
-                        ? 'OAuth'
-                        : t === 'revisions'
-                          ? 'Revisions'
-                          : t === 'apis'
-                            ? 'APIs'
-                            : 'Performance'
-                ) | transloco
-              }}
-            </button>
-          }
-        </div>
+        <app-settings-tabs [(tab)]="tab" />
         @switch (tab()) {
           @case ('general') {
             <h2>{{ 'Your workspace, everywhere' | transloco }}</h2>
@@ -211,6 +187,9 @@
           }
           @case ('vault') {
             <app-vault-secrets [vault]="vault" />
+          }
+          @case ('ssh') {
+            <app-ssh-profiles />
           }
           @case ('oauth') {
             <app-token-exchange [fields]="fields" (exchange)="oauth()" />

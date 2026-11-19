@@ -29,13 +29,18 @@ impl Transport {
                 })?;
             builder = builder.identity(identity);
         }
-        // The route of the settings: directly, or through an HTTP or SOCKS5 proxy.
-        let route = crate::route::Route::from_settings(settings)?;
-        match route.proxy_url() {
-            Some(url) => {
+        // The route of the settings: directly, through an HTTP or SOCKS5 proxy, or an SSH
+        // tunnel's loopback SOCKS5 proxy.
+        let dialer = crate::route::Dialer::new(
+            crate::route::Route::with_profiles(settings, &options.profiles)?,
+            options.egress.clone(),
+            options.loopback_ports.clone(),
+        );
+        match dialer.http_proxy()? {
+            Some((url, credentials)) => {
                 let mut configured = reqwest::Proxy::all(&url)
                     .map_err(|error| Error::Validation(format!("Invalid proxy: {error}")))?;
-                if let Some(credentials) = route.credentials() {
+                if let Some(credentials) = credentials {
                     configured =
                         configured.basic_auth(&credentials.username, &credentials.password);
                 }
@@ -43,11 +48,6 @@ impl Transport {
             }
             None => builder = builder.no_proxy(),
         }
-        let dialer = crate::route::Dialer::new(
-            route,
-            options.egress.clone(),
-            options.loopback_ports.clone(),
-        );
         Ok(Self {
             client: builder
                 .build()

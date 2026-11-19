@@ -23,12 +23,15 @@ import { MongoWatchSettings } from './mongo-watch-settings';
 import { watchLabel } from '../domain/mongo-watch';
 import { PanelWatch } from './protocol-panel/watch';
 import { ProtocolSettings, defaultProtocolSettings } from './protocol-settings';
+import { Route, readRoute, storedRoute } from '../domain/route';
+import { RoutePicker } from './route-picker';
 
 @Component({
   imports: [
     TranslocoPipe,
     FormField,
     KeyValueEditor,
+    RoutePicker,
     CodeEditor,
     GraphqlSubscriptionSettings,
     KafkaSettings,
@@ -101,7 +104,7 @@ export class ProtocolPanel {
       this.loadedTab = tab.id;
       const { headers, ...model } = settings;
       untracked(() => {
-        this.model.set({ ...this.model(), ...model });
+        this.model.set({ ...this.model(), ...model, route: readRoute(model.route) });
         this.headers.set(headers?.length ? headers : [row()]);
       });
     });
@@ -119,6 +122,7 @@ export class ProtocolPanel {
       topic: m.topic,
       qos: Number(m.qos),
       strictSSL: m.strictSSL,
+      route: storedRoute(m.route),
       ...(m.caPem.trim() ? { caPem: m.caPem } : {}),
       ...(m.protocol === 'mqtt' ? { username: m.username, password: m.password } : {}),
       ...(m.protocol === 'kafka'
@@ -148,6 +152,7 @@ export class ProtocolPanel {
       const settings: RealtimeSettings = {
         ...m,
         protocol: m.protocol as RealtimeSettings['protocol'],
+        route: storedRoute(m.route),
         headers: this.headers().filter((h) => h.key),
       };
       if (!this.state.active()) this.state.newTab();
@@ -248,6 +253,7 @@ export class ProtocolPanel {
         reflection: m.reflection,
         tls: m.tls,
         caPem: m.caPem,
+        route: storedRoute(m.route),
         metadata: m.metadata,
       });
       this.discoveries.update((all) => ({ ...all, [key]: found }));
@@ -275,11 +281,15 @@ export class ProtocolPanel {
         method: m.method,
         tls: m.tls,
         caPem: m.caPem,
+        route: storedRoute(m.route),
         message: m.grpcMessage,
         metadata: m.metadata,
       });
       this.result.set(JSON.stringify(result, null, 2));
     });
+  }
+  protected setRoute(route: Route) {
+    this.model.update((m) => ({ ...m, route }));
   }
   protected json(value: unknown) {
     return typeof value === 'string' ? value : JSON.stringify(value, null, 2);

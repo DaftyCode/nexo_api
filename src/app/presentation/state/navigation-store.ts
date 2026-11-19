@@ -1,6 +1,6 @@
 import { computed, effect, signal, untracked } from '@angular/core';
 
-export type SettingsTab = 'variables' | 'authorization' | 'scripts';
+export type SettingsTab = 'variables' | 'authorization' | 'scripts' | 'connection';
 
 /**
  * Where the person is: the section shown, the way back to the previous ones, the console and

@@ -19,6 +19,8 @@ pub struct DatabaseConnection {
     pub key_pem: Option<String>,
     /// Vault secrets of the connection that may only reach some hosts, by name.
     pub secret_hosts: Vec<(String, AllowedHosts)>,
+    /// How it reaches its servers: directly, a SOCKS5 proxy or an SSH tunnel.
+    pub route: ConnectionRoute,
 }
 impl std::fmt::Debug for DatabaseConnection {
     /// Never shows the password or the key, should a connection end up in a log.

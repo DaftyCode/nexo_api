@@ -11,6 +11,7 @@ mod database;
 mod datasource;
 mod modules;
 mod queries;
+mod routes;
 mod scripts;
 mod watch;
 mod writes;
@@ -19,6 +20,7 @@ pub use database::*;
 pub use datasource::*;
 pub use modules::*;
 pub use queries::*;
+pub use routes::*;
 pub use scripts::*;
 pub use watch::*;
 pub use writes::*;
@@ -83,8 +85,8 @@ pub trait SecretVault: Send + Sync {
     /// The stored secrets with their allowed hosts, never their values.
     async fn secrets(&self) -> Result<Vec<SecretSummary>>;
 }
-/// The egress policy, for tools that connect on their own (Git) instead of through the
-/// engine's transport.
+/// The egress policy, for tools that connect on their own (Git, MongoDB, database drivers)
+/// instead of through the engine's transport, and the routes they connect through.
 #[async_trait]
 pub trait NetworkPolicy: Send + Sync {
     /// Refuses a destination the egress policy blocks, after resolving it.
@@ -98,6 +100,19 @@ pub trait NetworkPolicy: Send + Sync {
     /// check every address their library connects to are stricter then.
     fn restrictive(&self) -> bool {
         false
+    }
+    /// The SOCKS5 proxy through which a connection with this route reaches its servers: the
+    /// route's own proxy, checked against the egress policy, or the loopback end of the
+    /// tunnel of its SSH profile, opened (and the server's key checked) when needed. `None`
+    /// when it goes directly. Database protocols cannot go through an HTTP proxy.
+    async fn socks_proxy(&self, route: &ConnectionRoute) -> Result<Option<SocksProxy>> {
+        unrouted(route)
+    }
+    /// Refuses a destination reached through a proxy or a tunnel: one the policy allows by
+    /// name passes; any other is resolved here and checked, so a name only the far side
+    /// knows can be reached only when the policy allows every destination or that name.
+    async fn check_routed_destination(&self, host: &str, port: u16) -> Result<()> {
+        self.check_destination(host, port).await
     }
 }
 

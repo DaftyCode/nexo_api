@@ -10,7 +10,8 @@ use nexo_domain::{Error, Result, WorkspaceId};
 use serde_json::{Map, Value};
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 6] = [
+const INTERNAL_FIELDS: [&str; 7] = [
+    "sshProfiles",
     "secretNames",
     "resolvedSecrets",
     "secretHosts",
@@ -80,6 +81,29 @@ impl Application {
                 .execute(operation, Value::Object(payload))
                 .await?;
             return self.realtime_list(engine).await;
+        }
+        // The SSH profiles that routes name, with their secrets (see ssh.rs).
+        if matches!(
+            operation,
+            Operation::Request
+                | Operation::Run
+                | Operation::Performance
+                | Operation::RealtimeConnect
+                | Operation::Grpc
+                | Operation::SshTest
+        ) {
+            let named = if operation == Operation::SshTest {
+                serde_json::json!({"via": "ssh", "profile": payload.get("profile")})
+            } else {
+                Value::Object(payload.clone())
+            };
+            let workspace = payload
+                .get("workspace")
+                .and_then(Value::as_str)
+                .map(String::from);
+            if let Some(profiles) = self.ssh_profiles(workspace.as_deref(), &named).await? {
+                payload.insert("sshProfiles".into(), profiles);
+            }
         }
         if matches!(
             operation,

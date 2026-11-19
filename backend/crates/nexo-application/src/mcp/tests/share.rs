@@ -14,6 +14,7 @@ fn shared_documents_keep_references_and_hide_credentials() {
             {"key": "ref", "value": "{{vault:key}}", "type": "secret"},
         ],
         "nexoTransport": {"clientCertificate": "-----BEGIN"},
+        "nexoRoute": {"via": "socks5", "host": "proxy", "password": "pw"},
         "item": [{"id": "r1", "name": "Login", "request": {
             "header": [
                 {"key": "Authorization", "value": "Basic dXNlcjpwYXNz"},
@@ -31,6 +32,7 @@ fn shared_documents_keep_references_and_hide_credentials() {
     assert_eq!(variables[2]["value"], MASKED);
     assert_eq!(variables[3]["value"], "{{vault:key}}");
     assert!(shared.get("nexoTransport").is_none());
+    assert!(shared.get("nexoRoute").is_none());
     let request = &shared["item"][0]["request"];
     assert_eq!(request["header"][0]["value"], MASKED);
     assert_eq!(request["header"][1]["value"], "application/json");

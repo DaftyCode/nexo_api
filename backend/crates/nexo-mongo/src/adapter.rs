@@ -1,6 +1,8 @@
 //! Opening and keeping connections: the client for a connection, refused destinations and
 //! the connection test.
 use super::*;
+use mongodb::options::Socks5Proxy;
+use nexo_application::ports::SocksProxy;
 
 impl MongoAdapter {
     /// An open connection for this one, opened (and every server checked) when there is
@@ -9,14 +11,20 @@ impl MongoAdapter {
         &self,
         connection: &DatabaseConnection,
     ) -> Result<(Client, Option<String>)> {
+        // The proxy is part of what identifies it: an SSH tunnel reopened after a while
+        // listens on another port, with another password.
+        let proxy = self.policy.socks_proxy(&connection.route).await?;
         let key = format!(
-            "{}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}",
+            "{}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}\0{:?}\0{}\0{}",
             connection.uri,
             connection.password,
             connection.ca_pem,
             connection.cert_pem,
             connection.key_pem,
             connection.secret_hosts,
+            proxy.as_ref().map(|p| (&p.host, p.port, &p.credentials)),
+            connection.route.route,
+            connection.route.profiles,
         );
         {
             let mut clients = self.clients.lock().await;
@@ -26,7 +34,7 @@ impl MongoAdapter {
                 return Ok((open.client.clone(), open.default_database.clone()));
             }
         }
-        let opened = self.connect(connection).await?;
+        let opened = self.connect(connection, proxy).await?;
         let mut clients = self.clients.lock().await;
         if clients.len() >= limits::CLIENTS
             && let Some(oldest) = clients
@@ -47,7 +55,8 @@ impl MongoAdapter {
     }
 
     /// Why Nexo may not reach a server, if it may not: a secret of the connection that is
-    /// not allowed there, or the egress policy.
+    /// not allowed there, or the egress policy (for a server behind a proxy or a tunnel,
+    /// as the far side resolves it).
     pub(super) async fn refusal(
         &self,
         host: &str,
@@ -61,11 +70,12 @@ impl MongoAdapter {
         {
             return Some(format!("secret {name} cannot be sent to {host}"));
         }
-        self.policy
-            .check_destination(host, port)
-            .await
-            .err()
-            .map(|error| error.to_string())
+        let checked = if connection.route.is_direct() {
+            self.policy.check_destination(host, port).await
+        } else {
+            self.policy.check_routed_destination(host, port).await
+        };
+        checked.err().map(|error| error.to_string())
     }
 
     pub(super) async fn run_test(
@@ -79,7 +89,12 @@ impl MongoAdapter {
             seeds,
             direct,
             mut refusals,
-        } = self.connect(&connection).await?;
+        } = self
+            .connect(
+                &connection,
+                self.policy.socks_proxy(&connection.route).await?,
+            )
+            .await?;
         let result = describe(
             self,
             &client,
@@ -94,9 +109,20 @@ impl MongoAdapter {
     }
 
     /// Checks every server of a connection against the egress policy and the secrets'
-    /// allowed domains, and opens it.
-    pub(super) async fn connect(&self, connection: &DatabaseConnection) -> Result<Opened> {
-        let (options, files) = connection::options(connection, &self.tls_directory).await?;
+    /// allowed domains, and opens it, through `proxy` when its route has one.
+    pub(super) async fn connect(
+        &self,
+        connection: &DatabaseConnection,
+        proxy: Option<SocksProxy>,
+    ) -> Result<Opened> {
+        let (mut options, files) = connection::options(connection, &self.tls_directory).await?;
+        options.socks5_proxy = proxy.map(|proxy| {
+            Socks5Proxy::builder()
+                .host(proxy.host)
+                .port(proxy.port)
+                .authentication(proxy.credentials)
+                .build()
+        });
         let seeds: Vec<(String, u16)> = options.hosts.iter().map(address).collect::<Result<_>>()?;
         let mut refusals: HashMap<String, Option<String>> = HashMap::new();
         for (host, port) in &seeds {

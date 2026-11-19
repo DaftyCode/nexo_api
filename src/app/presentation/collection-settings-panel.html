@@ -7,8 +7,8 @@
     <p>
       {{
         (target()?.folder
-          ? 'Variables, authorization and scripts defined here apply to every request in the folder.'
-          : 'Variables, authorization and scripts defined here apply to every request in the collection.'
+          ? 'Variables, authorization, scripts and connection defined here apply to every request in the folder.'
+          : 'Variables, authorization, scripts and connection defined here apply to every request in the collection.'
         ) | transloco
       }}
     </p>
@@ -51,7 +51,9 @@
       >
         {{ 'Authorization' | transloco }}</button
       ><button [class.active]="tab() === 'scripts'" (click)="tab.set('scripts')">
-        {{ 'Scripts' | transloco }}
+        {{ 'Scripts' | transloco }}</button
+      ><button [class.active]="tab() === 'connection'" (click)="tab.set('connection')">
+        {{ 'Connection' | transloco }}
       </button>
     </nav>
     <div class="settings-content" (input)="markDirty()" (change)="markDirty()">
@@ -110,6 +112,19 @@
           <p class="editor-hint">
             {{ 'Collection scripts run before the scripts of folders and requests.' | transloco }}
           </p>
+        }
+        @case ('connection') {
+          <p class="muted">
+            {{
+              'Requests and folders set to "Inherit from parent" reach their servers this way: directly, through a proxy or through an SSH tunnel.'
+                | transloco
+            }}
+          </p>
+          <app-route-picker
+            [route]="model().route"
+            (routeChange)="editRoute($event)"
+            [inheritable]="!!current.folder"
+          />
         }
       }
     </div>

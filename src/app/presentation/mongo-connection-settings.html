@@ -231,4 +231,17 @@
         spellcheck="false"
     /></label>
   }
+  @case ('route') {
+    <app-route-picker
+      [route]="settings().route"
+      (routeChange)="setRoute($event)"
+      [allowHttp]="false"
+    />
+    <p class="muted">
+      {{
+        'MongoDB goes through SOCKS5 proxies and SSH tunnels, and the far side resolves the names of its servers.'
+          | transloco
+      }}
+    </p>
+  }
 }

@@ -111,10 +111,12 @@ describe('variables domain', () => {
       info: { name: 'API', schema: 's' },
       variable: [{ key: 'root', value: '1' }],
       auth: { type: 'bearer' },
+      nexoRoute: { via: 'ssh', profile: 'p1' },
       item: [
         {
           name: 'Folder',
           variable: [{ key: 'folder', value: '2' }],
+          nexoRoute: { via: 'direct' },
           item: [{ name: 'Leaf', request: { url: 'x' } }],
         },
       ],
@@ -122,6 +124,10 @@ describe('variables domain', () => {
     const ancestors = requestAncestors(collection, [0, 0]);
     expect(ancestors.map((a) => a.name)).toEqual(['API', 'Folder']);
     expect(ancestors[0].auth).toEqual({ type: 'bearer' });
+    expect(ancestors.map((a) => a.nexoRoute)).toEqual([
+      { via: 'ssh', profile: 'p1' },
+      { via: 'direct' },
+    ]);
     expect(inheritedCollectionVariables(ancestors).map((row) => row.key)).toEqual([
       'root',
       'folder',

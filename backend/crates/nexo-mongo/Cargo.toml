@@ -14,9 +14,10 @@ nexo-application = { path = "../nexo-application" }
 # `rustls-tls` would bring ring), hickory for `mongodb+srv://` (Atlas), errors that never
 # show credentials, and snappy and zlib compression (no new crates: snap and flate2 come
 # with Kafka). Left out: aws-auth (AWS SDK), in-use-encryption (libmongocrypt, C),
-# gssapi-auth (system Kerberos), openssl-tls, zstd-compression (C), socks5-proxy (for
-# B-01) and cert-key-password, which needs a pkcs8 that is not released yet. Measured in
-# docs/ARCHITECTURE.md, section MongoDB.
+# gssapi-auth (system Kerberos), openssl-tls, zstd-compression (C) and cert-key-password,
+# which needs a pkcs8 that is not released yet. socks5-proxy takes connections through
+# SOCKS5 proxies and SSH tunnels (one new crate, fast-socks5; the rest is already here).
+# Measured in docs/ARCHITECTURE.md, section MongoDB.
 mongodb = { version = "3.10.1", default-features = false, features = [
     "rustls-tls-aws-lc",
     "dns-resolver",
@@ -25,6 +26,7 @@ mongodb = { version = "3.10.1", default-features = false, features = [
     "redact-errors",
     "snappy-compression",
     "zlib-compression",
+    "socks5-proxy",
 ] }
 # The same rustls the driver uses, asked for post-quantum key exchange here too rather than
 # only through the engine's features (one rustls for the whole workspace, no new crate).

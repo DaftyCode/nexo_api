@@ -24,6 +24,7 @@
     "api.example.com, *.example.com",
     "appName=reports&compressors=zlib",
     "Base64",
+    "bastion.example.com",
     "btree",
     "CORP",
     "CSV",

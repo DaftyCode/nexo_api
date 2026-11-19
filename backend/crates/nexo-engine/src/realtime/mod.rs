@@ -159,7 +159,7 @@ impl Realtime {
         });
         let ports = (self.loopback_ports)();
         // Directly or through the proxy of `route`, checked now so a refusal is answered at once.
-        let route = crate::route::Route::from_settings(payload)?;
+        let route = crate::route::Route::with_profiles(payload, &payload["sshProfiles"])?;
         let dialer = crate::route::Dialer::new(route, self.egress.clone(), ports.clone());
         dialer.check(&host, port).await?;
         let id = uuid::Uuid::new_v4().to_string();

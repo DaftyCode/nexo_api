@@ -65,6 +65,14 @@ impl Step {
         }
         request
     }
+    /// The route of the nearest folder or collection that sets one (`nexoRoute`), for a
+    /// request whose transport settings have none.
+    pub(super) fn inherited_route(&self) -> Option<&Value> {
+        self.parents
+            .iter()
+            .rev()
+            .find_map(|group| group.get("nexoRoute").filter(|route| route.is_object()))
+    }
     /// Variables of the folders around the request and of the request itself, nearest last.
     pub(super) fn layered_variables(&self) -> Map<String, Value> {
         let mut layered = Map::new();

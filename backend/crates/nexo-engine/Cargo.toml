@@ -18,6 +18,9 @@ tokio.workspace = true
 # the other protocols use for the same handshake (route/handshake.rs).
 reqwest = { workspace = true, features = ["socks"] }
 tokio-socks = "0.5.3"
+# SSH tunnels (route/ssh): pure Rust, on aws-lc-rs like every TLS client here, never ring.
+# Its default features: aws-lc-rs, RSA keys and zlib compression.
+russh = "0.65.2"
 rusqlite.workspace = true
 # SQL read by the MongoDB SQL query (M-12). Without its default features: no `recursive`
 # (which brings `stacker` and a C build); the engine limits the size of the SQL instead.

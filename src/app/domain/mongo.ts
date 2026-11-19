@@ -3,6 +3,8 @@
  * from. The URI is kept without its password, which lives in the vault.
  */
 
+import { StoredRoute, readRoute, storedRoute } from './route';
+
 export { formatMongoUri, parseMongoUri } from './mongo/uri';
 export type { ParsedUri } from './mongo/uri';
 export { parseCompassExport } from './mongo/compass';
@@ -28,6 +30,8 @@ export interface MongoConnectionValue {
   mcp?: boolean;
   /** Fields masked in what MCP agents read, at any depth. */
   mcpHidden?: string[];
+  /** How it reaches its servers: a SOCKS5 proxy or an SSH tunnel; directly without it. */
+  nexoRoute?: StoredRoute;
 }
 
 /** A server of a connection, as "Test connection" found it. */
@@ -192,6 +196,7 @@ export function connectionValue(value: unknown): MongoConnectionValue {
   const source = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
   const text = (key: string) =>
     typeof source[key] === 'string' ? (source[key] as string) : undefined;
+  const route = source['nexoRoute'] ? storedRoute(readRoute(source['nexoRoute'])) : undefined;
   return {
     uri: text('uri') ?? '',
     ...(text('password') ? { password: text('password') } : {}),
@@ -209,6 +214,7 @@ export function connectionValue(value: unknown): MongoConnectionValue {
           ),
         }
       : {}),
+    ...(route ? { nexoRoute: route } : {}),
   };
 }
 

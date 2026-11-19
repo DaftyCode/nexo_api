@@ -192,6 +192,7 @@
       <app-key-value-editor [(rows)]="headers" />
     }
     @if (model().protocol !== 'mongodb') {
+      <app-route-picker [route]="model().route" (routeChange)="setRoute($event)" />
       <details class="advanced-tls">
         <summary>{{ 'TLS settings' | transloco }}</summary>
         @if (model().protocol !== 'grpc') {

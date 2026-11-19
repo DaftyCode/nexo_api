@@ -10,6 +10,7 @@ pub mod diff;
 pub mod hosts;
 pub mod schema;
 pub mod sql;
+pub mod ssh;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
@@ -166,6 +167,9 @@ impl Document {
                         .into(),
                 ));
             }
+        }
+        if self.kind == DocumentKind::SshProfile {
+            ssh::validate_profile(&self.value)?;
         }
         if matches!(
             self.kind,

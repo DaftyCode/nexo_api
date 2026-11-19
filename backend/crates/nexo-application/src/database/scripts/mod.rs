@@ -59,6 +59,9 @@ pub(crate) fn connection(value: &Value, variables: &Map<String, Value>) -> Value
             connection.insert(key.into(), Value::String(text));
         }
     }
+    if let Some(route) = value.get("nexoRoute").filter(|route| route.is_object()) {
+        connection.insert("route".into(), route.clone());
+    }
     Value::Object(connection)
 }
 
