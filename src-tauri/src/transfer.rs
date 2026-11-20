@@ -56,13 +56,12 @@ impl Files {
             .map_err(|error| error.to_string())?;
         Ok(bytes)
     }
-    fn write(&self, handle: &str, text: &str) -> Result<(), String> {
+    fn write(&self, handle: &str, bytes: &[u8]) -> Result<(), String> {
         let mut files = self.0.lock().map_err(|_| "The files are not available")?;
         let Some(Opened::Write { file, .. }) = files.get_mut(handle) else {
             return Err("The file is not open".into());
         };
-        file.write_all(text.as_bytes())
-            .map_err(|error| error.to_string())
+        file.write_all(bytes).map_err(|error| error.to_string())
     }
     /// Closes a file; `discard` deletes a file being written, such as a cancelled export.
     fn close(&self, handle: &str, discard: bool) -> Result<(), String> {
@@ -164,7 +163,25 @@ pub fn transfer_write(
     handle: String,
     text: String,
 ) -> Result<(), String> {
-    files.write(&handle, &text)
+    files.write(&handle, text.as_bytes())
+}
+
+/// Appends bytes (an Excel workbook) to a file being saved: the body of the request is the
+/// bytes, and the `x-handle` header names the file.
+#[tauri::command]
+pub fn transfer_write_bytes(
+    files: tauri::State<'_, Files>,
+    request: tauri::ipc::Request<'_>,
+) -> Result<(), String> {
+    let tauri::ipc::InvokeBody::Raw(bytes) = request.body() else {
+        return Err("Expected the bytes of the file".into());
+    };
+    let handle = request
+        .headers()
+        .get("x-handle")
+        .and_then(|value| value.to_str().ok())
+        .ok_or("The file is not open")?;
+    files.write(handle, bytes)
 }
 
 #[tauri::command]
@@ -194,15 +211,15 @@ mod tests {
                 path: path.clone(),
             })
             .unwrap();
-        files.write(&handle, "[{\"a\":1},").unwrap();
-        files.write(&handle, "{\"b\":2}]").unwrap();
+        files.write(&handle, b"[{\"a\":1},").unwrap();
+        files.write(&handle, b"{\"b\":2}]").unwrap();
         assert!(
             files.read(&handle, 0, 10).is_err(),
             "a file to write is not read"
         );
         files.close(&handle, false).unwrap();
         assert!(
-            files.write(&handle, "x").is_err(),
+            files.write(&handle, b"x").is_err(),
             "a closed handle writes nothing"
         );
         assert_eq!(
@@ -215,7 +232,7 @@ mod tests {
         assert_eq!(files.read(&read, 100, 5).unwrap(), b"");
         assert!(files.read("other", 0, 5).is_err());
         assert!(
-            files.write(&read, "x").is_err(),
+            files.write(&read, b"x").is_err(),
             "a file to read is not written"
         );
         files.close(&read, false).unwrap();
@@ -232,7 +249,7 @@ mod tests {
                 path: path.clone(),
             })
             .unwrap();
-        files.write(&handle, "a,b\n").unwrap();
+        files.write(&handle, b"a,b\n").unwrap();
         files.close(&handle, true).unwrap();
         assert!(!path.exists());
 

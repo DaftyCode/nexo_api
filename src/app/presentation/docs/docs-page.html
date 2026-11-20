@@ -85,6 +85,14 @@
             >
           </li>
           <li>
+            <a
+              href="#masking"
+              [class.active]="active() === 'masking'"
+              (click)="go($event, 'masking')"
+              >{{ 'Data masking' | transloco }}</a
+            >
+          </li>
+          <li>
             <a href="#code" [class.active]="active() === 'code'" (click)="go($event, 'code')">{{
               'Code generation' | transloco
             }}</a>

@@ -39,15 +39,18 @@ export function databaseCases(answers: Record<string, Answer> = {}) {
 
 export function targetFile(): TransferTarget & {
   text: string;
+  bytes: Uint8Array[];
   closed: boolean;
   discarded: boolean;
 } {
   const file = {
     name: 'out.csv',
     text: '',
+    bytes: [] as Uint8Array[],
     closed: false,
     discarded: false,
     write: async (text: string) => void (file.text += text),
+    writeBytes: async (bytes: Uint8Array) => void file.bytes.push(bytes),
     close: async () => void (file.closed = true),
     discard: async () => void (file.discarded = true),
   };

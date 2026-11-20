@@ -6,9 +6,9 @@ import { readDbConnection } from '../../domain/db/connection';
 import { ResultColumn } from '../../domain/db/results';
 import { quoteName } from '../../domain/db/tree';
 import {
-  EXPORT_EXTENSIONS,
-  EXPORT_TYPES,
-  ExportFormat,
+  FILE_EXTENSIONS,
+  FILE_TYPES,
+  FileFormat,
   defaultExportOptions,
 } from '../../domain/db/transfer/export';
 import { FileColumn } from '../../domain/db/transfer/import';
@@ -20,7 +20,9 @@ import { TransferRun } from './transfer-run';
 export function transferModel(request: TransferRequest) {
   return {
     ...defaultExportOptions(),
-    format: request.format ?? ('csv' as ExportFormat),
+    format: request.format ?? ('csv' as FileFormat),
+    /** Export: the masking set the rows go through (empty: none). */
+    mask: '',
     /** SQL: write a `CREATE TABLE` first, for this engine (empty: the source's). */
     createTable: false,
     dialect: '',
@@ -110,8 +112,8 @@ export class TransferDraft {
     const format = this.model().format;
     return {
       name: this.request.name,
-      extension: EXPORT_EXTENSIONS[format],
-      type: EXPORT_TYPES[format],
+      extension: FILE_EXTENSIONS[format],
+      type: FILE_TYPES[format],
     };
   }
 

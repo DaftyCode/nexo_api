@@ -142,6 +142,7 @@ operations!(
         MonitorStatus => "monitor.status",
         MonitorRun => "monitor.run",
         ResponseCompare => "response.compare",
+        MaskApply => "mask.apply",
     }
 );
 

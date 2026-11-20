@@ -110,6 +110,38 @@ describe('MongoTransfer', { timeout: 20_000 }, () => {
     expect(root().querySelector('app-mongo-transfer')).toBeNull();
   });
 
+  it('exports to an Excel workbook through a masking set', async () => {
+    api.documentsStore.push({
+      id: 'pii',
+      workspace_id: 'local',
+      kind: 'masking',
+      name: 'PII',
+      revision: 1,
+      updated_at: 0,
+      value: { rules: [{ path: 'customer.name', method: 'hide' }] },
+    });
+    await state.refresh();
+    api.responses['mask.apply'] = (payload: Record<string, unknown>) => ({
+      documents: (payload['documents'] as Record<string, unknown>[]).map((document) => ({
+        ...document,
+        customer: { name: '****' },
+      })),
+    });
+    await click('Export…');
+    await fill(fixture, 'Format', 'xlsx', dialog());
+    await fill(fixture, 'Masking', 'pii', dialog());
+    await settle();
+    expect(dialog().textContent).toContain('customer.city');
+    await click(/^Export$/, dialog());
+    const [file] = files.targets;
+    expect(file.name).toMatch(/^orders-\d{4}-\d\d-\d\d\.xlsx$/);
+    expect(file.bytes).toHaveLength(1);
+    expect(calls('mask.apply').map((call) => call.payload['set'])).toEqual(['pii', 'pii']);
+    const sheet = new TextDecoder().decode(file.bytes[0]);
+    expect(sheet).toContain('****');
+    expect(sheet).not.toContain('C1<');
+  });
+
   it('imports a CSV with typed columns and lists the rows that failed', async () => {
     files.sources.push(sourceFile('people.csv', 'name,age,notes\nAna,41,x\nLuis,old,y\nEva,7,z\n'));
     await click('Import…');

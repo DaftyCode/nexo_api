@@ -27,6 +27,7 @@ pub mod grpc_reflection;
 pub mod hex;
 pub mod interchange;
 pub mod kafka;
+pub mod masking;
 pub mod mocks;
 pub mod mqtt;
 pub mod oauth2;

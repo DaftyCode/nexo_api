@@ -111,6 +111,7 @@
     "WebSocket",
     "WHERE",
     "WORKSTATION",
-    "XML"
+    "XML",
+    "card.number"
   ]
 }

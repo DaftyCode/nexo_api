@@ -191,6 +191,9 @@
           @case ('ssh') {
             <app-ssh-profiles />
           }
+          @case ('masking') {
+            <app-masking-sets />
+          }
           @case ('oauth') {
             <app-token-exchange [fields]="fields" (exchange)="oauth()" />
           }

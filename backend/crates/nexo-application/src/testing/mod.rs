@@ -65,10 +65,22 @@ impl WorkspaceRepository for Fake {
     }
     async fn summaries(
         &self,
-        _: &WorkspaceId,
-        _: Option<DocumentKind>,
+        workspace: &WorkspaceId,
+        kind: Option<DocumentKind>,
     ) -> Result<Vec<DocumentSummary>> {
-        Ok(vec![])
+        Ok(self
+            .documents(workspace, kind)
+            .await?
+            .into_iter()
+            .map(|document| DocumentSummary {
+                id: document.id,
+                workspace_id: document.workspace_id,
+                kind: document.kind,
+                name: document.name,
+                revision: document.revision,
+                updated_at: document.updated_at,
+            })
+            .collect())
     }
     async fn documents(
         &self,
@@ -125,8 +137,8 @@ impl ExecutionGateway for Fake {
         self.executed
             .lock()
             .unwrap()
-            .push((operation.as_str().into(), payload));
-        Ok(Value::Null)
+            .push((operation.as_str().into(), payload.clone()));
+        Ok(engine_answer(operation, &payload))
     }
 }
 #[async_trait]
@@ -153,6 +165,39 @@ impl SecretVault for Fake {
 impl VersionControl for Fake {
     async fn execute(&self, _: &WorkspaceId, _: GitOperation, _: Value) -> Result<Value> {
         Ok(Value::Null)
+    }
+}
+
+/// What the engine answers in these tests: masking with the domain's rules (and a digest
+/// that is not secret), a JSON response from `json.test`, and nothing else.
+fn engine_answer(operation: Operation, payload: &Value) -> Value {
+    match operation {
+        Operation::MaskApply => {
+            let rules = nexo_domain::masking::Rules::read(&json!({"rules": payload["rules"]}))
+                .expect("valid rules");
+            let digest = |input: &[u8]| [input.len() as u8; 32];
+            let masker = nexo_domain::masking::Masker::new(&rules, &digest);
+            let mut documents = payload["documents"].as_array().cloned().unwrap_or_default();
+            documents
+                .iter_mut()
+                .for_each(|document| masker.document(document));
+            json!({ "documents": documents })
+        }
+        Operation::Request
+            if payload["request"]["url"]
+                .as_str()
+                .is_some_and(|url| url.contains("json.test")) =>
+        {
+            json!({"status": 200, "body": r#"{"email":"ana@corp.com","id":7}"#})
+        }
+        Operation::Request
+            if payload["request"]["url"]
+                .as_str()
+                .is_some_and(|url| url.contains("text.test")) =>
+        {
+            json!({"status": 200, "body": "ana@corp.com"})
+        }
+        _ => Value::Null,
     }
 }
 

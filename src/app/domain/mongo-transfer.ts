@@ -25,8 +25,10 @@ export {
 export { JsonDocumentsReader, jsonDocument } from './mongo-transfer/json';
 export type { ReadDocument } from './mongo-transfer/json';
 import type { CsvColumn } from './mongo-transfer/cells';
+import { XLSX_TYPE } from './export/xlsx';
 
-export type TransferFormat = 'json' | 'jsonl' | 'csv';
+/** Imports read JSON, JSON Lines or CSV; exports also write Excel workbooks (B-06). */
+export type TransferFormat = 'json' | 'jsonl' | 'csv' | 'xlsx';
 /** Extended JSON: canonical keeps every type; relaxed writes plain numbers and dates. */
 export type JsonFlavour = 'canonical' | 'relaxed';
 /**
@@ -37,16 +39,18 @@ export type ExportScope = 'collection' | 'query' | 'aggregation' | 'page';
 /** How an import writes: inserts, replaces by some fields, or empties the collection first. */
 export type ImportMode = 'insert' | 'upsert' | 'replace';
 
-export const TRANSFER_FORMATS: readonly TransferFormat[] = ['json', 'jsonl', 'csv'];
+export const TRANSFER_FORMATS: readonly TransferFormat[] = ['json', 'jsonl', 'csv', 'xlsx'];
 export const EXTENSIONS: Record<TransferFormat, string> = {
   json: 'json',
   jsonl: 'jsonl',
   csv: 'csv',
+  xlsx: 'xlsx',
 };
 export const MEDIA_TYPES: Record<TransferFormat, string> = {
   json: 'application/json',
   jsonl: 'application/x-ndjson',
   csv: 'text/csv',
+  xlsx: XLSX_TYPE,
 };
 
 /** A transfer saved in the workspace, run again by hand. */
@@ -72,6 +76,8 @@ export interface TransferValue {
   mode: ImportMode;
   key: string[];
   continueOnError: boolean;
+  /** Export: the masking set the documents go through (empty: none). */
+  mask: string;
 }
 
 export function emptyTransfer(
@@ -98,6 +104,7 @@ export function emptyTransfer(
     mode: 'insert',
     key: [],
     continueOnError: true,
+    mask: '',
   };
 }
 
@@ -146,6 +153,7 @@ export function transferValue(value: unknown): TransferValue {
     mode: oneOf(stored['mode'], ['insert', 'upsert', 'replace'], 'insert'),
     key: texts(stored['key']),
     continueOnError: stored['continueOnError'] !== false,
+    mask: text('mask'),
   };
 }
 

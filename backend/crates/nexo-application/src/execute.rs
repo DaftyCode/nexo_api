@@ -44,6 +44,9 @@ impl Application {
         if operation.is_monitor() {
             return self.monitor(operation, &payload).await;
         }
+        if operation == Operation::MaskApply {
+            return self.mask(payload).await;
+        }
         self.engine(operation, payload, Sender::Person).await
     }
 

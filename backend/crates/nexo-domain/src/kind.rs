@@ -63,9 +63,12 @@ pub enum DocumentKind {
     /// it took, its state and its failed assertions, never its responses. One per monitor.
     #[serde(rename = "monitor-history")]
     MonitorHistory,
+    /// A set of masking rules: the fields it hides or replaces when data is exported, and
+    /// whether MCP agents and the AI assistant read through it too (`masking`).
+    Masking,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 24] = [
+    pub const ALL: [DocumentKind; 25] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -90,6 +93,7 @@ impl DocumentKind {
         Self::Session,
         Self::SshProfile,
         Self::MonitorHistory,
+        Self::Masking,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -117,6 +121,7 @@ impl DocumentKind {
             Self::Session => "session",
             Self::SshProfile => "ssh-profile",
             Self::MonitorHistory => "monitor-history",
+            Self::Masking => "masking",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

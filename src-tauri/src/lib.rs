@@ -117,6 +117,7 @@ pub fn run() {
             transfer::transfer_read,
             transfer::transfer_save,
             transfer::transfer_write,
+            transfer::transfer_write_bytes,
             transfer::transfer_close,
             database_files::db_file_choose
         ])

@@ -33,8 +33,10 @@ export interface ExportSource extends TransferEnd {
 export interface ExportFormat {
   format: TransferFormat;
   flavour: JsonFlavour;
-  /** CSV: the fields written, in their order. */
+  /** CSV and Excel: the fields written, in their order. */
   fields: readonly string[];
+  /** The id of a masking set the documents go through; none writes them as they are. */
+  mask?: string;
 }
 
 /** How an import writes: the mode, its key fields and whether it goes on after failures. */

@@ -194,7 +194,13 @@ impl Application {
             .into_iter()
             .max_by_key(|summary| summary.updated_at)
             .ok_or(Missing::Resource)?;
-        Ok(self.document(&latest.id).await?)
+        let mut document = self.document(&latest.id).await?;
+        // What the sets for agents mask is masked here too.
+        if document.value.get("response").is_some() {
+            let response = document.value["response"].take();
+            document.value["response"] = self.mask_response_for_agents(workspace, response).await?;
+        }
+        Ok(document)
     }
 
     /// Pretty JSON with every vault value replaced. Without the vault's list the text is not

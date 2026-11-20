@@ -120,6 +120,14 @@ describe('RunnerPanel', () => {
     expect(report?.kind).toBe('run');
     expect(report?.title).toBe('Shop');
 
+    // The run as a table, one row per request and iteration.
+    await clickButton(fixture, 'Export table…');
+    await settle();
+    await fill(fixture, 'Format', 'csv');
+    await clickButton(fixture, /^Export$/);
+    await settle();
+    expect(api.downloads.at(-1)?.name).toBe('Shop.csv');
+
     // Two responses of the run, compared.
     await clickButton(fixture, 'Compare responses');
     const compare = TestBed.inject(CompareStore).model();

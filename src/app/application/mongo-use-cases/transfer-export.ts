@@ -1,6 +1,15 @@
 import { readingPipeline } from '../../domain/mongo-aggregation';
 import { DocumentPage } from '../../domain/mongo-query';
-import { csvRecord, csvRow, documentFields, jsonDocument } from '../../domain/mongo-transfer';
+import { bsonType } from '../../domain/bson';
+import { XlsxSheet, workbook } from '../../domain/export/xlsx';
+import {
+  cellText,
+  csvRecord,
+  csvRow,
+  documentFields,
+  fieldValue,
+  jsonDocument,
+} from '../../domain/mongo-transfer';
 import { TransferTarget } from '../ports';
 import { MongoPorts, savedConnection } from './payload';
 import {
@@ -86,9 +95,25 @@ export async function sampleFields(api: MongoPorts, source: ExportSource): Promi
   return documentFields(page.documents);
 }
 
+/** A value of a document as a cell of a workbook: numbers stay numbers. */
+function sheetCell(value: unknown): unknown {
+  if (value === undefined || value === null) return null;
+  if (typeof value === 'number' || typeof value === 'boolean') return value;
+  const text = cellText(value);
+  const type = bsonType(value);
+  const number = Number(text);
+  return (type === 'Int32' ||
+    type === 'Double' ||
+    (type === 'Int64' && Number.isSafeInteger(number))) &&
+    Number.isFinite(number)
+    ? number
+    : text;
+}
+
 /**
- * Writes an export to a file: a JSON array, JSON Lines or CSV with a header. A cancelled
- * export leaves no file.
+ * Writes an export to a file: a JSON array, JSON Lines, CSV with a header or an Excel
+ * workbook (written at the end). With a masking set, each page is masked first. A
+ * cancelled export leaves no file.
  */
 export async function exportToFile(
   api: MongoPorts,
@@ -99,18 +124,39 @@ export async function exportToFile(
   signal: AbortSignal,
 ): Promise<TransferOutcome> {
   const outcome = emptyOutcome();
+  const sheet =
+    format.format === 'xlsx' ? new XlsxSheet(source.target.collection, format.fields) : undefined;
+  const masked = async (page: readonly Record<string, unknown>[]) =>
+    format.mask
+      ? (
+          await api.execute<{ documents: Record<string, unknown>[] }>('mask.apply', {
+            workspace: source.workspace,
+            set: format.mask,
+            documents: page,
+          })
+        ).documents
+      : page;
   try {
     if (format.format === 'csv') await file.write(csvRow(format.fields) + '\n');
     if (format.format === 'json') await file.write('[');
-    for await (const page of exportPages(api, source, () => signal.aborted)) {
-      const lines = page.map((document) =>
-        format.format === 'csv'
-          ? csvRecord(document, format.fields)
-          : jsonDocument(document, format.flavour),
-      );
-      const separator = format.format === 'json' ? ',\n' : '\n';
-      const lead = format.format === 'json' ? (outcome.documents ? ',\n' : '\n') : '';
-      await file.write(lead + lines.join(separator) + (format.format === 'json' ? '' : '\n'));
+    for await (const read of exportPages(api, source, () => signal.aborted)) {
+      const page = await masked(read);
+      if (sheet) {
+        sheet.add(
+          page.map((document) =>
+            format.fields.map((field) => sheetCell(fieldValue(document, field))),
+          ),
+        );
+      } else {
+        const lines = page.map((document) =>
+          format.format === 'csv'
+            ? csvRecord(document, format.fields)
+            : jsonDocument(document, format.flavour),
+        );
+        const separator = format.format === 'json' ? ',\n' : '\n';
+        const lead = format.format === 'json' ? (outcome.documents ? ',\n' : '\n') : '';
+        await file.write(lead + lines.join(separator) + (format.format === 'json' ? '' : '\n'));
+      }
       outcome.documents += page.length;
       progress(outcome.documents);
       if (signal.aborted) break;
@@ -121,6 +167,7 @@ export async function exportToFile(
       return outcome;
     }
     if (format.format === 'json') await file.write(outcome.documents ? '\n]\n' : ']\n');
+    if (sheet) await file.writeBytes(workbook([sheet]));
     await file.close();
     return outcome;
   } catch (error) {

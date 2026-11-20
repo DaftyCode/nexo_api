@@ -8,9 +8,12 @@ import { RunnerStore } from './runner-store';
 import { blockedSecret } from '../domain/secrets';
 import { CodeEditor } from './code-editor';
 import { CompareStore } from './compare/compare-store';
+import { TableExport } from './table-export';
+import { TableExportOptions } from '../application/workspace-use-cases/table-export';
+import { runReport } from '../domain/reports';
 
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor],
+  imports: [TranslocoPipe, FormField, CodeEditor, TableExport],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-runner-panel',
   styleUrl: './runner-panel.scss',
@@ -37,6 +40,16 @@ export class RunnerPanel {
     const run = this.runner.run();
     if (run) this.state.report.set(this.state.reports.runReport(run, this.runner.collectionName()));
   }
+  /** The run shown as a CSV or Excel file: one row per request and iteration. */
+  protected readonly exportTable = async (options: TableExportOptions) => {
+    const run = this.runner.run();
+    if (!run) throw new Error('Run a collection first');
+    return this.state.cases.tables.run(
+      this.state.workspaceId(),
+      runReport(run, this.runner.collectionName()),
+      options,
+    );
+  };
   protected start() {
     void this.task.run(async () => {
       const m = this.model();

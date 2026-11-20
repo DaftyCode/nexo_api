@@ -89,6 +89,7 @@ mod datasource;
 mod datasource_admin;
 mod git;
 mod http;
+mod masking;
 mod modules;
 mod mongo_compare;
 mod mongo_read;
@@ -107,6 +108,7 @@ pub use datasource::*;
 pub use datasource_admin::*;
 pub use git::*;
 pub use http::*;
+pub use masking::*;
 pub use modules::*;
 pub use mongo_compare::*;
 pub use mongo_read::*;
@@ -289,6 +291,7 @@ operation_payloads! {
     MonitorStatus => MonitorStatusPayload,
     MonitorRun => MonitorRunPayload,
     ResponseCompare => ResponseComparePayload,
+    MaskApply => MaskApplyPayload,
 }
 
 /// Checks the payload of a Git operation.

@@ -3,7 +3,7 @@
 //! run, aggregations with `$out` or `$merge` are refused like any read, answers are bounded
 //! in documents and size, and the fields the connection hides are masked.
 use crate::{Application, database::saved_connection, operations::Operation};
-use nexo_domain::{Document, DocumentKind, Error, Result, WorkspaceId};
+use nexo_domain::{Document, DocumentKind, Error, Result, WorkspaceId, masking::Rules};
 use serde_json::{Map, Value, json};
 
 /// Documents an agent gets at most from a tool.
@@ -218,6 +218,7 @@ impl Application {
                 payload["pageSize"] = json!(limit);
                 let page = self.execute(Operation::MongoFind, payload).await?;
                 let documents = page["documents"].as_array().cloned().unwrap_or_default();
+                let documents = self.mask_for_agents(&workspace, documents).await?;
                 Ok(bounded(documents, &hidden))
             }
             "mongo_aggregate" => {
@@ -230,18 +231,23 @@ impl Application {
                 payload["pageSize"] = json!(limit);
                 let page = self.execute(Operation::MongoAggregate, payload).await?;
                 let documents = page["documents"].as_array().cloned().unwrap_or_default();
+                let documents = self.mask_for_agents(&workspace, documents).await?;
                 Ok(bounded(documents, &hidden))
             }
             "mongo_schema" => {
                 payload["id"] = id();
                 payload["size"] = json!(MCP_SAMPLE);
                 let mut schema = self.execute(Operation::MongoSchema, payload).await?;
+                let masked = match self.agent_rules(&workspace).await? {
+                    Some(rules) => Rules::read(&json!({ "rules": rules }))?,
+                    None => Rules::default(),
+                };
                 // Frequent values are data: masked like documents.
                 for field in schema["fields"].as_array_mut().into_iter().flatten() {
                     let path = field["path"].as_str().unwrap_or_default().to_string();
-                    if hidden
-                        .iter()
-                        .any(|hide| path.split('.').any(|part| part == hide))
+                    let parts: Vec<&str> = path.split('.').collect();
+                    if hidden.iter().any(|hide| parts.contains(&hide.as_str()))
+                        || masked.names(&parts)
                     {
                         field["values"] = json!([]);
                         if let Some(types) = field["types"].as_array_mut() {

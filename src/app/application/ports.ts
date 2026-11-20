@@ -128,6 +128,8 @@ export interface TransferSource {
 export interface TransferTarget {
   readonly name: string;
   write(text: string): Promise<void>;
+  /** Appends bytes: an Excel workbook is not text. */
+  writeBytes(bytes: Uint8Array): Promise<void>;
   /** Ends the file: the web version downloads it then. */
   close(): Promise<void>;
   /** Drops what was written, as a cancelled export. */

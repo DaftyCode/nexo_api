@@ -14,6 +14,9 @@ import { blockedSecret } from '../domain/secrets';
 import { StudioIcon } from './studio-icon';
 import { WorkspaceState } from './workspace-state';
 import { CompareStore } from './compare/compare-store';
+import { TableExport } from './table-export';
+import { TableExportOptions } from '../application/workspace-use-cases/table-export';
+import { bodyRecords } from '../domain/export/table';
 
 /** Bodies above this size are shown as received; formatting them would block the interface. */
 const FORMAT_LIMIT = 2 * 1024 * 1024;
@@ -21,7 +24,7 @@ const FORMAT_LIMIT = 2 * 1024 * 1024;
 const DISPLAY_LIMIT = 512 * 1024;
 
 @Component({
-  imports: [TranslocoPipe, JsonPipe, StudioIcon],
+  imports: [TranslocoPipe, JsonPipe, StudioIcon, TableExport],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-response-view',
   styleUrl: './response-view.scss',
@@ -50,6 +53,22 @@ export class ResponseView {
       ? `data:${this.contentType()};base64,${this.response()?.body ?? ''}`
       : '',
   );
+  /** The records of a complete JSON body (an array of objects), to export as a table. */
+  protected readonly records = computed(() => {
+    const response = this.response();
+    if (!response || this.binary() || response.truncated) return undefined;
+    return bodyRecords(response.body);
+  });
+  protected readonly exportTable = async (options: TableExportOptions) => {
+    const found = this.records();
+    if (!found) throw new Error('This response has no records to export');
+    return this.state.cases.tables.records(
+      this.state.workspaceId(),
+      found.records,
+      found.name || 'response',
+      options,
+    );
+  };
   protected readonly large = computed(() => (this.response()?.body ?? '').length > FORMAT_LIMIT);
   /** The response whose full body the user chose to show. */
   private readonly expanded = signal<ExecutionResponse | undefined>(undefined);

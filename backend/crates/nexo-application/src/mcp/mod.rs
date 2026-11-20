@@ -79,6 +79,14 @@ impl From<Error> for Missing {
 }
 
 impl Application {
+    /// `send_request`: the response as agents may read it.
+    async fn mcp_send(&self, arguments: Value) -> nexo_domain::Result<Value> {
+        let workspace =
+            nexo_domain::WorkspaceId::parse(arguments["workspace"].as_str().unwrap_or("local"))?;
+        let response = self.execute(Operation::Request, arguments).await?;
+        self.mask_response_for_agents(&workspace, response).await
+    }
+
     /// Handles a single message or a batch.
     pub async fn mcp(&self, payload: Value) -> Reply {
         let batch = payload.is_array();
@@ -155,7 +163,7 @@ impl Application {
                     "send_request" => {
                         let arguments = params["arguments"].clone();
                         if arguments["request"]["url"].is_string() {
-                            self.execute(Operation::Request, arguments).await
+                            self.mcp_send(arguments).await
                         } else {
                             Err(Error::Validation(
                                 "arguments.request.url is required".into(),

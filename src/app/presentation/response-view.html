@@ -89,6 +89,14 @@
                     : ''
               }}</span>
             </div>
+            @if (records(); as found) {
+              <div class="response-table-export">
+                <span class="muted">{{
+                  'export.records' | transloco: { v0: found.records.length }
+                }}</span>
+                <app-table-export [make]="exportTable" />
+              </div>
+            }
             @for (warning of r.warnings ?? []; track warning) {
               <div class="alert">{{ warning }}</div>
             }

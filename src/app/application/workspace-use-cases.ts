@@ -35,6 +35,8 @@ import { SessionCases } from './workspace-use-cases/sessions';
 import { SshProfileCases } from './workspace-use-cases/ssh';
 import { MonitorCases } from './workspace-use-cases/monitors';
 import { CompareCases } from './workspace-use-cases/compare';
+import { MaskingCases } from './workspace-use-cases/masking';
+import { TableExportCases } from './workspace-use-cases/table-export';
 
 export type {
   ExecutionContext,
@@ -69,6 +71,10 @@ export class WorkspaceUseCases {
   readonly monitors: MonitorCases;
   /** What changed between two responses. */
   readonly compare: CompareCases;
+  /** Masking sets, and what they make of data. */
+  readonly masking: MaskingCases;
+  /** CSV and Excel files of runs and JSON responses. */
+  readonly tables: TableExportCases;
 
   constructor(
     private readonly api: ApiPort,
@@ -84,6 +90,8 @@ export class WorkspaceUseCases {
     this.ssh = new SshProfileCases(api);
     this.monitors = new MonitorCases(api, notifications);
     this.compare = new CompareCases(api);
+    this.masking = new MaskingCases(api);
+    this.tables = new TableExportCases(this.masking);
   }
 
   // Connection and session.

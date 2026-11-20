@@ -9,6 +9,7 @@ import { QuoteStyle, quoteName } from '../tree';
 import { base64Bytes, classOf } from '../grid/cells';
 import { SqlStyle, jsonValue, sqlLiteral } from '../grid/copy';
 import { escapeHtml, escapeXml, markdownCell } from './escape';
+import { XLSX_TYPE } from '../../export/xlsx';
 
 /** The byte order mark some spreadsheets want first. */
 export const BOM = String.fromCharCode(0xfeff);
@@ -45,6 +46,16 @@ export const EXPORT_TYPES: Record<ExportFormat, string> = {
   xml: 'application/xml',
   text: 'text/plain',
 };
+
+/** What an export writes: a format of the writers, or an Excel workbook (B-06). */
+export type FileFormat = ExportFormat | 'xlsx';
+export const FILE_FORMATS: readonly FileFormat[] = [
+  'csv',
+  'xlsx',
+  ...EXPORT_FORMATS.filter((format) => format !== 'csv'),
+];
+export const FILE_EXTENSIONS: Record<FileFormat, string> = { ...EXPORT_EXTENSIONS, xlsx: 'xlsx' };
+export const FILE_TYPES: Record<FileFormat, string> = { ...EXPORT_TYPES, xlsx: XLSX_TYPE };
 
 /**
  * The format `@export` names: a format's name (`@export csv`), or DBeaver's JSON with its

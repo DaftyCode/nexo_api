@@ -106,7 +106,34 @@ nx.test('Successful response', () => {{ '{' }}
           | transloco
       }}
     </li>
+    <li>
+      {{
+        'Export table… saves a finished run (one row per request and iteration, with its status, time and tests) or a JSON response with an array of objects as an Excel workbook or a CSV file. Embedded fields become columns named with dots; choose a semicolon as separator if your Excel expects one.'
+          | transloco
+      }}
+    </li>
   </ul>
+</section>
+<section id="masking">
+  <h2>{{ 'Data masking' | transloco }}</h2>
+  <p>
+    {{
+      'In Settings → Masking, a set of rules names the fields to hide or replace: Hide writes ****, Truncate keeps the last characters (**** 1234), Hash gives a token, Made-up value writes another value of the same form (an email, a name, a date, digits for digits) and Remove leaves the field out. Try it on an example before saving it.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Choose the set in Masking when you export a run, a response, a database table or a MongoDB collection: the file has none of the original values of the fields it names, and everything else as it was. Hashes and made-up values use a key of the workspace kept in the vault, so the same value always gives the same result and masked files still join.'
+        | transloco
+    }}
+  </p>
+  <p>
+    {{
+      'Mark a set with Mask what MCP agents read too, and agents connected to Nexo get responses, MongoDB documents and the last execution through it; a response body that is not JSON is withheld then.'
+        | transloco
+    }}
+  </p>
 </section>
 <section id="code">
   <h2>{{ 'Code generation' | transloco }}</h2>

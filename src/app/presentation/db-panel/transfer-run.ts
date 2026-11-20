@@ -197,6 +197,7 @@ export class TransferRun {
         format: model.format,
         options: model,
         shape: { table: draft.qualified(connection, table), style },
+        ...(model.mask ? { mask: model.mask } : {}),
         ...(model.format === 'sql' && model.createTable
           ? {
               ddlFor: async (columns: ResultColumn[]) =>

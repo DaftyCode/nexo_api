@@ -8,6 +8,7 @@ pub use kind::DocumentKind;
 
 pub mod diff;
 pub mod hosts;
+pub mod masking;
 pub mod monitor;
 pub mod schema;
 pub mod sql;
@@ -177,6 +178,9 @@ impl Document {
         }
         if self.kind == DocumentKind::Monitor {
             monitor::validate(&self.value)?;
+        }
+        if self.kind == DocumentKind::Masking {
+            masking::validate(&self.value)?;
         }
         if matches!(
             self.kind,

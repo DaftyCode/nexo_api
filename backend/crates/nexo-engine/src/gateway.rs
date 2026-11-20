@@ -62,6 +62,7 @@ impl ExecutionGateway for Engine {
             Operation::ApiInspect => api_spec::inspect(&payload),
             Operation::ApiDiff => api_spec::compare(&payload),
             Operation::ResponseCompare => compare::responses(&payload),
+            Operation::MaskApply => masking::apply(&self.vault, &payload).await,
             Operation::Codegen => interchange::generate(&payload),
             Operation::RealtimeConnect => self.realtime.connect(&payload).await,
             Operation::RealtimeSend => self.realtime.send(&payload),
@@ -211,6 +212,9 @@ impl SecretVault for Engine {
                 "Names starting with nexo-oauth2 are reserved for OAuth 2.0 tokens",
             ));
         }
+        if masking::is_reserved(name) {
+            return Err(invalid("Names starting with nexo-masking are reserved"));
+        }
         self.vault
             .store(name, value, allowed_hosts.map(AllowedHosts::patterns))
             .await
@@ -219,12 +223,16 @@ impl SecretVault for Engine {
         if oauth2_tokens::is_reserved(name) {
             return Err(invalid("Delete OAuth 2.0 tokens in Manage Tokens"));
         }
+        if masking::is_reserved(name) {
+            return Err(invalid("Names starting with nexo-masking are reserved"));
+        }
         self.vault.remove(name).await
     }
     /// Requests may reference a token's access or ID token, never its details (which hold
     /// the refresh token).
     async fn resolve(&self, name: &str) -> Result<String> {
-        if name.trim().starts_with("nexo-oauth2-details:") {
+        // The key of the masking never leaves the engine either.
+        if name.trim().starts_with("nexo-oauth2-details:") || masking::is_reserved(name) {
             return Err(Error::NotFound);
         }
         self.vault.get(name).await
@@ -235,7 +243,7 @@ impl SecretVault for Engine {
             .hosts()
             .await?
             .into_iter()
-            .filter(|(name, _)| !oauth2_tokens::is_reserved(name))
+            .filter(|(name, _)| !oauth2_tokens::is_reserved(name) && !masking::is_reserved(name))
             .map(|(name, allowed_hosts)| SecretSummary {
                 name,
                 allowed_hosts,

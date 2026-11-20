@@ -1,0 +1,102 @@
+<h2>{{ 'Data masking' | transloco }}</h2>
+<p class="muted">
+  {{
+    'Masking sets hide or replace sensitive fields when you export a run, a response or a table. A set marked for agents also masks what MCP agents read. Hashes and made-up values use a key of this workspace that stays in Nexo: the same value always gives the same result.'
+      | transloco
+  }}
+</p>
+@if (task.error(); as error) {
+  <p class="global-alert" role="alert">{{ error | transloco }}</p>
+}
+<ul class="masking-sets">
+  @for (set of sets(); track set.id) {
+    <li class="card">
+      <div class="row">
+        <strong class="grow">{{ set.name }}</strong>
+        <span class="muted">{{ 'mask.rules' | transloco: { v0: set.rules.length } }}</span>
+        @if (set.agents) {
+          <span class="status-pill">{{ 'Agents' | transloco }}</span>
+        }
+      </div>
+      <div class="button-grid">
+        <button type="button" class="button" (click)="edit(set)">{{ 'Edit' | transloco }}</button>
+        <button type="button" class="text-button danger" (click)="remove(set)">
+          {{ 'Delete' | transloco }}
+        </button>
+      </div>
+    </li>
+  } @empty {
+    <li class="muted">{{ 'No masking sets yet.' | transloco }}</li>
+  }
+</ul>
+@if (editing()) {
+  <form class="card" (submit)="$event.preventDefault(); save()">
+    <h3>{{ (editing() === 'new' ? 'New masking set' : 'Edit masking set') | transloco }}</h3>
+    <label class="field">{{ 'Name' | transloco }}<input [formField]="fields.name" /></label>
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.agents" />{{
+        'Mask what MCP agents read too' | transloco
+      }}</label
+    >
+    <p class="editor-hint">
+      {{
+        'A path names a field at any depth (email), from the top ($.card.number), or with * for any field and ** for any depth. Case does not matter; the first rule that names a field wins.'
+          | transloco
+      }}
+    </p>
+    @for (rule of fields.rules; track $index) {
+      <div class="row mask-rule">
+        <label class="field grow"
+          >{{ 'Field path' | transloco
+          }}<input [formField]="rule.path" spellcheck="false" placeholder="card.number"
+        /></label>
+        <label class="field"
+          >{{ 'Method' | transloco
+          }}<select [formField]="rule.method">
+            @for (method of methods; track method) {
+              <option [value]="method">{{ 'mask.method.' + method | transloco }}</option>
+            }
+          </select></label
+        >
+        @if (model().rules[$index].method === 'truncate') {
+          <label class="field"
+            >{{ 'Characters kept' | transloco }}<input type="number" [formField]="rule.keep"
+          /></label>
+        }
+        <button
+          type="button"
+          class="text-button danger"
+          [attr.aria-label]="'Remove rule' | transloco"
+          (click)="removeRule($index)"
+        >
+          ✕
+        </button>
+      </div>
+    }
+    <button type="button" class="button" (click)="addRule()">{{ 'Add rule' | transloco }}</button>
+    <details class="mask-trial">
+      <summary>{{ 'Try it on an example' | transloco }}</summary>
+      <label class="field"
+        >{{ 'Example (JSON)' | transloco
+        }}<textarea [formField]="trialFields.sample" rows="8" spellcheck="false"></textarea>
+      </label>
+      <button type="button" class="button" (click)="try()">{{ 'Try' | transloco }}</button>
+      @if (tried(); as tried) {
+        <pre class="mask-result" role="status">{{ tried }}</pre>
+      }
+    </details>
+    @if (problem(); as problem) {
+      <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+    }
+    <div class="button-grid">
+      <button type="submit" class="button primary" [disabled]="!!problem()">
+        {{ 'Save' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="cancel()">{{ 'Cancel' | transloco }}</button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="button" (click)="create()">
+    {{ 'New masking set' | transloco }}
+  </button>
+}

@@ -14,8 +14,11 @@ export interface ExportJob {
   workspace: string;
   session: string;
   sql: string;
-  format: ExportFormat;
+  /** A format of the writers, or an Excel workbook. */
+  format: ExportFormat | 'xlsx';
   options: ExportOptions;
+  /** The id of a masking set the rows go through; none exports them as they are. */
+  mask?: string;
   /** The table and dialect the rows are named with (SQL `INSERT`s). */
   shape: Omit<ExportShape, 'columns' | 'ddl'>;
   /** SQL: the `CREATE TABLE` of the columns read, written first. */

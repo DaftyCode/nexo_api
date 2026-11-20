@@ -10,12 +10,13 @@ import {
 import { FormField } from '@angular/forms/signals';
 import { pipelineText, writes } from '../domain/mongo-aggregation';
 import { MongoTransferWrite } from './mongo-transfer-write';
-import type { TransferDraft } from './mongo-transfer/draft';
+import { type TransferDraft, tabular } from './mongo-transfer/draft';
 import type { MongoTransfers } from './mongo-transfer/transfers';
 
 /**
- * What an export reads and where it goes: a JSON, JSON Lines or CSV file, or another
- * collection; for a CSV, the fields written and their order.
+ * What an export reads and where it goes: a JSON, JSON Lines, CSV or Excel file (masked by
+ * a set when one is chosen), or another collection; for a CSV or a workbook, the fields
+ * written and their order.
  */
 @Component({
   imports: [TranslocoPipe, FormField, MongoTransferWrite],
@@ -27,6 +28,9 @@ import type { MongoTransfers } from './mongo-transfer/transfers';
 export class MongoTransferExport {
   readonly transfers = input.required<MongoTransfers>();
   readonly draft = input.required<TransferDraft>();
+  protected readonly tabular = tabular;
+  /** The masking sets of the workspace. */
+  protected readonly sets = computed(() => this.transfers().maskingSets());
   /** The query exported, as typed in the bar. */
   protected readonly queryText = computed(() =>
     Object.entries(this.draft().query)
@@ -50,7 +54,7 @@ export class MongoTransferExport {
     // A CSV names its columns: the fields of the first documents are found once.
     effect(() => {
       const draft = this.draft();
-      if (draft.model().format !== 'csv' || draft.model().destination !== 'file') return;
+      if (!tabular(draft.model().format) || draft.model().destination !== 'file') return;
       untracked(() => {
         if (!draft.available().length) void this.transfers().loadFields(draft);
       });

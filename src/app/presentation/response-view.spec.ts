@@ -110,6 +110,21 @@ describe('ResponseView', () => {
       expect(api.downloads.at(-1)?.name).toBe('response.json');
     });
 
+    it('exports the records of a JSON body as a table, and only of a complete one', async () => {
+      TestBed.inject(WorkspaceState).workspaceId.set('local');
+      await show({ body: '{"data":[{"id":1,"user":{"name":"Ana"}},{"id":2}]}' });
+      expect(root().textContent).toContain('2 records you can export as a table');
+      await clickButton(fixture, 'Export table…');
+      await fixture.whenStable();
+      await clickButton(fixture, /^Export$/);
+      for (let i = 0; i < 4; i++) await fixture.whenStable();
+      expect(api.downloads.at(-1)?.name).toBe('data.xlsx');
+      await show({ body: '[{"id":1}]', truncated: true });
+      expect(root().textContent).not.toContain('records you can export');
+      await show({ body: '{"a":1}' });
+      expect(root().textContent).not.toContain('records you can export');
+    });
+
     it('previews images, offers other binaries for download and lists warnings', async () => {
       await show({
         headers: [{ key: 'content-type', value: 'image/png', enabled: true }],

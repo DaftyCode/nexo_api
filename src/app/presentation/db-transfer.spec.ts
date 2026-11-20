@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
-import { buttons, clickButton } from '../testing/controls';
+import { buttons, clickButton, fill } from '../testing/controls';
 import { TRANSFER_FILES } from '../composition/providers';
 import { TestTransferFiles, sourceFile } from '../testing/mongo-transfer';
 import { WorkspaceDocument } from '../domain/models';
@@ -113,6 +113,39 @@ describe('the data transfer wizard', () => {
     expect(dialog().textContent).toContain('3 rows exported.');
     // The wizard's session is closed at the end.
     expect(calls('db.disconnect')).toHaveLength(1);
+  });
+
+  it('exports to an Excel workbook through a masking set', async () => {
+    api.documentsStore.push({
+      id: 'pii',
+      workspace_id: 'local',
+      kind: 'masking',
+      name: 'PII',
+      revision: 1,
+      updated_at: 0,
+      value: { rules: [{ path: 'label', method: 'remove' }] },
+    });
+    await TestBed.inject(WorkspaceState).refresh();
+    api.responses['mask.apply'] = (payload: Record<string, unknown>) => ({
+      kept: [0],
+      rows: (payload['rows'] as unknown[][]).map((row) => [row[0]]),
+    });
+    open('export');
+    await settle();
+    await fill(fixture, 'Format', 'xlsx', dialog());
+    await fill(fixture, 'Masking', 'pii', dialog());
+    await settle();
+    expect(dialog().textContent).toContain('items.xlsx');
+    expect(dialog().textContent).not.toContain('Binary values');
+    await clickButton(fixture, 'Export');
+    await settle();
+    const [file] = files.targets;
+    expect(file.name).toBe('items.xlsx');
+    expect(file.text).toBe('');
+    expect(calls('mask.apply').map((call) => call['set'])).toEqual(['pii', 'pii']);
+    const sheet = new TextDecoder().decode(file.bytes[0]);
+    expect(sheet).not.toContain('lamp');
+    expect(sheet).toContain('<c r="A4"><v>3</v></c>');
   });
 
   it('imports a CSV into the table and says the rows that failed', async () => {

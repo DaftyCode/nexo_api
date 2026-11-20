@@ -3,6 +3,7 @@ mod database;
 mod datasource;
 mod environments;
 mod execute;
+mod masking;
 pub mod mcp;
 mod modules;
 mod monitors;

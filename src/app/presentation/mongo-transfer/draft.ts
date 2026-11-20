@@ -34,6 +34,8 @@ export interface DraftModel {
   continueOnError: boolean;
   /** The name to save the transfer with. */
   name: string;
+  /** Export: the masking set the documents go through (empty: none). */
+  mask: string;
 }
 
 /** A preview of a file before importing it. */
@@ -50,7 +52,7 @@ export interface FilePreview {
 export class TransferDraft {
   readonly model: ReturnType<typeof signal<DraftModel>>;
   readonly fields;
-  /** Export to CSV: the fields found, and those written in their order. */
+  /** Export to CSV or Excel: the fields found, and those written in their order. */
   readonly available = signal<string[]>([]);
   readonly chosen = signal<string[]>([]);
   /** Import: the file chosen, its preview and its CSV columns. */
@@ -94,6 +96,7 @@ export class TransferDraft {
       confirm: '',
       continueOnError: stored.continueOnError,
       name,
+      mask: stored.mask,
     });
     this.fields = runInInjectionContext(injector, () => form(this.model));
     this.query = { ...stored.query };
@@ -129,6 +132,7 @@ export class TransferDraft {
       mode: m.mode,
       key: this.key(),
       continueOnError: m.continueOnError,
+      mask: m.mask,
     };
   }
 
@@ -163,3 +167,6 @@ export class TransferDraft {
     );
   }
 }
+
+/** Whether a format writes columns of fields: CSV and Excel. */
+export const tabular = (format: string) => format === 'csv' || format === 'xlsx';

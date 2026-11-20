@@ -911,6 +911,15 @@ export interface ResponseComparePayload {
   ignoreHeaders?: readonly string[];
 }
 
+export interface MaskApplyPayload {
+  workspace: string;
+  set?: string;
+  rules?: readonly { path: string; method: string; keep?: number }[];
+  documents?: readonly unknown[];
+  columns?: readonly string[];
+  rows?: readonly (readonly unknown[])[];
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1031,6 +1040,7 @@ export interface OperationPayloads {
   'monitor.status': MonitorStatusPayload;
   'monitor.run': MonitorRunPayload;
   'response.compare': ResponseComparePayload;
+  'mask.apply': MaskApplyPayload;
 }
 
 /** The payload of an operation. */

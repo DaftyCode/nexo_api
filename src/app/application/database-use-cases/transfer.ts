@@ -1,6 +1,5 @@
-import { ResultColumn } from '../../domain/db/results';
-import { exportWriter } from '../../domain/db/transfer/export';
 import { ExecutionPort, TransferSource, TransferTarget } from '../ports';
+import { exportRows } from './transfer/export';
 import { readFile } from './transfer/file';
 import {
   CopyJob,
@@ -47,64 +46,13 @@ export class DatabaseTransferCases {
   }
 
   /** Writes the rows of a query to a file; a cancelled export leaves no file. */
-  async exportRows(
+  exportRows(
     job: ExportJob,
     file: TransferTarget,
     progress: (rows: number) => void,
     signal: AbortSignal,
   ): Promise<{ rows: number; cancelled: boolean }> {
-    const statement = `export-${Date.now()}`;
-    let rows: number;
-    let cursor: string | undefined;
-    try {
-      const first = await this.api.execute<{
-        columns: ResultColumn[];
-        rows: unknown[][];
-        cursor?: string | null;
-      }>('db.execute', {
-        workspace: job.workspace,
-        session: job.session,
-        statement,
-        sql: job.sql,
-        pageRows: TRANSFER_ROWS,
-      });
-      if (!first.columns.length) throw new Error('Only what a query reads can be exported');
-      const ddl = await job.ddlFor?.(first.columns);
-      const writer = exportWriter(
-        job.format,
-        { ...job.shape, columns: first.columns, ...(ddl ? { ddl } : {}) },
-        job.options,
-      );
-      await file.write(writer.start() + writer.page(first.rows));
-      rows = first.rows.length;
-      cursor = first.cursor ?? undefined;
-      progress(rows);
-      while (cursor && !signal.aborted) {
-        const page = await this.api.execute<{ rows: unknown[][]; cursor?: string | null }>(
-          'db.fetch',
-          { workspace: job.workspace, session: job.session, cursor, pageRows: TRANSFER_ROWS },
-        );
-        await file.write(writer.page(page.rows));
-        rows += page.rows.length;
-        cursor = page.cursor ?? undefined;
-        progress(rows);
-      }
-      if (signal.aborted) {
-        await file.discard();
-        return { rows, cancelled: true };
-      }
-      await file.write(writer.end());
-      await file.close();
-      return { rows, cancelled: false };
-    } catch (error) {
-      await file.discard().catch(() => undefined);
-      throw error;
-    } finally {
-      if (cursor)
-        await this.api
-          .execute('db.close', { workspace: job.workspace, session: job.session, cursor })
-          .catch(() => undefined);
-    }
+    return exportRows(this.api, job, file, progress, signal);
   }
 
   private run(target: WriteTarget, sql: string) {

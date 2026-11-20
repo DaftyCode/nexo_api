@@ -6,7 +6,12 @@ type Doc = Record<string, unknown>;
 
 /** Answers `mongo.find`, `mongo.more`, `mongo.close` and `mongo.import` on a list. */
 export function collectionApi(documents: Doc[] = []) {
-  const store = { documents: [...documents], imports: [] as Doc[], open: new Set<string>() };
+  const store = {
+    documents: [...documents],
+    imports: [] as Doc[],
+    open: new Set<string>(),
+    masked: [] as Doc[],
+  };
   const pages = new Map<string, Doc[]>();
   let cursors = 0;
   const page = (rest: Doc[], size: number) => {
@@ -56,6 +61,16 @@ export function collectionApi(documents: Doc[] = []) {
         failed,
       };
     }
+    if (operation === 'mask.apply') {
+      // A set that hides every `email`.
+      store.masked.push(payload);
+      return {
+        documents: (payload['documents'] as Doc[]).map((document) => ({
+          ...document,
+          ...('email' in document ? { email: '****' } : {}),
+        })),
+      };
+    }
     throw new Error(`Unexpected ${operation}`);
   };
   const api = {
@@ -81,13 +96,21 @@ export function sourceFile(name: string, text: string): TransferSource & { close
 }
 
 /** A file an export writes, kept as text. */
-export function targetFile(): TransferTarget & { text: string; state: string } {
+export function targetFile(): TransferTarget & {
+  text: string;
+  bytes: Uint8Array[];
+  state: string;
+} {
   return {
     name: 'export',
     text: '',
+    bytes: [],
     state: 'open',
     async write(text) {
       this.text += text;
+    },
+    async writeBytes(bytes) {
+      this.bytes.push(bytes);
     },
     async close() {
       this.state = 'closed';

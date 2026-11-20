@@ -31,10 +31,11 @@ export class BrowserTransferFiles implements TransferFilesPort {
     });
   }
   async save(name: string, _extension: string, type: string): Promise<TransferTarget> {
-    let parts: string[] = [];
+    let parts: BlobPart[] = [];
     return {
       name,
       write: async (text) => void parts.push(text),
+      writeBytes: async (bytes) => void parts.push(bytes as BlobPart),
       close: async () => {
         const url = URL.createObjectURL(new Blob(parts, { type }));
         parts = [];
@@ -79,6 +80,8 @@ export class DesktopTransferFiles implements TransferFilesPort {
     return {
       name: chosen.name,
       write: (text) => invoke('transfer_write', { handle: chosen.handle, text }),
+      writeBytes: (bytes) =>
+        invoke('transfer_write_bytes', bytes, { headers: { 'x-handle': chosen.handle } }),
       close: () => invoke('transfer_close', { handle: chosen.handle, discard: false }),
       discard: () => invoke('transfer_close', { handle: chosen.handle, discard: true }),
     };

@@ -1,7 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { FormField } from '@angular/forms/signals';
-import { EXPORT_FORMATS } from '../../domain/db/transfer/export';
+import { FILE_FORMATS } from '../../domain/db/transfer/export';
 import type { TransferDraft } from '../db-panel/transfer-draft';
 
 /** The format of an export and its options, as DBeaver's «Data export». */
@@ -69,19 +69,30 @@ import type { TransferDraft } from '../db-panel/transfer-draft';
           }}</label
         >
       }
+      @if (model.format !== 'xlsx') {
+        <label class="field"
+          >{{ 'Binary values' | transloco }}
+          <select [formField]="fields.binary">
+            <option value="base64">Base64</option>
+            <option value="hex">{{ 'Hexadecimal' | transloco }}</option>
+            <option value="null">NULL</option>
+          </select>
+        </label>
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields.bom" />{{
+            'A byte order mark first (for spreadsheets)' | transloco
+          }}</label
+        >
+      }
       <label class="field"
-        >{{ 'Binary values' | transloco }}
-        <select [formField]="fields.binary">
-          <option value="base64">Base64</option>
-          <option value="hex">{{ 'Hexadecimal' | transloco }}</option>
-          <option value="null">NULL</option>
+        >{{ 'Masking' | transloco }}
+        <select [formField]="fields.mask">
+          <option value="">{{ 'None: values as they are' | transloco }}</option>
+          @for (set of sets(); track set.id) {
+            <option [value]="set.id">{{ set.name }}</option>
+          }
         </select>
       </label>
-      <label class="check-field"
-        ><input type="checkbox" [formField]="fields.bom" />{{
-          'A byte order mark first (for spreadsheets)' | transloco
-        }}</label
-      >
     </div>
     <p class="muted">{{ 'db.transfer.exportFile' | transloco: { v0: fileName() } }}</p>
   `,
@@ -89,7 +100,12 @@ import type { TransferDraft } from '../db-panel/transfer-draft';
 })
 export class DbTransferExport {
   readonly draft = input.required<TransferDraft>();
-  protected readonly formats = EXPORT_FORMATS;
+  protected readonly formats = FILE_FORMATS;
+  /** The masking sets of the workspace. */
+  protected readonly sets = computed(() => {
+    const state = this.draft().section.state;
+    return state.cases.masking.sets(state.documents());
+  });
   protected readonly tab = '\t';
 
   protected fileName() {

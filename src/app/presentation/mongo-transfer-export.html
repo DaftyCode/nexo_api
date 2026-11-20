@@ -48,9 +48,19 @@
         <option value="json">{{ 'JSON array' | transloco }}</option>
         <option value="jsonl">{{ 'JSON Lines' | transloco }}</option>
         <option value="csv">CSV</option>
+        <option value="xlsx">{{ 'Excel (.xlsx)' | transloco }}</option>
       </select>
     </label>
-    @if (draft().model().format !== 'csv') {
+    <label class="field grow"
+      >{{ 'Masking' | transloco }}
+      <select [formField]="draft().fields.mask">
+        <option value="">{{ 'None: values as they are' | transloco }}</option>
+        @for (set of sets(); track set.id) {
+          <option [value]="set.id">{{ set.name }}</option>
+        }
+      </select>
+    </label>
+    @if (!tabular(draft().model().format)) {
       <label class="field grow"
         >{{ 'Extended JSON' | transloco }}
         <select [formField]="draft().fields.flavour">
@@ -60,7 +70,7 @@
       </label>
     }
   </div>
-  @if (draft().model().format === 'csv') {
+  @if (tabular(draft().model().format)) {
     <fieldset class="mongo-options">
       <legend>{{ 'Columns, in their order' | transloco }}</legend>
       <ul

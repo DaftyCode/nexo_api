@@ -16,7 +16,7 @@ import {
 import { resolveVariables } from '../../domain/variables';
 import type { MongoExplorer } from '../mongo-explorer';
 import { named } from '../workspace-state';
-import { TransferDraft } from './draft';
+import { TransferDraft, tabular } from './draft';
 
 /** Files an import may read. */
 const IMPORTED = ['json', 'jsonl', 'ndjson', 'csv', 'tsv', 'txt'];
@@ -46,6 +46,10 @@ export class MongoTransfers {
       .filter((d) => isMongoConnection(d) && !connectionValue(d.value).readOnly),
   );
 
+  /** The masking sets an export can go through. */
+  readonly maskingSets = computed(() =>
+    this.explorer.state.cases.masking.sets(this.explorer.state.documents()),
+  );
   /** The dialog's forms are made outside the explorer's constructor. */
   private readonly injector = inject(Injector);
 
@@ -217,14 +221,19 @@ export class MongoTransfers {
           cases.transfer.copy(this.source(draft), destination, plan, counted, controller.signal),
         );
       } else {
-        if (m.format === 'csv' && !draft.chosen().length) await this.loadFields(draft);
-        if (m.format === 'csv' && !draft.chosen().length)
+        if (tabular(m.format) && !draft.chosen().length) await this.loadFields(draft);
+        if (tabular(m.format) && !draft.chosen().length)
           return draft.error.set(draft.error() || 'Choose the fields of the CSV');
         const name = exportName(m.collection, m.format);
         const file = await this.files.save(name, EXTENSIONS[m.format], MEDIA_TYPES[m.format]);
         if (!file) return;
         draft.phase.set('running');
-        const format = { format: m.format, flavour: m.flavour, fields: draft.chosen() };
+        const format = {
+          format: m.format,
+          flavour: m.flavour,
+          fields: draft.chosen(),
+          ...(m.mask ? { mask: m.mask } : {}),
+        };
         outcome = await this.explorer.use((cases) =>
           cases.transfer.export(this.source(draft), format, file, counted, controller.signal),
         );
