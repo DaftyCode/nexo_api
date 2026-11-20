@@ -102,6 +102,18 @@ nx.test('Successful response', () => {{ '{' }}
     </li>
     <li>
       {{
+        'It also reads what other clients export: Insomnia (v4 JSON or YAML and the v5 YAML of Insomnia 11), Hoppscotch and Thunder Client collections and environments, and Bruno collections, as their JSON export or by choosing the collection folder (the one with bruno.json) with Choose a Bruno collection folder.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'The menu of a collection exports it as portable JSON, without literal secrets, or prints its documentation as PDF.'
           | transloco
       }}

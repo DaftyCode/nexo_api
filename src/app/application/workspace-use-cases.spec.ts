@@ -236,3 +236,18 @@ describe('WorkspaceUseCases OAuth 2.0 sign-in', () => {
     });
   });
 });
+
+describe('WorkspaceUseCases imports', () => {
+  it('refuses Bruno folders with more files than the engine reads', async () => {
+    const { cases, executed } = fixture();
+    const files = Array.from({ length: 5001 }, (_, at) => {
+      const file = new File([''], at ? `${at}.bru` : 'bruno.json');
+      Object.defineProperty(file, 'webkitRelativePath', { value: `pets/${file.name}` });
+      return file;
+    });
+    await expect(cases.importFolder('w', files)).rejects.toThrow(
+      'A Bruno collection can have at most 5000 files',
+    );
+    expect(executed).toEqual([]);
+  });
+});

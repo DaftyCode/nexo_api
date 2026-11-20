@@ -1,0 +1,197 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-11-20T09:12:44.123Z",
+  "__export_source": "insomnia.desktop.app:v10.3.1",
+  "resources": [
+    {
+      "_id": "req_list",
+      "parentId": "fld_users",
+      "modified": 1763629964000,
+      "created": 1763629900000,
+      "url": "{{ _.baseUrl }}/users",
+      "name": "List users",
+      "description": "Every user, a page at a time.",
+      "method": "GET",
+      "body": {},
+      "parameters": [
+        { "id": "pair_1", "name": "page", "value": "{{ _.page }}", "description": "" },
+        { "id": "pair_2", "name": "verbose", "value": "true", "description": "", "disabled": true }
+      ],
+      "headers": [{ "name": "Accept", "value": "application/json" }],
+      "authentication": {},
+      "metaSortKey": -1763629900000,
+      "isPrivate": false,
+      "pathParameters": [],
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "preRequestScript": "insomnia.environment.set('started', Date.now());",
+      "afterResponseScript": "",
+      "_type": "request"
+    },
+    {
+      "_id": "req_create",
+      "parentId": "fld_users",
+      "url": "{{ _.baseUrl }}/users",
+      "name": "Create user",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"{{ _.userName }}\",\n  \"at\": \"{% now 'iso-8601', '' %}\"\n}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": {
+        "type": "basic",
+        "useISO88591": false,
+        "disabled": false,
+        "username": "{{ _.user }}",
+        "password": "secret"
+      },
+      "metaSortKey": -1763629800000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_avatar",
+      "parentId": "fld_users",
+      "url": "{{ _.baseUrl }}/users/:id/avatar",
+      "name": "Upload avatar",
+      "method": "PUT",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          { "id": "pair_3", "name": "caption", "value": "Me", "description": "" },
+          {
+            "id": "pair_4",
+            "name": "image",
+            "value": "",
+            "description": "",
+            "type": "file",
+            "fileName": "C:\\Users\\me\\Pictures\\me.png"
+          }
+        ]
+      },
+      "parameters": [],
+      "pathParameters": [{ "name": "id", "value": "7" }],
+      "headers": [],
+      "authentication": {},
+      "metaSortKey": -1763629700000,
+      "_type": "request"
+    },
+    {
+      "_id": "fld_users",
+      "parentId": "wrk_shop",
+      "name": "Users",
+      "description": "",
+      "environment": { "page": "2" },
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1763629000000,
+      "headers": [{ "name": "X-Team", "value": "shop" }],
+      "authentication": { "type": "bearer", "token": "{{ _.token }}", "prefix": "", "disabled": false },
+      "preRequestScript": "",
+      "afterResponseScript": "insomnia.test('ok', () => insomnia.expect(insomnia.response.code).to.eql(200));",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_login",
+      "parentId": "wrk_shop",
+      "url": "{{ _.baseUrl }}/login",
+      "name": "Log in",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/x-www-form-urlencoded",
+        "params": [
+          { "id": "pair_5", "name": "user", "value": "{{ _.user }}" },
+          { "id": "pair_6", "name": "remember", "value": "yes", "disabled": true }
+        ]
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+      "authentication": { "type": "none" },
+      "metaSortKey": -1763628000000,
+      "_type": "request"
+    },
+    {
+      "_id": "req_graph",
+      "parentId": "wrk_shop",
+      "url": "{{ _.baseUrl }}/graphql",
+      "name": "Products",
+      "method": "POST",
+      "body": {
+        "mimeType": "application/graphql",
+        "text": "{\"query\":\"query Products($first: Int) { products(first: $first) { id } }\",\"variables\":{\"first\":3}}"
+      },
+      "parameters": [],
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "authentication": {
+        "type": "apikey",
+        "disabled": false,
+        "key": "X-Api-Key",
+        "value": "{{ _.apiKey }}",
+        "addTo": "header"
+      },
+      "metaSortKey": -1763627000000,
+      "_type": "request"
+    },
+    {
+      "_id": "greq_stock",
+      "parentId": "wrk_shop",
+      "name": "Stock stream",
+      "url": "localhost:50051",
+      "protoFileId": "pf_1",
+      "protoMethodName": "/stock.Stock/Watch",
+      "metadata": [],
+      "body": { "text": "{}" },
+      "metaSortKey": -1763626000000,
+      "_type": "grpc_request"
+    },
+    {
+      "_id": "wrk_shop",
+      "parentId": null,
+      "modified": 1763629964000,
+      "created": 1763620000000,
+      "name": "Shop API",
+      "description": "",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_base",
+      "parentId": "wrk_shop",
+      "name": "Base Environment",
+      "data": {
+        "baseUrl": "https://shop.example.com",
+        "user": "ana",
+        "userName": "Ana",
+        "api": { "version": "v2" }
+      },
+      "dataPropertyOrder": { "&": ["baseUrl", "user", "userName", "api"], "&~|api": ["version"] },
+      "color": null,
+      "isPrivate": false,
+      "metaSortKey": 1763620000000,
+      "_type": "environment"
+    },
+    {
+      "_id": "env_dev",
+      "parentId": "env_base",
+      "name": "Development",
+      "data": { "baseUrl": "http://localhost:8080", "token": "dev-token", "apiKey": "dev-key" },
+      "dataPropertyOrder": { "&": ["baseUrl", "token", "apiKey"] },
+      "color": "#7d69cb",
+      "isPrivate": false,
+      "metaSortKey": 1763620000001,
+      "_type": "environment"
+    },
+    {
+      "_id": "jar_shop",
+      "parentId": "wrk_shop",
+      "name": "Default Jar",
+      "cookies": [],
+      "_type": "cookie_jar"
+    }
+  ]
+}

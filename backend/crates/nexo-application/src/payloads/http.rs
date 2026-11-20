@@ -66,10 +66,15 @@ pub enum RunAction {
 }
 
 payload! {
-    /// `import`: a collection, environment, cURL command, HAR or OpenAPI document.
+    /// `import`: a collection, environment, cURL command, HAR or OpenAPI document, an
+    /// export of Insomnia, Bruno, Hoppscotch or Thunder Client, or the files of a Bruno
+    /// collection folder (`files`, with `content` empty).
     closed ImportPayload {
         required { content "content": String => "string" }
-        optional { workspace "workspace": String => "string" }
+        optional {
+            workspace "workspace": String => "string",
+            files "files": Vec<Value> => "readonly { path: string; content: string }[]",
+        }
     }
 }
 

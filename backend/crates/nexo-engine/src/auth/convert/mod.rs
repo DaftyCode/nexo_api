@@ -14,7 +14,7 @@ pub use insomnia::from_insomnia;
 use serde_json::{Map, Value, json};
 
 /// Postman rows from `(key, value)` pairs, leaving out values that are absent.
-fn stored(kind: &str, pairs: Vec<(&str, Value)>) -> Value {
+pub(crate) fn stored(kind: &str, pairs: Vec<(&str, Value)>) -> Value {
     let rows: Vec<Value> = pairs
         .into_iter()
         .filter(|(_, value)| !value.is_null())
@@ -49,7 +49,7 @@ fn owned(kind: &str, pairs: Vec<(String, Value)>) -> Value {
 }
 
 /// Keeps a type Nexo does not know as it was, so that it is neither lost nor misread.
-fn unknown(kind: &str, source: &Value) -> Value {
+pub(crate) fn unknown(kind: &str, source: &Value) -> Value {
     let values: Map<String, Value> = source.as_object().cloned().unwrap_or_default();
     owned(
         kind,

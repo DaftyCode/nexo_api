@@ -1,0 +1,24 @@
+headers {
+  X-Client: bruno-import-test
+  ~X-Debug: 1
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+vars:pre-request {
+  apiVersion: v1
+}
+
+script:pre-request {
+  req.setHeader("X-Started", Date.now());
+}
+
+docs {
+  The pet store, as Bruno keeps it.
+}

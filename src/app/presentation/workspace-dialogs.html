@@ -35,9 +35,16 @@
           <dt><kbd>F1</kbd> / <kbd>Ctrl</kbd> + <kbd>/</kbd></dt>
           <dd>{{ 'Show these shortcuts' | transloco }}</dd>
         </dl>
+      } @else if (workspace().dialogs() === 'imported') {
+        @if (workspace().state.imported(); as report) {
+          <app-import-report [report]="report" />
+        }
       } @else if (workspace().dialogs() === 'import') {
         <p class="muted">
-          {{ 'Portable collections and environments, OpenAPI, HAR or a cURL command.' | transloco }}
+          {{
+            'Portable collections and environments, OpenAPI, HAR, a cURL command, or what Insomnia, Bruno, Hoppscotch and Thunder Client export.'
+              | transloco
+          }}
         </p>
         <label class="file-drop"
           >{{ '↑ Choose a file' | transloco
@@ -45,6 +52,9 @@
             type="file"
             accept=".json,.yaml,.yml,.har,.txt"
             (change)="workspace().file($event)" /></label
+        ><label class="file-drop"
+          >{{ '↑ Choose a Bruno collection folder' | transloco
+          }}<input type="file" webkitdirectory (change)="workspace().importFolder($event)" /></label
         ><span class="divider-label">{{ 'or paste content' | transloco }}</span>
         @defer (on immediate) {
           <app-code-editor
@@ -69,9 +79,9 @@
       }
       <div class="modal-actions">
         <button class="button" (click)="workspace().dialogs.set('')">
-          {{ (workspace().dialogs() === 'shortcuts' ? 'Close' : 'Cancel') | transloco }}
+          {{ (closes() ? 'Close' : 'Cancel') | transloco }}
         </button>
-        @if (workspace().dialogs() !== 'shortcuts') {
+        @if (!closes()) {
           <button
             class="button primary"
             (click)="workspace().submitDialog()"

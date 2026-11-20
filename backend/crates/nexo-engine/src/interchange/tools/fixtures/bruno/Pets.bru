@@ -1,0 +1,40 @@
+meta {
+  name: Pets
+  type: graphql
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/graphql
+  body: graphql
+  auth: oauth2
+}
+
+auth:oauth2 {
+  grant_type: client_credentials
+  access_token_url: {{baseUrl}}/token
+  client_id: store
+  client_secret: {{clientSecret}}
+  scope: pets:read
+  credentials_placement: basic_auth_header
+  token_placement: header
+  token_header_prefix: Bearer
+  auto_fetch_token: true
+  auto_refresh_token: false
+}
+
+auth:oauth2:additional_params:access_token_req:body {
+  audience: pets
+}
+
+body:graphql {
+  query Pets($first: Int) {
+    pets(first: $first) { id name }
+  }
+}
+
+body:graphql:vars {
+  {
+    "first": 2
+  }
+}

@@ -1,0 +1,48 @@
+meta {
+  name: Get user
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/users/:id?fields=name
+  body: none
+  auth: inherit
+}
+
+params:query {
+  fields: name
+  ~"sort by": name
+}
+
+params:path {
+  id: 7
+}
+
+headers {
+  Accept: application/json
+  "X-Quoted": yes
+}
+
+vars:pre-request {
+  @description('The user to read')
+  userId: 7
+}
+
+vars:post-response {
+  @lastName: res.body.name
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("is the user", function () {
+    expect(res.body.id).to.equal(7);
+  });
+}
+
+docs {
+  Reads a user.
+}

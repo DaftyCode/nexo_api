@@ -286,9 +286,9 @@ export class WorkspaceState {
   openHistory = (document: WorkspaceDocument) =>
     this.guard(() => this.requests.openHistory(document));
   recordRun = (run: Run, collectionId: string) => this.requests.recordRun(run, collectionId);
-
-  // Documents and variables.
-  importContent = (content: string) => this.saves.importContent(content);
+  /** Documents and variables. Imports keep their report in `imported`. */
+  importContent: SavesStore['importContent'] = (...args) => this.saves.importContent(...args);
+  readonly imported = this.saves.imported;
   /** Downloads a collection or environment as JSON, and says so. */
   export = (document: WorkspaceDocument) => this.saves.export(document);
   remove = (document: WorkspaceDocument) => this.saves.remove(document);

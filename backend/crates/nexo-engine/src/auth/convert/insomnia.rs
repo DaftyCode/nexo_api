@@ -22,9 +22,13 @@ pub fn from_insomnia(auth: &Value) -> Option<Value> {
                 ],
             ),
         ),
+        // An empty prefix is Insomnia's default, `Bearer`.
         "bearer" => owned(
             "bearer",
-            renamed(auth, &[("token", "token"), ("prefix", "prefix")]),
+            renamed(auth, &[("token", "token"), ("prefix", "prefix")])
+                .into_iter()
+                .filter(|(key, value)| key != "prefix" || value != &json!(""))
+                .collect(),
         ),
         "singleToken" => owned("bearer", renamed(auth, &[("token", "token")])),
         "digest" | "ntlm" => owned(

@@ -1,0 +1,96 @@
+{
+  "name": "Pet Store",
+  "version": "1",
+  "items": [
+    {
+      "type": "folder",
+      "name": "People",
+      "seq": 1,
+      "root": {
+        "request": {
+          "headers": [{ "name": "X-Area", "value": "users", "enabled": true }],
+          "auth": { "mode": "inherit" },
+          "vars": { "req": [{ "name": "limit", "value": "20", "enabled": true }] }
+        },
+        "meta": { "name": "People", "seq": 1 }
+      },
+      "items": [
+        {
+          "type": "http-request",
+          "name": "Get user",
+          "seq": 1,
+          "request": {
+            "url": "{{baseUrl}}/users/:id?fields=name",
+            "method": "GET",
+            "headers": [{ "name": "Accept", "value": "application/json", "enabled": true }],
+            "params": [
+              { "name": "fields", "value": "name", "type": "query", "enabled": true },
+              { "name": "sort by", "value": "name", "type": "query", "enabled": false },
+              { "name": "id", "value": "7", "type": "path", "enabled": true }
+            ],
+            "body": { "mode": "none", "formUrlEncoded": [], "multipartForm": [] },
+            "auth": { "mode": "inherit" },
+            "script": { "req": "" },
+            "vars": { "req": [], "res": [] },
+            "assertions": [{ "name": "res.status", "value": "eq 200", "enabled": true }],
+            "tests": "",
+            "docs": "Reads a user."
+          }
+        },
+        {
+          "type": "http-request",
+          "name": "Create user",
+          "seq": 2,
+          "request": {
+            "url": "{{baseUrl}}/users",
+            "method": "POST",
+            "headers": [],
+            "params": [],
+            "body": { "mode": "json", "json": "{\n  \"name\": \"Rex\"\n}" },
+            "auth": {
+              "mode": "awsv4",
+              "awsv4": {
+                "accessKeyId": "{{awsKey}}",
+                "secretAccessKey": "{{awsSecret}}",
+                "sessionToken": "",
+                "service": "execute-api",
+                "region": "eu-west-1",
+                "profileName": ""
+              }
+            },
+            "script": { "res": "bru.setVar(\"userId\", res.body.id);" },
+            "vars": { "req": [{ "name": "kind", "value": "dog", "enabled": true }], "res": [] },
+            "assertions": [],
+            "tests": "",
+            "docs": ""
+          }
+        }
+      ]
+    },
+    {
+      "type": "grpc-request",
+      "name": "Stream pets",
+      "seq": 2,
+      "request": { "url": "localhost:50051", "method": "/pets.Pets/Watch" }
+    }
+  ],
+  "environments": [
+    {
+      "name": "Local",
+      "variables": [
+        { "name": "baseUrl", "value": "http://localhost:3000", "enabled": true, "secret": false, "type": "text" },
+        { "name": "token", "value": "", "enabled": true, "secret": true, "type": "text" }
+      ]
+    }
+  ],
+  "root": {
+    "request": {
+      "headers": [{ "name": "X-Client", "value": "bruno-import-test", "enabled": true }],
+      "auth": { "mode": "bearer", "bearer": { "token": "{{token}}" } },
+      "script": {},
+      "vars": { "req": [] }
+    },
+    "docs": "The pet store, as Bruno keeps it."
+  },
+  "brunoConfig": { "version": "1", "name": "Pet Store", "type": "collection", "ignore": ["node_modules", ".git"] }
+}

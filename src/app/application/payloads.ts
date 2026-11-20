@@ -128,6 +128,7 @@ export interface IdPayload {
 export interface ImportPayload {
   content: string;
   workspace?: string;
+  files?: readonly { path: string; content: string }[];
 }
 
 export interface ApiInspectPayload {

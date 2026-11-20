@@ -1,7 +1,9 @@
-//! Imports (cURL, collections, environments, HAR, OpenAPI) and code generation.
+//! Imports (cURL, collections, environments, HAR, OpenAPI, and the exports of Insomnia,
+//! Bruno, Hoppscotch and Thunder Client) and code generation.
 
 mod codegen;
 mod openapi;
+mod tools;
 
 use crate::{
     collection::{SCHEMA, encode_component, request_item, request_url},
@@ -29,6 +31,14 @@ fn js_string(value: &Value) -> String {
 
 pub fn import(payload: &Value) -> Result<Value> {
     let text = payload["content"].as_str().unwrap_or_default();
+    let files = payload["files"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default();
+    if !files.is_empty() {
+        return tools::import(None, files)
+            .unwrap_or_else(|| Err(invalid("Unsupported import format")));
+    }
     if text.trim_start().starts_with("curl ") {
         return import_curl(text.trim());
     }
@@ -73,7 +83,7 @@ pub fn import(payload: &Value) -> Result<Value> {
     if document.get("openapi").is_some_and(|v| !v.is_null()) || document["swagger"] == "2.0" {
         return OpenApi { spec: &document }.import();
     }
-    Err(invalid("Unsupported import format"))
+    tools::import(Some(&document), &[]).unwrap_or_else(|| Err(invalid("Unsupported import format")))
 }
 
 fn import_curl(text: &str) -> Result<Value> {

@@ -1,0 +1,88 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Weather",
+  "dateExported": "2026-11-20T09:30:00.000Z",
+  "version": "1.2",
+  "folders": [
+    {
+      "_id": "f1c0e6a2-1111-4a7f-9a10-000000000001",
+      "name": "Admin",
+      "containerId": "",
+      "created": "2026-11-01T10:00:00.000Z",
+      "sortNum": 20000,
+      "settings": {
+        "headers": [{ "name": "X-Area", "value": "admin" }],
+        "auth": { "type": "basic", "basic": { "username": "root", "password": "{{adminPassword}}" } },
+        "tests": [],
+        "options": {}
+      }
+    }
+  ],
+  "requests": [
+    {
+      "_id": "a3b4c5d6-2222-4b8f-9b20-000000000002",
+      "colId": "c0l0c0l0-0000-4000-8000-000000000000",
+      "containerId": "",
+      "name": "Forecast",
+      "url": "{{baseUrl}}/cities/{city}/forecast?days=3",
+      "method": "GET",
+      "sortNum": 10000,
+      "created": "2026-11-01T10:00:00.000Z",
+      "modified": "2026-11-01T10:00:00.000Z",
+      "headers": [
+        { "name": "Accept", "value": "application/json" },
+        { "name": "X-Request-Id", "value": "{{#guid}}" },
+        { "name": "X-Off", "value": "1", "isDisabled": true }
+      ],
+      "params": [
+        { "name": "days", "value": "3", "isPath": false },
+        { "name": "units", "value": "metric", "isDisabled": true, "isPath": false },
+        { "name": "city", "value": "madrid", "isPath": true }
+      ],
+      "tests": [{ "type": "res-code", "custom": "", "action": "equal", "value": "200" }],
+      "docs": "Three days of forecast."
+    },
+    {
+      "_id": "a3b4c5d6-3333-4b8f-9b20-000000000003",
+      "colId": "c0l0c0l0-0000-4000-8000-000000000000",
+      "containerId": "f1c0e6a2-1111-4a7f-9a10-000000000001",
+      "name": "Add station",
+      "url": "{{baseUrl}}/stations",
+      "method": "POST",
+      "sortNum": 10000,
+      "created": "2026-11-01T10:00:00.000Z",
+      "modified": "2026-11-01T10:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"name\": \"Retiro\",\n  \"at\": {{#timestamp}}\n}", "form": [] },
+      "auth": { "type": "inherit" },
+      "tests": []
+    },
+    {
+      "_id": "a3b4c5d6-4444-4b8f-9b20-000000000004",
+      "colId": "c0l0c0l0-0000-4000-8000-000000000000",
+      "containerId": "f1c0e6a2-1111-4a7f-9a10-000000000001",
+      "name": "Upload readings",
+      "url": "{{baseUrl}}/stations/1/readings",
+      "method": "PUT",
+      "sortNum": 20000,
+      "headers": [],
+      "params": [],
+      "body": {
+        "type": "formdata",
+        "raw": "",
+        "form": [{ "name": "station", "value": "1" }],
+        "files": [{ "name": "readings", "value": "C:\\data\\readings.csv" }]
+      },
+      "auth": { "type": "bearer", "bearer": "{{token}}", "bearerPrefix": "Token" },
+      "tests": []
+    }
+  ],
+  "settings": {
+    "headers": [{ "name": "X-Client", "value": "thunder-import-test" }],
+    "auth": { "type": "bearer", "bearer": "{{token}}" },
+    "tests": [],
+    "options": { "baseUrl": "" },
+    "envId": "env-weather"
+  }
+}

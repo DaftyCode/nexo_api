@@ -1,0 +1,17 @@
+meta {
+  name: Upload photo
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/users/7/photo
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  caption: My dog
+  photo: @file(photos/rex.png) @contentType(image/png)
+  ~old: @file(photos/a.png|photos/b.png)
+}

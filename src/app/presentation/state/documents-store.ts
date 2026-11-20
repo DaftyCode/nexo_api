@@ -55,11 +55,17 @@ export class DocumentsStore {
     this.applySaved([created]);
     return created;
   }
-  /** Imports a collection, environment or definition; returns the document created. */
-  async importContent(content: string) {
-    const created = await this.context.cases.import(this.context.workspaceId(), content);
+  /**
+   * Imports a collection, environment or definition, or a Bruno collection folder from its
+   * `files`; returns the first document created and the report of the import.
+   */
+  async importContent(content: string, files?: readonly File[]) {
+    const workspace = this.context.workspaceId();
+    const imported = files
+      ? await this.context.cases.importFolder(workspace, files)
+      : await this.context.cases.import(workspace, content);
     await this.refresh();
-    return created;
+    return imported;
   }
   async saveCollectionSettings(
     id: string,

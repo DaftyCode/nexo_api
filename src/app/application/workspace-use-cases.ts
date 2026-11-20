@@ -31,12 +31,26 @@ import {
   createDocument,
 } from './workspace-use-cases/types';
 import { VariableCases } from './workspace-use-cases/variables';
+import { BRUNO_MAX_FILES, brunoFile, readImportReport } from '../domain/import-report';
 import { SessionCases } from './workspace-use-cases/sessions';
 import { SshProfileCases } from './workspace-use-cases/ssh';
 import { MonitorCases } from './workspace-use-cases/monitors';
 import { CompareCases } from './workspace-use-cases/compare';
 import { MaskingCases } from './workspace-use-cases/masking';
 import { TableExportCases } from './workspace-use-cases/table-export';
+
+/** A file of a Bruno collection folder, as the engine reads it. */
+export interface ImportedFile {
+  path: string;
+  content: string;
+}
+interface ImportResult {
+  kind: string;
+  name: string;
+  value: unknown;
+  more?: { kind: string; name: string; value: unknown }[];
+  report?: unknown;
+}
 
 export type {
   ExecutionContext,
@@ -224,12 +238,33 @@ export class WorkspaceUseCases {
     const value = updateItem(collection, path, toItem(request, existing));
     return this.api.save({ ...document, value });
   }
-  async import(workspace: string, content: string) {
-    const result = await this.api.execute<{ kind: string; name: string; value: unknown }>(
-      'import',
-      { content },
+  /**
+   * Imports a collection, environment or definition, or the export of another API client
+   * with the environments that came with it; returns the first document and, for other
+   * tools, the report of what came and what did not.
+   */
+  async import(workspace: string, content: string, files?: readonly ImportedFile[]) {
+    const result = await this.api.execute<ImportResult>('import', {
+      content,
+      ...(files ? { files } : {}),
+    });
+    const document = await this.createDocument(workspace, result.kind, result.name, result.value);
+    for (const more of result.more ?? [])
+      await this.createDocument(workspace, more.kind, more.name, more.value);
+    return { document, report: readImportReport(result.report) };
+  }
+  /** Imports a Bruno collection from the files of its folder, chosen in the browser. */
+  async importFolder(workspace: string, files: readonly File[]) {
+    const path = (file: File) => file.webkitRelativePath || file.name;
+    const chosen = files.filter((file) => brunoFile(path(file), file.size));
+    if (!chosen.some((file) => path(file).endsWith('bruno.json')))
+      throw new Error('Choose the folder of a Bruno collection, the one with bruno.json');
+    if (chosen.length > BRUNO_MAX_FILES)
+      throw new Error('A Bruno collection can have at most 5000 files');
+    const read = await Promise.all(
+      chosen.map(async (file) => ({ path: path(file), content: await this.files.read(file) })),
     );
-    return this.createDocument(workspace, result.kind, result.name, result.value);
+    return this.import(workspace, '', read);
   }
   /** Downloads a collection or environment as JSON; returns the name of the file. */
   export(document: WorkspaceDocument) {

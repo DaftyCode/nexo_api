@@ -1,0 +1,131 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: Orders API
+meta:
+  id: wrk_6f2b0c4f3e1a4f0c9a9d8e7f6a5b4c3d
+  created: 1763620000000
+  modified: 1763629964000
+  description: Orders of the shop.
+collection:
+  - name: Orders
+    meta:
+      id: fld_0a1b2c3d4e5f
+      created: 1763620100000
+      modified: 1763620100000
+      sortKey: -1763620100000
+    children:
+      - url: "{{ _.baseUrl }}/orders/{{ _['order-id'] }}"
+        name: Get order
+        meta:
+          id: req_1a2b3c4d5e6f
+          created: 1763620200000
+          modified: 1763620200000
+          isPrivate: false
+          sortKey: -1763620200000
+        method: GET
+        parameters:
+          - name: expand
+            value: items
+            disabled: false
+        headers:
+          - name: Accept
+            value: application/json
+        authentication:
+          type: iam
+          disabled: false
+          accessKeyId: "{{ _.awsKey }}"
+          secretAccessKey: "{{ _.awsSecret }}"
+          region: eu-west-1
+          service: execute-api
+        scripts:
+          preRequest: ""
+          afterResponse: |-
+            const body = insomnia.response.json();
+            insomnia.environment.set('orderId', body.id);
+        settings:
+          renderRequestBody: true
+          encodeUrl: true
+          followRedirects: global
+          cookies:
+            send: true
+            store: true
+          rebuildPath: true
+      - url: "{{ _.baseUrl }}/orders/{{ _['order-id'] }}/file"
+        name: Upload receipt
+        meta:
+          id: req_2b3c4d5e6f7a
+          sortKey: -1763620300000
+        method: POST
+        body:
+          mimeType: application/octet-stream
+          fileName: /home/ana/receipt.pdf
+        headers: []
+    authentication:
+      type: digest
+      disabled: false
+      username: ana
+      password: "{{ _.password }}"
+    environment:
+      order-id: "41"
+    headers:
+      - name: X-Source
+        value: insomnia
+  - url: "{{ _.baseUrl }}/health"
+    name: Health
+    meta:
+      id: req_3c4d5e6f7a8b
+      sortKey: -1763620000000
+    method: HEAD
+    body:
+      mimeType: text/plain
+      text: ping
+  - url: wss://shop.example.com/live
+    name: Live orders
+    meta:
+      id: ws-req_4d5e6f7a8b9c
+      sortKey: -1763619000000
+    settings:
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      useProxy: false
+    pathParameters: null
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_5e6f7a8b9c0d
+  cookies: []
+environments:
+  name: Base Environment
+  meta:
+    id: env_6f7a8b9c0d1e
+    created: 1763620000000
+    modified: 1763620000000
+    isPrivate: false
+  data:
+    baseUrl: https://orders.example.com
+  subEnvironments:
+    - name: Staging
+      meta:
+        id: env_7a8b9c0d1e2f
+        created: 1763620000000
+        modified: 1763620000000
+        isPrivate: false
+        sortKey: 1763620000000
+      data:
+        baseUrl: https://staging.orders.example.com
+        password: s3cret
+      confidentialKeys:
+        - password
+      color: "#ff8800"
+headers:
+  - name: X-Client
+    value: nexo-import-test
+scripts:
+  preRequest: "insomnia.request.addHeader({ key: 'X-Trace', value: '1' });"
+  afterResponse: ""
+authentication:
+  type: bearer
+  token: "{{ _.token }}"

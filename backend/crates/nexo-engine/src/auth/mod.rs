@@ -91,6 +91,12 @@ pub struct Outgoing<'a> {
     pub credential_headers: &'a mut Vec<String>,
 }
 
+/// The authorization types `sign` knows, as stored in collections.
+pub(crate) const KNOWN: [&str; 16] = [
+    "noauth", "inherit", "basic", "bearer", "oauth2", "apikey", "digest", "oauth1", "awsv4",
+    "hawk", "ntlm", "jwt", "asap", "edgegrid", "wsse", "netrc",
+];
+
 fn kind(auth: &Map<String, Value>) -> &str {
     auth.get("type").and_then(Value::as_str).unwrap_or("")
 }

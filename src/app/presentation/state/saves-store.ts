@@ -1,4 +1,6 @@
+import { signal } from '@angular/core';
 import { WorkspaceDocument } from '../../domain/models';
+import { ImportReport } from '../../domain/import-report';
 import { EnvironmentSettings } from '../../domain/environment-protection';
 import { VariableRow } from '../../domain/variables';
 import { DocumentsStore } from './documents-store';
@@ -69,11 +71,16 @@ export class SavesStore {
       named('Collection created', (await this.documents.createCollection(name)).name),
     );
   }
-  importContent(content: string) {
+  /** The report of the last import of another tool's export, until the next import. */
+  readonly imported = signal<ImportReport | undefined>(undefined);
+  /** Imports content or, with `files`, the folder of a Bruno collection. */
+  importContent(content: string, files?: readonly File[]) {
+    this.imported.set(undefined);
     return this.announce('The import failed', async () => {
-      const created = await this.documents.importContent(content);
+      const { document, report } = await this.documents.importContent(content, files);
+      this.imported.set(report);
       this.variables.validate();
-      return named('Import completed', created.name);
+      return named('Import completed', document.name);
     });
   }
   /** Downloads a collection or environment as JSON, and says so. */

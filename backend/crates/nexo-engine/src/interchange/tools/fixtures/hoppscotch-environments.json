@@ -1,0 +1,16 @@
+[
+  {
+    "v": 2,
+    "id": "env-local",
+    "name": "Local",
+    "variables": [
+      { "key": "baseUrl", "initialValue": "http://localhost:4000", "currentValue": "http://localhost:4000", "secret": false },
+      { "key": "token", "initialValue": "", "currentValue": "abc", "secret": true }
+    ]
+  },
+  {
+    "id": "env-old",
+    "name": "Old",
+    "variables": [{ "key": "baseUrl", "value": "http://old.example.com", "secret": false }]
+  }
+]

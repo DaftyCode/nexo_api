@@ -1,0 +1,113 @@
+[
+  {
+    "v": 8,
+    "id": "cm3kx9f2a0001",
+    "name": "Books",
+    "folders": [
+      {
+        "v": 8,
+        "id": "cm3kx9f2a0002",
+        "name": "Admin",
+        "folders": [],
+        "requests": [
+          {
+            "v": "16",
+            "id": "cm3kx9f2a0003",
+            "name": "Add book",
+            "method": "POST",
+            "endpoint": "<<baseUrl>>/books",
+            "params": [],
+            "headers": [{ "key": "Content-Type", "value": "application/json", "active": true, "description": "" }],
+            "preRequestScript": "",
+            "testScript": "pw.test(\"created\", () => pw.expect(pw.response.status).toBe(201));",
+            "auth": { "authType": "inherit", "authActive": true },
+            "body": { "contentType": "application/json", "body": "{\n  \"title\": \"<<title>>\"\n}" },
+            "requestVariables": [{ "key": "title", "value": "Dune", "active": true }],
+            "responses": {}
+          },
+          {
+            "v": "16",
+            "id": "cm3kx9f2a0004",
+            "name": "Upload cover",
+            "method": "PUT",
+            "endpoint": "<<baseUrl>>/books/1/cover",
+            "params": [],
+            "headers": [],
+            "preRequestScript": "",
+            "testScript": "",
+            "auth": { "authType": "none", "authActive": true },
+            "body": {
+              "contentType": "multipart/form-data",
+              "body": [
+                { "key": "note", "value": "front", "active": true, "isFile": false },
+                { "key": "cover", "value": [{}], "active": true, "isFile": true }
+              ]
+            },
+            "requestVariables": [],
+            "responses": {}
+          }
+        ],
+        "auth": {
+          "authType": "api-key",
+          "authActive": true,
+          "key": "X-Admin-Key",
+          "value": "<<adminKey>>",
+          "addTo": "HEADERS"
+        },
+        "headers": [{ "key": "X-Area", "value": "admin", "active": true, "description": "" }],
+        "variables": []
+      }
+    ],
+    "requests": [
+      {
+        "v": "16",
+        "id": "cm3kx9f2a0005",
+        "name": "List books",
+        "method": "GET",
+        "endpoint": "<<baseUrl>>/books",
+        "params": [
+          { "key": "author", "value": "<<author>>", "active": true, "description": "" },
+          { "key": "draft", "value": "true", "active": false, "description": "" }
+        ],
+        "headers": [{ "key": "Accept", "value": "application/json", "active": true, "description": "" }],
+        "preRequestScript": "pw.env.set(\"started\", Date.now().toString());",
+        "testScript": "",
+        "auth": { "authType": "inherit", "authActive": true },
+        "body": { "contentType": null, "body": null },
+        "requestVariables": [],
+        "responses": {}
+      },
+      {
+        "v": "16",
+        "id": "cm3kx9f2a0006",
+        "name": "Search",
+        "method": "POST",
+        "endpoint": "<<baseUrl>>/search",
+        "params": [],
+        "headers": [],
+        "preRequestScript": "",
+        "testScript": "",
+        "auth": {
+          "authType": "oauth-2",
+          "authActive": true,
+          "grantTypeInfo": {
+            "grantType": "CLIENT_CREDENTIALS",
+            "authEndpoint": "<<baseUrl>>/oauth/token",
+            "clientID": "books",
+            "clientSecret": "<<clientSecret>>",
+            "scopes": "books:read",
+            "token": "",
+            "clientAuthentication": "IN_BODY"
+          },
+          "addTo": "HEADERS"
+        },
+        "body": { "contentType": "application/x-www-form-urlencoded", "body": "q: <<author>>\n#page: 2\nlimit: 10" },
+        "requestVariables": [],
+        "responses": {}
+      }
+    ],
+    "auth": { "authType": "bearer", "authActive": true, "token": "<<token>>" },
+    "headers": [{ "key": "X-Client", "value": "hoppscotch-import-test", "active": true, "description": "" }],
+    "variables": [{ "key": "author", "initialValue": "Herbert", "currentValue": "Herbert", "secret": false }]
+  }
+]

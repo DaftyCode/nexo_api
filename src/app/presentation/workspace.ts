@@ -173,6 +173,7 @@ export class Workspace {
   dialogTitle() {
     const titles: Record<string, string> = {
       import: 'Import your work',
+      imported: 'Import report',
       collection: 'Create collection',
       workspace: 'Create workspace',
       folder: 'Create folder',
@@ -194,15 +195,24 @@ export class Workspace {
       done = await this.state.addFolder(target.document, m.name, target.path);
     if (target && dialog === 'rename')
       done = await this.state.renameItem(target.document, target.path, m.name);
-    if (done) this.dialogs.set('');
+    if (done) this.dialogs.set(dialog === 'import' && this.state.imported() ? 'imported' : '');
   }
   async file(event: Event) {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (file) this.formModel.update((m) => ({ ...m, content: '' }));
     if (file) {
       const content = await this.state.cases.files.read(file);
-      if (await this.state.importContent(content)) this.dialogs.set('');
+      this.imported(await this.state.importContent(content));
     }
+  }
+  /** Imports the Bruno collection of a chosen folder. */
+  async importFolder(event: Event) {
+    const files = [...((event.target as HTMLInputElement).files ?? [])];
+    if (files.length) this.imported(await this.state.importContent('', files));
+  }
+  /** After an import that did not fail: its report, when another tool's export gave one. */
+  private imported(done: boolean) {
+    if (done) this.dialogs.set(this.state.imported() ? 'imported' : '');
   }
   protected async selectWorkspace(event: Event) {
     await this.state.selectWorkspace((event.target as HTMLSelectElement).value);

@@ -1,0 +1,33 @@
+meta {
+  name: Sign in
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/sign-in
+  body: formUrlEncoded
+  auth: oauth1
+}
+
+auth:oauth1 {
+  consumer_key: store-app
+  consumer_secret:
+  access_token:
+  token_secret:
+  callback_url:
+  verifier:
+  signature_method: RSA-SHA256
+  private_key: @file(keys/signing.key)
+  timestamp:
+  nonce:
+  version: 1.0
+  realm:
+  placement: header
+  include_body_hash: false
+}
+
+body:form-urlencoded {
+  user: ana
+  ~remember: yes
+}

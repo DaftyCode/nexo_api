@@ -1,0 +1,16 @@
+meta {
+  name: People
+  seq: 1
+}
+
+headers {
+  X-Area: users
+}
+
+auth {
+  mode: inherit
+}
+
+vars:pre-request {
+  limit: 20
+}
