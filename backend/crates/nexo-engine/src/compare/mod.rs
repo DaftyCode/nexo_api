@@ -1,7 +1,11 @@
 //! `response.compare`: what changed between two responses. The status and the error, the
 //! headers by name, and the body: field by field when both are JSON (with
 //! `nexo_domain::diff`), as text otherwise, and only whether they are equal when one is
-//! binary. Body paths and headers the person names are left out.
+//! binary. Body paths and headers the person names are left out. Also `schema.infer`.
+mod schema;
+
+pub use schema::infer_schema;
+
 use nexo_domain::{
     Error, Result,
     diff::{self, Pattern},

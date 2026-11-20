@@ -181,3 +181,16 @@ payload! {
         }
     }
 }
+
+payload! {
+    /// `schema.infer`: the JSON Schema of some response bodies (`samples`, parsed JSON):
+    /// fields present in all of them are required, strings get their format and, with
+    /// `enums`, short enums.
+    closed SchemaInferPayload {
+        required { samples "samples": Vec<Value> => "readonly unknown[]" }
+        optional {
+            workspace "workspace": String => "string",
+            enums "enums": bool => "boolean",
+        }
+    }
+}

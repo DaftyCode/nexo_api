@@ -22,6 +22,14 @@ nx.test('Successful response', () => {{ '{' }}
     </li>
     <li>
       {{
+        'JSON Schema…, under a JSON response, reads its schema from that response and the ones the history keeps of the same request: the fields all of them have are required, and strings get their format (date-time, email, uuid, uri). Add schema test writes a test that checks it in every run; generating it again replaces it.'
+          | transloco
+      }}
+      <code>pm.response.to.have.jsonSchema(schema)</code>
+      {{ 'checks any response against a schema of your own.' | transloco }}
+    </li>
+    <li>
+      {{
         'Scripts run in a sandbox: 5 seconds and 128 MB at most, with no access to your files or to the secrets of the vault.'
           | transloco
       }}

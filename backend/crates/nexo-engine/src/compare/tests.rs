@@ -156,3 +156,17 @@ fn refuses_wrong_or_too_many_paths_to_leave_out() {
     let error = responses(&json!({"source": side, "target": side, "ignore": [long]}));
     assert!(error.is_err());
 }
+
+#[test]
+fn a_schema_is_read_from_one_to_a_hundred_samples() {
+    let inferred =
+        super::infer_schema(&json!({"samples": [{"a": "x"}, {"a": "x", "b": 1}], "enums": true}))
+            .unwrap();
+    assert_eq!(inferred["sampled"], 2);
+    assert_eq!(inferred["schema"]["required"], json!(["a"]));
+    assert_eq!(inferred["schema"]["properties"]["a"]["enum"], json!(["x"]));
+    for samples in [json!([]), json!(vec![1; 101])] {
+        let error = super::infer_schema(&json!({ "samples": samples })).unwrap_err();
+        assert!(error.to_string().contains("1 to 100 JSON responses"));
+    }
+}

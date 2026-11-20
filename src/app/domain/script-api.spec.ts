@@ -54,7 +54,7 @@ describe('script API suggestions', () => {
         { name: 'to', call: false },
         { name: 'have', call: false },
       ]),
-    ).toEqual(['status', 'header', 'body', 'jsonBody']);
+    ).toEqual(['status', 'header', 'body', 'jsonBody', 'jsonSchema']);
     const chain = names([
       { name: 'pm', call: false },
       { name: 'expect', call: true },

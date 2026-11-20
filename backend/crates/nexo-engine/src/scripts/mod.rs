@@ -1,8 +1,10 @@
 //! Pre-request and test scripts, evaluated with QuickJS.
 //!
-//! Each execution gets its own runtime and context with memory and time limits. The context
-//! has no host functions: scripts exchange JSON strings with the engine through the
-//! `__nexo` object installed by the `bootstrap/` script, requests made with
+//! Each execution gets its own runtime and context with memory and time limits. Its one host
+//! function is the JSON Schema validator of `pm.response.to.have.jsonSchema` (`schema.rs`),
+//! which reads two texts and returns one and touches nothing else. Scripts exchange JSON
+//! strings with the engine through the `__nexo` object installed by the `bootstrap/` script,
+//! requests made with
 //! `pm.sendRequest` are queued for the engine to send, and `nx.mongo` calls for the
 //! application to answer. Code generation from strings is
 //! disabled. Vault secrets and OAuth 2.0 tokens never enter the context: the host fills them
@@ -28,6 +30,7 @@ const BOOTSTRAP: &str = concat!(
     include_str!("bootstrap/06-host.js"),
 );
 mod queue;
+mod schema;
 
 const SCRIPT_TIMEOUT: Duration = Duration::from_secs(5);
 const MEMORY_LIMIT: usize = 128 * 1024 * 1024;
@@ -80,6 +83,7 @@ impl ScriptSession {
                     .is_some_and(|deadline| Instant::now() > deadline)
         })));
         let context = Context::full(&runtime).map_err(infrastructure)?;
+        schema::install(&context).map_err(infrastructure)?;
         let session = Self {
             runtime,
             context,

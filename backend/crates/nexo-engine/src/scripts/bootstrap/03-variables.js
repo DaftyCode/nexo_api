@@ -84,6 +84,7 @@
           if (expected !== undefined) expect(response.headers.get(key)).equal(expected);
         },
         body: (body) => expect(value.body).equal(body),
+        jsonSchema: (schema) => expect(response.json()).to.have.jsonSchema(schema),
         jsonBody: (key, expected) =>
           key === undefined ? response.json() : expect(response.json()[key]).eql(expected),
       },

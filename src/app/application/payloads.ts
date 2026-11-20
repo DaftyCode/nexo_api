@@ -921,6 +921,12 @@ export interface MaskApplyPayload {
   rows?: readonly (readonly unknown[])[];
 }
 
+export interface SchemaInferPayload {
+  samples: readonly unknown[];
+  workspace?: string;
+  enums?: boolean;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1042,6 +1048,7 @@ export interface OperationPayloads {
   'monitor.run': MonitorRunPayload;
   'response.compare': ResponseComparePayload;
   'mask.apply': MaskApplyPayload;
+  'schema.infer': SchemaInferPayload;
 }
 
 /** The payload of an operation. */

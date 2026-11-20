@@ -109,6 +109,7 @@ export const EXECUTION_OPERATIONS = [
   'monitor.run',
   'response.compare',
   'mask.apply',
+  'schema.infer',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

@@ -137,6 +137,8 @@ const assertions: ScriptMember[] = (() => {
     method('a', '(type)', 'Of that type: string, number, object, array, null…'),
     method('an', '(type)', 'Of that type: object, array…'),
     method('throw', '()', 'The function throws.'),
+    method('jsonSchema', '(schema)', 'Matches the JSON Schema.'),
+    method('matchSchema', '(schema)', 'Matches the JSON Schema.'),
   ];
   const states = ['ok', 'true', 'false', 'null', 'undefined', 'exist', 'empty'].map((name) =>
     property(name, 'assertion', `The value is ${name === 'ok' ? 'truthy' : name}.`),
@@ -170,6 +172,7 @@ const response: ScriptMember[] = [
       method('header', '(name, value?)', 'The header is there, with that value if given.'),
       method('body', '(text)', 'The body is this text.'),
       method('jsonBody', '(key?, value?)', 'The body is JSON, with that value at the key.'),
+      method('jsonSchema', '(schema)', 'The JSON body matches the JSON Schema.'),
     ]),
     object('be', 'What the response is.', [
       method('json', '()', 'The body is JSON.'),

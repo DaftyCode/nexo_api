@@ -1,7 +1,8 @@
 //! The schema of a report as JSON Schema (draft 2020-12) or as a MongoDB validator
 //! (`{$jsonSchema: …}`, with `bsonType`). A field present in every document is required;
-//! documents describe their fields and arrays their items. No other rule is invented.
-use super::{FieldSchema, SchemaReport};
+//! documents describe their fields and arrays their items. JSON Schema also gets the format
+//! every string of a field is of and, when asked, short enums. No other rule is invented.
+use super::{FieldSchema, Flavor, SchemaReport, analyze};
 use serde_json::{Map, Value, json};
 use std::collections::HashMap;
 
@@ -12,6 +13,16 @@ pub enum SchemaDialect {
     /// A MongoDB validator: `{$jsonSchema: …}` with `bsonType`.
     MongoValidator,
 }
+
+/// What a schema says besides the types and fields.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SchemaOptions {
+    /// Strings with a few values that repeat get them as an `enum` (JSON Schema only).
+    pub enums: bool,
+}
+
+/// Values an enum has at most.
+const ENUM_SIZE: u64 = 5;
 
 /// The type a JSON Schema gives a value of this type, if it can say.
 fn json_type(name: &str) -> Option<&'static str> {
@@ -55,11 +66,44 @@ fn bson_type(name: &str) -> &'static str {
 
 /// The schema of the documents a report describes.
 pub fn json_schema(report: &SchemaReport, dialect: SchemaDialect) -> Value {
+    json_schema_with(report, dialect, SchemaOptions::default())
+}
+
+/// The JSON Schema of some JSON values, such as the bodies of the responses of a request:
+/// objects, arrays or plain values alike. Fields are required when every sample has them.
+pub fn infer(samples: &[Value], options: SchemaOptions) -> Value {
+    let wrapped: Vec<Value> = samples
+        .iter()
+        .map(|sample| json!({ "root": sample }))
+        .collect();
+    let report = analyze(&wrapped, Flavor::Json);
+    let schema = json_schema_with(&report, SchemaDialect::JsonSchema, options);
+    let mut inferred = Map::new();
+    inferred.insert(
+        "$schema".into(),
+        json!("https://json-schema.org/draft/2020-12/schema"),
+    );
+    if let Value::Object(root) = &schema["properties"]["root"] {
+        inferred.extend(root.clone());
+    }
+    Value::Object(inferred)
+}
+
+/// The schema of the documents a report describes, with `options`.
+pub fn json_schema_with(
+    report: &SchemaReport,
+    dialect: SchemaDialect,
+    options: SchemaOptions,
+) -> Value {
     let mut children: HashMap<&str, Vec<&FieldSchema>> = HashMap::new();
     for field in &report.fields {
         children.entry(parent(field)).or_default().push(field);
     }
-    let writer = Writer { children, dialect };
+    let writer = Writer {
+        children,
+        dialect,
+        options,
+    };
     let mut root = Map::new();
     match dialect {
         SchemaDialect::JsonSchema => {
@@ -91,6 +135,7 @@ fn parent(field: &FieldSchema) -> &str {
 struct Writer<'a> {
     children: HashMap<&'a str, Vec<&'a FieldSchema>>,
     dialect: SchemaDialect,
+    options: SchemaOptions,
 }
 
 impl Writer<'_> {
@@ -140,6 +185,7 @@ impl Writer<'_> {
                 if every && !types.is_empty() {
                     schema.insert("type".into(), one_or_many(types));
                 }
+                self.strings(field, &mut schema);
             }
             SchemaDialect::MongoValidator => {
                 let mut types: Vec<&str> = Vec::new();
@@ -165,6 +211,31 @@ impl Writer<'_> {
             }
         }
         Value::Object(schema)
+    }
+}
+
+impl Writer<'_> {
+    /// The format and, when asked, the enum of a field whose values are strings (or null).
+    fn strings(&self, field: &FieldSchema, schema: &mut Map<String, Value>) {
+        let mut strings = field.types.iter().filter(|t| t.name != "Null");
+        let Some(text) = strings.next().filter(|t| t.name == "String") else {
+            return;
+        };
+        if strings.next().is_some() {
+            return;
+        }
+        if let Some(format) = &text.format {
+            schema.insert("format".into(), json!(format));
+        }
+        let repeated = field.count >= field.distinct * 2;
+        if self.options.enums
+            && !field.distinct_capped
+            && (1..=ENUM_SIZE).contains(&field.distinct)
+            && repeated
+        {
+            let values: Vec<&Value> = field.values.iter().map(|v| &v.value).collect();
+            schema.insert("enum".into(), json!(values));
+        }
     }
 }
 

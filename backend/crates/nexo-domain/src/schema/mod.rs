@@ -6,15 +6,19 @@
 //! writes the schema as JSON Schema or a MongoDB `$jsonSchema` validator.
 //!
 //! Paths use dots; the items of an array are the segment `[]` (`items.[].sku`).
+mod formats;
 mod generate;
 mod types;
+mod validate;
 mod walk;
 
 #[cfg(test)]
 mod tests;
 
-pub use generate::{SchemaDialect, json_schema};
+pub use formats::{format_of, matches as matches_format};
+pub use generate::{SchemaDialect, SchemaOptions, infer, json_schema, json_schema_with};
 pub use types::type_name;
+pub use validate::{PatternCheck, Problem, Validation, validate};
 pub use walk::analyze;
 
 use serde::Serialize;
@@ -86,6 +90,9 @@ pub struct TypeSummary {
     /// Characters of strings, items of arrays.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lengths: Option<Lengths>,
+    /// The format of JSON Schema every string is of (`date-time`, `email`, `uuid`…).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub format: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize)]

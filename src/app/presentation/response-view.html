@@ -97,6 +97,9 @@
                 <app-table-export [make]="exportTable" />
               </div>
             }
+            @if (json()) {
+              <app-response-schema [response]="r" />
+            }
             @for (warning of r.warnings ?? []; track warning) {
               <div class="alert">{{ warning }}</div>
             }

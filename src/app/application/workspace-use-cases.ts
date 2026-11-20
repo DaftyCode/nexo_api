@@ -37,6 +37,7 @@ import { SshProfileCases } from './workspace-use-cases/ssh';
 import { MonitorCases } from './workspace-use-cases/monitors';
 import { CompareCases } from './workspace-use-cases/compare';
 import { MaskingCases } from './workspace-use-cases/masking';
+import { SchemaCases } from './workspace-use-cases/schema';
 import { TableExportCases } from './workspace-use-cases/table-export';
 
 /** A file of a Bruno collection folder, as the engine reads it. */
@@ -89,6 +90,8 @@ export class WorkspaceUseCases {
   readonly masking: MaskingCases;
   /** CSV and Excel files of runs and JSON responses. */
   readonly tables: TableExportCases;
+  /** JSON Schema read from the responses of a request. */
+  readonly schemas: SchemaCases;
 
   constructor(
     private readonly api: ApiPort,
@@ -106,6 +109,7 @@ export class WorkspaceUseCases {
     this.compare = new CompareCases(api);
     this.masking = new MaskingCases(api);
     this.tables = new TableExportCases(this.masking);
+    this.schemas = new SchemaCases(api, (document) => this.compare.historyResponse(document));
   }
 
   // Connection and session.

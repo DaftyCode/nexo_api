@@ -120,3 +120,51 @@ fn infinite_loops_stop_at_the_time_limit() {
     assert!(error.to_string().contains("5 second"), "{error}");
     assert!(started.elapsed() < Duration::from_secs(8));
 }
+
+/// `jsonSchema` checks a value with the host's validator, and patterns with RegExp; the
+/// validator is reachable through the assertions only.
+#[test]
+fn json_schema_assertions_check_values_and_responses() {
+    let session = session();
+    let response = json!({"status": 200, "statusText": "OK", "headers": [], "size": 2, "time": 1,
+                          "cookies": [], "body": "{\"id\": 7, \"code\": \"ab\"}"});
+    session
+        .run(
+            &[r#"
+                const schema = {type: 'object', required: ['id', 'name'],
+                                properties: {id: {type: 'integer'}, code: {pattern: '^[a-z]+$'}}};
+                pm.test('missing', () => pm.response.to.have.jsonSchema(schema));
+                pm.test('matches', () => pm.expect({id: 1, name: 'x'}).to.have.jsonSchema(schema));
+                pm.test('not', () => pm.expect({}).not.to.matchSchema(schema));
+                pm.test('pattern', () => pm.expect('AB').to.have.jsonSchema({pattern: '^[a-z]+$'}));
+                pm.test('bad pattern', () => pm.expect('a').to.have.jsonSchema({pattern: '('}));
+                pm.environment.set('hidden', typeof globalThis.__nexoSchema);
+            "#
+            .into()],
+            Some(&response),
+        )
+        .unwrap();
+    let state = session.snapshot().unwrap();
+    let results: Vec<(bool, String)> = state["assertions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| {
+            (
+                a["passed"] == true,
+                a["error"].as_str().unwrap_or("").to_string(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        results,
+        [
+            (false, "Expected the value to match the JSON Schema: $: Missing required property \"name\"".into()),
+            (true, String::new()),
+            (true, String::new()),
+            (false, "Expected the value to match the JSON Schema: $: Expected \"AB\" to match ^[a-z]+$".into()),
+            (false, "Expected the value to match the JSON Schema: $: Invalid pattern (".into()),
+        ]
+    );
+    assert_eq!(state["environment"]["hidden"], "undefined");
+}

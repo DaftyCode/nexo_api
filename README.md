@@ -24,7 +24,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Requests            | HTTP/HTTPS, methods, query and path parameters, headers and responses; raw, JSON and form bodies, multipart and binary file uploads, and GraphQL with an explorer and autocompletion.                                                                                                                                                                                                                                              |
 | Organization        | Collections and folders, tabs, environments (with a colour and a protection: ask before sending changes, or read-only, which the engine also applies to scripts, runs and the CLI), variables, history and documents persisted in SQLite. Drag tabs, collections, folders, requests (also into another collection) and the sections of the menu; on start, everything keeps your order and tabs reopen with their unsaved changes. |
 | HTTP authentication | Every type of Postman, Bruno and Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (all grants, PKCE, sign-in window in the desktop app like Postman's, tokens in the vault, auto-refresh and auto-fetch), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE and Netrc; inherited from folders and collections.                                                                         |
-| Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results.                                                                                                                                                                                                                                                                                                          |
+| Scripts and tests   | Pre-request and response scripts, scoped variables, `nx.test`, `nx.expect`, `nx.sendRequest`, logs and assertion results. JSON Schema read from a response and the history of its request (required fields, formats, short enums), added as a test that checks every run with `pm.response.to.have.jsonSchema`.                                                                                                                    |
 | Runner              | Collection iterations with JSON/CSV data, inherited scripts, progress, pause, cancellation, PDF reports and JSON/JUnit reports from the CLI.                                                                                                                                                                                                                                                                                       |
 | Monitors            | A collection or one of its folders run on a schedule while Nexo is open (every few minutes or hours, or a cron expression), with an environment and data, its last 100 runs and a system notification when one fails.                                                                                                                                                                                                              |
 | Compare responses   | Two responses side by side, from tabs, the history or a collection run, or one request sent with two environments: what changed in the status, the headers and the body, field by field for JSON whatever the order of its fields, leaving out the fields and headers you name (dates, generated ids).                                                                                                                             |
@@ -161,8 +161,7 @@ What Nexo keeps by itself is capped, so it never fills the disk: the request his
 
 In the planned order:
 
-1. **API client improvements** (next, to finish that part): inferring the JSON Schema of responses.
-2. **More databases:**
+1. **More databases** (next):
    - Backup and restore with each engine's native client.
    - Comparing and syncing data and schemas.
    - Advanced connections: the SSH tunnels and SOCKS5 proxies requests and MongoDB already use, in the drivers too; network settings, connection startup and importing connections from other tools.
@@ -172,12 +171,12 @@ In the planned order:
    - SQL from request scripts (`nx.sql`), read-only MCP tools and a query's code in several languages.
    - New engines: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, and Apache Drill. Oracle waits for a stable release of its Rust driver; DB2, Apache Hive and Apache Ignite are being evaluated.
    - MongoDB will become one more downloadable module, in the same tree as the rest.
-3. **An AI assistant** using each user's own API key.
-4. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
-5. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
-6. **Custom themes** from the app, built on the design tokens.
-7. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
-8. **Reproducible benchmarks** of startup, memory and latency.
+2. **An AI assistant** using each user's own API key.
+3. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
+4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
+5. **Custom themes** from the app, built on the design tokens.
+6. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
+7. **Reproducible benchmarks** of startup, memory and latency.
 
 This section is updated with every change, always in both READMEs (`README.md` and `README.es.md`) at once:
 

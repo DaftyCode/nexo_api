@@ -24,7 +24,7 @@ El proyecto está en fase inicial. Las contribuciones, ideas, pruebas y revision
 | Peticiones            | HTTP/HTTPS, métodos, parámetros y variables de ruta, cabeceras y respuestas; cuerpos raw, JSON, formularios, archivos en multipart y binario, y GraphQL con explorador y autocompletado.                                                                                                                                                                                                                                                                                                                                                                        |
 | Organización          | Colecciones y carpetas, pestañas, entornos (con color y protección: preguntar antes de enviar cambios o solo lectura, que el motor aplica también a scripts, ejecuciones y la CLI), variables, historial y documentos persistidos en SQLite. Arrastra pestañas, colecciones, carpetas, peticiones (también a otra colección) y las secciones del menú; al abrir, todo sigue en tu orden y las pestañas vuelven con sus cambios sin guardar.                                                                                                                     |
 | Autenticación HTTP    | Todos los tipos de Postman, Bruno e Insomnia: Basic, Bearer, API key, Digest, OAuth 1.0, OAuth 2.0 (todos los flujos, PKCE, ventana de inicio de sesión en el escritorio como la de Postman, tokens en el vault, renovación y obtención automáticas), AWS Signature v4, Hawk, NTLM, JWT Bearer, Atlassian ASAP, Akamai EdgeGrid, WSSE y Netrc; heredada de carpetas y colecciones.                                                                                                                                                                              |
-| Scripts y pruebas     | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones.                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Scripts y pruebas     | Pre-request y scripts de respuesta, variables por ámbito, `nx.test`, `nx.expect`, `nx.sendRequest`, logs y resultados de aserciones. JSON Schema leído de una respuesta y del historial de su petición (campos obligatorios, formatos, enums cortos), añadido como test que comprueba cada ejecución con `pm.response.to.have.jsonSchema`.                                                                                                                                                                                                                      |
 | Runner                | Colecciones con iteraciones y datos JSON/CSV, scripts heredados, progreso, pausa, cancelación, informes PDF y reportes JSON/JUnit desde CLI.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Monitores             | Una colección o una de sus carpetas ejecutada según un horario mientras Nexo está abierto (cada pocos minutos u horas, o una expresión cron), con un entorno y datos, sus 100 últimas ejecuciones y una notificación del sistema cuando una falla.                                                                                                                                                                                                                                                                                                              |
 | Comparar respuestas   | Dos respuestas lado a lado, de pestañas, del historial o de una ejecución, o una petición enviada con dos entornos: qué cambió en el estado, las cabeceras y el cuerpo, campo a campo en JSON sea cual sea el orden de sus campos, sin los campos y cabeceras que indiques (fechas, ids generados).                                                                                                                                                                                                                                                             |
@@ -161,8 +161,7 @@ Lo que Nexo guarda por su cuenta tiene tope, para que nunca llene el disco: el h
 
 En el orden previsto:
 
-1. **Mejoras de la parte de APIs** (lo siguiente, para dejar terminada esa parte): inferir el JSON Schema de las respuestas.
-2. **Más bases de datos:**
+1. **Más bases de datos** (lo siguiente):
    - Backup y restore con el cliente nativo de cada motor.
    - Comparar y sincronizar datos y esquemas.
    - Conexión avanzada: el túnel SSH y el proxy SOCKS5 que ya usan las peticiones y MongoDB, también en los drivers; ajustes de red, arranque de la conexión e importar conexiones de otras herramientas.
@@ -172,12 +171,12 @@ En el orden previsto:
    - SQL desde los scripts de las peticiones (`nx.sql`), herramientas MCP de solo lectura y el código de una consulta en varios lenguajes.
    - Motores nuevos: Cassandra y ScyllaDB, Redis y Valkey, Elasticsearch y OpenSearch, y Apache Drill. Oracle espera a la versión estable de su driver de Rust; DB2, Apache Hive y Apache Ignite están en evaluación.
    - MongoDB pasará a ser un módulo descargable más, en el mismo árbol que el resto.
-3. **Asistente de IA** con la clave personal de cada usuario.
-4. **Mensajes del motor traducidos:** los errores y avisos del backend y de los drivers, en todos los idiomas, con códigos y parámetros; la interfaz ya está traducida entera.
-5. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
-6. **Temas personalizados** desde la app, sobre los tokens de diseño.
-7. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.
-8. **Mediciones** reproducibles de arranque, memoria y latencia.
+2. **Asistente de IA** con la clave personal de cada usuario.
+3. **Mensajes del motor traducidos:** los errores y avisos del backend y de los drivers, en todos los idiomas, con códigos y parámetros; la interfaz ya está traducida entera.
+4. **Herramientas de desarrollo sin Node fuera de Angular:** pruebas de contrato y scripts de compilación en Rust.
+5. **Temas personalizados** desde la app, sobre los tokens de diseño.
+6. **Distribución:** WinGet, Homebrew, repositorios APT/YUM firmados y Flatpak. Firma de los instaladores y de los drivers fuera de la Store en Windows, notarización en macOS y validación de los instaladores en máquinas limpias.
+7. **Mediciones** reproducibles de arranque, memoria y latencia.
 
 Esta sección se actualiza con cada cambio, siempre en los dos README (`README.md` y `README.es.md`) a la vez:
 

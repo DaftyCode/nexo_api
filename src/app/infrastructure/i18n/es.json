@@ -2951,5 +2951,20 @@
   "A Bruno collection can have at most 5000 files": "Una colección de Bruno puede tener como mucho 5000 ficheros",
   "There is nothing to import in this file": "No hay nada que importar en este fichero",
   "It also reads what other clients export: Insomnia (v4 JSON or YAML and the v5 YAML of Insomnia 11), Hoppscotch and Thunder Client collections and environments, and Bruno collections, as their JSON export or by choosing the collection folder (the one with bruno.json) with Choose a Bruno collection folder.": "También lee lo que exportan otros clientes: Insomnia (JSON o YAML v4 y el YAML v5 de Insomnia 11), colecciones y entornos de Hoppscotch y Thunder Client, y colecciones de Bruno, por su exportación JSON o eligiendo la carpeta de la colección (la que tiene bruno.json) con Elegir la carpeta de una colección de Bruno.",
-  "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.": "Las carpetas, la autorización, las cabeceras, las variables y los cuerpos llegan tal cual, con las variables escritas entre llaves dobles, como en Nexo. Los scripts usan la API de cada herramienta, así que llegan comentados para traducirlos a pm.*; el informe de la importación los lista, junto con los ficheros que hay que volver a elegir y lo que no ha llegado."
+  "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.": "Las carpetas, la autorización, las cabeceras, las variables y los cuerpos llegan tal cual, con las variables escritas entre llaves dobles, como en Nexo. Los scripts usan la API de cada herramienta, así que llegan comentados para traducirlos a pm.*; el informe de la importación los lista, junto con los ficheros que hay que volver a elegir y lo que no ha llegado.",
+  "JSON Schema…": "JSON Schema…",
+  "Short enums: strings with a few values that repeat": "Enums cortos: textos con pocos valores que se repiten",
+  "Infer schema": "Inferir esquema",
+  "schema.sampled": "Leído de {{v0}} respuestas: esta y las que guarda el historial de esta petición. Los campos que tienen todas son obligatorios.",
+  "Add schema test": "Añadir test de esquema",
+  "Download schema": "Descargar esquema",
+  "The schema could not be inferred": "No se ha podido inferir el esquema",
+  "The schema test could not be added": "No se ha podido añadir el test de esquema",
+  "Schema test added": "Test de esquema añadido",
+  "toast.schemaTestAdded": "Está en los tests post-respuesta de la petición; guárdala para conservarlo.",
+  "This response is not complete JSON": "Esta respuesta no es JSON completo",
+  "A schema is read from 1 to 100 JSON responses": "Un esquema se lee de 1 a 100 respuestas JSON",
+  "JSON Schema…, under a JSON response, reads its schema from that response and the ones the history keeps of the same request: the fields all of them have are required, and strings get their format (date-time, email, uuid, uri). Add schema test writes a test that checks it in every run; generating it again replaces it.": "JSON Schema…, bajo una respuesta JSON, lee su esquema de esa respuesta y de las que guarda el historial de la misma petición: los campos que tienen todas son obligatorios y los textos llevan su formato (date-time, email, uuid, uri). Añadir test de esquema escribe un test que lo comprueba en cada ejecución; generarlo otra vez lo sustituye.",
+  "checks any response against a schema of your own.": "comprueba cualquier respuesta con un esquema propio.",
+  "JSON Schema": "JSON Schema"
 }

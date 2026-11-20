@@ -47,6 +47,20 @@
             items.every((item) => value.some((candidate) => equal(item, candidate))),
           'Expected array members',
         ),
+      jsonSchema: (schema) => {
+        const problems = schemaProblems(value, schema);
+        const shown = problems
+          .slice(0, 5)
+          .map((problem) => `${problem.path}: ${problem.message}`)
+          .join('; ');
+        const more = problems.length > 5 ? ` (and ${problems.length - 5} more)` : '';
+        return check(
+          problems.length === 0,
+          negate
+            ? 'Expected the value not to match the JSON Schema'
+            : `Expected the value to match the JSON Schema: ${shown}${more}`,
+        );
+      },
       a: (type) =>
         check(
           type === 'array'
@@ -94,6 +108,7 @@
           if (key === 'equals') return methods.equal;
           if (key === 'contain' || key === 'contains') return methods.include;
           if (key === 'length') return methods.lengthOf;
+          if (key === 'matchSchema') return methods.jsonSchema;
           if (key === 'ok') return check(Boolean(value), 'Expected truthy value');
           if (key === 'true') return check(value === true, 'Expected true');
           if (key === 'false') return check(value === false, 'Expected false');

@@ -15,6 +15,8 @@ import { StudioIcon } from './studio-icon';
 import { WorkspaceState } from './workspace-state';
 import { CompareStore } from './compare/compare-store';
 import { TableExport } from './table-export';
+import { ResponseSchema } from './response-schema';
+import { jsonBody } from '../domain/schema-test';
 import { TableExportOptions } from '../application/workspace-use-cases/table-export';
 import { bodyRecords } from '../domain/export/table';
 
@@ -24,7 +26,7 @@ const FORMAT_LIMIT = 2 * 1024 * 1024;
 const DISPLAY_LIMIT = 512 * 1024;
 
 @Component({
-  imports: [TranslocoPipe, JsonPipe, StudioIcon, TableExport],
+  imports: [TranslocoPipe, JsonPipe, StudioIcon, TableExport, ResponseSchema],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-response-view',
   styleUrl: './response-view.scss',
@@ -59,6 +61,8 @@ export class ResponseView {
     if (!response || this.binary() || response.truncated) return undefined;
     return bodyRecords(response.body);
   });
+  /** Whether the body is complete JSON, to read its JSON Schema. */
+  protected readonly json = computed(() => !!jsonBody(this.response()));
   protected readonly exportTable = async (options: TableExportOptions) => {
     const found = this.records();
     if (!found) throw new Error('This response has no records to export');

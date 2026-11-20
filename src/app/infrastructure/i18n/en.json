@@ -2951,5 +2951,20 @@
   "A Bruno collection can have at most 5000 files": "A Bruno collection can have at most 5000 files",
   "There is nothing to import in this file": "There is nothing to import in this file",
   "It also reads what other clients export: Insomnia (v4 JSON or YAML and the v5 YAML of Insomnia 11), Hoppscotch and Thunder Client collections and environments, and Bruno collections, as their JSON export or by choosing the collection folder (the one with bruno.json) with Choose a Bruno collection folder.": "It also reads what other clients export: Insomnia (v4 JSON or YAML and the v5 YAML of Insomnia 11), Hoppscotch and Thunder Client collections and environments, and Bruno collections, as their JSON export or by choosing the collection folder (the one with bruno.json) with Choose a Bruno collection folder.",
-  "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.": "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come."
+  "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.": "Folders, authorization, headers, variables and bodies come as they were, with variables written between double braces, as in Nexo. Scripts use each tool’s own API, so they arrive commented out to translate to pm.*; the import report lists them, with the files to choose again and whatever did not come.",
+  "JSON Schema…": "JSON Schema…",
+  "Short enums: strings with a few values that repeat": "Short enums: strings with a few values that repeat",
+  "Infer schema": "Infer schema",
+  "schema.sampled": "Read from {{v0}} responses: this one and those the history keeps of this request. Fields all of them have are required.",
+  "Add schema test": "Add schema test",
+  "Download schema": "Download schema",
+  "The schema could not be inferred": "The schema could not be inferred",
+  "The schema test could not be added": "The schema test could not be added",
+  "Schema test added": "Schema test added",
+  "toast.schemaTestAdded": "It is in the Post-response tests of the request; save it to keep it.",
+  "This response is not complete JSON": "This response is not complete JSON",
+  "A schema is read from 1 to 100 JSON responses": "A schema is read from 1 to 100 JSON responses",
+  "JSON Schema…, under a JSON response, reads its schema from that response and the ones the history keeps of the same request: the fields all of them have are required, and strings get their format (date-time, email, uuid, uri). Add schema test writes a test that checks it in every run; generating it again replaces it.": "JSON Schema…, under a JSON response, reads its schema from that response and the ones the history keeps of the same request: the fields all of them have are required, and strings get their format (date-time, email, uuid, uri). Add schema test writes a test that checks it in every run; generating it again replaces it.",
+  "checks any response against a schema of your own.": "checks any response against a schema of your own.",
+  "JSON Schema": "JSON Schema"
 }

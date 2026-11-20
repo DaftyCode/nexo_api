@@ -62,6 +62,7 @@ impl ExecutionGateway for Engine {
             Operation::ApiInspect => api_spec::inspect(&payload),
             Operation::ApiDiff => api_spec::compare(&payload),
             Operation::ResponseCompare => compare::responses(&payload),
+            Operation::SchemaInfer => compare::infer_schema(&payload),
             Operation::MaskApply => masking::apply(&self.vault, &payload).await,
             Operation::Codegen => interchange::generate(&payload),
             Operation::RealtimeConnect => self.realtime.connect(&payload).await,

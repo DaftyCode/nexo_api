@@ -1,4 +1,5 @@
 //! Reads the documents once, field by field, and sums up each field path.
+use super::formats::{format_of, matches};
 use super::types::{Order, is_container, length, order};
 use super::*;
 use serde_json::Map;
@@ -10,6 +11,8 @@ struct TypeTally {
     min: Option<(Order, Value)>,
     max: Option<(Order, Value)>,
     lengths: Option<(u64, u64, u64, u64)>,
+    /// The format every string so far is of: unknown before the first, `None` once two differ.
+    format: Option<Option<&'static str>>,
 }
 
 #[derive(Default)]
@@ -153,6 +156,13 @@ impl Tally {
                 tally.max = Some((position, value.clone()));
             }
         }
+        if let Some(text) = value.as_str() {
+            tally.format = Some(match tally.format {
+                None => format_of(text),
+                Some(Some(format)) if matches(format, text) => Some(format),
+                Some(_) => None,
+            });
+        }
         if let Some(length) = length(value) {
             let (min, max, total, count) = tally.lengths.unwrap_or((u64::MAX, 0, 0, 0));
             tally.lengths = Some((min.min(length), max.max(length), total + length, count + 1));
@@ -185,6 +195,7 @@ impl Tally {
                     max,
                     average: total as f64 / count as f64,
                 }),
+                format: tally.format.flatten().map(str::to_string),
             })
             .collect();
         types.sort_by_key(|summary| std::cmp::Reverse(summary.count));
