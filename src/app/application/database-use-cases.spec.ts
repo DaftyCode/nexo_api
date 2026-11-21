@@ -112,6 +112,23 @@ describe('database use cases', () => {
     expect(secrets.has('db-proxy:c1')).toBe(false);
   });
 
+  it('tests a connection that asks for its password with the one typed, never kept', async () => {
+    const { cases, calls, secrets } = fixture({ 'db.test': { pingMs: 1 } });
+    const value = { driver: 'postgres', host: 'h', askPassword: true };
+    await cases.connections.test('w', 'c1', value, { password: 'typed' }, scopes);
+    expect(secrets.size).toBe(0);
+    expect(calls[0][1]).toMatchObject({ connection: value, password: 'typed' });
+    await cases.connections.test(
+      'w',
+      'c1',
+      { driver: 'postgres', pgpass: true },
+      { password: 'p' },
+      scopes,
+    );
+    expect(secrets.size).toBe(0);
+    expect(calls[1][1]).not.toHaveProperty('password');
+  });
+
   it('saves with the revision it was loaded from, and keeps vault references typed as such', async () => {
     const { cases, saved, secrets } = fixture();
     const existing = document('c1', {});

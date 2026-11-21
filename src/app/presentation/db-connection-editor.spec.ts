@@ -151,6 +151,29 @@ describe('the connection editor', () => {
     expect(panel.text()).toContain('Keep alive is from 5 to 600 seconds, or 0 for none');
   });
 
+  it('asks for the password each time, or reads pgpass, and keeps none', async () => {
+    const asked: Record<string, unknown>[] = [];
+    const panel = await start((payload) => (asked.push(payload), reached()));
+    await edit(panel);
+    const pgpass = 'Read the password from the pgpass file';
+    (panel.control(pgpass, editor(panel)) as HTMLInputElement).click();
+    await panel.settle();
+    expect(panel.text()).toContain('The password comes from the pgpass file of your user');
+    await panel.click(/^Save$/, editor(panel));
+    const saved = () => panel.api.documentsStore.find((document) => document.id === 'c1')?.value;
+    expect(saved()).toMatchObject({ pgpass: true });
+    (panel.control('Ask for the password each time', editor(panel)) as HTMLInputElement).click();
+    await panel.settle();
+    expect(panel.buttons(pgpass, editor(panel))).toHaveLength(0);
+    await panel.fill('Password', 'only-to-test', editor(panel));
+    await panel.click('Test connection', editor(panel));
+    expect(asked.at(-1)).toMatchObject({ password: 'only-to-test' });
+    expect(panel.api.secretNames).not.toContain('db-password:c1');
+    await panel.click(/^Save$/, editor(panel));
+    expect(saved()).toMatchObject({ askPassword: true });
+    expect(saved()).not.toHaveProperty('password');
+  });
+
   it('forgets the secrets of a new connection tested but never saved', async () => {
     const panel = await start();
     panel.section().edit();

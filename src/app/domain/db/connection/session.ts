@@ -21,5 +21,7 @@ export function sessionSettings(source: Record<string, unknown>): Partial<DbConn
     ...whole('keepAliveSeconds'),
     ...whole('idleMinutes'),
     ...whole('connectTimeoutSeconds'),
+    ...(source['askPassword'] === true ? { askPassword: true } : {}),
+    ...(source['pgpass'] === true && source['askPassword'] !== true ? { pgpass: true } : {}),
   };
 }

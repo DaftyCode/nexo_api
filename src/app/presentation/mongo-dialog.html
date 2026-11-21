@@ -13,7 +13,16 @@
       </p>
     }
     @if (request().first; as first) {
-      <label class="field">{{ first.label | transloco }}<input [formField]="fields.first" /></label>
+      @if (first.secret) {
+        <label class="field"
+          >{{ first.label | transloco
+          }}<input type="password" [formField]="fields.first" autocomplete="off"
+        /></label>
+      } @else {
+        <label class="field"
+          >{{ first.label | transloco }}<input [formField]="fields.first"
+        /></label>
+      }
     }
     @if (request().second; as second) {
       <label class="field"

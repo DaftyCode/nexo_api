@@ -32,8 +32,13 @@ pub(crate) struct Session {
     pub ignore_startup_errors: bool,
 }
 
+/// The open sessions, and the passwords typed for connections that keep none (DB-25), kept
+/// while a session of theirs is open.
 #[derive(Default)]
-pub(crate) struct Sessions(Mutex<HashMap<String, Arc<Session>>>);
+pub(crate) struct Sessions {
+    open: Mutex<HashMap<String, Arc<Session>>>,
+    asked: Mutex<HashMap<(WorkspaceId, DocumentId), String>>,
+}
 
 /// A session name: letters, digits and `_ . : -`, as the client chooses it (one per editor).
 pub(crate) fn session_name(name: &str) -> Result<&str> {
@@ -50,7 +55,7 @@ pub(crate) fn session_name(name: &str) -> Result<&str> {
 
 impl Sessions {
     pub fn get(&self, name: &str) -> Result<Arc<Session>> {
-        self.0
+        self.open
             .lock()
             .unwrap()
             .get(name)
@@ -59,7 +64,7 @@ impl Sessions {
     }
     /// Registers a session; refuses when too many are open.
     pub fn insert(&self, name: &str, session: Session) -> Result<()> {
-        let mut sessions = self.0.lock().unwrap();
+        let mut sessions = self.open.lock().unwrap();
         if !sessions.contains_key(name) && sessions.len() >= SESSIONS {
             return Err(Error::Validation(format!(
                 "There are already {SESSIONS} database sessions open; close one first"
@@ -68,12 +73,31 @@ impl Sessions {
         sessions.insert(name.to_owned(), Arc::new(session));
         Ok(())
     }
+    /// Takes out a session; the password typed for its connection goes with its last one.
     pub fn remove(&self, name: &str) -> Option<Arc<Session>> {
-        self.0.lock().unwrap().remove(name)
+        let mut sessions = self.open.lock().unwrap();
+        let removed = sessions.remove(name)?;
+        let key = (removed.workspace.clone(), removed.connection.clone());
+        if !sessions
+            .values()
+            .any(|other| other.workspace == key.0 && other.connection == key.1)
+        {
+            self.asked.lock().unwrap().remove(&key);
+        }
+        Some(removed)
+    }
+    /// The password typed for a connection while a session of it is open.
+    pub fn asked(&self, workspace: &WorkspaceId, connection: &DocumentId) -> Option<String> {
+        let key = (workspace.clone(), connection.clone());
+        self.asked.lock().unwrap().get(&key).cloned()
+    }
+    pub fn remember(&self, workspace: &WorkspaceId, connection: &DocumentId, password: String) {
+        let key = (workspace.clone(), connection.clone());
+        self.asked.lock().unwrap().insert(key, password);
     }
     /// Every open session, by name.
     pub fn all(&self) -> Vec<(String, Arc<Session>)> {
-        let sessions = self.0.lock().unwrap();
+        let sessions = self.open.lock().unwrap();
         let mut all: Vec<_> = sessions
             .iter()
             .map(|(name, session)| (name.clone(), session.clone()))

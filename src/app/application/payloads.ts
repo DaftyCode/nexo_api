@@ -722,6 +722,7 @@ export interface DbTestPayload {
   connectionId?: string;
   connection?: Readonly<Record<string, unknown>>;
   variables?: Readonly<Record<string, string>>;
+  password?: string;
 }
 
 export interface DbConnectPayload {
@@ -730,6 +731,7 @@ export interface DbConnectPayload {
   database?: string;
   workspace?: string;
   variables?: Readonly<Record<string, string>>;
+  password?: string;
 }
 
 export interface DbSessionPayload {

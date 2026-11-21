@@ -124,10 +124,26 @@ impl Application {
         };
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
-        let connection = self
+        let mut connection = self
             .resolve_sql_connection(Some(&workspace), &stored.value, &variables, &mut values)
             .await
             .map_err(|error| redact_error(error, &values))?;
+        // A connection that keeps no password: pgpass's, or the one typed for a session of it.
+        let remembered = self.sql_sessions.asked(&workspace, &stored.id);
+        self.supply_password(
+            &crate::datasource::PasswordSource::of(&stored.value),
+            remembered,
+            None,
+            &mut connection,
+            &mut values,
+        )
+        .await
+        .map_err(|error| match error {
+            Error::Database { code, .. } if code == "password" => {
+                invalid("Open a session of the connection and type its password first")
+            }
+            other => redact_error(other, &values),
+        })?;
         // The client tools connect on their own: they cannot take the host's forwarded port.
         if !connection.route.is_direct() {
             return Err(invalid(

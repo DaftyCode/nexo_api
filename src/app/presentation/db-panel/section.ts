@@ -2,6 +2,7 @@ import { computed, DestroyRef, effect, inject, Injectable, signal, untracked } f
 import type { TransferRequest } from './transfer-request';
 import type { StructureRequest } from './structure-draft';
 import type { DatabaseUseCases } from '../../application/database-use-cases';
+import { PasswordPrompts } from './password-prompt';
 import { DATABASES, MODULES } from '../../composition/providers';
 import {
   ConnectionType,
@@ -43,7 +44,9 @@ export class DbSection {
   readonly state = inject(WorkspaceState);
   readonly modules = inject(MODULES);
   private readonly loader = inject(DATABASES);
-  readonly cases = (): Promise<DatabaseUseCases> => this.loader();
+  /** Asks for the password of a connection that keeps none, when a session of it opens. */
+  readonly passwords = new PasswordPrompts();
+  readonly cases: () => Promise<DatabaseUseCases> = this.passwords.asking(this.loader);
   /** The module whose download dialog is open, if any. */
   readonly moduleWait = signal<ModuleWait | undefined>(undefined);
   readonly tree = new DbTreeStore({

@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use nexo_domain::native::Tool;
 
 #[derive(Default)]
-struct Tools {
-    started: Mutex<Vec<(LocatedTool, NativeJob)>>,
+pub(super) struct Tools {
+    pub(super) started: Mutex<Vec<(LocatedTool, NativeJob)>>,
     folders: Mutex<Vec<Option<String>>>,
 }
 
@@ -41,7 +41,7 @@ impl NativeTools for Tools {
     }
 }
 
-fn file(name: &str) -> String {
+pub(super) fn file(name: &str) -> String {
     std::env::temp_dir().join(name).display().to_string()
 }
 
@@ -57,41 +57,27 @@ fn with_connection(fake: &Fake, value: Value) {
     });
 }
 
-fn setup(value: Value) -> (Application, Arc<Tools>) {
+pub(super) fn setup(value: Value) -> (Application, Arc<Tools>) {
     let (application, fake) = application();
     with_connection(&fake, value);
     let tools = Arc::new(Tools::default());
     (application.with_native_tools(tools.clone()), tools)
 }
 
-fn postgres() -> Value {
+pub(super) fn postgres() -> Value {
     json!({"driver": "postgres", "host": "db.test", "port": 5432, "database": "shop", "user": "ana",
            "password": "{{vault:db-password:c1}}", "localClient": "/opt/pg/bin"})
 }
 
-async fn run(application: &Application, operation: Operation, payload: Value) -> Result<Value> {
+pub(super) async fn run(
+    application: &Application,
+    operation: Operation,
+    payload: Value,
+) -> Result<Value> {
     let mut payload = payload;
     payload["workspace"] = json!("local");
     payload["connection"] = json!("c1");
     application.execute(operation, payload).await
-}
-
-#[tokio::test]
-async fn the_client_tools_do_not_go_through_a_route() {
-    let mut value = postgres();
-    value["route"] = json!({"via": "socks5", "host": "proxy.test"});
-    let (application, tools) = setup(value);
-    let options = json!({"options": {"path": file("shop.dump"), "format": "custom"}});
-    let refused = run(&application, Operation::NativeBackup, options)
-        .await
-        .unwrap_err();
-    assert!(
-        refused
-            .to_string()
-            .contains("SOCKS5 proxy or an SSH tunnel"),
-        "{refused}"
-    );
-    assert!(tools.started.lock().unwrap().is_empty());
 }
 
 #[tokio::test]

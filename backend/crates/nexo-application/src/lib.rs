@@ -21,7 +21,7 @@ mod workspaces;
 
 use ports::{
     DataSources, DocumentDatabase, ExecutionGateway, ModuleCatalog, NativeTools, SecretVault,
-    VersionControl, WorkspaceRepository,
+    UserFiles, VersionControl, WorkspaceRepository,
 };
 use std::sync::Arc;
 
@@ -54,6 +54,8 @@ pub struct Application {
     sql_sessions: datasource::Sessions,
     /// The local client tools of the databases; only the desktop app has them.
     native: Option<Arc<dyn NativeTools>>,
+    /// The user's own files a connection may read (pgpass).
+    user_files: Option<Arc<dyn UserFiles>>,
     /// What the monitors are doing now.
     monitors: monitors::Board,
 }
@@ -75,6 +77,7 @@ impl Application {
             datasources: None,
             sql_sessions: datasource::Sessions::default(),
             native: None,
+            user_files: None,
             monitors: monitors::Board::default(),
         }
     }
@@ -86,6 +89,11 @@ impl Application {
     /// Adds the local client tools of the databases (the desktop app).
     pub fn with_native_tools(mut self, native: Arc<dyn NativeTools>) -> Self {
         self.native = Some(native);
+        self
+    }
+    /// Adds the user's own files a connection may read (pgpass).
+    pub fn with_user_files(mut self, files: Arc<dyn UserFiles>) -> Self {
+        self.user_files = Some(files);
         self
     }
     /// Adds the database modules.

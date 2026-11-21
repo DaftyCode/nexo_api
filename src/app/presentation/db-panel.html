@@ -178,6 +178,13 @@
     (closed)="wait.done(false)"
   />
 }
+@if (section.passwords.request(); as asked) {
+  <app-mongo-dialog
+    [request]="asked.request"
+    (confirmed)="asked.answer($event.first)"
+    (cancelled)="asked.answer(undefined)"
+  />
+}
 @if (section.transactions.shown()) {
   <app-db-transactions (closed)="section.transactions.hide()" />
 }

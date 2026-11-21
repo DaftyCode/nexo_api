@@ -82,6 +82,10 @@ export interface DbConnectionValue {
   idleMinutes?: number;
   /** The longest it may take to open. */
   connectTimeoutSeconds?: number;
+  /** It keeps no password: it is asked for when a session of it opens (DB-25). */
+  askPassword?: boolean;
+  /** PostgreSQL: it keeps no password: the user's pgpass file gives it. */
+  pgpass?: boolean;
 }
 
 /** The vault entries Nexo creates for a connection. */

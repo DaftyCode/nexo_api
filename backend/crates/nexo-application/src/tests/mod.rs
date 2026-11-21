@@ -6,6 +6,7 @@ mod indexes;
 mod masking;
 mod mcp_mongo;
 mod native;
+mod native_connections;
 mod schema;
 mod scripts;
 mod vault;

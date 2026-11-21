@@ -12,13 +12,15 @@ payload! {
             connection_id "connectionId": String => "string",
             connection "connection": Map<String, Value> => "Readonly<Record<string, unknown>>",
             variables "variables": BTreeMap<String, String> => "Readonly<Record<string, string>>",
+            password "password": String => "string",
         }
     }
 }
 
 payload! {
     /// `db.connect`: opens a session named `session` on a saved connection; `database`
-    /// opens it on another database of the same server.
+    /// opens it on another database of the same server; `password` is the one typed for a
+    /// connection that asks for it.
     closed DbConnectPayload {
         required {
             connection_id "connectionId": String => "string",
@@ -28,6 +30,7 @@ payload! {
             database "database": String => "string",
             workspace "workspace": String => "string",
             variables "variables": BTreeMap<String, String> => "Readonly<Record<string, string>>",
+            password "password": String => "string",
         }
     }
 }

@@ -2,7 +2,13 @@
 //! connection, under its rules; and opening it again when its connection closed (left unused,
 //! dropped by the server, or its driver stopped). What only reads runs again once it is open;
 //! nothing that writes ever runs again by itself.
-use super::{Session, read, redacted, rules::classify_all, sessions::session_name};
+use super::{
+    Session,
+    passwords::{Source, asking},
+    read, redacted,
+    rules::classify_all,
+    sessions::session_name,
+};
 use crate::{
     Application,
     operations::Operation,
@@ -66,10 +72,24 @@ impl Application {
         if let Some(database) = payload.database.filter(|name| !name.trim().is_empty()) {
             connection.database = Some(database.trim().to_owned());
         }
+        let source = Source::of(&stored.value);
+        let remembered = self.sql_sessions.asked(&workspace, &stored.id);
+        self.supply_password(
+            &source,
+            remembered,
+            payload.password,
+            &mut connection,
+            &mut values,
+        )
+        .await
+        .map_err(|error| asking(redact_error(error, &values), &stored.name))?;
         let dialect = Dialect::parse(&connection.driver);
         let settings = SessionSettings::read(&stored.value, dialect, connection.read_only)?;
+        let asked = matches!(source, Source::Asked)
+            .then(|| connection.password.clone())
+            .flatten();
         let session = Session {
-            workspace,
+            workspace: workspace.clone(),
             connection: stored.id.clone(),
             name: stored.name.clone(),
             driver: connection.driver.clone(),
@@ -96,6 +116,9 @@ impl Application {
         };
         match opened.await {
             Ok((mut server, failed)) => {
+                if let Some(password) = asked {
+                    self.sql_sessions.remember(&workspace, &stored.id, password);
+                }
                 // Startup queries that failed while the connection lets them: said.
                 if let (Some(fields), false) = (server.as_object_mut(), failed.is_empty()) {
                     fields.insert("startup".into(), Value::Array(failed));

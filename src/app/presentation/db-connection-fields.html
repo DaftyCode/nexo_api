@@ -54,8 +54,27 @@
             [attr.placeholder]="passwordStored() ? ('Saved in the vault' | transloco) : ''"
         /></label>
       </div>
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields().askPassword" />{{
+          'Ask for the password each time' | transloco
+        }}</label
+      >
+      @if (settings().driver === 'postgres' && !settings().askPassword) {
+        <label class="check-field"
+          ><input type="checkbox" [formField]="fields().pgpass" />{{
+            'Read the password from the pgpass file' | transloco
+          }}</label
+        >
+      }
       <p class="muted">
-        {{ 'The password goes to the vault.' | transloco }}
+        {{
+          (settings().askPassword
+            ? 'The password typed here only tests the connection: it is asked for when a session opens and kept until its sessions close.'
+            : settings().pgpass
+              ? 'The password comes from the pgpass file of your user, never from a command.'
+              : 'The password goes to the vault.'
+          ) | transloco
+        }}
         {{ 'Variables of the active environment are replaced when connecting.' | transloco }}
       </p>
     }

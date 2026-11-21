@@ -4,6 +4,7 @@ mod classify;
 pub mod compare;
 mod connection;
 mod convert;
+mod pgpass;
 mod scanner;
 mod session;
 mod split;
@@ -14,6 +15,7 @@ mod vocabulary;
 pub use classify::{Classification, StatementKind, classify};
 pub use connection::{ConnectionType, validate_connection};
 pub use convert::{Converted, SourceColumn, convert, create_table, quote};
+pub use pgpass::pgpass_password;
 pub use session::{SessionSettings, keep_alive_query, schema_statement};
 pub use split::{Statement, split, statement_at};
 

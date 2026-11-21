@@ -20,6 +20,7 @@ import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
 import { ModuleDownload } from './module-download';
+import { MongoDialog } from './mongo-dialog';
 import { Splitter } from './splitter';
 import { StudioIcon } from './studio-icon';
 
@@ -52,6 +53,7 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbDashboard,
     DbNative,
     DbCompare,
+    MongoDialog,
   ],
   providers: [DbSection],
   host: {

@@ -60,6 +60,10 @@ export interface DbForm {
   idleMinutes: number;
   /** 0: the driver's own time. */
   connectTimeoutSeconds: number;
+  /** The password is asked for when a session opens; the one typed here only tests. */
+  askPassword: boolean;
+  /** PostgreSQL: the user's pgpass file gives the password. */
+  pgpass: boolean;
   /** A URL pasted to fill the form. */
   url: string;
 }
@@ -97,6 +101,8 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     keepAliveSeconds: 0,
     idleMinutes: 0,
     connectTimeoutSeconds: 0,
+    askPassword: false,
+    pgpass: false,
     url: '',
   };
 }
@@ -132,6 +138,8 @@ export function formOf(name: string, stored: unknown): DbForm {
     keepAliveSeconds: value.keepAliveSeconds ?? 0,
     idleMinutes: value.idleMinutes ?? 0,
     connectTimeoutSeconds: value.connectTimeoutSeconds ?? 0,
+    askPassword: !!value.askPassword,
+    pgpass: !!value.pgpass,
   };
 }
 
@@ -207,7 +215,10 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
     port: port ? (/^\d+$/.test(port) ? Number(port) : port) : undefined,
     database: text(form.database),
     user: text(form.user),
-    password: stored?.password,
+    // A password asked for or read from pgpass is never kept.
+    password: form.askPassword || form.pgpass ? undefined : stored?.password,
+    ...(form.askPassword ? { askPassword: true } : {}),
+    ...(form.pgpass && !form.askPassword ? { pgpass: true } : {}),
     ...(Object.keys(params).length ? { params } : {}),
     tls,
     ...(form.type !== 'development' ? { type: form.type } : {}),

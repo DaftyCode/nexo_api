@@ -10,6 +10,7 @@ mod explain;
 mod history;
 mod journal;
 mod opening;
+mod passwords;
 mod route;
 mod rows;
 mod rules;
@@ -21,6 +22,7 @@ mod tests;
 mod transactions;
 mod transfer;
 
+pub(crate) use passwords::Source as PasswordSource;
 pub(crate) use sessions::Sessions;
 
 use crate::{
@@ -187,13 +189,23 @@ impl Application {
             .await?;
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
-        let answer = match self
-            .resolve_sql_connection(workspace.as_ref(), &value, &variables, &mut values)
-            .await
-        {
-            Ok(connection) => sources.test(connection).await,
-            Err(error) => Err(error),
-        };
+        let source = passwords::Source::of(&value);
+        let answer = async {
+            let mut connection = self
+                .resolve_sql_connection(workspace.as_ref(), &value, &variables, &mut values)
+                .await?;
+            // The password typed in the form, for a connection that keeps none.
+            self.supply_password(
+                &source,
+                None,
+                payload.password,
+                &mut connection,
+                &mut values,
+            )
+            .await?;
+            sources.test(connection).await
+        }
+        .await;
         answer
             .map(|value| redact_secrets(value, &values))
             .map_err(|error| redact_error(error, &values))

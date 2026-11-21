@@ -89,4 +89,21 @@ describe('the parts of the connection form added with DB-25', () => {
       expect(formProblem({ ...form, ...change })).toBe(problem);
     expect(formProblem(form)).toBe('');
   });
+
+  it('keeps no password for a connection that asks for it or reads pgpass', () => {
+    const stored = { driver: 'postgres', password: '{{vault:db-password:c1}}' };
+    const form = { ...emptyDbForm('postgres'), name: 'Shop', password: 'typed' };
+    const asks = valueOf({ ...form, askPassword: true, pgpass: true }, stored);
+    expect(asks).toMatchObject({ askPassword: true });
+    expect(asks).not.toHaveProperty('password');
+    expect(asks).not.toHaveProperty('pgpass');
+    const pgpass = valueOf({ ...form, pgpass: true }, stored);
+    expect(pgpass).toMatchObject({ pgpass: true });
+    expect(pgpass).not.toHaveProperty('password');
+    expect(valueOf(form, stored).password).toBe('{{vault:db-password:c1}}');
+    expect(formOf('Shop', { driver: 'postgres', askPassword: true })).toMatchObject({
+      askPassword: true,
+      pgpass: false,
+    });
+  });
 });

@@ -2,6 +2,7 @@ pub mod clock;
 pub mod git;
 pub mod native;
 pub mod sqlite;
+pub mod user_files;
 pub mod vault;
 pub fn now() -> i64 {
     std::time::SystemTime::now()

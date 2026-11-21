@@ -80,12 +80,34 @@ fn a_sql_connection_keeps_its_secrets_in_the_vault() {
         ),
         ("route", json!({"via": "carrier pigeon"}), "route"),
         ("route", json!("ssh"), "route"),
+        ("askPassword", json!(true), "keeps none"),
     ] {
         let error = with(field, value).unwrap_err().to_string();
         assert!(error.contains(message), "{field}: {error}");
     }
     // A variable of the environment may stand for the port; no server needs a database.
     with("port", json!("{{port}}")).unwrap();
+    // Its password asked for each time, or read from pgpass (PostgreSQL only), never both.
+    let mut asked = base.clone();
+    asked.as_object_mut().unwrap().remove("password");
+    asked["askPassword"] = json!(true);
+    connection(asked.clone()).unwrap();
+    asked["pgpass"] = json!(true);
+    assert!(
+        connection(asked.clone())
+            .unwrap_err()
+            .to_string()
+            .contains("Choose one")
+    );
+    asked["askPassword"] = json!(false);
+    connection(asked.clone()).unwrap();
+    asked["driver"] = json!("mysql");
+    assert!(
+        connection(asked)
+            .unwrap_err()
+            .to_string()
+            .contains("Only PostgreSQL")
+    );
     // It reaches its server directly, through an SSH profile or a SOCKS5 proxy.
     for route in [
         json!({"via": "direct"}),

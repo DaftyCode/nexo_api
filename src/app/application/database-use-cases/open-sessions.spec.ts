@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DatabaseUseCases, DatabasePorts } from '../database-use-cases';
+import { ApiFailure } from '../ports';
 import type { ExecuteArgs, ExecutionPort, PageExitPort } from '../ports';
 import { WorkspaceDocument } from '../../domain/models';
 import { VariableScopes } from '../../domain/variables';
@@ -100,5 +101,37 @@ describe('DatabaseUseCases leaving the page', () => {
       ['db.disconnect', { session: 'editor:t1', workspace: 'w' }],
     ]);
     expect(left.leave()).toBe(false);
+  });
+
+  it('asks for the password a connection needs and opens the session with it', async () => {
+    const calls: unknown[] = [];
+    let passwords = 0;
+    const api: ExecutionPort = {
+      execute: async <T>(...[operation, payload]: ExecuteArgs) => {
+        calls.push(payload);
+        if (operation === 'db.connect' && !(payload as { password?: string }).password)
+          throw new ApiFailure('Type the password', 'database.password', 400, {
+            connection: 'Shop',
+          });
+        if (operation === 'db.tree') throw new ApiFailure('gone', 'database.closed', 400);
+        return { serverVersion: '18' } as T;
+      },
+    };
+    const sessions = new DbOpenSessions(api);
+    // Nobody to ask yet: the engine's answer goes on.
+    await expect(sessions.execute(...connect('s0'))).rejects.toThrow('Type the password');
+    const asked: string[] = [];
+    sessions.askPasswordsWith(async (connection) => {
+      asked.push(connection);
+      return passwords++ ? undefined : 'typed';
+    });
+    await sessions.execute(...connect('s1'));
+    expect(asked).toEqual(['Shop']);
+    expect(calls.at(-1)).toEqual({ connectionId: 'c1', session: 's1', password: 'typed' });
+    expect(sessions.names()).toEqual(['s1']);
+    // Declined: the session does not open; other failures never ask.
+    await expect(sessions.execute(...connect('s2'))).rejects.toThrow('Type the password');
+    await expect(sessions.execute('db.tree', { session: 's1', path: [] })).rejects.toThrow('gone');
+    expect(asked).toHaveLength(2);
   });
 });

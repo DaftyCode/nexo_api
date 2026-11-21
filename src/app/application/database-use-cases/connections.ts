@@ -94,7 +94,8 @@ export class DatabaseConnectionCases {
       ...(value.tls ? { tls: { ...value.tls } } : {}),
       ...(value.route ? { route: { ...value.route } } : {}),
     };
-    const password = typed.password ?? '';
+    // A connection that asks for its password, or reads pgpass, keeps none in the vault.
+    const password = value.askPassword || value.pgpass ? '' : (typed.password ?? '');
     if (password) {
       if (isVaultReference(password)) stored.password = password.trim();
       else {
@@ -154,10 +155,13 @@ export class DatabaseConnectionCases {
     scopes: VariableScopes,
   ): Promise<DbTestReport> {
     const connection = await this.withSecrets(id, value, typed);
+    // The password typed in the form tests a connection that asks for it, and is not kept.
+    const asked = value.askPassword && typed.password ? { password: typed.password } : {};
     return this.api.execute<DbTestReport>('db.test', {
       workspace,
       connection: connection as unknown as Record<string, unknown>,
       variables: connectionVariables(connection, scopes),
+      ...asked,
     });
   }
 

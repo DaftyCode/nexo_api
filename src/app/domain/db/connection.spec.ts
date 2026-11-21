@@ -29,6 +29,15 @@ describe('the session settings of a connection', () => {
       ignoreStartupErrors: true,
       keepAliveSeconds: 30,
     });
+    // A password asked for wins over pgpass.
+    expect(readDbConnection({ driver: 'postgres', askPassword: true, pgpass: true })).toEqual({
+      driver: 'postgres',
+      askPassword: true,
+    });
+    expect(readDbConnection({ driver: 'postgres', pgpass: true })).toEqual({
+      driver: 'postgres',
+      pgpass: true,
+    });
   });
 });
 

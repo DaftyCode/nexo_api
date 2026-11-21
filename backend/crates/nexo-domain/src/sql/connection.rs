@@ -101,6 +101,27 @@ fn validate_route(route: Option<&Value>) -> Result<()> {
     }
 }
 
+/// Where the password comes from when it is not kept in the vault (DB-25): asked for each
+/// time, or read from PostgreSQL's pgpass file; then the connection keeps none.
+fn validate_password_source(value: &Value, driver: &str) -> Result<()> {
+    let asks = value.get("askPassword") == Some(&Value::Bool(true));
+    let pgpass = value.get("pgpass") == Some(&Value::Bool(true));
+    if asks && pgpass {
+        return Err(invalid(
+            "Choose one: ask for the password or read it from pgpass",
+        ));
+    }
+    if pgpass && super::Dialect::parse(driver) != super::Dialect::PostgreSql {
+        return Err(invalid("Only PostgreSQL connections read pgpass"));
+    }
+    if (asks || pgpass) && text(value, "password")?.is_some() {
+        return Err(invalid(
+            "A connection that asks for its password or reads pgpass keeps none",
+        ));
+    }
+    Ok(())
+}
+
 /// Checks a SQL connection before it is saved.
 pub fn validate_connection(value: &Value) -> Result<()> {
     let driver =
@@ -144,6 +165,7 @@ pub fn validate_connection(value: &Value) -> Result<()> {
         }
     }
     validate_route(value.get("route"))?;
+    validate_password_source(value, driver)?;
     // The default schema, startup queries and the times its sessions keep (DB-25).
     super::SessionSettings::read(
         value,

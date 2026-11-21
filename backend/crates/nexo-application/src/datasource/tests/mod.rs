@@ -5,6 +5,7 @@ mod admin;
 mod dashboard;
 mod explain;
 mod opening;
+mod passwords;
 mod route;
 mod rows;
 mod rules;

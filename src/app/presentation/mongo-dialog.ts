@@ -21,6 +21,8 @@ import { CollectionForm, emptyCollectionForm } from '../domain/mongo-write';
 export interface DialogField {
   label: string;
   value: string;
+  /** Typed hidden, as a password. */
+  secret?: boolean;
 }
 
 /** What a dialog asks. Texts are message keys. */

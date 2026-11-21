@@ -72,6 +72,13 @@ pub struct StatementRequest {
     pub timeout: Option<Duration>,
 }
 
+/// The user's own files a database connection may read, only when it says so (DB-25).
+#[async_trait]
+pub trait UserFiles: Send + Sync {
+    /// The text of this user's PostgreSQL password file (`pgpass`), when there is one.
+    async fn pgpass(&self) -> Result<Option<String>>;
+}
+
 #[async_trait]
 pub trait DataSources: Send + Sync {
     /// What the driver of a module says about itself: its capabilities and dialect.
