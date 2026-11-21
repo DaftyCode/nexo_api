@@ -11,8 +11,9 @@ import {
   isVaultReference,
   readDbConnection,
 } from './connection';
-import { Route, StoredRoute, emptyRoute, readRoute, routeProblem, storedRoute } from '../route';
+import { Route, emptyRoute, readRoute, routeProblem } from '../route';
 import { engineProfile } from './engines';
+import { connectionRoute, sessionProblem, sessionValue } from './form/session';
 import { ParsedUrl, formatDbUrl } from './url';
 
 export interface PropertyRow {
@@ -49,6 +50,16 @@ export interface DbForm {
   localClient: string;
   /** How it reaches its server; the proxy's password typed here, blank keeps the vault's. */
   route: Route;
+  /** PostgreSQL's schemas of every session, with commas. */
+  defaultSchema: string;
+  startupQueries: { sql: string }[];
+  ignoreStartupErrors: boolean;
+  /** 0: no keep-alive query. */
+  keepAliveSeconds: number;
+  /** 0: the ten minutes of every connection. */
+  idleMinutes: number;
+  /** 0: the driver's own time. */
+  connectTimeoutSeconds: number;
   /** A URL pasted to fill the form. */
   url: string;
 }
@@ -80,6 +91,12 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     timeoutSeconds: 0,
     localClient: '',
     route: emptyRoute(),
+    defaultSchema: '',
+    startupQueries: [],
+    ignoreStartupErrors: false,
+    keepAliveSeconds: 0,
+    idleMinutes: 0,
+    connectTimeoutSeconds: 0,
     url: '',
   };
 }
@@ -109,6 +126,12 @@ export function formOf(name: string, stored: unknown): DbForm {
     timeoutSeconds: value.timeoutSeconds ?? 0,
     localClient: value.localClient ?? '',
     route: { ...readRoute(value.route), password: '' },
+    defaultSchema: value.defaultSchema ?? '',
+    startupQueries: (value.startupQueries ?? []).map((sql) => ({ sql })),
+    ignoreStartupErrors: !!value.ignoreStartupErrors,
+    keepAliveSeconds: value.keepAliveSeconds ?? 0,
+    idleMinutes: value.idleMinutes ?? 0,
+    connectTimeoutSeconds: value.connectTimeoutSeconds ?? 0,
   };
 }
 
@@ -154,7 +177,7 @@ export function formProblem(form: DbForm): string {
   if (new Set(names).size !== names.length) return 'Each driver setting appears once';
   if (form.route.via === 'socks5' || form.route.via === 'ssh')
     return routeProblem(form.route) ?? '';
-  return '';
+  return sessionProblem(form);
 }
 
 /**
@@ -198,6 +221,8 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
     ...(form.timeoutSeconds > 0 ? { timeoutSeconds: form.timeoutSeconds } : {}),
     localClient: text(form.localClient),
     route: connectionRoute(form.route, stored?.route),
+    defaultSchema: text(form.defaultSchema),
+    ...sessionValue(form),
     ...(stored?.filters?.length ? { filters: stored.filters } : {}),
     ...(stored?.virtualKeys ? { virtualKeys: stored.virtualKeys } : {}),
     ...(stored?.virtualColumns ? { virtualColumns: stored.virtualColumns } : {}),
@@ -205,22 +230,6 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
   for (const key of Object.keys(value) as (keyof DbConnectionValue)[])
     if (value[key] === undefined) delete value[key];
   return value;
-}
-
-/**
- * The route kept from the form: a SOCKS5 proxy or an SSH profile, none when it goes directly.
- * The proxy's password is the saved vault reference while its user stays; one typed in the
- * form goes to the vault (`typedSecrets`).
- */
-function connectionRoute(route: Route, stored?: StoredRoute): StoredRoute | undefined {
-  if (route.via !== 'socks5' && route.via !== 'ssh') return undefined;
-  const kept = storedRoute({ ...route, password: '' });
-  if (kept?.via === 'socks5' && kept.username) {
-    const saved = stored?.via === 'socks5' ? stored.password : undefined;
-    if (saved) kept.password = saved;
-    else delete kept.password;
-  }
-  return kept;
 }
 
 /** The secrets typed in the form, to put in the vault; a vault reference is kept as it is. */

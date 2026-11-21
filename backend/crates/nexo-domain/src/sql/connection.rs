@@ -1,6 +1,6 @@
 //! A saved connection to a SQL database (or any engine of a module):
 //! `{driver, host, port, database, user, password, params, tls, type, folder, color,
-//! readOnly, autoCommit, timeoutSeconds, route}`. Its secrets are never stored: the password,
+//! readOnly, autoCommit, timeoutSeconds, route}` and its session settings (`session.rs`). Its secrets are never stored: the password,
 //! the client key and the password of its proxy are references to the vault (`{{vault:…}}`).
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
@@ -144,6 +144,12 @@ pub fn validate_connection(value: &Value) -> Result<()> {
         }
     }
     validate_route(value.get("route"))?;
+    // The default schema, startup queries and the times its sessions keep (DB-25).
+    super::SessionSettings::read(
+        value,
+        super::Dialect::parse(driver),
+        value.get("readOnly") == Some(&Value::Bool(true)),
+    )?;
     if let Some(kind) = value.get("type")
         && !kind.is_null()
         && serde_json::from_value::<ConnectionType>(kind.clone()).is_err()

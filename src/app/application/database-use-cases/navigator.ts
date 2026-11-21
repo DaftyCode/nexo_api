@@ -38,6 +38,8 @@ export interface DbServerInfo {
   database?: string;
   user?: string;
   tls: boolean;
+  /** Startup queries that failed while the connection lets them (DB-25). */
+  startup?: { sql: string; error: string }[];
 }
 
 /** The session of the navigator of a connection; editors open their own (DB-14). */

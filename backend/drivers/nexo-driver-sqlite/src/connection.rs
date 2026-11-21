@@ -183,7 +183,7 @@ impl SqliteConnection {
                 }
             })
             .map_err(|error| DriverError::internal(error.to_string()))?;
-        let (server, interrupt) = tokio::time::timeout(limits::CONNECT, opening)
+        let (server, interrupt) = tokio::time::timeout(limits::connect(), opening)
             .await
             .map_err(|_| DriverError::timeout("The database file stayed locked"))?
             .map_err(|_| ended())??;

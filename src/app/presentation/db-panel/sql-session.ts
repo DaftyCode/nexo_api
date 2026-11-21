@@ -139,6 +139,12 @@ export abstract class SqlSession {
         { database: this.section.tabs.draft(this.tab).database, manual: !autoCommits(value) },
       );
       this.server.set(server);
+      for (const failed of server.startup ?? [])
+        this.results.note({
+          kind: 'warning',
+          text: 'db.startup.failed',
+          params: { v0: failed.sql, v1: failed.error },
+        });
       this.transaction.set(transaction);
       this.status.set('open');
       return true;

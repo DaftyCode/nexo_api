@@ -9,6 +9,7 @@ mod dashboard;
 mod explain;
 mod history;
 mod journal;
+mod opening;
 mod route;
 mod rows;
 mod rules;
@@ -26,20 +27,20 @@ use crate::{
     Application,
     operations::Operation,
     payloads::{
-        DbCancelPayload, DbConnectPayload, DbCursorPayload, DbDriverPayload, DbExecutePayload,
-        DbObjectPayload, DbSessionPayload, DbSplitPayload, DbTestPayload,
+        DbCancelPayload, DbCursorPayload, DbDriverPayload, DbExecutePayload, DbObjectPayload,
+        DbSessionPayload, DbSplitPayload, DbTestPayload,
     },
     ports::{DataSources, StatementRequest},
     vault::{redact_error, redact_secrets},
 };
 use nexo_domain::{
     Error, Result, WorkspaceId,
-    sql::{ConnectionType, Dialect, StatementKind, classify, split, statement_at},
+    sql::{Dialect, StatementKind, classify, split, statement_at},
 };
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use sessions::{Session, session_name};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 /// Reads a payload already checked against its type.
 fn read<T: DeserializeOwned>(payload: Value) -> Result<T> {
@@ -81,6 +82,21 @@ impl Application {
             Error::Unavailable("Database connections are not available here".into())
         })?;
         let sources = sources.as_ref();
+        // A session whose connection closed is opened again on its next use (DB-25).
+        match self.dispatch(sources, operation, payload.clone()).await {
+            Err(error) if opening::closed(&error) => {
+                self.after_closed(sources, operation, payload, error).await
+            }
+            answer => answer,
+        }
+    }
+
+    async fn dispatch(
+        &self,
+        sources: &dyn DataSources,
+        operation: Operation,
+        payload: Value,
+    ) -> Result<Value> {
         match operation {
             Operation::DbDialect => {
                 let payload: DbDriverPayload = read(payload)?;
@@ -181,52 +197,6 @@ impl Application {
         answer
             .map(|value| redact_secrets(value, &values))
             .map_err(|error| redact_error(error, &values))
-    }
-
-    /// Opens a session on a saved connection; a session of the same name is closed first.
-    async fn connect_session(
-        &self,
-        sources: &dyn DataSources,
-        payload: DbConnectPayload,
-    ) -> Result<Value> {
-        let name = session_name(&payload.session)?;
-        let workspace = WorkspaceId::parse(payload.workspace.unwrap_or_default())?;
-        let stored = self
-            .saved_sql_connection(&workspace, &payload.connection_id)
-            .await?;
-        if self.sql_sessions.remove(name).is_some() {
-            let _ = sources.disconnect(name).await;
-        }
-        let mut values = Vec::new();
-        let variables = payload.variables.unwrap_or_default();
-        let mut connection = self
-            .resolve_sql_connection(Some(&workspace), &stored.value, &variables, &mut values)
-            .await
-            .map_err(|error| redact_error(error, &values))?;
-        if let Some(database) = payload.database.filter(|name| !name.trim().is_empty()) {
-            connection.database = Some(database.trim().to_owned());
-        }
-        let session = Session {
-            workspace,
-            connection: stored.id.clone(),
-            name: stored.name.clone(),
-            driver: connection.driver.clone(),
-            read_only: connection.read_only,
-            kind: ConnectionType::of(&stored.value),
-            timeout: stored.value["timeoutSeconds"]
-                .as_u64()
-                .map(Duration::from_secs),
-            secrets: values.clone(),
-            journal: Default::default(),
-        };
-        self.sql_sessions.insert(name, session)?;
-        match sources.connect(name, connection).await {
-            Ok(server) => Ok(redact_secrets(server, &values)),
-            Err(error) => {
-                self.sql_sessions.remove(name);
-                Err(redact_error(error, &values))
-            }
-        }
     }
 
     /// Runs one statement of a session after its rules, and records it in the history.

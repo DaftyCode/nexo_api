@@ -1,6 +1,7 @@
 //! The sessions open on the databases of the modules, and what the application must know of
 //! each to apply its rules without the client sending the connection again.
 use super::journal::Journal;
+use crate::ports::SqlConnection;
 use nexo_domain::{DocumentId, Error, Result, WorkspaceId, sql::ConnectionType};
 use std::{
     collections::HashMap,
@@ -24,6 +25,11 @@ pub(crate) struct Session {
     pub secrets: Vec<(String, String)>,
     /// Its transaction: the statements since it began.
     pub journal: Mutex<Journal>,
+    /// What it opened with, its secrets included, to open it again when it closed (DB-25).
+    pub opened: SqlConnection,
+    /// What it runs as it opens: its default schema and its startup queries.
+    pub opening: Vec<String>,
+    pub ignore_startup_errors: bool,
 }
 
 #[derive(Default)]

@@ -1,5 +1,6 @@
 mod classify;
 mod convert;
+mod session;
 mod split;
 
 use super::*;

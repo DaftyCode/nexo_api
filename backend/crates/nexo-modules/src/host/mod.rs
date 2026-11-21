@@ -4,7 +4,7 @@ mod files;
 mod idle;
 mod shared;
 
-use crate::connections::{Connection, Destination, SecretHosts};
+use crate::connections::{Connection, ConnectionSettings, Destination};
 use idle::close_idle;
 use nexo_application::ports::{ConnectionRoute, NetworkPolicy};
 use nexo_driver_sdk::{
@@ -91,7 +91,8 @@ fn stopped(module: &str) -> DriverError {
 impl DriverHost {
     /// Must be called inside a Tokio runtime: it starts the task that closes what is idle.
     pub fn new(config: HostConfig, network: Arc<dyn NetworkPolicy>) -> Self {
-        let tick = (config.idle / 4).max(Duration::from_millis(25));
+        // Often enough for keep-alive queries every few seconds.
+        let tick = (config.idle / 4).clamp(Duration::from_millis(25), Duration::from_secs(5));
         let shared = Arc::new(Shared {
             config,
             network,
@@ -114,17 +115,10 @@ impl DriverHost {
         &self,
         module: &str,
         params: ConnectParams,
-        secret_hosts: SecretHosts,
-        route: ConnectionRoute,
+        settings: ConnectionSettings,
     ) -> Result<ServerInfo> {
         let (outcome, _) = self
-            .opening(
-                module,
-                &params,
-                (secret_hosts, route),
-                methods::CONNECT,
-                true,
-            )
+            .opening(module, &params, settings, methods::CONNECT, true)
             .await;
         outcome
     }
@@ -134,10 +128,9 @@ impl DriverHost {
         &self,
         module: &str,
         params: ConnectParams,
-        secret_hosts: SecretHosts,
-        route: ConnectionRoute,
+        settings: ConnectionSettings,
     ) -> (Result<TestReport>, Vec<Destination>) {
-        self.opening(module, &params, (secret_hosts, route), methods::TEST, false)
+        self.opening(module, &params, settings, methods::TEST, false)
             .await
     }
 
@@ -145,7 +138,7 @@ impl DriverHost {
         &self,
         module: &str,
         params: &ConnectParams,
-        (secret_hosts, route): (SecretHosts, ConnectionRoute),
+        settings: ConnectionSettings,
         method: &str,
         keep: bool,
     ) -> (Result<R>, Vec<Destination>) {
@@ -163,12 +156,15 @@ impl DriverHost {
         let connection = Connection {
             module: module.to_owned(),
             generation: process.generation,
-            secret_hosts,
+            secret_hosts: settings.secret_hosts,
             last_used: Instant::now(),
             destinations: Vec::new(),
             held: false,
-            route,
+            route: settings.route,
             forwards: Vec::new(),
+            idle: settings.idle,
+            keep_alive: settings.keep_alive,
+            pinged: Instant::now(),
         };
         if let Err(error) = shared.connections.open(&params.connection, connection) {
             return (Err(error), Vec::new());
@@ -205,10 +201,13 @@ impl DriverHost {
         R: DeserializeOwned,
     {
         let shared = &self.shared;
-        let (module, generation) = shared
-            .connections
-            .touch(connection)
-            .ok_or_else(|| DriverError::invalid("The connection is not open"))?;
+        let (module, generation) = shared.connections.touch(connection).ok_or_else(|| {
+            if shared.connections.was_closed(connection) {
+                DriverError::closed("The connection closed after a while unused")
+            } else {
+                DriverError::invalid("The connection is not open")
+            }
+        })?;
         // Never starts a process here: a new one would not have this connection.
         let process = shared.processes.lock().await.get(&module).cloned();
         let process = process.filter(|process| process.alive() && process.generation == generation);

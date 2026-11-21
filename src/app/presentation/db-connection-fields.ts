@@ -7,7 +7,7 @@ import { EngineProfile } from '../domain/db/engines';
 import { DbForm } from '../domain/db/form';
 import { hasNativeTools } from '../domain/db/native';
 import { CONNECTION_COLORS } from '../domain/mongo';
-import type { EditorPage } from './db-connection-editor';
+import type { EditorPage } from './db-connection-editor/pages';
 
 /** A tab of the connection form: main, TLS, driver settings or general. */
 @Component({

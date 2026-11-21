@@ -23,6 +23,25 @@ pub(crate) struct FakeSources {
     pub(crate) held: Mutex<Vec<(String, bool)>>,
     /// Connections whose server was reached through their route.
     pub(crate) reached: Mutex<Vec<SqlConnection>>,
+    /// The next trees or statements found their connection closed, this many.
+    pub(crate) closing: Mutex<usize>,
+    /// Transaction actions asked for, in order.
+    pub(crate) transactions: Mutex<Vec<String>>,
+}
+impl FakeSources {
+    /// Whether this call finds its connection closed, as a driver would say it.
+    fn closed(&self) -> Result<()> {
+        let mut closing = self.closing.lock().unwrap();
+        if *closing == 0 {
+            return Ok(());
+        }
+        *closing -= 1;
+        Err(Error::Database {
+            code: "closed".into(),
+            message: "The connection closed after a while unused".into(),
+            detail: None,
+        })
+    }
 }
 
 #[async_trait]
@@ -64,6 +83,7 @@ impl DataSources for FakeSources {
         Ok(())
     }
     async fn tree(&self, _: &str, path: Vec<String>) -> Result<Value> {
+        self.closed()?;
         Ok(json!({"nodes": [{"name": path.len().to_string()}]}))
     }
     async fn describe(&self, _: &str, _: Vec<String>) -> Result<Value> {
@@ -78,6 +98,7 @@ impl DataSources for FakeSources {
             .lock()
             .unwrap()
             .push((session.into(), request));
+        self.closed()?;
         if sql.contains("fail") {
             let connected = self.connected.lock().unwrap();
             let password = connected.last().and_then(|(_, c)| c.password.clone());
@@ -101,6 +122,7 @@ impl DataSources for FakeSources {
         Ok(())
     }
     async fn transaction(&self, _: &str, action: &str, _: Option<String>) -> Result<Value> {
+        self.transactions.lock().unwrap().push(action.into());
         Ok(json!({"autoCommit": action != "manual", "open": action == "begin"}))
     }
     async fn write_rows(&self, session: &str, request: Value) -> Result<Value> {

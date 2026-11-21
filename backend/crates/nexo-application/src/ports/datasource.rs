@@ -36,6 +36,12 @@ pub struct SqlConnection {
     /// How it reaches its server: directly, or through a SOCKS5 proxy or an SSH tunnel that
     /// the host opens for the driver (DB-25).
     pub route: super::ConnectionRoute,
+    /// How long it may take to open, when not the drivers' own time.
+    pub connect_timeout: Option<Duration>,
+    /// How long it stays open unused, when shorter than the host's.
+    pub idle: Option<Duration>,
+    /// A trivial query run every so often while it is not used, to keep it alive.
+    pub keep_alive: Option<(Duration, String)>,
 }
 impl std::fmt::Debug for SqlConnection {
     /// Never shows the password or the key, should a connection end up in a log.

@@ -10,6 +10,28 @@ import {
   withFilter,
 } from './connection';
 
+describe('the session settings of a connection', () => {
+  it('reads what is valid and leaves out the rest', () => {
+    expect(
+      readDbConnection({
+        driver: 'postgres',
+        defaultSchema: 'sales',
+        startupQueries: ['SET a = 1', ' ', 7],
+        ignoreStartupErrors: true,
+        keepAliveSeconds: 30,
+        idleMinutes: 2.5,
+        connectTimeoutSeconds: -1,
+      }),
+    ).toEqual({
+      driver: 'postgres',
+      defaultSchema: 'sales',
+      startupQueries: ['SET a = 1'],
+      ignoreStartupErrors: true,
+      keepAliveSeconds: 30,
+    });
+  });
+});
+
 describe('the route of a connection', () => {
   it('keeps a SOCKS5 proxy or an SSH profile and reads anything else as direct', () => {
     expect(

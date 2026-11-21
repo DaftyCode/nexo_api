@@ -172,6 +172,8 @@ export class SqlRunner extends SqlSession {
           ...(confirmation?.names ? { confirmName: confirmation.names } : {}),
         },
       );
+      if (answer.reconnected)
+        this.results.note({ kind: 'warning', text: reconnected(answer.transactionLost) });
       for (const notice of answer.notices ?? [])
         this.results.note({
           kind: notice.severity === 'info' ? 'info' : 'warning',
@@ -282,3 +284,9 @@ export class SqlRunner extends SqlSession {
     }));
   }
 }
+
+/** What a statement that ran on a connection opened again says first. */
+export const reconnected = (lost?: boolean) =>
+  lost
+    ? 'The connection had closed and was opened again; its open transaction was lost.'
+    : 'The connection had closed and was opened again.';

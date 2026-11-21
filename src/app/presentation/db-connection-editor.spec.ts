@@ -112,10 +112,43 @@ describe('the connection editor', () => {
     expect(panel.text()).toContain('Leave the proxy password blank to keep the saved one.');
   });
 
-  it('has no network tab for a database file', async () => {
+  it('has no network tab for a database file, and its startup tab keeps no times', async () => {
     const panel = await startDbPanel({ connection: { driver: 'sqlite', database: '/a.db' } });
     await edit(panel);
     expect(panel.buttons('Network', editor(panel))).toHaveLength(0);
+    await panel.click('Startup', editor(panel));
+    expect(panel.text()).not.toContain('Keep alive every');
+    expect(panel.text()).not.toContain('Default schema');
+    expect(panel.text()).toContain('Close when unused for');
+  });
+
+  it('keeps the startup queries and how the connection is kept', async () => {
+    const panel = await start();
+    await edit(panel);
+    await panel.click('Startup', editor(panel));
+    await panel.fill('Default schema (several, with commas)', 'sales', editor(panel));
+    await panel.click('+ Add startup query', editor(panel));
+    await panel.click('+ Add startup query', editor(panel));
+    await panel.fill('Startup query 1', 'SET a = 1', editor(panel));
+    await panel.click('Remove startup query 2', editor(panel));
+    const lenient = 'Open the session even if a startup query fails';
+    (panel.control(lenient, editor(panel)) as HTMLInputElement).click();
+    await panel.fill('Keep alive every (seconds, 0 for never)', '60', editor(panel));
+    await panel.fill('Close when unused for (minutes, 0 for ten)', '3', editor(panel));
+    await panel.fill('Time to connect (seconds, 0 for the driver’s)', '20', editor(panel));
+    await panel.click(/^Save$/, editor(panel));
+    const saved = panel.api.documentsStore.find((document) => document.id === 'c1');
+    expect(saved?.value).toMatchObject({
+      defaultSchema: 'sales',
+      startupQueries: ['SET a = 1'],
+      ignoreStartupErrors: true,
+      keepAliveSeconds: 60,
+      idleMinutes: 3,
+      connectTimeoutSeconds: 20,
+    });
+    await panel.fill('Keep alive every (seconds, 0 for never)', '2', editor(panel));
+    await panel.click('Test connection', editor(panel));
+    expect(panel.text()).toContain('Keep alive is from 5 to 600 seconds, or 0 for none');
   });
 
   it('forgets the secrets of a new connection tested but never saved', async () => {

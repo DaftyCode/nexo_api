@@ -1,6 +1,9 @@
 //! The loop of a driver: it reads requests, hands them to the [`Driver`] and writes its
 //! answers, several at a time.
-use crate::{Driver, DriverError, Handler, HostLink, Peer, Result, methods, protocol::TreeNodes};
+use crate::{
+    Driver, DriverError, Handler, HostLink, Peer, Result, limits, methods,
+    protocol::{ConnectParams, TreeNodes},
+};
 use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -27,8 +30,16 @@ impl<D: Driver> Handler for Dispatcher<D> {
         let (driver, host) = (&self.driver, &self.host);
         match method {
             methods::HELLO => write(driver.hello()),
-            methods::CONNECT => write(driver.connect(host, read(params)?).await?),
-            methods::TEST => write(driver.test(host, read(params)?).await?),
+            methods::CONNECT => {
+                let params: ConnectParams = read(params)?;
+                let limit = params.connect_timeout_ms;
+                write(limits::opening(limit, driver.connect(host, params)).await?)
+            }
+            methods::TEST => {
+                let params: ConnectParams = read(params)?;
+                let limit = params.connect_timeout_ms;
+                write(limits::opening(limit, driver.test(host, params)).await?)
+            }
             methods::DISCONNECT => {
                 let params: crate::protocol::ConnectionParams = read(params)?;
                 write(driver.disconnect(&params.connection).await?)

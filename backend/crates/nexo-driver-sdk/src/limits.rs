@@ -13,6 +13,37 @@ pub const VALUE_BYTES: usize = 1024 * 1024;
 pub const STATEMENT: Duration = Duration::from_secs(60);
 /// How long to wait to open a connection.
 pub const CONNECT: Duration = Duration::from_secs(10);
+
+tokio::task_local! {
+    /// The time of the connection being opened, when it has its own.
+    static CONNECTING: Duration;
+}
+
+/// How long to wait to open a connection: its own time while it opens (the host sends it in
+/// `connect`), or [`CONNECT`]. Drivers wait this long for each step of opening one.
+pub fn connect() -> Duration {
+    CONNECTING.try_with(|limit| *limit).unwrap_or(CONNECT)
+}
+
+/// Opens a connection within its own time, when it has one: past it, the opening stops and
+/// nothing of it is kept.
+pub async fn opening<T>(
+    limit_ms: Option<u64>,
+    open: impl Future<Output = crate::Result<T>>,
+) -> crate::Result<T> {
+    let Some(limit) = limit_ms.map(Duration::from_millis) else {
+        return open.await;
+    };
+    CONNECTING
+        .scope(limit, tokio::time::timeout(limit, open))
+        .await
+        .map_err(|_| {
+            crate::DriverError::timeout(format!(
+                "The connection did not open within {} s",
+                limit.as_secs().max(1)
+            ))
+        })?
+}
 /// Connections a driver keeps open at once.
 pub const CONNECTIONS: usize = 16;
 /// Cursors a driver keeps open at once; the oldest is closed for a new one.
@@ -23,4 +54,28 @@ pub const IDLE: Duration = Duration::from_secs(600);
 /// The rows of a page for what a request asked.
 pub fn page_rows(requested: Option<u32>) -> usize {
     requested.unwrap_or(PAGE_ROWS).clamp(1, MAX_PAGE_ROWS) as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn a_connection_opens_within_its_own_time_or_the_drivers() {
+        assert_eq!(connect(), CONNECT);
+        let seen = opening(Some(2_000), async { Ok(connect()) }).await.unwrap();
+        assert_eq!(seen, Duration::from_secs(2));
+        let slow = opening(Some(30), async {
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            Ok(())
+        })
+        .await
+        .unwrap_err();
+        assert_eq!(slow.code, crate::ErrorCode::Timeout);
+        assert_eq!(slow.message, "The connection did not open within 1 s");
+        assert_eq!(
+            opening(None, async { Ok(connect()) }).await.unwrap(),
+            CONNECT
+        );
+    }
 }

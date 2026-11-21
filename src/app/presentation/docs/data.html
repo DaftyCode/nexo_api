@@ -50,6 +50,12 @@
     </li>
     <li>
       {{
+        'The Startup tab runs queries in every session as it opens (one statement each; a read-only connection only reads or sets the session), sets PostgreSQL’s default schema, keeps the connection alive with a trivial query, closes it sooner when unused and limits how long it may take to open. A session that closed opens again on its next use: what only reads runs again, what writes never does.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'In the navigator, a click expands a row and a double click opens a table on its data. F5 refreshes a node, Shift+F10 opens its actions and Ctrl+H searches objects, data and saved scripts.'
           | transloco
       }}

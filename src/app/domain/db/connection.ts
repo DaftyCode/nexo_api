@@ -5,6 +5,7 @@
  */
 import { isVaultReference } from '../mongo';
 import { StoredRoute, readRoute, storedRoute } from '../route';
+import { sessionSettings } from './connection/session';
 
 /** How careful Nexo is with a connection, as DBeaver's connection types. */
 export type ConnectionType = 'development' | 'test' | 'production';
@@ -69,6 +70,18 @@ export interface DbConnectionValue {
   virtualColumns?: Record<string, { name: string; expression: string }[]>;
   /** How it reaches its server: a SOCKS5 proxy or an SSH profile (DB-25); none: directly. */
   route?: StoredRoute;
+  /** PostgreSQL's `search_path` of every session: one or several schemas, with commas. */
+  defaultSchema?: string;
+  /** Run in every session as it opens, one statement each. */
+  startupQueries?: string[];
+  /** A startup query that fails is said, and the session still opens. */
+  ignoreStartupErrors?: boolean;
+  /** A trivial query every so many seconds while it is not used. */
+  keepAliveSeconds?: number;
+  /** Closed after so many minutes unused, under the ten of every connection. */
+  idleMinutes?: number;
+  /** The longest it may take to open. */
+  connectTimeoutSeconds?: number;
 }
 
 /** The vault entries Nexo creates for a connection. */
@@ -187,6 +200,7 @@ export function readDbConnection(value: unknown): DbConnectionValue {
     ...(Object.keys(keys).length ? { virtualKeys: keys } : {}),
     ...(Object.keys(computed).length ? { virtualColumns: computed } : {}),
     ...(route ? { route } : {}),
+    ...sessionSettings(source),
   };
 }
 

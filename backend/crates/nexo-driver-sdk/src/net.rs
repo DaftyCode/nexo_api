@@ -14,7 +14,7 @@ pub async fn connect(
     let addresses = link.resolve(connection, host, port).await?;
     let mut last = None;
     for address in addresses {
-        match tokio::time::timeout(limits::CONNECT, TcpStream::connect(address)).await {
+        match tokio::time::timeout(limits::connect(), TcpStream::connect(address)).await {
             Ok(Ok(stream)) => {
                 // Statements and their answers are small messages: do not wait to group them.
                 let _ = stream.set_nodelay(true);

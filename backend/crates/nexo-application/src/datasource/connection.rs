@@ -6,7 +6,9 @@ use crate::{
     vault::{replace_vault, vault_references},
 };
 use nexo_domain::{
-    Document, DocumentId, DocumentKind, Error, Result, WorkspaceId, hosts::AllowedHosts,
+    Document, DocumentId, DocumentKind, Error, Result, WorkspaceId,
+    hosts::AllowedHosts,
+    sql::{Dialect, SessionSettings, keep_alive_query},
 };
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -87,8 +89,12 @@ fn sql_connection(value: &Value) -> Result<SqlConnection> {
                 .collect()
         })
         .unwrap_or_default();
+    let driver = text(value, "driver").unwrap_or_default();
+    let read_only = value.get("readOnly") == Some(&Value::Bool(true));
+    let dialect = Dialect::parse(&driver);
+    let settings = SessionSettings::read(value, dialect, read_only)?;
     Ok(SqlConnection {
-        driver: text(value, "driver").unwrap_or_default(),
+        driver,
         host: text(value, "host"),
         port,
         database: text(value, "database"),
@@ -101,12 +107,17 @@ fn sql_connection(value: &Value) -> Result<SqlConnection> {
             key_pem: text(&tls, "keyPem"),
         },
         options,
-        read_only: value.get("readOnly") == Some(&Value::Bool(true)),
+        read_only,
         secret_hosts: Vec::new(),
         route: ConnectionRoute {
             route: value.get("route").cloned().unwrap_or(Value::Null),
             profiles: Value::Null,
         },
+        connect_timeout: settings.connect_timeout,
+        idle: settings.idle,
+        keep_alive: settings
+            .keep_alive
+            .map(|every| (every, keep_alive_query(dialect).to_string())),
     })
 }
 

@@ -52,17 +52,7 @@
           [attr.aria-current]="page() === p ? 'page' : null"
           (click)="page.set(p)"
         >
-          {{
-            p === 'main'
-              ? ('Main' | transloco)
-              : p === 'tls'
-                ? ('TLS' | transloco)
-                : p === 'network'
-                  ? ('Network' | transloco)
-                  : p === 'properties'
-                    ? ('Driver settings' | transloco)
-                    : ('General' | transloco)
-          }}
+          {{ pageLabels[p] | transloco }}
         </button>
       }
     </nav>
@@ -71,9 +61,11 @@
         <app-db-connection-network
           [fields]="fields"
           [proxyStored]="proxyStored()"
-          [tunnel]="tunnel()"
-          (testRoute)="testRoute()"
+          [tunnel]="checks.tunnel()"
+          (testRoute)="checks.testRoute()"
         />
+      } @else if (page() === 'startup') {
+        <app-db-connection-startup [fields]="fields" [profile]="profile()" />
       } @else {
         <app-db-connection-fields
           [page]="page()"
@@ -95,7 +87,7 @@
     @if (notice()) {
       <p class="muted" role="status">{{ notice() | transloco }}</p>
     }
-    @if (report(); as answer) {
+    @if (checks.report(); as answer) {
       <section class="db-report" role="status" [attr.aria-label]="'Connection test' | transloco">
         <strong>{{ 'Connected' | transloco }}</strong>
         <dl>
@@ -116,11 +108,11 @@
         </dl>
       </section>
     }
-    @if (servers().length) {
+    @if (checks.servers().length) {
       <section class="db-servers" [attr.aria-label]="'Servers' | transloco">
         <h3>{{ 'Servers' | transloco }}</h3>
         <ul>
-          @for (server of servers(); track server.host + ':' + server.port) {
+          @for (server of checks.servers(); track server.host + ':' + server.port) {
             <li [class.db-server-blocked]="!server.allowed">
               <code>{{ server.host }}:{{ server.port }}</code>
               @if (server.allowed) {

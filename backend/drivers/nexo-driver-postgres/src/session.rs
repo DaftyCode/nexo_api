@@ -43,7 +43,7 @@ fn config(params: &ConnectParams, database: Option<&str>) -> Result<Config> {
         .user(params.user.as_deref().unwrap_or("postgres"))
         .application_name("Nexo")
         .channel_binding(ChannelBinding::Disable)
-        .connect_timeout(limits::CONNECT);
+        .connect_timeout(limits::connect());
     if let Some(password) = &params.password {
         config.password(password.as_bytes());
     }
@@ -150,7 +150,7 @@ pub(crate) async fn open(
             Some(tls) => handshake(&config, stream, tls.clone(), &notices).await,
         }
     };
-    let client = tokio::time::timeout(limits::CONNECT, opening)
+    let client = tokio::time::timeout(limits::connect(), opening)
         .await
         .map_err(|_| DriverError::timeout(format!("{host} did not answer in time")))?
         .map_err(|error| database(error, None))?;

@@ -26,7 +26,7 @@ mod resolve;
 mod store;
 
 pub use catalog::{Manifest, ModuleEntry, executable_name};
-pub use connections::Destination;
+pub use connections::{ConnectionSettings, Destination};
 pub use host::{DriverHost, Executables, Folder, HostConfig, LogSink, NoModules};
 pub use modules::Modules;
 pub use store::{ModuleStore, StoreConfig};

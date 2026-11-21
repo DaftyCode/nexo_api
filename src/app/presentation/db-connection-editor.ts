@@ -10,13 +10,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField, form, max, min } from '@angular/forms/signals';
-import {
-  testedServers,
-  type DbDestination,
-  type DbRouteReport,
-  type DbTestReport,
-} from '../application/database-use-cases';
-import { ApiFailure, failureCode } from '../application/ports';
+import { failureCode } from '../application/ports';
 import { readDbConnection } from '../domain/db/connection';
 import { engineProfile } from '../domain/db/engines';
 import {
@@ -33,6 +27,9 @@ import { parseDbUrl } from '../domain/db/url';
 import { ModuleSummary } from '../domain/modules';
 import { DbConnectionFields } from './db-connection-fields';
 import { DbConnectionNetwork } from './db-connection-network';
+import { DbConnectionStartup } from './db-connection-startup';
+import { ConnectionChecks } from './db-connection-editor/checks';
+import { EditorPage, PAGE_LABELS, editorPages } from './db-connection-editor/pages';
 import { DbEngineGallery } from './db-engine-gallery';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -40,7 +37,7 @@ import { ModuleDownload } from './module-download';
 import { PanelTask } from './panel-task';
 import { named } from './workspace-state';
 
-export type EditorPage = 'main' | 'tls' | 'network' | 'properties' | 'general';
+export type { EditorPage } from './db-connection-editor/pages';
 
 /**
  * Creating or editing a connection of a database module: the engine first (its module is
@@ -54,6 +51,7 @@ export type EditorPage = 'main' | 'tls' | 'network' | 'properties' | 'general';
     DbEngineGallery,
     DbConnectionFields,
     DbConnectionNetwork,
+    DbConnectionStartup,
     ModuleDownload,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -73,11 +71,6 @@ export class DbConnectionEditor {
     min(path.timeoutSeconds, 0);
     max(path.timeoutSeconds, 3600);
   });
-  protected readonly report = signal<DbTestReport | undefined>(undefined);
-  /** What the last «Test the tunnel» said. */
-  protected readonly tunnel = signal<DbRouteReport | undefined>(undefined);
-  /** Each server the last test asked to reach, and whether the egress policy let it. */
-  protected readonly servers = signal<readonly DbDestination[]>([]);
   protected readonly notice = signal('');
   protected readonly download = signal<ModuleSummary | undefined>(undefined);
   /** The id the connection is saved with; its vault entries are named after it. */
@@ -90,14 +83,8 @@ export class DbConnectionEditor {
   protected readonly document = computed(() => this.section.connection(this.tab().connection));
   private readonly stored = computed(() => readDbConnection(this.document()?.value));
   protected readonly profile = computed(() => engineProfile(this.model().driver));
-  /** The tabs of the form; an engine without TLS or network (a file) has neither tab. */
-  protected readonly pages = computed(() =>
-    (['main', 'tls', 'network', 'properties', 'general'] as const).filter(
-      (page) =>
-        (page !== 'tls' || this.profile().tlsModes.length > 0) &&
-        (page !== 'network' || !this.profile().file),
-    ),
-  );
+  protected readonly pages = computed(() => editorPages(this.profile()));
+  protected readonly pageLabels = PAGE_LABELS;
   /** How a URL of the engine looks, under the field where one is pasted. */
   protected readonly urlExample = computed(() =>
     this.profile().file
@@ -111,6 +98,18 @@ export class DbConnectionEditor {
   protected readonly proxyStored = computed(() => {
     const route = this.stored().route;
     return route?.via === 'socks5' && !!route.password;
+  });
+  /** «Test connection» and «Test the tunnel» of the form as it is written. */
+  protected readonly checks = new ConnectionChecks({
+    section: this.section,
+    task: this.task,
+    model: this.model,
+    stored: this.stored,
+    saved: () => !!this.document(),
+    id: () => this.id,
+    defaultPort: () => this.profile().defaultPort || undefined,
+    problem: this.problem,
+    typedUnsaved: () => (this.unsavedSecrets = true),
   });
 
   constructor() {
@@ -131,8 +130,7 @@ export class DbConnectionEditor {
 
   private open(tab: DbTab) {
     const document = this.section.connection(tab.connection);
-    this.report.set(undefined);
-    this.tunnel.set(undefined);
+    this.checks.clear();
     this.notice.set('');
     if (document) {
       this.id = document.id;
@@ -186,54 +184,8 @@ export class DbConnectionEditor {
   }
 
   protected test() {
-    this.report.set(undefined);
-    this.servers.set([]);
     this.notice.set('');
-    void this.task.run(async () => {
-      this.check();
-      const model = this.model();
-      if (!(await this.section.ensure(model.driver))) return;
-      const cases = await this.section.cases();
-      const typed = typedSecrets(model);
-      if (!this.document() && (typed.password || typed.keyPem || typed.proxyPassword))
-        this.unsavedSecrets = true;
-      try {
-        const report = await cases.connections.test(
-          this.state.workspaceId(),
-          this.id,
-          valueOf(model, this.stored()),
-          typed,
-          this.state.scopes(),
-        );
-        this.report.set(report);
-        this.servers.set(report.servers ?? []);
-      } catch (error) {
-        this.servers.set(testedServers((error as ApiFailure).detail));
-        throw error;
-      }
-    });
-  }
-
-  /** «Test the tunnel»: the server reached through the proxy or the SSH tunnel, no session. */
-  protected testRoute() {
-    this.tunnel.set(undefined);
-    void this.task.run(async () => {
-      this.check();
-      const model = this.model();
-      const cases = await this.section.cases();
-      const typed = typedSecrets(model);
-      if (!this.document() && typed.proxyPassword) this.unsavedSecrets = true;
-      this.tunnel.set(
-        await cases.connections.testRoute(
-          this.state.workspaceId(),
-          this.id,
-          valueOf(model, this.stored()),
-          typed,
-          this.state.scopes(),
-          this.profile().defaultPort || undefined,
-        ),
-      );
-    });
+    this.checks.test();
   }
 
   protected save() {

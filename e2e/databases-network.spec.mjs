@@ -1,7 +1,8 @@
 // End-to-end test of the «Network» tab of a database connection (DB-25) against the
 // PostgreSQL fixture (tools/sql-fixture.sh): the server's name is known only to a local
 // SOCKS5 proxy, which asks for a password; the tunnel is tested on its own, then the
-// connection, and the saved connection is browsed through the proxy.
+// connection; its sessions get a startup query, and the saved connection is browsed
+// through the proxy.
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
 import { socksProxy } from '../tests/contract/socks-fixture.mjs';
@@ -58,8 +59,19 @@ test('a connection goes through a SOCKS5 proxy that alone knows its server', asy
     expect(proxy.asked).toContain('db.socks:5432');
     expect(proxy.asked).toContain('user ana');
 
+    // Every session runs its startup queries as it opens.
+    await settings.getByRole('button', { name: 'Startup' }).click();
+    await page.getByLabel('Default schema (several, with commas)').fill('public');
+    await page.getByRole('button', { name: '+ Add startup query' }).click();
+    await page
+      .getByRole('textbox', { name: 'Startup query 1' })
+      .fill("SET application_name = 'nexo-e2e'");
+    await page.getByLabel('Keep alive every (seconds, 0 for never)').fill('30');
+    expect(await violations(page)).toEqual([]);
+
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('.toast').filter({ hasText: 'Connection saved' })).toBeVisible();
+    await settings.getByRole('button', { name: 'Network' }).click();
     await expect(
       page.getByText('Leave the proxy password blank to keep the saved one.'),
     ).toBeVisible();

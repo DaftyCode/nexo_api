@@ -5,6 +5,7 @@ pub mod compare;
 mod connection;
 mod convert;
 mod scanner;
+mod session;
 mod split;
 #[cfg(test)]
 mod tests;
@@ -13,6 +14,7 @@ mod vocabulary;
 pub use classify::{Classification, StatementKind, classify};
 pub use connection::{ConnectionType, validate_connection};
 pub use convert::{Converted, SourceColumn, convert, create_table, quote};
+pub use session::{SessionSettings, keep_alive_query, schema_statement};
 pub use split::{Statement, split, statement_at};
 
 /// The SQL dialect of a script: how it quotes, comments and ends statements.

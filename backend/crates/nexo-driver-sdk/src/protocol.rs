@@ -120,6 +120,9 @@ pub struct ConnectParams {
     pub options: BTreeMap<String, String>,
     /// The server should refuse writes in this session, where it can.
     pub read_only: bool,
+    /// How long the connection may take to open, when not [`crate::limits::CONNECT`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connect_timeout_ms: Option<u64>,
 }
 impl std::fmt::Debug for ConnectParams {
     /// Never shows the password or the key, should a connection end up in a log.

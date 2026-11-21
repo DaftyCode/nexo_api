@@ -82,7 +82,7 @@ impl Opener {
         let attempt = |options: Option<SslOpts>| {
             let opts = base.clone().ssl_opts(options);
             async move {
-                tokio::time::timeout(limits::CONNECT, Conn::new(opts))
+                tokio::time::timeout(limits::connect(), Conn::new(opts))
                     .await
                     .map_err(|_| DriverError::timeout(format!("{host} did not answer in time")))?
                     .map_err(|error| database(error, None))

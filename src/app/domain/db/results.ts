@@ -25,6 +25,10 @@ export interface ExecuteAnswer {
   elapsedMs: number;
   /** The results after the first one of a batch or procedure, read whole up to a limit. */
   results?: FurtherResult[];
+  /** Its connection had closed and was opened again first (DB-25). */
+  reconnected?: boolean;
+  /** The transaction that was open was lost with the old connection. */
+  transactionLost?: boolean;
 }
 
 /** A further result of a batch: its rows, and whether there were more than these. */

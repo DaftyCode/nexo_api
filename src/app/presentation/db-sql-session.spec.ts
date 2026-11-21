@@ -88,4 +88,33 @@ describe('the session of a SQL tab', () => {
     });
     await panel.section().runner('s1').cancel();
   });
+
+  it('says the startup queries that failed and a connection that opened again', async () => {
+    let answer: Record<string, unknown> = { reconnected: true };
+    const panel = await startDbPanel({
+      tabs: [{ id: 's1', kind: 'sql', title: 'SQL' }],
+      responses: {
+        'db.split': split,
+        'db.connect': () => ({
+          serverVersion: '18',
+          tls: false,
+          startup: [{ sql: 'SET x = 1', error: 'unknown setting' }],
+        }),
+        'db.execute': () => ({
+          columns: [{ name: 'n', typeName: 'int4', kind: 'integer' }],
+          rows: [[1]],
+          elapsedMs: 1,
+          ...answer,
+        }),
+      },
+    });
+    await run(panel, 'select 1');
+    await panel.click(/^Messages/);
+    expect(panel.text()).toContain('The startup query «SET x = 1» failed: unknown setting');
+    expect(panel.text()).toContain('The connection had closed and was opened again.');
+    answer = { reconnected: true, transactionLost: true };
+    await run(panel, 'select 2');
+    await panel.click(/^Messages/);
+    expect(panel.text()).toContain('its open transaction was lost');
+  });
 });

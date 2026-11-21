@@ -17,7 +17,7 @@ async fn runs_a_statement_by_pages_and_cancels_another() {
     let hello = host.hello("test").await.unwrap();
     assert_eq!(hello.driver.id, "test");
     let server = host
-        .connect("test", connection("main"), Vec::new(), Default::default())
+        .connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     assert_eq!(server.server_version, "1.0");
@@ -96,7 +96,7 @@ async fn runs_a_statement_by_pages_and_cancels_another() {
 async fn a_driver_that_dies_fails_its_requests_and_starts_again() {
     let fixture = fixture();
     let host = &fixture.host;
-    host.connect("test", connection("main"), Vec::new(), Default::default())
+    host.connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     let dying = host
@@ -116,7 +116,7 @@ async fn a_driver_that_dies_fails_its_requests_and_starts_again() {
     assert!(after.message.contains("Connect again"), "{}", after.message);
     assert!(host.running().await.is_empty());
     // The next connection starts the driver again, with the same name free.
-    host.connect("test", connection("main"), Vec::new(), Default::default())
+    host.connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     let count: ExecuteResult = host
@@ -157,11 +157,11 @@ async fn refuses_what_is_not_a_module_or_an_open_connection() {
         .await;
     assert_eq!(unknown.unwrap_err().code, ErrorCode::Invalid);
 
-    host.connect("test", connection("main"), Vec::new(), Default::default())
+    host.connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     let twice = host
-        .connect("test", connection("main"), Vec::new(), Default::default())
+        .connect("test", connection("main"), Default::default())
         .await
         .unwrap_err();
     assert_eq!(twice.code, ErrorCode::Invalid);
@@ -171,13 +171,13 @@ async fn refuses_what_is_not_a_module_or_an_open_connection() {
     let mut wrong = connection("main");
     wrong.password = Some("wrong".into());
     assert_eq!(
-        host.connect("test", wrong, Vec::new(), Default::default())
+        host.connect("test", wrong, Default::default())
             .await
             .unwrap_err()
             .code,
         ErrorCode::Auth
     );
-    host.connect("test", connection("main"), Vec::new(), Default::default())
+    host.connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     host.shutdown().await;
@@ -187,7 +187,7 @@ async fn refuses_what_is_not_a_module_or_an_open_connection() {
 async fn stops_waiting_for_a_driver_that_does_not_answer() {
     let fixture = fixture_with(|config| config.request_timeout = Duration::from_millis(300));
     let host = &fixture.host;
-    host.connect("test", connection("main"), Vec::new(), Default::default())
+    host.connect("test", connection("main"), Default::default())
         .await
         .unwrap();
     let late = host

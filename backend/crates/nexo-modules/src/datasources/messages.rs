@@ -1,4 +1,5 @@
 //! How the application's requests and the drivers' answers and errors translate.
+use crate::connections::ConnectionSettings;
 use nexo_application::ports::SqlConnection;
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{
@@ -49,5 +50,18 @@ pub(super) fn connect_params(session: &str, connection: SqlConnection) -> Result
         },
         options: connection.options,
         read_only: connection.read_only,
+        connect_timeout_ms: connection
+            .connect_timeout
+            .map(|limit| limit.as_millis() as u64),
     })
+}
+
+/// What the host keeps with the connection, besides what its driver is told.
+pub(super) fn settings(connection: &SqlConnection) -> ConnectionSettings {
+    ConnectionSettings {
+        secret_hosts: connection.secret_hosts.clone(),
+        route: connection.route.clone(),
+        idle: connection.idle,
+        keep_alive: connection.keep_alive.clone(),
+    }
 }
