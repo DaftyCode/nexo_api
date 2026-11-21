@@ -192,6 +192,13 @@ impl ExecutionGateway for Engine {
             // The application schedules the monitors and runs them through `run`.
             | Operation::MonitorStatus
             | Operation::MonitorRun
+            // The application runs the local client tools through its adapter.
+            | Operation::NativeLocate
+            | Operation::NativeBackup
+            | Operation::NativeRestore
+            | Operation::NativeScript
+            | Operation::NativeStatus
+            | Operation::NativeCancel
             => Err(Error::Validation(format!(
                 "{operation} is not an operation of the execution engine"
             ))),

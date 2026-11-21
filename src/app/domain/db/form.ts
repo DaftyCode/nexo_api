@@ -44,6 +44,8 @@ export interface DbForm {
   sharedSession: boolean;
   /** 0: no limit. */
   timeoutSeconds: number;
+  /** The folder of the client tools; empty: found where they usually are. */
+  localClient: string;
   /** A URL pasted to fill the form. */
   url: string;
 }
@@ -73,6 +75,7 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     smartCommit: false,
     sharedSession: false,
     timeoutSeconds: 0,
+    localClient: '',
     url: '',
   };
 }
@@ -100,6 +103,7 @@ export function formOf(name: string, stored: unknown): DbForm {
     smartCommit: !!value.smartCommit,
     sharedSession: !!value.sharedSession,
     timeoutSeconds: value.timeoutSeconds ?? 0,
+    localClient: value.localClient ?? '',
   };
 }
 
@@ -185,6 +189,7 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
     ...(form.smartCommit ? { smartCommit: true } : {}),
     ...(form.sharedSession ? { sharedSession: true } : {}),
     ...(form.timeoutSeconds > 0 ? { timeoutSeconds: form.timeoutSeconds } : {}),
+    localClient: text(form.localClient),
     ...(stored?.filters?.length ? { filters: stored.filters } : {}),
     ...(stored?.virtualKeys ? { virtualKeys: stored.virtualKeys } : {}),
     ...(stored?.virtualColumns ? { virtualColumns: stored.virtualColumns } : {}),

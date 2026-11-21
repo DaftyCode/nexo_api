@@ -155,6 +155,17 @@ export interface DatabaseFilesPort {
   /** A file to open, or where to make a new one; `undefined` when the person cancels. */
   choose(create: boolean): Promise<string | undefined>;
 }
+/**
+ * The files and folders of the local client tools (DB-23), chosen in the desktop app's
+ * dialogs: the folder of the tools, where a backup goes and the file a restore or script
+ * reads. The web version has none, and the backend refuses those runs there.
+ */
+export interface NativeFilesPort {
+  readonly available: boolean;
+  /** A folder, where to save (with `name` proposed) or a file to open; `undefined` when the
+   * person cancels. */
+  choose(purpose: 'folder' | 'save' | 'open', name?: string): Promise<string | undefined>;
+}
 /** Prints a report shown on screen, where the system lets the person save it as PDF. */
 export interface PrintPort {
   print(sheet: HTMLElement): Promise<void>;

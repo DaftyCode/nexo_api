@@ -16,9 +16,10 @@ import { ModulesUseCases } from '../application/modules-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
 import { BrowserPageExit } from '../infrastructure/browser-page-exit';
 import { BrowserNotifications } from '../infrastructure/browser-notifications';
-import type { DatabaseFilesPort, TransferFilesPort } from '../application/ports';
+import type { DatabaseFilesPort, NativeFilesPort, TransferFilesPort } from '../application/ports';
 import { transferFiles } from '../infrastructure/transfer-files';
 import { databaseFiles } from '../infrastructure/database-files';
+import { nativeFiles } from '../infrastructure/native-files';
 export const WORKSPACE = new InjectionToken<WorkspaceUseCases>('Nexo workspace use cases');
 export const APPEARANCE = new InjectionToken<AppearanceUseCases>('Nexo appearance use cases');
 export const INTEGRATION = new InjectionToken<IntegrationUseCases>('Nexo integration use cases');
@@ -37,6 +38,8 @@ export const DATABASES = new InjectionToken<DatabaseLoader>('Nexo database conne
 export const TRANSFER_FILES = new InjectionToken<TransferFilesPort>('Nexo transfer files');
 /** The file of a SQLite connection: chosen in the desktop dialog, typed in the web version. */
 export const DATABASE_FILES = new InjectionToken<DatabaseFilesPort>('Nexo database files');
+/** The dialogs of the local client tools: the desktop app only. */
+export const NATIVE_FILES = new InjectionToken<NativeFilesPort>('Nexo local client files');
 export const workspaceProviders = [
   HttpApi,
   BrowserFiles,
@@ -64,6 +67,7 @@ export const workspaceProviders = [
   },
   { provide: TRANSFER_FILES, useFactory: transferFiles },
   { provide: DATABASE_FILES, useFactory: databaseFiles },
+  { provide: NATIVE_FILES, useFactory: nativeFiles },
   {
     provide: MONGO,
     useFactory: (): MongoLoader => {

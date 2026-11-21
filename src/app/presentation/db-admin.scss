@@ -113,3 +113,14 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+.db-native {
+  display: grid;
+  gap: var(--nexo-space-4);
+  min-height: 0;
+  overflow: auto;
+}
+.db-native-form {
+  display: grid;
+  gap: var(--nexo-space-3);
+  max-width: calc(var(--nexo-size-unit) * 140);
+}

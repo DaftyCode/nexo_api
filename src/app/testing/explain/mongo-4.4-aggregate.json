@@ -39,12 +39,8 @@
                 "indexVersion": 2,
                 "direction": "forward",
                 "indexBounds": {
-                  "status": [
-                    "[\"B\", \"B\"]"
-                  ],
-                  "at": [
-                    "[MaxKey, MinKey]"
-                  ]
+                  "status": ["[\"B\", \"B\"]"],
+                  "at": ["[MaxKey, MinKey]"]
                 }
               }
             }
@@ -112,12 +108,8 @@
                 "indexVersion": 2,
                 "direction": "forward",
                 "indexBounds": {
-                  "status": [
-                    "[\"B\", \"B\"]"
-                  ],
-                  "at": [
-                    "[MaxKey, MinKey]"
-                  ]
+                  "status": ["[\"B\", \"B\"]"],
+                  "at": ["[MaxKey, MinKey]"]
                 },
                 "keysExamined": 1500,
                 "seeks": 1,

@@ -25,7 +25,7 @@ export class DbTabsStore {
       if (other.kind !== tab.kind || other.connection !== tab.connection) return false;
       if (tab.kind === 'connection') return !!tab.connection;
       if (tab.kind === 'object') return other.path?.join('/') === tab.path?.join('/');
-      if (['sessions', 'locks', 'dashboard'].includes(tab.kind)) return true;
+      if (['sessions', 'locks', 'dashboard', 'native'].includes(tab.kind)) return true;
       if (tab.kind === 'diagram')
         return tab.diagram
           ? other.diagram === tab.diagram

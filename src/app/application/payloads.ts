@@ -927,6 +927,24 @@ export interface SchemaInferPayload {
   enums?: boolean;
 }
 
+export interface NativeLocatePayload {
+  connection: string;
+  workspace?: string;
+  folder?: string;
+  need?: 'backup' | 'server' | 'archive' | 'plain' | 'script';
+}
+
+export interface NativeRunPayload {
+  connection: string;
+  options: Readonly<Record<string, unknown>>;
+  workspace?: string;
+  database?: string;
+  variables?: Readonly<Record<string, string>>;
+  confirm?: boolean;
+  confirmName?: string;
+  timeoutSeconds?: number;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1049,6 +1067,12 @@ export interface OperationPayloads {
   'response.compare': ResponseComparePayload;
   'mask.apply': MaskApplyPayload;
   'schema.infer': SchemaInferPayload;
+  'native.locate': NativeLocatePayload;
+  'native.backup': NativeRunPayload;
+  'native.restore': NativeRunPayload;
+  'native.script': NativeRunPayload;
+  'native.status': IdPayload;
+  'native.cancel': IdPayload;
 }
 
 /** The payload of an operation. */

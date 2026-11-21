@@ -58,6 +58,8 @@ export interface DbConnectionValue {
   sharedSession?: boolean;
   /** The longest a statement may run, in seconds. */
   timeoutSeconds?: number;
+  /** The folder of the engine's client tools (`pg_dump`, `mysql`…), desktop only. */
+  localClient?: string;
   filters?: NodeFilter[];
   /** The columns that name each row of a table without a key, by `schema.table`, chosen to
    * edit its rows in the grid (DBeaver's virtual keys). */
@@ -171,6 +173,9 @@ export function readDbConnection(value: unknown): DbConnectionValue {
     ...(source['smartCommit'] === true ? { smartCommit: true } : {}),
     ...(source['sharedSession'] === true ? { sharedSession: true } : {}),
     ...(typeof timeout === 'number' && timeout > 0 ? { timeoutSeconds: timeout } : {}),
+    ...(typeof source['localClient'] === 'string' && source['localClient'].trim()
+      ? { localClient: source['localClient'] }
+      : {}),
     ...(kept.length ? { filters: kept } : {}),
     ...(Object.keys(keys).length ? { virtualKeys: keys } : {}),
     ...(Object.keys(computed).length ? { virtualColumns: computed } : {}),

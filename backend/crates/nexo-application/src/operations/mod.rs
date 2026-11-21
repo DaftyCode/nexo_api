@@ -144,6 +144,12 @@ operations!(
         ResponseCompare => "response.compare",
         MaskApply => "mask.apply",
         SchemaInfer => "schema.infer",
+        NativeLocate => "native.locate",
+        NativeBackup => "native.backup",
+        NativeRestore => "native.restore",
+        NativeScript => "native.script",
+        NativeStatus => "native.status",
+        NativeCancel => "native.cancel",
     }
 );
 

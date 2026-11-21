@@ -200,5 +200,26 @@
       >{{ 'Description' | transloco
       }}<textarea [formField]="fields().description" rows="2"></textarea>
     </label>
+    @if (tools()) {
+      @if (native.available) {
+        <div class="db-file">
+          <label class="field"
+            >{{ 'Local client: the folder of pg_dump, mysqldump…' | transloco
+            }}<input
+              [formField]="fields().localClient"
+              [attr.placeholder]="'Empty: where they are usually installed' | transloco"
+          /></label>
+          <button type="button" class="button" (click)="chooseClient()">
+            {{ 'Choose…' | transloco }}
+          </button>
+        </div>
+      } @else {
+        <p class="muted">
+          {{
+            'Backups and restores with the local client tools are in the desktop app.' | transloco
+          }}
+        </p>
+      }
+    }
   }
 }

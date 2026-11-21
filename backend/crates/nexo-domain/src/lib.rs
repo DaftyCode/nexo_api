@@ -10,6 +10,7 @@ pub mod diff;
 pub mod hosts;
 pub mod masking;
 pub mod monitor;
+pub mod native;
 pub mod schema;
 pub mod sql;
 pub mod ssh;

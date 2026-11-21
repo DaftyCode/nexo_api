@@ -108,7 +108,7 @@ fn sql_connection(value: &Value) -> Result<SqlConnection> {
 
 impl Application {
     /// A saved SQL connection of a workspace.
-    pub(super) async fn saved_sql_connection(
+    pub(crate) async fn saved_sql_connection(
         &self,
         workspace: &WorkspaceId,
         id: &str,
@@ -131,7 +131,7 @@ impl Application {
     /// The connection a driver receives, from a connection's value: variables replaced, the
     /// vault values in `values` (to keep them out of every answer) and the allowed domains of
     /// those secrets alongside.
-    pub(super) async fn resolve_sql_connection(
+    pub(crate) async fn resolve_sql_connection(
         &self,
         value: &Value,
         variables: &BTreeMap<String, String>,

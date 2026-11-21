@@ -63,7 +63,7 @@ pub fn validate_connection(value: &Value) -> Result<()> {
     if !valid_driver {
         return Err(invalid("Unknown database driver"));
     }
-    for field in ["host", "database", "user", "folder", "color"] {
+    for field in ["host", "database", "user", "folder", "color", "localClient"] {
         if text(value, field)?.is_some_and(|text| text.len() > 1024) {
             return Err(Error::Validation(format!(
                 "The connection's {field} is too long"

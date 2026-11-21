@@ -5,6 +5,7 @@ mod imports;
 mod indexes;
 mod masking;
 mod mcp_mongo;
+mod native;
 mod schema;
 mod scripts;
 mod vault;

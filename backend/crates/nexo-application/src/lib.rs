@@ -7,6 +7,7 @@ mod masking;
 pub mod mcp;
 mod modules;
 mod monitors;
+mod native;
 pub mod operations;
 pub mod payloads;
 pub mod ports;
@@ -19,8 +20,8 @@ mod vault;
 mod workspaces;
 
 use ports::{
-    DataSources, DocumentDatabase, ExecutionGateway, ModuleCatalog, SecretVault, VersionControl,
-    WorkspaceRepository,
+    DataSources, DocumentDatabase, ExecutionGateway, ModuleCatalog, NativeTools, SecretVault,
+    VersionControl, WorkspaceRepository,
 };
 use std::sync::Arc;
 
@@ -51,6 +52,8 @@ pub struct Application {
     datasources: Option<Arc<dyn DataSources>>,
     /// The sessions open on them.
     sql_sessions: datasource::Sessions,
+    /// The local client tools of the databases; only the desktop app has them.
+    native: Option<Arc<dyn NativeTools>>,
     /// What the monitors are doing now.
     monitors: monitors::Board,
 }
@@ -71,12 +74,18 @@ impl Application {
             modules: None,
             datasources: None,
             sql_sessions: datasource::Sessions::default(),
+            native: None,
             monitors: monitors::Board::default(),
         }
     }
     /// Adds the databases of the modules.
     pub fn with_datasources(mut self, datasources: Arc<dyn DataSources>) -> Self {
         self.datasources = Some(datasources);
+        self
+    }
+    /// Adds the local client tools of the databases (the desktop app).
+    pub fn with_native_tools(mut self, native: Arc<dyn NativeTools>) -> Self {
+        self.native = Some(native);
         self
     }
     /// Adds the database modules.

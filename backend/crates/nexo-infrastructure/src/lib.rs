@@ -1,5 +1,6 @@
 pub mod clock;
 pub mod git;
+pub mod native;
 pub mod sqlite;
 pub mod vault;
 pub fn now() -> i64 {

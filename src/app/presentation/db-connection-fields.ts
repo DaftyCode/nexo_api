@@ -1,10 +1,11 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FieldTree, FormField } from '@angular/forms/signals';
-import { DATABASE_FILES } from '../composition/providers';
+import { DATABASE_FILES, NATIVE_FILES } from '../composition/providers';
 import { CONNECTION_TYPES, TLS_MODES } from '../domain/db/connection';
 import { EngineProfile } from '../domain/db/engines';
 import { DbForm } from '../domain/db/form';
+import { hasNativeTools } from '../domain/db/native';
 import { CONNECTION_COLORS } from '../domain/mongo';
 import type { EditorPage } from './db-connection-editor';
 
@@ -29,6 +30,9 @@ export class DbConnectionFields {
   protected readonly colors = CONNECTION_COLORS;
   /** The desktop dialog that chooses the file of a SQLite connection. */
   protected readonly files = inject(DATABASE_FILES);
+  /** The desktop dialog that chooses the folder of the client tools. */
+  protected readonly native = inject(NATIVE_FILES);
+  protected readonly tools = computed(() => hasNativeTools(this.settings().driver));
   protected readonly settings = computed(() => this.fields()().value());
   /** The settings of the driver not chosen yet. */
   protected readonly unused = computed(() => {
@@ -64,6 +68,11 @@ export class DbConnectionFields {
         params: create ? [...params, { name: 'create', value: 'true' }] : form.params,
       };
     });
+  }
+  /** The folder of the client tools, chosen in the dialog. */
+  protected async chooseClient() {
+    const folder = await this.native.choose('folder');
+    if (folder) this.fields()().value.update((form) => ({ ...form, localClient: folder }));
   }
   protected setColor(color: string) {
     this.fields()().value.update((form) => ({ ...form, color }));

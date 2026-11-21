@@ -8,6 +8,7 @@ use std::sync::Mutex;
 use tauri::{Manager, RunEvent};
 
 mod database_files;
+mod native_files;
 mod sign_in;
 mod transfer;
 
@@ -119,7 +120,8 @@ pub fn run() {
             transfer::transfer_write,
             transfer::transfer_write_bytes,
             transfer::transfer_close,
-            database_files::db_file_choose
+            database_files::db_file_choose,
+            native_files::native_choose
         ])
         .build(tauri::generate_context!());
     let application = match application {

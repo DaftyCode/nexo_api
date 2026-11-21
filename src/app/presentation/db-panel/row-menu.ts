@@ -13,6 +13,9 @@ import {
   output,
 } from '@angular/core';
 import { NavigatorRow } from '../../domain/db/rows';
+import { NATIVE_FILES } from '../../composition/providers';
+import { readDbConnection } from '../../domain/db/connection';
+import { hasNativeTools } from '../../domain/db/native';
 import { menuKeys } from '../menu-keys';
 import { MenuAction } from './menu';
 import { DbSection } from './section';
@@ -138,6 +141,11 @@ import { DbSection } from './section';
             {{ 'Locks' | transloco }}
           </button>
         }
+        @if (native()) {
+          <button type="button" role="menuitem" (click)="chosen.emit('native')">
+            {{ 'Backup and restore…' | transloco }}
+          </button>
+        }
       }
       @if (row().type === 'connection' || row().type === 'node' || row().type === 'script-group') {
         <button type="button" role="menuitem" (click)="chosen.emit('newScript')">
@@ -221,6 +229,16 @@ export class DbRowMenu {
   );
   /** The sessions and locks of the server of a connection (DB-21), when its driver lists them. */
   protected readonly admin = computed(() => administers(this.section, this.row().connection));
+  /** The local client tools of its engine, in the desktop app (DB-23). */
+  protected readonly native = computed(() => {
+    const document = this.section.connection(this.row().connection ?? '');
+    return (
+      this.nativeFiles.available &&
+      !!document &&
+      hasNativeTools(readDbConnection(document.value).driver)
+    );
+  });
+  private readonly nativeFiles = inject(NATIVE_FILES);
   /** Tables, schemas, databases and folders of tables have a diagram (DB-20). */
   protected readonly diagrammed = computed(() => {
     const node = this.row().node;

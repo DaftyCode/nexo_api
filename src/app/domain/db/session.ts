@@ -17,6 +17,7 @@ export const DB_TAB_KINDS = [
   'sessions',
   'locks',
   'dashboard',
+  'native',
 ] as const;
 export type DbTabKind = (typeof DB_TAB_KINDS)[number];
 

@@ -1,3 +1,4 @@
+import type { Provider } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { vi } from 'vitest';
 import { DbPanel } from '../presentation/db-panel';
@@ -6,6 +7,8 @@ import { WorkspaceState } from '../presentation/workspace-state';
 import { WorkspaceDocument } from '../domain/models';
 import { buttons, clickButton, control, fill } from './controls';
 import { FakeResponse, TEST_API, TestApi, testProviders } from './providers';
+import { NATIVE_FILES } from '../composition/providers';
+import type { NativeFilesPort } from '../application/ports';
 
 // The whole database section renders in each of these tests: more than a unit test takes,
 // above all on a busy machine or a CI runner.
@@ -100,21 +103,26 @@ export async function startDbPanel(options: {
   documents?: WorkspaceDocument[];
   /** The stored drafts of SQL tabs, by tab. */
   drafts?: Record<string, { text: string; cursor: number; script?: string; dirty?: boolean }>;
+  /** The dialogs of the local client tools; the web version's (none) by default. */
+  nativeFiles?: NativeFilesPort;
 }) {
   const tree = options.tree ?? {};
   await TestBed.configureTestingModule({
-    providers: testProviders({
-      'modules.list': () => options.modules ?? [installedModule()],
-      'db.connect': () => ({ serverVersion: '18', database: 'shop', tls: false }),
-      'db.disconnect': () => ({}),
-      'db.close': () => ({}),
-      'db.dialect': () => options.hello ?? driverHello({}),
-      'db.tree': (payload: Record<string, unknown>) => ({
-        nodes: tree[(payload['path'] as string[]).join('/')] ?? [],
+    providers: [
+      ...testProviders({
+        'modules.list': () => options.modules ?? [installedModule()],
+        'db.connect': () => ({ serverVersion: '18', database: 'shop', tls: false }),
+        'db.disconnect': () => ({}),
+        'db.close': () => ({}),
+        'db.dialect': () => options.hello ?? driverHello({}),
+        'db.tree': (payload: Record<string, unknown>) => ({
+          nodes: tree[(payload['path'] as string[]).join('/')] ?? [],
+        }),
+        'db.transaction': () => ({ autoCommit: true, open: false }),
+        ...options.responses,
       }),
-      'db.transaction': () => ({ autoCommit: true, open: false }),
-      ...options.responses,
-    }),
+      ...(options.nativeFiles ? [{ provide: NATIVE_FILES, useValue: options.nativeFiles }] : []),
+    ] as Provider[],
     imports: [DbPanel],
   }).compileComponents();
   const api: TestApi = TestBed.inject(TEST_API);

@@ -26,6 +26,7 @@ describe('the connection form', () => {
       smartCommit: true,
       sharedSession: true,
       timeoutSeconds: 20,
+      localClient: '/opt/pg/bin',
     });
     expect(form).toMatchObject({
       name: 'Shop',
@@ -48,7 +49,10 @@ describe('the connection form', () => {
       smartCommit: true,
       sharedSession: true,
       timeoutSeconds: 20,
+      localClient: '/opt/pg/bin',
     });
+    expect(valueOf(form).localClient).toBe('/opt/pg/bin');
+    expect(valueOf({ ...form, localClient: ' ' })).not.toHaveProperty('localClient');
     expect(formOf('Empty', { driver: 'sqlite' })).toMatchObject({
       host: '',
       port: '',

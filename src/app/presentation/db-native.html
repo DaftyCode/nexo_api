@@ -1,0 +1,204 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+<div class="db-native">
+  @if (!files.available) {
+    <p class="db-admin-note">
+      {{ 'Backups and restores with the local client tools are in the desktop app.' | transloco }}
+    </p>
+  } @else {
+    <nav class="editor-tabs" [attr.aria-label]="'Backup and restore' | transloco">
+      @for (each of ['backup', 'restore', 'script']; track each) {
+        <button
+          type="button"
+          [class.active]="action() === each"
+          [attr.aria-current]="action() === each ? 'page' : null"
+          (click)="choose($any(each))"
+        >
+          {{ 'db.native.action.' + each | transloco }}
+        </button>
+      }
+    </nav>
+    <div class="db-admin-toolbar">
+      <span class="grow muted">{{
+        located()
+          ? ('db.native.found' | transloco: { v0: located()!.version, v1: located()!.path })
+          : ('db.native.where' | transloco)
+      }}</span>
+      <button type="button" class="button small" (click)="detect()">
+        {{ 'Find the tool' | transloco }}
+      </button>
+    </div>
+    @if (older()) {
+      <p class="alert">{{ 'db.native.older' | transloco }}</p>
+    }
+    <form class="db-native-form" (submit)="$event.preventDefault(); start()">
+      @switch (action()) {
+        @case ('backup') {
+          @if (postgres()) {
+            <label class="check-field"
+              ><input type="checkbox" [formField]="fields.server" />{{
+                'Every database of the server (pg_dumpall)' | transloco
+              }}</label
+            >
+          }
+          @if (postgres() && !model().server) {
+            <label class="field"
+              >{{ 'Format' | transloco
+              }}<select [formField]="fields.format">
+                @for (format of formats; track format) {
+                  <option [value]="format">{{ formatLabel(format) | transloco }}</option>
+                }
+              </select></label
+            >
+          }
+          <label class="field"
+            >{{ 'What to keep' | transloco
+            }}<select [formField]="fields.content">
+              @for (content of contents; track content) {
+                <option [value]="content">{{ contentLabel(content) | transloco }}</option>
+              }
+            </select></label
+          >
+          @if (!model().server) {
+            @if (postgres()) {
+              <label class="field"
+                >{{ 'Only these schemas (separated by commas)' | transloco
+                }}<input [formField]="fields.schemas"
+              /></label>
+            }
+            <label class="field"
+              >{{
+                (postgres()
+                  ? 'Only these tables (schema.table, separated by commas)'
+                  : 'Only these tables (separated by commas)'
+                ) | transloco
+              }}<input [formField]="fields.tables"
+            /></label>
+          }
+          @if (postgres()) {
+            <label class="check-field"
+              ><input type="checkbox" [formField]="fields.noOwner" />{{
+                'Without owners' | transloco
+              }}</label
+            >
+            <label class="check-field"
+              ><input type="checkbox" [formField]="fields.noPrivileges" />{{
+                'Without privileges' | transloco
+              }}</label
+            >
+          }
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.inserts" />{{
+              (postgres() ? 'INSERT statements instead of COPY' : 'One INSERT per row') | transloco
+            }}</label
+          >
+          @if (postgres() && !model().server && model().format !== 'tar') {
+            <label class="field"
+              >{{ 'Compression' | transloco
+              }}<select [formField]="fields.compress">
+                @for (level of levels; track level) {
+                  <option [value]="level">
+                    {{ level === '' ? ('Default' | transloco) : level }}
+                  </option>
+                }
+              </select></label
+            >
+          }
+        }
+        @case ('restore') {
+          @if (postgres()) {
+            <label class="field"
+              >{{ 'Format of the backup' | transloco
+              }}<select [formField]="fields.format">
+                @for (format of formats; track format) {
+                  <option [value]="format">{{ formatLabel(format) | transloco }}</option>
+                }
+              </select></label
+            >
+            @if (model().format !== 'plain') {
+              <label class="check-field"
+                ><input type="checkbox" [formField]="fields.clean" />{{
+                  'Drop its objects first' | transloco
+                }}</label
+              >
+              <label class="check-field"
+                ><input type="checkbox" [formField]="fields.dataOnly" />{{
+                  'Only the data' | transloco
+                }}</label
+              >
+              <label class="check-field"
+                ><input type="checkbox" [formField]="fields.noOwner" />{{
+                  'Without owners' | transloco
+                }}</label
+              >
+            }
+            <label class="check-field"
+              ><input type="checkbox" [formField]="fields.singleTransaction" />{{
+                'In one transaction' | transloco
+              }}</label
+            >
+          }
+        }
+        @case ('script') {
+          <label class="check-field"
+            ><input type="checkbox" [formField]="fields.stopOnError" />{{
+              'Stop at the first error' | transloco
+            }}</label
+          >
+        }
+      }
+      @if (action() !== 'backup' || !model().server) {
+        <label class="field"
+          >{{ 'Database' | transloco
+          }}<input [formField]="fields.database" [attr.placeholder]="value().database ?? ''"
+        /></label>
+      }
+      <label class="field"
+        >{{ 'Time limit (minutes, empty for none)' | transloco
+        }}<input [formField]="fields.minutes" inputmode="numeric"
+      /></label>
+      @if (action() === 'restore') {
+        <label class="field"
+          >{{ 'db.native.typeDatabase' | transloco: { v0: database() }
+          }}<input [formField]="fields.confirmName" autocomplete="off"
+        /></label>
+      }
+      <div class="button-grid">
+        <button type="submit" class="button primary" [disabled]="!ready()">
+          {{ 'db.native.start.' + action() | transloco }}
+        </button>
+      </div>
+    </form>
+    @if (run(); as current) {
+      <section class="db-admin-detail" [attr.aria-label]="'Output of the tool' | transloco">
+        <div class="db-admin-toolbar">
+          <h3 class="grow" role="status">
+            {{
+              stateLabel(current.state)
+                | transloco: { v0: current.tool, v1: current.seconds.toFixed(0) }
+            }}
+          </h3>
+          @if (current.state === 'running') {
+            <button type="button" class="button small danger" (click)="cancel()">
+              {{ 'Cancel' | transloco }}
+            </button>
+          }
+        </div>
+        @if (current.dropped) {
+          <p class="muted">{{ 'db.native.dropped' | transloco: { v0: current.dropped } }}</p>
+        }
+        <pre tabindex="0">{{ current.lines.join('\n') }}</pre>
+      </section>
+    }
+  }
+</div>

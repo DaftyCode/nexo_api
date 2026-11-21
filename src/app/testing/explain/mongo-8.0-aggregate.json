@@ -46,12 +46,8 @@
                   "indexVersion": 2,
                   "direction": "forward",
                   "indexBounds": {
-                    "status": [
-                      "[\"B\", \"B\"]"
-                    ],
-                    "at": [
-                      "[MaxKey, MinKey]"
-                    ]
+                    "status": ["[\"B\", \"B\"]"],
+                    "at": ["[MaxKey, MinKey]"]
                   }
                 }
               }
@@ -105,9 +101,7 @@
                 "saveState": 1,
                 "restoreState": 1,
                 "isEOF": 1,
-                "groupBySlots": [
-                  11
-                ],
+                "groupBySlots": [11],
                 "expressions": {
                   "12": "count() ",
                   "initExprs": {
@@ -164,19 +158,11 @@
                       "collectionSeeks": 1500,
                       "indexScans": 0,
                       "indexSeeks": 1,
-                      "indexesUsed": [
-                        "status_1_at_-1"
-                      ],
+                      "indexesUsed": ["status_1_at_-1"],
                       "innerOpens": 1500,
                       "innerCloses": 1,
                       "outerProjects": [],
-                      "outerCorrelated": [
-                        1,
-                        2,
-                        3,
-                        4,
-                        5
-                      ],
+                      "outerCorrelated": [1, 2, 3, 4, 5],
                       "outerStage": {
                         "stage": "ixseek",
                         "planNodeId": 1,
@@ -229,12 +215,8 @@
                           "indexIdentSlot": 3,
                           "indexKeySlot": 4,
                           "indexKeyPatternSlot": 5,
-                          "scanFieldNames": [
-                            "customer"
-                          ],
-                          "scanFieldSlots": [
-                            8
-                          ]
+                          "scanFieldNames": ["customer"],
+                          "scanFieldSlots": [8]
                         }
                       }
                     }

@@ -37,4 +37,5 @@ export type MenuAction =
   | 'deleteDiagram'
   | 'sessions'
   | 'locks'
-  | 'dashboard';
+  | 'dashboard'
+  | 'native';

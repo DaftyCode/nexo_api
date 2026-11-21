@@ -110,6 +110,12 @@ export const EXECUTION_OPERATIONS = [
   'response.compare',
   'mask.apply',
   'schema.infer',
+  'native.locate',
+  'native.backup',
+  'native.restore',
+  'native.script',
+  'native.status',
+  'native.cancel',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

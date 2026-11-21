@@ -27,6 +27,7 @@ mod mongo_read;
 mod mongo_schema;
 mod mongo_write;
 mod monitors;
+mod native;
 mod protocols;
 mod ssh;
 #[cfg(test)]
@@ -46,6 +47,7 @@ pub use mongo_read::*;
 pub use mongo_schema::*;
 pub use mongo_write::*;
 pub use monitors::*;
+pub use native::*;
 pub use protocols::*;
 pub use ssh::*;
 pub use typescript::typescript_contract;
@@ -224,6 +226,12 @@ operation_payloads! {
     ResponseCompare => ResponseComparePayload,
     MaskApply => MaskApplyPayload,
     SchemaInfer => SchemaInferPayload,
+    NativeLocate => NativeLocatePayload,
+    NativeBackup => NativeRunPayload,
+    NativeRestore => NativeRunPayload,
+    NativeScript => NativeRunPayload,
+    NativeStatus => IdPayload,
+    NativeCancel => IdPayload,
 }
 
 /// Checks the payload of a Git operation.

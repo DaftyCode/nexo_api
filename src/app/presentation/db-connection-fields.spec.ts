@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { form } from '@angular/forms/signals';
-import { DATABASE_FILES } from '../composition/providers';
+import { DATABASE_FILES, NATIVE_FILES } from '../composition/providers';
 import { engineProfile } from '../domain/db/engines';
 import { DbForm, emptyDbForm } from '../domain/db/form';
 import { testProviders } from '../testing/providers';
@@ -139,5 +139,38 @@ describe('DbConnectionFields of a server connection', () => {
     buttons(page('general'), 'No color')[0].click();
     await settle();
     expect(fixture.componentInstance.model().color).toBe('');
+  });
+
+  it('says that the local client tools are in the desktop app', () => {
+    expect(page('general').textContent).toContain(
+      'Backups and restores with the local client tools are in the desktop app.',
+    );
+  });
+});
+
+describe('DbConnectionFields in the desktop app', () => {
+  it('chooses the folder of the local client tools', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        ...testProviders(),
+        {
+          provide: NATIVE_FILES,
+          useValue: { available: true, choose: async () => 'C:/Program Files/PostgreSQL/18/bin' },
+        },
+      ],
+      imports: [Pages],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(Pages);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const general = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-page="general"]',
+    )!;
+    expect(general.textContent).toContain('Local client: the folder of pg_dump, mysqldump…');
+    buttons(general, 'Choose…')[0].click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.model().localClient).toBe(
+      'C:/Program Files/PostgreSQL/18/bin',
+    );
   });
 });

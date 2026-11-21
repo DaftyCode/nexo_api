@@ -5,8 +5,8 @@ use nexo_engine::Engine;
 use nexo_http::{AccessConfig, router};
 pub use nexo_http::{Mode, Sessions};
 use nexo_infrastructure::{
-    clock::SystemClock, git::GitAdapter, infrastructure as err, sqlite::SqliteStore,
-    vault::desktop_master_key,
+    clock::SystemClock, git::GitAdapter, infrastructure as err, native::NativeAdapter,
+    sqlite::SqliteStore, vault::desktop_master_key,
 };
 use nexo_modules::{HostConfig, Modules, StoreConfig};
 use nexo_mongo::MongoAdapter;
@@ -107,11 +107,18 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         host,
         engine.clone(),
     )?);
-    let application = Arc::new(
-        application
-            .with_modules(modules.clone())
-            .with_datasources(modules),
-    );
+    let mut application = application
+        .with_modules(modules.clone())
+        .with_datasources(modules);
+    // The local client tools (`pg_dump`, `mysql`…) run programs of the computer with files
+    // chosen in native dialogs: only the desktop app has them.
+    if config.mode == Mode::Desktop {
+        application = application.with_native_tools(Arc::new(NativeAdapter::new(
+            engine.clone(),
+            vec![config.data.clone()],
+        )));
+    }
+    let application = Arc::new(application);
     // Scripts reach the databases through the application, with its rules (`nx.mongo`).
     let databases: Arc<dyn nexo_application::ports::ScriptDatabase> = application.clone();
     engine.connect_databases(Arc::downgrade(&databases));

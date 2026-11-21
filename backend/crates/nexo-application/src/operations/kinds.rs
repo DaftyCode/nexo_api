@@ -50,6 +50,19 @@ impl Operation {
     pub fn is_monitor(self) -> bool {
         matches!(self, Self::MonitorStatus | Self::MonitorRun)
     }
+    /// Operations with the local client tools of the databases (desktop only), not of the
+    /// engine.
+    pub fn is_native(self) -> bool {
+        matches!(
+            self,
+            Self::NativeLocate
+                | Self::NativeBackup
+                | Self::NativeRestore
+                | Self::NativeScript
+                | Self::NativeStatus
+                | Self::NativeCancel
+        )
+    }
     /// Operations of the document database adapter (MongoDB), not of the engine.
     pub fn is_database(self) -> bool {
         matches!(
@@ -144,6 +157,10 @@ impl Operation {
                 | Self::MongoShell
                 | Self::MongoSync
                 | Self::DbConnect
+                | Self::NativeLocate
+                | Self::NativeBackup
+                | Self::NativeRestore
+                | Self::NativeScript
                 | Self::MonitorStatus
                 | Self::MonitorRun
         )

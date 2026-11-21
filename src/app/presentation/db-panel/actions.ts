@@ -94,6 +94,15 @@ export class DbActions {
   sessions = (row: NavigatorRow) => openAdmin(this.section, row, 'sessions');
   locks = (row: NavigatorRow) => openAdmin(this.section, row, 'locks');
   dashboard = (row: NavigatorRow) => this.section.dashboards.open(row);
+  /** Backups, restores and scripts with the local client tools (DB-23). */
+  native = (row: NavigatorRow) => {
+    if (row.connection)
+      this.section.tabs.open({
+        kind: 'native',
+        connection: row.connection,
+        title: 'Backup and restore',
+      });
+  };
   newDiagram = (row: NavigatorRow) =>
     this.task.announce('The diagram could not be created', () =>
       this.section.diagrams.create(row.connection ?? ''),
