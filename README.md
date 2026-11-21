@@ -170,7 +170,7 @@ In the planned order:
    - SQL from request scripts (`nx.sql`), read-only MCP tools and a query's code in several languages.
    - New engines: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, and Apache Drill. Oracle waits for a stable release of its Rust driver; DB2, Apache Hive and Apache Ignite are being evaluated.
    - MongoDB will become one more downloadable module, in the same tree as the rest.
-2. **An AI assistant** using each user's own API key.
+2. **An AI assistant** using each user's own API key, or a local model: Qwen3.5-9B, or Qwen3.5-4B on computers short of resources, fitted automatically to the free RAM and VRAM.
 3. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
 4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
 5. **Custom themes** from the app, built on the design tokens.
