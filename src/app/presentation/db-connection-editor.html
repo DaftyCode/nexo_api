@@ -57,22 +57,33 @@
               ? ('Main' | transloco)
               : p === 'tls'
                 ? ('TLS' | transloco)
-                : p === 'properties'
-                  ? ('Driver settings' | transloco)
-                  : ('General' | transloco)
+                : p === 'network'
+                  ? ('Network' | transloco)
+                  : p === 'properties'
+                    ? ('Driver settings' | transloco)
+                    : ('General' | transloco)
           }}
         </button>
       }
     </nav>
     <div class="db-page">
-      <app-db-connection-fields
-        [page]="page()"
-        [fields]="fields"
-        [profile]="profile()"
-        [passwordStored]="passwordStored()"
-        [keyStored]="keyStored()"
-        [folders]="section.folderNames()"
-      />
+      @if (page() === 'network') {
+        <app-db-connection-network
+          [fields]="fields"
+          [proxyStored]="proxyStored()"
+          [tunnel]="tunnel()"
+          (testRoute)="testRoute()"
+        />
+      } @else {
+        <app-db-connection-fields
+          [page]="page()"
+          [fields]="fields"
+          [profile]="profile()"
+          [passwordStored]="passwordStored()"
+          [keyStored]="keyStored()"
+          [folders]="section.folderNames()"
+        />
+      }
     </div>
 
     <div class="db-url-preview">

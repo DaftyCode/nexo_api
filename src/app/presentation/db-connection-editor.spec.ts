@@ -78,6 +78,46 @@ describe('the connection editor', () => {
     expect(panel.api.documentsStore.find((document) => document.id === 'c1')?.name).toBe('Renamed');
   });
 
+  it('goes through a SOCKS5 proxy or an SSH profile, and tests the tunnel alone', async () => {
+    const asked: Record<string, unknown>[] = [];
+    const panel = await startDbPanel({
+      responses: {
+        'db.route.test': (payload: Record<string, unknown>) => {
+          asked.push(payload);
+          return { host: 'db', port: 5432, via: 'socks5', ms: 7 };
+        },
+      },
+    });
+    await edit(panel);
+    await panel.click('Network', editor(panel));
+    expect(panel.buttons('Test the tunnel', editor(panel))).toHaveLength(0);
+    const via = panel.control('Connect through', editor(panel)) as HTMLSelectElement;
+    expect([...via.options].map((option) => option.value)).toEqual(['direct', 'socks5', 'ssh']);
+    via.value = 'socks5';
+    via.dispatchEvent(new Event('input'));
+    await panel.settle();
+    await panel.fill('Proxy host', 'proxy', editor(panel));
+    await panel.fill('Proxy user', 'ana', editor(panel));
+    await panel.fill('Proxy password', 'pw', editor(panel));
+    await panel.click('Test the tunnel', editor(panel));
+    expect(panel.text()).toContain('db:5432 reached through the tunnel in 7 ms.');
+    expect(asked[0]).toMatchObject({
+      port: 5432,
+      connection: { route: { via: 'socks5', host: 'proxy', password: '{{vault:db-proxy:c1}}' } },
+    });
+    expect(panel.api.secretNames).toContain('db-proxy:c1');
+    await panel.click(/^Save$/, editor(panel));
+    const saved = panel.api.documentsStore.find((document) => document.id === 'c1');
+    expect((saved?.value as { route?: unknown }).route).toMatchObject({ via: 'socks5' });
+    expect(panel.text()).toContain('Leave the proxy password blank to keep the saved one.');
+  });
+
+  it('has no network tab for a database file', async () => {
+    const panel = await startDbPanel({ connection: { driver: 'sqlite', database: '/a.db' } });
+    await edit(panel);
+    expect(panel.buttons('Network', editor(panel))).toHaveLength(0);
+  });
+
   it('forgets the secrets of a new connection tested but never saved', async () => {
     const panel = await start();
     panel.section().edit();

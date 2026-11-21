@@ -3,8 +3,10 @@
 mod common;
 
 use common::{connection, fixture, statement};
+use nexo_application::ports::ConnectionRoute;
 use nexo_domain::hosts::AllowedHosts;
 use nexo_driver_sdk::{ErrorCode, methods, statements::ExecuteResult};
+use serde_json::json;
 
 #[tokio::test]
 async fn secrets_stay_out_of_the_log_and_of_errors() {
@@ -12,7 +14,9 @@ async fn secrets_stay_out_of_the_log_and_of_errors() {
     let host = &fixture.host;
     let mut leaking = connection("main");
     leaking.options.insert("leak".into(), "log".into());
-    host.connect("test", leaking, Vec::new()).await.unwrap();
+    host.connect("test", leaking, Vec::new(), Default::default())
+        .await
+        .unwrap();
     host.call::<_, ExecuteResult>(
         "main",
         methods::EXECUTE,
@@ -42,7 +46,10 @@ async fn secrets_stay_out_of_the_log_and_of_errors() {
     let mut refused = connection("other");
     refused.password = Some("tr0ub4dor&3".into());
     refused.options.insert("leak".into(), "error".into());
-    let error = host.connect("test", refused, Vec::new()).await.unwrap_err();
+    let error = host
+        .connect("test", refused, Vec::new(), Default::default())
+        .await
+        .unwrap_err();
     assert_eq!(error.code, ErrorCode::Auth);
     assert_eq!(error.message, "The password [REDACTED] was refused");
     assert_eq!(error.detail.unwrap()["password"], "[REDACTED]");
@@ -59,12 +66,22 @@ async fn a_driver_connects_only_where_the_host_allows() {
         params.port = Some(5432);
         params
     };
-    host.connect("test", to("allowed", "db.example.com"), Vec::new())
-        .await
-        .unwrap();
+    host.connect(
+        "test",
+        to("allowed", "db.example.com"),
+        Vec::new(),
+        Default::default(),
+    )
+    .await
+    .unwrap();
 
     let error = host
-        .connect("test", to("blocked", "private.example.com"), Vec::new())
+        .connect(
+            "test",
+            to("blocked", "private.example.com"),
+            Vec::new(),
+            Default::default(),
+        )
         .await;
     let error = error.unwrap_err();
     assert_eq!(error.code, ErrorCode::Network);
@@ -80,14 +97,24 @@ async fn a_driver_connects_only_where_the_host_allows() {
         AllowedHosts::parse(&["*.internal.test"]).unwrap(),
     )];
     let error = host
-        .connect("test", to("limited", "db.example.com"), limited.clone())
+        .connect(
+            "test",
+            to("limited", "db.example.com"),
+            limited.clone(),
+            Default::default(),
+        )
         .await;
     let error = error.unwrap_err();
     assert_eq!(error.code, ErrorCode::Network);
     assert!(error.message.contains("db-password:1"), "{}", error.message);
-    host.connect("test", to("within", "db.internal.test"), limited)
-        .await
-        .unwrap();
+    host.connect(
+        "test",
+        to("within", "db.internal.test"),
+        limited,
+        Default::default(),
+    )
+    .await
+    .unwrap();
 
     let asked = fixture.policy.asked.lock().unwrap().clone();
     let asked: Vec<&str> = asked.iter().map(|(name, _)| name.as_str()).collect();
@@ -101,6 +128,39 @@ async fn a_driver_connects_only_where_the_host_allows() {
     assert_eq!(
         host.disconnect("blocked").await.unwrap_err().code,
         ErrorCode::Invalid
+    );
+    host.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_connection_with_a_route_is_given_the_port_the_host_forwards() {
+    let fixture = fixture();
+    let host = &fixture.host;
+    let route = ConnectionRoute {
+        route: json!({"via": "ssh", "profile": "p1"}),
+        profiles: json!({}),
+    };
+    let mut params = connection("tunnelled");
+    params.host = Some("db.internal".into());
+    params.port = Some(5432);
+    let (opened, servers) = host
+        .test("test", params.clone(), Vec::new(), route.clone())
+        .await;
+    opened.unwrap();
+    // The driver is told the loopback port; the name is never resolved here.
+    assert_eq!(servers[0].host, "db.internal");
+    assert_eq!(servers[0].addresses, ["127.0.0.1:15432"]);
+    assert!(fixture.policy.asked.lock().unwrap().is_empty());
+    params.host = Some("private.internal".into());
+    let (refused, servers) = host.test("test", params, Vec::new(), route).await;
+    assert_eq!(refused.unwrap_err().code, ErrorCode::Network);
+    assert!(!servers[0].allowed);
+    assert_eq!(
+        *fixture.policy.forwarded.lock().unwrap(),
+        [
+            ("db.internal".to_owned(), 5432),
+            ("private.internal".to_owned(), 5432)
+        ]
     );
     host.shutdown().await;
 }

@@ -1,9 +1,9 @@
-// What the contract tests of comparing databases (DB-24) share: saving connections, opening
+// What the contract tests of the databases of the modules share: saving connections, opening
 // their sessions and running statements as the SQL editor does, on the server the test
 // starts (read when each call is made).
 import assert from 'node:assert/strict';
 
-export function compareClient(current) {
+export function dbClient(current) {
   const save = (id, value) =>
     current().api('PUT', '/documents', {
       id,

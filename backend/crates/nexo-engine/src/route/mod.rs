@@ -5,6 +5,7 @@
 //! route as reqwest's proxy ([`Dialer::http_proxy`]).
 
 mod dialer;
+pub mod forward;
 mod handshake;
 pub mod ssh;
 

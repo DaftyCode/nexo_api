@@ -1,9 +1,10 @@
 /**
  * A saved connection of a database module, as the backend stores it (`connection` documents
- * that name their `driver`). Its secrets are never stored: the password and the client key
- * are references to the vault (`{{vault:…}}`).
+ * that name their `driver`). Its secrets are never stored: the password, the client key and
+ * the password of its proxy are references to the vault (`{{vault:…}}`).
  */
 import { isVaultReference } from '../mongo';
+import { StoredRoute, readRoute, storedRoute } from '../route';
 
 /** How careful Nexo is with a connection, as DBeaver's connection types. */
 export type ConnectionType = 'development' | 'test' | 'production';
@@ -66,11 +67,14 @@ export interface DbConnectionValue {
   virtualKeys?: Record<string, string[]>;
   /** Columns computed in the interface from the others, by `schema.table` (DB-13). */
   virtualColumns?: Record<string, { name: string; expression: string }[]>;
+  /** How it reaches its server: a SOCKS5 proxy or an SSH profile (DB-25); none: directly. */
+  route?: StoredRoute;
 }
 
 /** The vault entries Nexo creates for a connection. */
 export const dbPasswordSecret = (id: string) => `db-password:${id}`;
 export const dbKeySecret = (id: string) => `db-key:${id}`;
+export const dbProxySecret = (id: string) => `db-proxy:${id}`;
 export const vaultReference = (name: string) => `{{vault:${name}}}`;
 export { isVaultReference };
 
@@ -150,6 +154,9 @@ export function readDbConnection(value: unknown): DbConnectionValue {
   const kept = filters(source['filters']);
   const keys = virtualKeys(source['virtualKeys']);
   const computed = virtualColumns(source['virtualColumns']);
+  // Database protocols go through SOCKS5 or SSH only; anything else reads as direct.
+  const read = readRoute(source['route']);
+  const route = read.via === 'socks5' || read.via === 'ssh' ? storedRoute(read) : undefined;
   const optional = {
     host: text('host'),
     database: text('database'),
@@ -179,6 +186,7 @@ export function readDbConnection(value: unknown): DbConnectionValue {
     ...(kept.length ? { filters: kept } : {}),
     ...(Object.keys(keys).length ? { virtualKeys: keys } : {}),
     ...(Object.keys(computed).length ? { virtualColumns: computed } : {}),
+    ...(route ? { route } : {}),
   };
 }
 

@@ -9,6 +9,7 @@ mod dashboard;
 mod explain;
 mod history;
 mod journal;
+mod route;
 mod rows;
 mod rules;
 mod search;
@@ -33,9 +34,7 @@ use crate::{
 };
 use nexo_domain::{
     Error, Result, WorkspaceId,
-    sql::{
-        ConnectionType, Dialect, StatementKind, classify, split, statement_at, validate_connection,
-    },
+    sql::{ConnectionType, Dialect, StatementKind, classify, split, statement_at},
 };
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
@@ -88,6 +87,7 @@ impl Application {
                 sources.driver(&payload.driver).await
             }
             Operation::DbTest => self.test_connection(sources, read(payload)?).await,
+            Operation::DbRouteTest => self.test_route(sources, read(payload)?).await,
             Operation::DbConnect => self.connect_session(sources, read(payload)?).await,
             Operation::DbDisconnect => {
                 let payload: DbSessionPayload = read(payload)?;
@@ -157,22 +157,22 @@ impl Application {
         sources: &dyn DataSources,
         payload: DbTestPayload,
     ) -> Result<Value> {
-        let value = match (payload.connection, payload.connection_id) {
-            (Some(connection), _) => {
-                let value = Value::Object(connection);
-                validate_connection(&value)?;
-                value
-            }
-            (None, Some(id)) => {
-                let workspace = WorkspaceId::parse(payload.workspace.unwrap_or_default())?;
-                self.saved_sql_connection(&workspace, &id).await?.value
-            }
-            (None, None) => return Err(Error::Validation("Choose a connection to test".into())),
-        };
+        let workspace = payload
+            .workspace
+            .as_deref()
+            .map(WorkspaceId::parse)
+            .transpose()?;
+        let value = self
+            .tested_connection(
+                workspace.as_ref(),
+                payload.connection,
+                payload.connection_id,
+            )
+            .await?;
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
         let answer = match self
-            .resolve_sql_connection(&value, &variables, &mut values)
+            .resolve_sql_connection(workspace.as_ref(), &value, &variables, &mut values)
             .await
         {
             Ok(connection) => sources.test(connection).await,
@@ -200,7 +200,7 @@ impl Application {
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
         let mut connection = self
-            .resolve_sql_connection(&stored.value, &variables, &mut values)
+            .resolve_sql_connection(Some(&workspace), &stored.value, &variables, &mut values)
             .await
             .map_err(|error| redact_error(error, &values))?;
         if let Some(database) = payload.database.filter(|name| !name.trim().is_empty()) {

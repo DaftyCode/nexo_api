@@ -6,7 +6,7 @@ mod shared;
 
 use crate::connections::{Connection, Destination, SecretHosts};
 use idle::close_idle;
-use nexo_application::ports::NetworkPolicy;
+use nexo_application::ports::{ConnectionRoute, NetworkPolicy};
 use nexo_driver_sdk::{
     DriverError, Result, limits, methods,
     protocol::{ConnectParams, Hello, ServerInfo, TestReport},
@@ -115,9 +115,16 @@ impl DriverHost {
         module: &str,
         params: ConnectParams,
         secret_hosts: SecretHosts,
+        route: ConnectionRoute,
     ) -> Result<ServerInfo> {
         let (outcome, _) = self
-            .opening(module, &params, secret_hosts, methods::CONNECT, true)
+            .opening(
+                module,
+                &params,
+                (secret_hosts, route),
+                methods::CONNECT,
+                true,
+            )
             .await;
         outcome
     }
@@ -128,8 +135,9 @@ impl DriverHost {
         module: &str,
         params: ConnectParams,
         secret_hosts: SecretHosts,
+        route: ConnectionRoute,
     ) -> (Result<TestReport>, Vec<Destination>) {
-        self.opening(module, &params, secret_hosts, methods::TEST, false)
+        self.opening(module, &params, (secret_hosts, route), methods::TEST, false)
             .await
     }
 
@@ -137,7 +145,7 @@ impl DriverHost {
         &self,
         module: &str,
         params: &ConnectParams,
-        secret_hosts: SecretHosts,
+        (secret_hosts, route): (SecretHosts, ConnectionRoute),
         method: &str,
         keep: bool,
     ) -> (Result<R>, Vec<Destination>) {
@@ -159,6 +167,8 @@ impl DriverHost {
             last_used: Instant::now(),
             destinations: Vec::new(),
             held: false,
+            route,
+            forwards: Vec::new(),
         };
         if let Err(error) = shared.connections.open(&params.connection, connection) {
             return (Err(error), Vec::new());
@@ -219,6 +229,17 @@ impl DriverHost {
             .await;
         self.shared.connections.close(connection);
         outcome
+    }
+
+    /// A loopback port that reaches `host:port` through `route`, checked by the egress
+    /// policy; the server is reached once now. Closed when dropped.
+    pub async fn forward(
+        &self,
+        route: &ConnectionRoute,
+        host: &str,
+        port: u16,
+    ) -> nexo_domain::Result<nexo_application::ports::Forwarded> {
+        self.shared.network.forward(route, host, port).await
     }
 
     /// Keeps a connection with an open transaction from being closed for being idle.

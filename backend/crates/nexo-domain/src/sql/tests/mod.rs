@@ -56,12 +56,44 @@ fn a_sql_connection_keeps_its_secrets_in_the_vault() {
         ("params", json!({"x": 1}), "driver settings"),
         ("timeoutSeconds", json!(0), "time limit"),
         ("host", json!(7), "must be text"),
+        (
+            "route",
+            json!({"via": "http", "host": "p"}),
+            "not an HTTP proxy",
+        ),
+        ("route", json!({"via": "ssh"}), "SSH profile"),
+        (
+            "route",
+            json!({"via": "socks5"}),
+            "server of the SOCKS5 proxy",
+        ),
+        (
+            "route",
+            json!({"via": "socks5", "host": "p", "port": 0}),
+            "port of the proxy",
+        ),
+        (
+            "route",
+            json!({"via": "socks5", "host": "p", "password": "pw"}),
+            "password of the proxy",
+        ),
+        ("route", json!({"via": "carrier pigeon"}), "route"),
+        ("route", json!("ssh"), "route"),
     ] {
         let error = with(field, value).unwrap_err().to_string();
         assert!(error.contains(message), "{field}: {error}");
     }
     // A variable of the environment may stand for the port; no server needs a database.
     with("port", json!("{{port}}")).unwrap();
+    // It reaches its server directly, through an SSH profile or a SOCKS5 proxy.
+    for route in [
+        json!({"via": "direct"}),
+        json!({"via": "ssh", "profile": "bastion"}),
+        json!({"via": "socks5", "host": "proxy", "port": "{{proxyPort}}", "username": "ana",
+               "password": "{{vault:db-proxy:c1}}", "remoteDns": true}),
+    ] {
+        with("route", route).unwrap();
+    }
     let mut file = json!({"driver": "sqlite", "database": "C:/data/shop.db"});
     connection(file.clone()).unwrap();
     file["database"] = Value::Null;

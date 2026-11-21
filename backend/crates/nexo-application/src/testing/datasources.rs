@@ -21,6 +21,8 @@ pub(crate) struct FakeSources {
     pub(crate) administered: Mutex<Vec<(String, Value)>>,
     /// Sessions kept from closing for being idle, and whether they still are.
     pub(crate) held: Mutex<Vec<(String, bool)>>,
+    /// Connections whose server was reached through their route.
+    pub(crate) reached: Mutex<Vec<SqlConnection>>,
 }
 
 #[async_trait]
@@ -31,6 +33,14 @@ impl DataSources for FakeSources {
     async fn test(&self, connection: SqlConnection) -> Result<Value> {
         let password = connection.password.clone().unwrap_or_default();
         Ok(json!({"server": {"serverVersion": "16.4", "user": connection.user, "note": password}}))
+    }
+    async fn reach(&self, connection: SqlConnection) -> Result<Value> {
+        // Says the proxy's password, to test that the application keeps it out.
+        let note = connection.route.route["password"].clone();
+        let answer = json!({"host": connection.host, "port": connection.port,
+                            "via": connection.route.route["via"], "ms": 3, "note": note});
+        self.reached.lock().unwrap().push(connection);
+        Ok(answer)
     }
     async fn connect(&self, session: &str, connection: SqlConnection) -> Result<Value> {
         if connection.host.as_deref() == Some("down.test") {

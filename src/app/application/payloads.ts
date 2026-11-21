@@ -983,6 +983,14 @@ export interface DbCompareDataPayload {
   script?: boolean;
 }
 
+export interface DbRouteTestPayload {
+  workspace?: string;
+  connectionId?: string;
+  connection?: Readonly<Record<string, unknown>>;
+  variables?: Readonly<Record<string, string>>;
+  port?: number;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1115,6 +1123,7 @@ export interface OperationPayloads {
   'db.compare.script': DbCompareSchemaPayload;
   'db.compare.data': DbCompareDataPayload;
   'db.sync.data': DbCompareDataPayload;
+  'db.route.test': DbRouteTestPayload;
 }
 
 /** The payload of an operation. */

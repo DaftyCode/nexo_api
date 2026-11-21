@@ -125,9 +125,15 @@ impl Application {
         let mut values = Vec::new();
         let variables = payload.variables.unwrap_or_default();
         let connection = self
-            .resolve_sql_connection(&stored.value, &variables, &mut values)
+            .resolve_sql_connection(Some(&workspace), &stored.value, &variables, &mut values)
             .await
             .map_err(|error| redact_error(error, &values))?;
+        // The client tools connect on their own: they cannot take the host's forwarded port.
+        if !connection.route.is_direct() {
+            return Err(invalid(
+                "The local client tools cannot go through a SOCKS5 proxy or an SSH tunnel: use a direct connection",
+            ));
+        }
         let database = payload
             .database
             .map(|name| name.trim().to_owned())

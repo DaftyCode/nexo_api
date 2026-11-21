@@ -48,6 +48,7 @@ impl Operation {
                 | Self::DbCompareScript
                 | Self::DbCompareData
                 | Self::DbSyncData
+                | Self::DbRouteTest
         )
     }
     /// Operations on the monitors, which the application schedules, not the engine.

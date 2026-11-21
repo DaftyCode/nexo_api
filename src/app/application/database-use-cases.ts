@@ -42,6 +42,7 @@ export {
   testedServers,
   type DatabasePorts,
   type DbDestination,
+  type DbRouteReport,
   type DbTestReport,
   type TypedDbSecrets,
 } from './database-use-cases/connections';

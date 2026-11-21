@@ -11,6 +11,7 @@ import {
   isVaultReference,
   readDbConnection,
 } from './connection';
+import { Route, StoredRoute, emptyRoute, readRoute, routeProblem, storedRoute } from '../route';
 import { engineProfile } from './engines';
 import { ParsedUrl, formatDbUrl } from './url';
 
@@ -46,6 +47,8 @@ export interface DbForm {
   timeoutSeconds: number;
   /** The folder of the client tools; empty: found where they usually are. */
   localClient: string;
+  /** How it reaches its server; the proxy's password typed here, blank keeps the vault's. */
+  route: Route;
   /** A URL pasted to fill the form. */
   url: string;
 }
@@ -76,6 +79,7 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     sharedSession: false,
     timeoutSeconds: 0,
     localClient: '',
+    route: emptyRoute(),
     url: '',
   };
 }
@@ -104,6 +108,7 @@ export function formOf(name: string, stored: unknown): DbForm {
     sharedSession: !!value.sharedSession,
     timeoutSeconds: value.timeoutSeconds ?? 0,
     localClient: value.localClient ?? '',
+    route: { ...readRoute(value.route), password: '' },
   };
 }
 
@@ -147,6 +152,8 @@ export function formProblem(form: DbForm): string {
   if (allowed.length && names.some((name) => !allowed.includes(name)))
     return 'Choose the driver settings from its list';
   if (new Set(names).size !== names.length) return 'Each driver setting appears once';
+  if (form.route.via === 'socks5' || form.route.via === 'ssh')
+    return routeProblem(form.route) ?? '';
   return '';
 }
 
@@ -190,6 +197,7 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
     ...(form.sharedSession ? { sharedSession: true } : {}),
     ...(form.timeoutSeconds > 0 ? { timeoutSeconds: form.timeoutSeconds } : {}),
     localClient: text(form.localClient),
+    route: connectionRoute(form.route, stored?.route),
     ...(stored?.filters?.length ? { filters: stored.filters } : {}),
     ...(stored?.virtualKeys ? { virtualKeys: stored.virtualKeys } : {}),
     ...(stored?.virtualColumns ? { virtualColumns: stored.virtualColumns } : {}),
@@ -199,11 +207,34 @@ export function valueOf(form: DbForm, stored?: DbConnectionValue): DbConnectionV
   return value;
 }
 
+/**
+ * The route kept from the form: a SOCKS5 proxy or an SSH profile, none when it goes directly.
+ * The proxy's password is the saved vault reference while its user stays; one typed in the
+ * form goes to the vault (`typedSecrets`).
+ */
+function connectionRoute(route: Route, stored?: StoredRoute): StoredRoute | undefined {
+  if (route.via !== 'socks5' && route.via !== 'ssh') return undefined;
+  const kept = storedRoute({ ...route, password: '' });
+  if (kept?.via === 'socks5' && kept.username) {
+    const saved = stored?.via === 'socks5' ? stored.password : undefined;
+    if (saved) kept.password = saved;
+    else delete kept.password;
+  }
+  return kept;
+}
+
 /** The secrets typed in the form, to put in the vault; a vault reference is kept as it is. */
-export function typedSecrets(form: DbForm): { password?: string; keyPem?: string } {
+export function typedSecrets(form: DbForm): {
+  password?: string;
+  keyPem?: string;
+  proxyPassword?: string;
+} {
+  const proxy =
+    form.route.via === 'socks5' && form.route.username.trim() ? form.route.password : '';
   return {
     ...(form.password ? { password: form.password } : {}),
     ...(form.keyPem.trim() && form.certPem.trim() ? { keyPem: form.keyPem.trim() } : {}),
+    ...(proxy ? { proxyPassword: proxy } : {}),
   };
 }
 

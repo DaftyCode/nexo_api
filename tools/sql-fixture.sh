@@ -7,6 +7,8 @@
 #         the same CA; only on x86-64, where Microsoft publishes it (elsewhere its tests skip)
 #   23306 MySQL 8.4 (user root), with tools/sql-fixture-seed-mysql.sql and a certificate of the CA
 #   23307 MariaDB 11.4 (user root), with the same data
+#   22222 an SSH bastion (user nexo), the only way to db.internal:5432: a PostgreSQL 18 with
+#         the same data, a certificate of the CA for that name and no port of its own (DB-25)
 # Prints the NEXO_SQL_* variables the driver and contract tests read, and adds them to
 # $GITHUB_ENV in CI.  Usage: tools/sql-fixture.sh start | stop
 set -euo pipefail
@@ -15,7 +17,11 @@ export MSYS_NO_PATHCONV=1
 
 current=postgres:18
 oldest=postgres:14
-names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql nexo-sql-mysql nexo-sql-mariadb)
+names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql nexo-sql-mysql nexo-sql-mariadb
+  nexo-sql-pg-hidden nexo-sql-bastion)
+network=nexo-sql-net
+bastion=alpine:3.22
+bastion_password='bastion-secret'
 mssql=mcr.microsoft.com/mssql/server:2022-latest
 mysql=mysql:8.4
 mariadb=mariadb:11.4
@@ -26,12 +32,13 @@ directory="${NEXO_SQL_FIXTURE_DIR:-${TMPDIR:-/tmp}/nexo-sql-fixture}"
 
 if [[ "${1:-start}" == "stop" ]]; then
   docker rm -f "${names[@]}" >/dev/null 2>&1 || true
+  docker network rm "$network" >/dev/null 2>&1 || true
   exit 0
 fi
 
 tools="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$directory"
-mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init"
+mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init" "$directory/hidden-init"
 cp "$tools/sql-fixture-seed-postgres.sql" "$directory/seed/"
 mkdir -p "$directory/mssql" "$directory/mysql-seed"
 cp "$tools/sql-fixture-seed-mssql.sql" "$directory/mssql/seed.sql"
@@ -44,6 +51,11 @@ openssl req -newkey rsa:2048 -nodes -subj "/CN=localhost" -keyout server.key -ou
 printf 'subjectAltName=DNS:localhost,IP:127.0.0.1\n' > server.ext
 openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 2 \
   -extfile server.ext -out server.crt 2>/dev/null
+# The server behind the bastion: its certificate names it as the bastion's network does.
+openssl req -newkey rsa:2048 -nodes -subj "/CN=db.internal" -keyout hidden.key -out hidden.csr 2>/dev/null
+printf 'subjectAltName=DNS:db.internal\n' > hidden.ext
+openssl x509 -req -in hidden.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 2 \
+  -extfile hidden.ext -out hidden.crt 2>/dev/null
 openssl req -newkey rsa:2048 -nodes -subj "/CN=nexo" -keyout client.key -out client.csr 2>/dev/null
 printf 'extendedKeyUsage=clientAuth\n' > client.ext
 openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -days 2 \
@@ -67,6 +79,17 @@ psql -v ON_ERROR_STOP=1 -U nexo -d shop -c "ALTER SYSTEM SET ssl = on" \
   -c "ALTER SYSTEM SET ssl_ca_file = 'ca.crt'"
 EOF
 chmod 755 "$directory/tls-init/tls.sh"
+# The hidden server takes TLS (not required) with the certificate for db.internal, and its data.
+cp "$tools/sql-fixture-seed-postgres.sql" "$directory/hidden-init/1-seed.sql"
+cat > "$directory/hidden-init/2-tls.sh" <<'EOF'
+#!/bin/bash
+set -e
+cp /certs/hidden.crt "$PGDATA/server.crt"
+cp /certs/hidden.key "$PGDATA/server.key"
+chmod 600 "$PGDATA/server.key"
+psql -v ON_ERROR_STOP=1 -U nexo -d shop -c "ALTER SYSTEM SET ssl = on"
+EOF
+chmod 755 "$directory/hidden-init/2-tls.sh"
 cd "$directory"
 
 docker rm -f "${names[@]}" >/dev/null 2>&1 || true
@@ -77,6 +100,18 @@ docker run -d --name nexo-sql-pg-tls -p 25433:5432 "${server[@]}" \
   -v "$directory/certs:/certs:ro" -v "$directory/tls-init:/docker-entrypoint-initdb.d:ro" "$current" >/dev/null
 docker run -d --name nexo-sql-pg-old -p 25434:5432 "${server[@]}" \
   -v "$directory/seed:/docker-entrypoint-initdb.d:ro" "$oldest" >/dev/null
+# A network of their own: the hidden server has no port on this computer; only the bastion,
+# an OpenSSH server that signs in nexo with a password and forwards TCP, reaches it.
+docker network rm "$network" >/dev/null 2>&1 || true
+docker network create "$network" >/dev/null
+docker run -d --name nexo-sql-pg-hidden --network "$network" --network-alias db.internal \
+  "${server[@]}" -v "$directory/certs:/certs:ro" \
+  -v "$directory/hidden-init:/docker-entrypoint-initdb.d:ro" "$current" >/dev/null
+docker run -d --name nexo-sql-bastion --network "$network" -p 22222:22 "$bastion" sh -c \
+  "apk add --no-cache openssh >/dev/null && ssh-keygen -A >/dev/null && adduser -D nexo \
+   && echo 'nexo:$bastion_password' | chpasswd >/dev/null \
+   && exec /usr/sbin/sshd -D -e -o PasswordAuthentication=yes -o AllowTcpForwarding=yes \
+      -o PermitRootLogin=no" >/dev/null
 if [[ "$with_mssql" == true ]]; then
   # SQL Server takes the certificate of the CA made above, and still accepts plain logins.
   cat > "$directory/mssql/mssql.conf" <<'CONF'
@@ -108,7 +143,10 @@ for _ in $(seq 1 90); do
   if ready nexo-sql-pg "SELECT count(*) FROM public.every_type" \
     && ready nexo-sql-pg-old "SELECT count(*) FROM public.every_type" \
     && docker exec nexo-sql-pg-tls pg_isready -h 127.0.0.1 -U nexo >/dev/null 2>&1 \
-    && docker logs nexo-sql-pg-tls 2>&1 | grep -q "PostgreSQL init process complete"; then
+    && docker logs nexo-sql-pg-tls 2>&1 | grep -q "PostgreSQL init process complete" \
+    && ready nexo-sql-pg-hidden "SELECT count(*) FROM public.every_type" \
+    && docker logs nexo-sql-pg-hidden 2>&1 | grep -q "PostgreSQL init process complete" \
+    && docker logs nexo-sql-bastion 2>&1 | grep -q "Server listening"; then
     started=true
     break
   fi
@@ -173,7 +211,13 @@ NEXO_SQL_MARIADB_HOST=127.0.0.1
 NEXO_SQL_MARIADB_PORT=23307
 NEXO_SQL_MARIADB_USER=root
 NEXO_SQL_MARIADB_PASSWORD=$mysql_password
-NEXO_SQL_MARIADB_DATABASE=shop"
+NEXO_SQL_MARIADB_DATABASE=shop
+NEXO_SQL_BASTION_HOST=127.0.0.1
+NEXO_SQL_BASTION_PORT=22222
+NEXO_SQL_BASTION_USER=nexo
+NEXO_SQL_BASTION_PASSWORD=$bastion_password
+NEXO_SQL_HIDDEN_HOST=db.internal
+NEXO_SQL_HIDDEN_PORT=5432"
 if [[ "$with_mssql" == true ]]; then
   variables="$variables
 NEXO_SQL_MSSQL_HOST=127.0.0.1

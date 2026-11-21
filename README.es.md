@@ -45,7 +45,7 @@ Las peticiones salen desde tu equipo. Con `NEXO_EGRESS=deny-private` se rechazan
 ### Bases de datos
 
 - **Módulos bajo demanda:** Nexo se instala como cliente de APIs. El driver de cada motor se descarga de GitHub Releases al crear la primera conexión de ese tipo, se comprueba con el SHA-256 que lleva la app y se ejecuta como un proceso aparte. La galería de motores muestra el icono de cada driver, qué es, si es de los más usados y si ya está instalado.
-- **Conexiones y navegador:** asistente con URL pegada (también JDBC), TLS, ajustes del driver y tipo de conexión (producción en rojo) y «Probar conexión». Navegador con teclado, iconos y recuentos, filtros, vista simple, marcadores y carpetas: un clic despliega una fila y un doble clic abre la tabla en sus datos. Ctrl+H busca objetos, datos y scripts guardados.
+- **Conexiones y navegador:** asistente con URL pegada (también JDBC), TLS, ajustes del driver y tipo de conexión (producción en rojo) y «Probar conexión». Una conexión va directa, por un proxy SOCKS5 o por el túnel SSH de un perfil, que Nexo abre para el driver, con «Probar el túnel». Navegador con teclado, iconos y recuentos, filtros, vista simple, marcadores y carpetas: un clic despliega una fila y un doble clic abre la tabla en sus datos. Ctrl+H busca objetos, datos y scripts guardados.
 - **Editor SQL:** cada pestaña con su propia sesión; la sentencia del cursor, una selección o el script con los atajos de DBeaver y confirmaciones antes de enviar. Completa con el esquema (las columnas de un alias, el join de una clave foránea), formatea, tiene plantillas, pide los parámetros `:nombre` y los envía enlazados, genera el SQL de una tabla y tiene una consola SQL. Una pestaña de resultado por consulta (fijar, volver a ejecutar, separar, leer más, repetir; una por cada resultado de un procedimiento), mensajes con la línea de un error, planes de ejecución estimados o medidos, scripts guardados e historial.
 - **Transacciones manuales:** cuentan sus sentencias, guardan su registro y se listan, con commit inteligente y una pregunta antes de cerrar una pestaña con cambios.
 - **Rejilla de datos:** virtualizada (100 000 filas y 200 columnas), con filas alternas, menús por columna y fila, barra de estado y filas que se leen al desplazarse. Teclado, buscar, modo registro, copiar como TSV, JSON, CSV, Markdown, `IN` o `INSERT`, paneles Valor, Metadatos, Cálculo y Agrupación y formatos en Ajustes. Las filas se editan con sus cambios pendientes hasta guardarlos todos juntos.
@@ -163,7 +163,7 @@ Lo que Nexo guarda por su cuenta tiene tope, para que nunca llene el disco: el h
 En el orden previsto:
 
 1. **Más bases de datos** (lo siguiente):
-   - Conexión avanzada: el túnel SSH y el proxy SOCKS5 que ya usan las peticiones y MongoDB, también en los drivers; ajustes de red, arranque de la conexión e importar conexiones de otras herramientas.
+   - Conexión avanzada: perfiles de proxy guardados, consultas de arranque, mantener viva y reconectar, pedir la contraseña cada vez y `pgpass`, tipos de conexión propios, e importar conexiones de DBeaver, pgAdmin y MySQL Workbench.
    - Constructor visual de consultas, generador de datos de prueba, gráficos de resultados y visor de datos espaciales.
    - Ficheros como base de datos (CSV, JSON, Parquet y Excel).
    - Tareas de bases de datos guardadas, compuestas y programadas, y transferencias y comparaciones de MongoDB programadas.

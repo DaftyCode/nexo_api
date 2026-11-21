@@ -63,7 +63,7 @@ async fn shutting_the_host_down_leaves_no_driver_running() {
     let fixture = fixture();
     fixture
         .host
-        .connect("test", connection("main"), Vec::new())
+        .connect("test", connection("main"), Vec::new(), Default::default())
         .await
         .unwrap();
     let driver = pid(&fixture.host, "main").await;
@@ -78,7 +78,7 @@ async fn dropping_the_host_kills_a_driver_that_is_busy() {
     let fixture = fixture();
     fixture
         .host
-        .connect("test", connection("main"), Vec::new())
+        .connect("test", connection("main"), Vec::new(), Default::default())
         .await
         .unwrap();
     let driver = pid(&fixture.host, "main").await;
@@ -102,12 +102,17 @@ async fn dropping_the_host_kills_a_driver_that_is_busy() {
 async fn closes_idle_connections_and_then_their_driver() {
     let fixture = fixture_with(|config| config.idle = Duration::from_millis(400));
     let host = &fixture.host;
-    host.connect("test", connection("used"), Vec::new())
+    host.connect("test", connection("used"), Vec::new(), Default::default())
         .await
         .unwrap();
-    host.connect("test", connection("forgotten"), Vec::new())
-        .await
-        .unwrap();
+    host.connect(
+        "test",
+        connection("forgotten"),
+        Vec::new(),
+        Default::default(),
+    )
+    .await
+    .unwrap();
     let driver = pid(host, "used").await;
     // One connection keeps being used: it and the driver stay, the other one is closed.
     for _ in 0..8 {
@@ -130,7 +135,7 @@ async fn closes_idle_connections_and_then_their_driver() {
     .await;
     eventually("the process is gone", async || !alive(driver)).await;
     // And it comes back when it is needed.
-    host.connect("test", connection("used"), Vec::new())
+    host.connect("test", connection("used"), Vec::new(), Default::default())
         .await
         .unwrap();
     assert_ne!(pid(host, "used").await, driver);
@@ -141,9 +146,14 @@ async fn closes_idle_connections_and_then_their_driver() {
 async fn a_connection_with_an_open_transaction_is_never_closed_for_being_idle() {
     let fixture = fixture_with(|config| config.idle = Duration::from_millis(200));
     let host = &fixture.host;
-    host.connect("test", connection("pending"), Vec::new())
-        .await
-        .unwrap();
+    host.connect(
+        "test",
+        connection("pending"),
+        Vec::new(),
+        Default::default(),
+    )
+    .await
+    .unwrap();
     host.hold("pending", true);
     tokio::time::sleep(Duration::from_millis(900)).await;
     pid(host, "pending").await;
@@ -162,7 +172,7 @@ async fn runs_no_more_drivers_than_allowed() {
     // that one has a connection, and gets it when it has none.
     let fixture = fixture_with(|config| config.max_processes = 1);
     let host = &fixture.host;
-    host.connect("test", connection("main"), Vec::new())
+    host.connect("test", connection("main"), Vec::new(), Default::default())
         .await
         .unwrap();
     let copy =

@@ -34,6 +34,36 @@ impl nexo_application::ports::NetworkPolicy for Engine {
             .check_remote(host, port, &self.mocks.ports())
             .await
     }
+    async fn forward(
+        &self,
+        route: &nexo_application::ports::ConnectionRoute,
+        host: &str,
+        port: u16,
+    ) -> Result<nexo_application::ports::Forwarded> {
+        let route =
+            crate::route::Route::with_profiles(&json!({"route": route.route}), &route.profiles)?;
+        match route {
+            crate::route::Route::Direct => {
+                return Err(Error::Validation(
+                    "This connection goes straight to its server: there is nothing to forward"
+                        .into(),
+                ));
+            }
+            crate::route::Route::Http { .. } => {
+                return Err(Error::Validation(
+                    "This connection cannot go through an HTTP proxy: choose a SOCKS5 proxy or an SSH tunnel"
+                        .into(),
+                ));
+            }
+            _ => {}
+        }
+        let dialer = crate::route::Dialer::new(route, self.egress.clone(), self.mocks.ports());
+        let forward = crate::route::forward::open(dialer, host.to_string(), port).await?;
+        Ok(nexo_application::ports::Forwarded {
+            address: forward.address,
+            open: Box::new(forward),
+        })
+    }
 }
 
 #[async_trait]
@@ -193,6 +223,7 @@ impl ExecutionGateway for Engine {
             | Operation::DbCompareScript
             | Operation::DbCompareData
             | Operation::DbSyncData
+            | Operation::DbRouteTest
             // The application schedules the monitors and runs them through `run`.
             | Operation::MonitorStatus
             | Operation::MonitorRun

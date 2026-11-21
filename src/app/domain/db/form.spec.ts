@@ -1,3 +1,4 @@
+import { emptyRoute } from '../route';
 import { describe, expect, it } from 'vitest';
 import { emptyDbForm, formOf, formProblem, formUrl, typedSecrets, valueOf, withUrl } from './form';
 
@@ -199,6 +200,46 @@ describe('the connection form', () => {
       database: 'a.db',
       tls: { mode: 'prefer' },
     });
+  });
+
+  it('keeps the route of a connection, the proxy password in the vault', () => {
+    const socks = {
+      ...emptyRoute('socks5'),
+      host: ' proxy ',
+      port: '1080',
+      username: 'ana',
+      password: 'typed',
+    };
+    const form = { ...emptyDbForm('postgres'), name: 'Shop', route: socks };
+    const saved = { via: 'socks5' as const, host: 'p', username: 'ana', password: '{{vault:p}}' };
+    // The saved reference stays while its user does; the typed password goes to the vault.
+    expect(valueOf(form, { driver: 'postgres', route: saved }).route).toEqual({
+      via: 'socks5',
+      host: 'proxy',
+      port: '1080',
+      username: 'ana',
+      password: '{{vault:p}}',
+      remoteDns: true,
+    });
+    expect(valueOf(form).route).not.toHaveProperty('password');
+    expect(typedSecrets(form)).toEqual({ proxyPassword: 'typed' });
+    expect(typedSecrets({ ...form, route: { ...socks, username: '' } })).toEqual({});
+    const ssh = { ...form, route: { ...emptyRoute('ssh'), profile: 'p1' } };
+    expect(valueOf(ssh).route).toEqual({ via: 'ssh', profile: 'p1' });
+    expect(valueOf({ ...form, route: emptyRoute() })).not.toHaveProperty('route');
+    // Read back, its password is blank: blank keeps the vault's.
+    expect(formOf('Shop', { driver: 'postgres', route: saved }).route).toMatchObject({
+      via: 'socks5',
+      host: 'p',
+      password: '',
+    });
+    expect(formProblem({ ...form, route: { ...socks, host: '' } })).toBe(
+      'Enter the host of the proxy',
+    );
+    expect(formProblem({ ...ssh, route: emptyRoute('ssh') })).toBe(
+      'Choose the SSH profile to connect through',
+    );
+    expect(formProblem(form)).toBe('');
   });
 
   it('gives the secrets typed, the key only with its certificate', () => {

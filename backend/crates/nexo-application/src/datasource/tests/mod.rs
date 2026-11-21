@@ -4,6 +4,7 @@ use crate::testing::{datasources::with_sources, *};
 mod admin;
 mod dashboard;
 mod explain;
+mod route;
 mod rows;
 mod rules;
 mod search;

@@ -118,6 +118,18 @@ pub trait NetworkPolicy: Send + Sync {
     async fn check_routed_destination(&self, host: &str, port: u16) -> Result<()> {
         self.check_destination(host, port).await
     }
+    /// A loopback port that relays to `host:port` through the route (its SOCKS5 proxy or its
+    /// SSH tunnel), for database drivers, which connect to an address and not through a
+    /// proxy. The destination is checked and first reached here, so a refusal or a server
+    /// that cannot be reached is said at once.
+    async fn forward(
+        &self,
+        _route: &ConnectionRoute,
+        _host: &str,
+        _port: u16,
+    ) -> Result<Forwarded> {
+        Err(no_routes())
+    }
 }
 
 #[async_trait]

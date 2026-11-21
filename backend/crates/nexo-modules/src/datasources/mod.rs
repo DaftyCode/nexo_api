@@ -25,6 +25,7 @@ use serde_json::{Value, json};
 use std::time::Duration;
 
 mod messages;
+mod route;
 use messages::{connect_params, database_error, to_json};
 
 impl Modules {
@@ -69,9 +70,10 @@ impl DataSources for Modules {
     async fn test(&self, connection: SqlConnection) -> Result<Value> {
         let session = format!("test-{}", uuid::Uuid::new_v4().simple());
         let (driver, hosts) = (connection.driver.clone(), connection.secret_hosts.clone());
+        let route = connection.route.clone();
         let params = connect_params(&session, connection)?;
         // Each server the driver asked for, and whether the egress policy let it through.
-        let (report, servers) = self.host().test(&driver, params, hosts).await;
+        let (report, servers) = self.host().test(&driver, params, hosts, route).await;
         let servers = to_json(servers)?;
         match report {
             Ok(report) => {
@@ -89,10 +91,15 @@ impl DataSources for Modules {
         }
     }
 
+    async fn reach(&self, connection: SqlConnection) -> Result<Value> {
+        self.reach_server(connection).await
+    }
+
     async fn connect(&self, session: &str, connection: SqlConnection) -> Result<Value> {
         let (driver, hosts) = (connection.driver.clone(), connection.secret_hosts.clone());
+        let route = connection.route.clone();
         let params = connect_params(session, connection)?;
-        let server = self.host().connect(&driver, params, hosts).await;
+        let server = self.host().connect(&driver, params, hosts, route).await;
         to_json(server.map_err(database_error)?)
     }
 

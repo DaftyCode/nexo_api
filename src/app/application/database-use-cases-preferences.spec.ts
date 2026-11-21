@@ -106,7 +106,7 @@ describe('the connection use cases, at their edges', () => {
       value: { password: '{{vault:db-password:a}}' },
     });
     await cases.connections.forget('z');
-    expect(removedSecrets).toEqual(['db-password:z', 'db-key:z']);
+    expect(removedSecrets).toEqual(['db-password:z', 'db-key:z', 'db-proxy:z']);
   });
 
   it('drops the filters of a connection when none is left', async () => {

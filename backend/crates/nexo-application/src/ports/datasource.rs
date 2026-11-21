@@ -33,6 +33,9 @@ pub struct SqlConnection {
     pub read_only: bool,
     /// Vault secrets of the connection that may only reach some hosts, by name.
     pub secret_hosts: Vec<(String, AllowedHosts)>,
+    /// How it reaches its server: directly, or through a SOCKS5 proxy or an SSH tunnel that
+    /// the host opens for the driver (DB-25).
+    pub route: super::ConnectionRoute,
 }
 impl std::fmt::Debug for SqlConnection {
     /// Never shows the password or the key, should a connection end up in a log.
@@ -45,6 +48,7 @@ impl std::fmt::Debug for SqlConnection {
             .field("database", &self.database)
             .field("user", &self.user)
             .field("read_only", &self.read_only)
+            .field("route", &self.route)
             .finish_non_exhaustive()
     }
 }
@@ -68,6 +72,13 @@ pub trait DataSources: Send + Sync {
     async fn driver(&self, driver: &str) -> Result<Value>;
     /// Opens a connection, measures it and closes it.
     async fn test(&self, connection: SqlConnection) -> Result<Value>;
+    /// Reaches the server of a connection through its route (SOCKS5 proxy or SSH tunnel)
+    /// without opening a session: `{host, port, via, ms}`.
+    async fn reach(&self, _connection: SqlConnection) -> Result<Value> {
+        Err(nexo_domain::Error::Unavailable(
+            "Database connections are not available here".into(),
+        ))
+    }
     /// Opens a session named `session`; answers what the server said about itself.
     async fn connect(&self, session: &str, connection: SqlConnection) -> Result<Value>;
     async fn disconnect(&self, session: &str) -> Result<()>;

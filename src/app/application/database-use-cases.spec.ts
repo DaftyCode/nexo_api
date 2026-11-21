@@ -82,6 +82,36 @@ describe('database use cases', () => {
     expect(value.tls).toEqual({ mode: 'verify', certPem: 'CERT' });
   });
 
+  it('tests the tunnel of a connection with the proxy password in the vault', async () => {
+    const { cases, calls, secrets } = fixture({ 'db.route.test': { via: 'socks5', ms: 4 } });
+    const route = { via: 'socks5' as const, host: 'proxy', username: 'ana' };
+    const value = { driver: 'postgres', host: '{{host}}', route };
+    expect(
+      await cases.connections.testRoute('w', 'c1', value, { proxyPassword: 'pw' }, scopes, 5432),
+    ).toEqual({ via: 'socks5', ms: 4 });
+    expect(secrets.get('db-proxy:c1')).toBe('pw');
+    expect(calls[0]).toEqual([
+      'db.route.test',
+      {
+        workspace: 'w',
+        connection: {
+          driver: 'postgres',
+          host: '{{host}}',
+          route: { ...route, password: '{{vault:db-proxy:c1}}' },
+        },
+        variables: { host: 'db.test' },
+        port: 5432,
+      },
+    ]);
+    // The form's route is not changed; a reference typed as such is kept, with no port.
+    expect(value.route).toEqual(route);
+    await cases.connections.testRoute('w', 'c1', value, { proxyPassword: '{{vault:x}}' }, scopes);
+    expect(calls[1][1]).toMatchObject({ connection: { route: { password: '{{vault:x}}' } } });
+    expect(calls[1][1]).not.toHaveProperty('port');
+    await cases.connections.forget('c1');
+    expect(secrets.has('db-proxy:c1')).toBe(false);
+  });
+
   it('saves with the revision it was loaded from, and keeps vault references typed as such', async () => {
     const { cases, saved, secrets } = fixture();
     const existing = document('c1', {});

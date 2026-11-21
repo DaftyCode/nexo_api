@@ -2,7 +2,7 @@
 //! tests can look at.
 #![allow(dead_code)]
 use async_trait::async_trait;
-use nexo_application::ports::NetworkPolicy;
+use nexo_application::ports::{ConnectionRoute, Forwarded, NetworkPolicy};
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::{protocol::ConnectParams, statements::ExecuteParams};
 use nexo_modules::{DriverHost, Folder, HostConfig};
@@ -13,10 +13,12 @@ use std::{
     time::Duration,
 };
 
-/// Refuses the hosts named `private…` and answers a fixed address for the others.
+/// Refuses the hosts named `private…` and answers a fixed address for the others; through
+/// a route, a loopback port as the engine would forward it.
 #[derive(Default)]
 pub struct Policy {
     pub asked: Mutex<Vec<(String, u16)>>,
+    pub forwarded: Mutex<Vec<(String, u16)>>,
 }
 #[async_trait]
 impl NetworkPolicy for Policy {
@@ -31,6 +33,19 @@ impl NetworkPolicy for Policy {
             )));
         }
         Ok(vec![SocketAddr::from(([203, 0, 113, 7], port))])
+    }
+    async fn forward(&self, route: &ConnectionRoute, host: &str, port: u16) -> Result<Forwarded> {
+        assert!(!route.is_direct());
+        self.forwarded.lock().unwrap().push((host.to_owned(), port));
+        if host.starts_with("private") {
+            return Err(Error::Validation(format!(
+                "Destination {host} is blocked by the egress policy"
+            )));
+        }
+        Ok(Forwarded {
+            address: SocketAddr::from(([127, 0, 0, 1], 15_432)),
+            open: Box::new(()),
+        })
     }
 }
 

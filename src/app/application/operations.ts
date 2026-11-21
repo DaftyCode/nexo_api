@@ -120,6 +120,7 @@ export const EXECUTION_OPERATIONS = [
   'db.compare.script',
   'db.compare.data',
   'db.sync.data',
+  'db.route.test',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

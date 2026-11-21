@@ -13,6 +13,7 @@ import { FormField, form, max, min } from '@angular/forms/signals';
 import {
   testedServers,
   type DbDestination,
+  type DbRouteReport,
   type DbTestReport,
 } from '../application/database-use-cases';
 import { ApiFailure, failureCode } from '../application/ports';
@@ -31,6 +32,7 @@ import {
 import { parseDbUrl } from '../domain/db/url';
 import { ModuleSummary } from '../domain/modules';
 import { DbConnectionFields } from './db-connection-fields';
+import { DbConnectionNetwork } from './db-connection-network';
 import { DbEngineGallery } from './db-engine-gallery';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -38,7 +40,7 @@ import { ModuleDownload } from './module-download';
 import { PanelTask } from './panel-task';
 import { named } from './workspace-state';
 
-export type EditorPage = 'main' | 'tls' | 'properties' | 'general';
+export type EditorPage = 'main' | 'tls' | 'network' | 'properties' | 'general';
 
 /**
  * Creating or editing a connection of a database module: the engine first (its module is
@@ -46,7 +48,14 @@ export type EditorPage = 'main' | 'tls' | 'properties' | 'general';
  * is saved; the password and the client key always go to the vault.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, DbEngineGallery, DbConnectionFields, ModuleDownload],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    DbEngineGallery,
+    DbConnectionFields,
+    DbConnectionNetwork,
+    ModuleDownload,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-connection-editor',
   templateUrl: './db-connection-editor.html',
@@ -65,6 +74,8 @@ export class DbConnectionEditor {
     max(path.timeoutSeconds, 3600);
   });
   protected readonly report = signal<DbTestReport | undefined>(undefined);
+  /** What the last «Test the tunnel» said. */
+  protected readonly tunnel = signal<DbRouteReport | undefined>(undefined);
   /** Each server the last test asked to reach, and whether the egress policy let it. */
   protected readonly servers = signal<readonly DbDestination[]>([]);
   protected readonly notice = signal('');
@@ -79,10 +90,12 @@ export class DbConnectionEditor {
   protected readonly document = computed(() => this.section.connection(this.tab().connection));
   private readonly stored = computed(() => readDbConnection(this.document()?.value));
   protected readonly profile = computed(() => engineProfile(this.model().driver));
-  /** The tabs of the form; an engine without TLS (a file) has no TLS tab. */
+  /** The tabs of the form; an engine without TLS or network (a file) has neither tab. */
   protected readonly pages = computed(() =>
-    (['main', 'tls', 'properties', 'general'] as const).filter(
-      (page) => page !== 'tls' || this.profile().tlsModes.length > 0,
+    (['main', 'tls', 'network', 'properties', 'general'] as const).filter(
+      (page) =>
+        (page !== 'tls' || this.profile().tlsModes.length > 0) &&
+        (page !== 'network' || !this.profile().file),
     ),
   );
   /** How a URL of the engine looks, under the field where one is pasted. */
@@ -95,6 +108,10 @@ export class DbConnectionEditor {
   protected readonly problem = computed(() => formProblem(this.model()));
   protected readonly passwordStored = computed(() => !!this.stored().password);
   protected readonly keyStored = computed(() => !!this.stored().tls?.keyPem);
+  protected readonly proxyStored = computed(() => {
+    const route = this.stored().route;
+    return route?.via === 'socks5' && !!route.password;
+  });
 
   constructor() {
     effect(() => {
@@ -115,6 +132,7 @@ export class DbConnectionEditor {
   private open(tab: DbTab) {
     const document = this.section.connection(tab.connection);
     this.report.set(undefined);
+    this.tunnel.set(undefined);
     this.notice.set('');
     if (document) {
       this.id = document.id;
@@ -177,7 +195,8 @@ export class DbConnectionEditor {
       if (!(await this.section.ensure(model.driver))) return;
       const cases = await this.section.cases();
       const typed = typedSecrets(model);
-      if (!this.document() && (typed.password || typed.keyPem)) this.unsavedSecrets = true;
+      if (!this.document() && (typed.password || typed.keyPem || typed.proxyPassword))
+        this.unsavedSecrets = true;
       try {
         const report = await cases.connections.test(
           this.state.workspaceId(),
@@ -192,6 +211,28 @@ export class DbConnectionEditor {
         this.servers.set(testedServers((error as ApiFailure).detail));
         throw error;
       }
+    });
+  }
+
+  /** «Test the tunnel»: the server reached through the proxy or the SSH tunnel, no session. */
+  protected testRoute() {
+    this.tunnel.set(undefined);
+    void this.task.run(async () => {
+      this.check();
+      const model = this.model();
+      const cases = await this.section.cases();
+      const typed = typedSecrets(model);
+      if (!this.document() && typed.proxyPassword) this.unsavedSecrets = true;
+      this.tunnel.set(
+        await cases.connections.testRoute(
+          this.state.workspaceId(),
+          this.id,
+          valueOf(model, this.stored()),
+          typed,
+          this.state.scopes(),
+          this.profile().defaultPort || undefined,
+        ),
+      );
     });
   }
 
@@ -227,7 +268,12 @@ export class DbConnectionEditor {
       await this.state.refresh();
       this.section.tabs.update(this.tab().id, { connection: saved.id, title: saved.name });
       this.section.active.set(saved.id);
-      this.model.update((form) => ({ ...form, password: '', keyPem: '' }));
+      this.model.update((form) => ({
+        ...form,
+        password: '',
+        keyPem: '',
+        route: { ...form.route, password: '' },
+      }));
       // The navigator connects again with the new settings.
       if (this.section.tree.status()[saved.id] === 'connected')
         await this.section.tree.disconnect(saved.id);

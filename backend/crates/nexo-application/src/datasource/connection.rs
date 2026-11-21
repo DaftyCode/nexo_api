@@ -2,7 +2,7 @@
 //! variables it names and its vault references resolved.
 use crate::{
     Application,
-    ports::{SqlConnection, SqlTls},
+    ports::{ConnectionRoute, SqlConnection, SqlTls},
     vault::{replace_vault, vault_references},
 };
 use nexo_domain::{
@@ -103,6 +103,10 @@ fn sql_connection(value: &Value) -> Result<SqlConnection> {
         options,
         read_only: value.get("readOnly") == Some(&Value::Bool(true)),
         secret_hosts: Vec::new(),
+        route: ConnectionRoute {
+            route: value.get("route").cloned().unwrap_or(Value::Null),
+            profiles: Value::Null,
+        },
     })
 }
 
@@ -133,6 +137,7 @@ impl Application {
     /// those secrets alongside.
     pub(crate) async fn resolve_sql_connection(
         &self,
+        workspace: Option<&WorkspaceId>,
         value: &Value,
         variables: &BTreeMap<String, String>,
         values: &mut Vec<(String, String)>,
@@ -162,7 +167,22 @@ impl Application {
                 *text = resolve(text.take());
             }
         }
+        // The proxy of its route: its password is in the vault too.
+        if let Some(route) = value.get_mut("route").and_then(Value::as_object_mut) {
+            for field in ["host", "username", "password"] {
+                if let Some(text) = route.get_mut(field) {
+                    *text = resolve(text.take());
+                }
+            }
+        }
         let mut connection = sql_connection(&value)?;
+        // The SSH profile its route names, with its secrets, read from the workspace.
+        if !connection.route.is_direct() {
+            connection.route.profiles = self
+                .ssh_profiles(workspace.map(WorkspaceId::as_str), &connection.route.route)
+                .await?
+                .unwrap_or(Value::Null);
+        }
         if !names.is_empty() {
             connection.secret_hosts = self
                 .secrets

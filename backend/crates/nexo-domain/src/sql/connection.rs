@@ -1,7 +1,7 @@
 //! A saved connection to a SQL database (or any engine of a module):
 //! `{driver, host, port, database, user, password, params, tls, type, folder, color,
-//! readOnly, autoCommit, timeoutSeconds}`. Its secrets are never stored: the password and the
-//! client key are references to the vault (`{{vault:…}}`).
+//! readOnly, autoCommit, timeoutSeconds, route}`. Its secrets are never stored: the password,
+//! the client key and the password of its proxy are references to the vault (`{{vault:…}}`).
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -52,6 +52,55 @@ fn text<'a>(value: &'a Value, field: &str) -> Result<Option<&'a str>> {
     }
 }
 
+/// A port of the connection or of its proxy: a number from 1 to 65535, none, or a variable of
+/// the environment, replaced when it connects.
+fn valid_port(port: Option<&Value>) -> bool {
+    match port {
+        None | Some(Value::Null) => true,
+        Some(Value::Number(port)) => port
+            .as_u64()
+            .is_some_and(|port| (1..=65535).contains(&port)),
+        Some(Value::String(port)) if port.contains("{{") || port.trim().is_empty() => true,
+        Some(Value::String(port)) => port.trim().parse::<u16>().is_ok_and(|port| port > 0),
+        Some(_) => false,
+    }
+}
+
+/// How the connection reaches its server (DB-25): directly, through a SOCKS5 proxy (its
+/// password in the vault) or an SSH tunnel of a profile. Database protocols do not go through
+/// HTTP proxies.
+fn validate_route(route: Option<&Value>) -> Result<()> {
+    let Some(route) = route.filter(|route| !route.is_null()) else {
+        return Ok(());
+    };
+    if !route.is_object() {
+        return Err(invalid("The route of the connection is not valid"));
+    }
+    match text(route, "via")?.unwrap_or("direct") {
+        "direct" => Ok(()),
+        "ssh" if text(route, "profile")?.is_some() => Ok(()),
+        "ssh" => Err(invalid("Choose the SSH profile to connect through")),
+        "socks5" => {
+            if text(route, "host")?.is_none() {
+                return Err(invalid("Write the server of the SOCKS5 proxy"));
+            }
+            if !valid_port(route.get("port")) {
+                return Err(invalid("The port of the proxy is a number from 1 to 65535"));
+            }
+            if text(route, "password")?.is_some_and(|secret| !is_vault_reference(secret)) {
+                return Err(invalid(
+                    "Keep the password of the proxy out of the connection: Nexo keeps it in the vault",
+                ));
+            }
+            Ok(())
+        }
+        "http" => Err(invalid(
+            "A database connection goes through a SOCKS5 proxy or an SSH tunnel, not an HTTP proxy",
+        )),
+        _ => Err(invalid("The route of the connection is not valid")),
+    }
+}
+
 /// Checks a SQL connection before it is saved.
 pub fn validate_connection(value: &Value) -> Result<()> {
     let driver =
@@ -73,16 +122,8 @@ pub fn validate_connection(value: &Value) -> Result<()> {
     if text(value, "host")?.is_none() && text(value, "database")?.is_none() {
         return Err(invalid("A connection needs a server or a database"));
     }
-    match value.get("port") {
-        None | Some(Value::Null) => {}
-        Some(Value::Number(port))
-            if port
-                .as_u64()
-                .is_some_and(|port| (1..=65535).contains(&port)) => {}
-        // A variable of the environment, replaced when it connects.
-        Some(Value::String(port)) if port.contains("{{") || port.trim().is_empty() => {}
-        Some(Value::String(port)) if port.trim().parse::<u16>().is_ok_and(|port| port > 0) => {}
-        Some(_) => return Err(invalid("The port is a number from 1 to 65535")),
+    if !valid_port(value.get("port")) {
+        return Err(invalid("The port is a number from 1 to 65535"));
     }
     let secrets = [
         ("password", text(value, "password")?),
@@ -102,6 +143,7 @@ pub fn validate_connection(value: &Value) -> Result<()> {
             )));
         }
     }
+    validate_route(value.get("route"))?;
     if let Some(kind) = value.get("type")
         && !kind.is_null()
         && serde_json::from_value::<ConnectionType>(kind.clone()).is_err()

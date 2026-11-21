@@ -8,12 +8,12 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { startServer } from './server.mjs';
-import { compareClient } from './db-compare-client.mjs';
+import { dbClient } from './db-client.mjs';
 
 const environment = process.env;
 let server;
 let folder;
-const { save, connect, run, call, ok } = compareClient(() => server);
+const { save, connect, run, call, ok } = dbClient(() => server);
 
 before(async () => {
   server = await startServer({

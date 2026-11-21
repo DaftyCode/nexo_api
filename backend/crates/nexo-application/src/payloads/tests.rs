@@ -105,11 +105,14 @@ fn every_operation_has_a_payload_type() {
                     | Operation::NativeStatus
                     | Operation::NativeCancel
             )
-            // Every database operation names its session, script or driver; only a test may
-            // name nothing yet (and is refused afterwards), and the list of open transactions
-            // is of the whole workspace.
+            // Every database operation names its session, script or driver; only a test (of
+            // the connection or of its tunnel) may name nothing yet (and is refused
+            // afterwards), and the list of open transactions is of the whole workspace.
             || (operation.is_datasource()
-                && !matches!(operation, Operation::DbTest | Operation::DbTransactions));
+                && !matches!(
+                    operation,
+                    Operation::DbTest | Operation::DbRouteTest | Operation::DbTransactions
+                ));
         assert_eq!(result.is_err(), required, "{operation}");
         assert!(
             validate(

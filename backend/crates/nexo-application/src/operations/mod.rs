@@ -154,6 +154,7 @@ operations!(
         DbCompareScript => "db.compare.script",
         DbCompareData => "db.compare.data",
         DbSyncData => "db.sync.data",
+        DbRouteTest => "db.route.test",
     }
 );
 

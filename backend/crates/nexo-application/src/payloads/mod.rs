@@ -19,6 +19,7 @@ mod common;
 mod datasource;
 mod datasource_admin;
 mod datasource_compare;
+mod datasource_network;
 mod git;
 mod http;
 mod masking;
@@ -40,6 +41,7 @@ pub use common::*;
 pub use datasource::*;
 pub use datasource_admin::*;
 pub use datasource_compare::*;
+pub use datasource_network::*;
 pub use git::*;
 pub use http::*;
 pub use masking::*;
@@ -238,6 +240,7 @@ operation_payloads! {
     DbCompareScript => DbCompareSchemaPayload,
     DbCompareData => DbCompareDataPayload,
     DbSyncData => DbCompareDataPayload,
+    DbRouteTest => DbRouteTestPayload,
 }
 
 /// Checks the payload of a Git operation.

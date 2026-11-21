@@ -10,6 +10,30 @@ import {
   withFilter,
 } from './connection';
 
+describe('the route of a connection', () => {
+  it('keeps a SOCKS5 proxy or an SSH profile and reads anything else as direct', () => {
+    expect(
+      readDbConnection({ driver: 'postgres', route: { via: 'ssh', profile: 'p1', host: 'x' } })
+        .route,
+    ).toEqual({ via: 'ssh', profile: 'p1' });
+    expect(
+      readDbConnection({
+        driver: 'postgres',
+        route: { via: 'socks5', host: 'p', port: 1080, username: 'a', password: '{{vault:x}}' },
+      }).route,
+    ).toEqual({
+      via: 'socks5',
+      host: 'p',
+      port: '1080',
+      username: 'a',
+      password: '{{vault:x}}',
+      remoteDns: true,
+    });
+    for (const route of [{ via: 'http', host: 'p' }, { via: 'direct' }, 'ssh', undefined])
+      expect(readDbConnection({ driver: 'postgres', route })).not.toHaveProperty('route');
+  });
+});
+
 describe('a stored database connection', () => {
   it('is read defensively, keeping only what has the right shape', () => {
     const value = readDbConnection({

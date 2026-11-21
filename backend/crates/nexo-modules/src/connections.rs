@@ -1,10 +1,12 @@
 //! The connections open in the drivers: which process each one lives in, the secrets that
 //! may only reach some hosts, and when it was last used.
+use nexo_application::ports::{ConnectionRoute, Forwarded};
 use nexo_domain::hosts::AllowedHosts;
 use nexo_driver_sdk::{DriverError, Result, limits};
 use serde::Serialize;
 use std::{
     collections::HashMap,
+    net::SocketAddr,
     sync::Mutex,
     time::{Duration, Instant},
 };
@@ -38,6 +40,11 @@ pub(crate) struct Connection {
     pub destinations: Vec<Destination>,
     /// A transaction is open in it: it is never closed for being idle (the person is told).
     pub held: bool,
+    /// How it reaches its servers; when not direct, the host forwards a loopback port for
+    /// each server the driver asks for (DB-25).
+    pub route: ConnectionRoute,
+    /// The forwarded ports, by server: closed with the connection.
+    pub forwards: Vec<(String, u16, Forwarded)>,
 }
 
 #[derive(Default)]
@@ -74,11 +81,47 @@ impl Connections {
         connection.last_used = Instant::now();
         Some((connection.module.clone(), connection.generation))
     }
-    /// The secrets of a connection of `module` that are limited to some hosts.
-    pub fn secret_hosts(&self, name: &str, module: &str) -> Option<SecretHosts> {
+    /// The secrets of a connection of `module` that are limited to some hosts, and its route.
+    pub fn secret_hosts(&self, name: &str, module: &str) -> Option<(SecretHosts, ConnectionRoute)> {
         let connections = self.0.lock().unwrap();
         let connection = connections.get(name).filter(|c| c.module == module)?;
-        Some(connection.secret_hosts.clone())
+        Some((connection.secret_hosts.clone(), connection.route.clone()))
+    }
+    /// The loopback address already forwarded to `host:port` for a connection.
+    pub fn forwarded(&self, name: &str, host: &str, port: u16) -> Option<SocketAddr> {
+        let connections = self.0.lock().unwrap();
+        connections
+            .get(name)?
+            .forwards
+            .iter()
+            .find(|(known, at, _)| known == host && *at == port)
+            .map(|(_, _, forward)| forward.address)
+    }
+    /// Keeps a forwarded port with its connection, once per server; when the connection is
+    /// gone (closed while the port opened), the port closes at once.
+    pub fn keep_forward(
+        &self,
+        name: &str,
+        host: &str,
+        port: u16,
+        forward: Forwarded,
+    ) -> SocketAddr {
+        let mut connections = self.0.lock().unwrap();
+        let Some(connection) = connections.get_mut(name) else {
+            return forward.address;
+        };
+        if let Some((_, _, known)) = connection
+            .forwards
+            .iter()
+            .find(|(known, at, _)| known == host && *at == port)
+        {
+            return known.address;
+        }
+        let address = forward.address;
+        if connection.forwards.len() < DESTINATIONS {
+            connection.forwards.push((host.to_owned(), port, forward));
+        }
+        address
     }
     /// Records a server a connection's driver asked for; the same server once, the latest.
     pub fn record(&self, name: &str, destination: Destination) {

@@ -3091,5 +3091,11 @@
   "Data (two tables): rows paired by the primary key or the columns you name, with columns left out and a filter; it counts the rows only on each side, those that differ and those that are equal, and shows the first 1000 differences. Synchronize the target inserts, updates and, if asked, deletes in one transaction once you type the table’s name; or write the INSERT, UPDATE and DELETE script instead.": "Datos (dos tablas): filas emparejadas por la clave primaria o por las columnas que nombres, con columnas que no se comparan y un filtro; cuenta las filas que solo están en cada lado, las distintas y las iguales, y muestra las 1000 primeras diferencias. Sincronizar el destino inserta, actualiza y, si se pide, borra en una transacción después de escribir el nombre de la tabla; o escribe en su lugar el script de INSERT, UPDATE y DELETE.",
   "db.compare.warn.default": "Se deja fuera el valor por defecto de {{v0}}: está escrito para el otro motor",
   "db.compare.warn.checks": "Se dejan fuera los checks de {{v0}}: están escritos para el otro motor",
-  "db.compare.warn.others": "{{v0}} vistas, rutinas u otros objetos son distintos: el script solo cambia tablas"
+  "db.compare.warn.others": "{{v0}} vistas, rutinas u otros objetos son distintos: el script solo cambia tablas",
+  "Network": "Red",
+  "Leave the proxy password blank to keep the saved one.": "Deja en blanco la contraseña del proxy para conservar la guardada.",
+  "Nexo opens the proxy or the SSH tunnel and the driver connects through it; the server is checked by its own name, which only the far side needs to know.": "Nexo abre el proxy o el túnel SSH y el driver conecta a través de él; el servidor se comprueba por su propio nombre, que solo necesita conocer el otro lado.",
+  "Test the tunnel": "Probar el túnel",
+  "db.route.reached": "Se ha llegado a {{v0}} por el túnel en {{v1}} ms.",
+  "The Network tab of a connection takes it through a SOCKS5 proxy (its password kept in the vault) or the SSH tunnel of a profile of Settings → SSH. Test the tunnel reaches the server through it without signing in; TLS still checks the server by its own name.": "La pestaña Red de una conexión la lleva por un proxy SOCKS5 (con su contraseña en el vault) o por el túnel SSH de un perfil de Ajustes → SSH. Probar el túnel llega al servidor por él sin iniciar sesión; TLS sigue comprobando el servidor por su propio nombre."
 }

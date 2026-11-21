@@ -6,12 +6,12 @@ import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { startServer } from './server.mjs';
-import { compareClient } from './db-compare-client.mjs';
+import { dbClient } from './db-client.mjs';
 
 const environment = process.env;
 const setting = (prefix, key) => environment[`NEXO_SQL_${prefix}_${key}`];
 let server;
-const { save, connect, run, ok } = compareClient(() => server);
+const { save, connect, run, ok } = dbClient(() => server);
 
 /** Where the tests make their tables: their own, as the other files run at the same time. */
 const OWN = 'nexo_compare';

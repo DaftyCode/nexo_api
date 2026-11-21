@@ -3091,5 +3091,11 @@
   "Data (two tables): rows paired by the primary key or the columns you name, with columns left out and a filter; it counts the rows only on each side, those that differ and those that are equal, and shows the first 1000 differences. Synchronize the target inserts, updates and, if asked, deletes in one transaction once you type the table’s name; or write the INSERT, UPDATE and DELETE script instead.": "Data (two tables): rows paired by the primary key or the columns you name, with columns left out and a filter; it counts the rows only on each side, those that differ and those that are equal, and shows the first 1000 differences. Synchronize the target inserts, updates and, if asked, deletes in one transaction once you type the table’s name; or write the INSERT, UPDATE and DELETE script instead.",
   "db.compare.warn.default": "The default of {{v0}} is left out: it is written for the other engine",
   "db.compare.warn.checks": "The checks of {{v0}} are left out: they are written for the other engine",
-  "db.compare.warn.others": "{{v0}} views, routines or other objects differ: the script only changes tables"
+  "db.compare.warn.others": "{{v0}} views, routines or other objects differ: the script only changes tables",
+  "Network": "Network",
+  "Leave the proxy password blank to keep the saved one.": "Leave the proxy password blank to keep the saved one.",
+  "Nexo opens the proxy or the SSH tunnel and the driver connects through it; the server is checked by its own name, which only the far side needs to know.": "Nexo opens the proxy or the SSH tunnel and the driver connects through it; the server is checked by its own name, which only the far side needs to know.",
+  "Test the tunnel": "Test the tunnel",
+  "db.route.reached": "{{v0}} reached through the tunnel in {{v1}} ms.",
+  "The Network tab of a connection takes it through a SOCKS5 proxy (its password kept in the vault) or the SSH tunnel of a profile of Settings → SSH. Test the tunnel reaches the server through it without signing in; TLS still checks the server by its own name.": "The Network tab of a connection takes it through a SOCKS5 proxy (its password kept in the vault) or the SSH tunnel of a profile of Settings → SSH. Test the tunnel reaches the server through it without signing in; TLS still checks the server by its own name."
 }

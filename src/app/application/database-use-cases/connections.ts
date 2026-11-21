@@ -4,6 +4,7 @@ import {
   NodeFilter,
   dbKeySecret,
   dbPasswordSecret,
+  dbProxySecret,
   isVaultReference,
   readDbConnection,
   vaultReference,
@@ -20,6 +21,16 @@ export type DatabasePorts = ExecutionPort &
 export interface TypedDbSecrets {
   password?: string;
   keyPem?: string;
+  /** Of the SOCKS5 proxy of its route. */
+  proxyPassword?: string;
+}
+
+/** What «Test the tunnel» says: the server reached through the route, and how long it took. */
+export interface DbRouteReport {
+  host: string;
+  port: number;
+  via: 'socks5' | 'ssh';
+  ms: number;
 }
 
 /** A server the driver asked to reach while testing, and what the egress policy said. */
@@ -78,7 +89,11 @@ export class DatabaseConnectionCases {
     value: DbConnectionValue,
     typed: TypedDbSecrets,
   ): Promise<DbConnectionValue> {
-    const stored: DbConnectionValue = { ...value, ...(value.tls ? { tls: { ...value.tls } } : {}) };
+    const stored: DbConnectionValue = {
+      ...value,
+      ...(value.tls ? { tls: { ...value.tls } } : {}),
+      ...(value.route ? { route: { ...value.route } } : {}),
+    };
     const password = typed.password ?? '';
     if (password) {
       if (isVaultReference(password)) stored.password = password.trim();
@@ -93,6 +108,14 @@ export class DatabaseConnectionCases {
       else {
         await this.api.putSecret(dbKeySecret(id), key);
         stored.tls.keyPem = vaultReference(dbKeySecret(id));
+      }
+    }
+    const proxy = typed.proxyPassword ?? '';
+    if (proxy && stored.route?.via === 'socks5') {
+      if (isVaultReference(proxy)) stored.route.password = proxy.trim();
+      else {
+        await this.api.putSecret(dbProxySecret(id), proxy);
+        stored.route.password = vaultReference(dbProxySecret(id));
       }
     }
     return stored;
@@ -138,6 +161,27 @@ export class DatabaseConnectionCases {
     });
   }
 
+  /**
+   * «Test the tunnel»: the server of the connection as the form shows it, reached through its
+   * SOCKS5 proxy or SSH tunnel without opening a session. `port` is the engine's usual one.
+   */
+  async testRoute(
+    workspace: string,
+    id: string,
+    value: DbConnectionValue,
+    typed: TypedDbSecrets,
+    scopes: VariableScopes,
+    port?: number,
+  ): Promise<DbRouteReport> {
+    const connection = await this.withSecrets(id, value, typed);
+    return this.api.execute<DbRouteReport>('db.route.test', {
+      workspace,
+      connection: connection as unknown as Record<string, unknown>,
+      variables: connectionVariables(connection, scopes),
+      ...(port ? { port } : {}),
+    });
+  }
+
   /** A copy of a connection, with a new id and name; it reads the same vault entries. */
   duplicate(workspace: string, document: WorkspaceDocument, id: string, name: string) {
     return this.api.save({
@@ -173,7 +217,7 @@ export class DatabaseConnectionCases {
 
   /** Removes the vault entries a connection that was tested but never saved left behind. */
   async forget(id: string) {
-    for (const name of [dbPasswordSecret(id), dbKeySecret(id)])
+    for (const name of [dbPasswordSecret(id), dbKeySecret(id), dbProxySecret(id)])
       await this.api.removeSecret(name).catch(() => undefined);
   }
 
@@ -184,7 +228,11 @@ export class DatabaseConnectionCases {
   async remove(document: WorkspaceDocument, others: readonly WorkspaceDocument[]) {
     await this.api.remove(document);
     const text = (item: WorkspaceDocument) => JSON.stringify(item.value ?? {});
-    for (const name of [dbPasswordSecret(document.id), dbKeySecret(document.id)]) {
+    for (const name of [
+      dbPasswordSecret(document.id),
+      dbKeySecret(document.id),
+      dbProxySecret(document.id),
+    ]) {
       const reference = vaultReference(name);
       const used = others.some((other) => other.id !== document.id && text(other).includes(name));
       if (text(document).includes(reference) && !used)

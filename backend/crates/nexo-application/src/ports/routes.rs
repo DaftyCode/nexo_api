@@ -54,13 +54,33 @@ impl std::fmt::Debug for ConnectionRoute {
     }
 }
 
+/// A loopback address that reaches one destination through a route while it is kept: what
+/// a database driver connects to instead of the destination, as `ssh -L` does. Dropping it
+/// closes the port and every connection relayed through it.
+pub struct Forwarded {
+    pub address: std::net::SocketAddr,
+    /// What keeps the forwarding open.
+    pub open: Box<dyn std::any::Any + Send + Sync>,
+}
+impl std::fmt::Debug for Forwarded {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("Forwarded")
+            .field("address", &self.address)
+            .finish_non_exhaustive()
+    }
+}
+
 /// Answer of a policy that cannot route connections (tests, tools without an engine).
 pub fn unrouted(route: &ConnectionRoute) -> Result<Option<SocksProxy>> {
     if route.is_direct() {
         Ok(None)
     } else {
-        Err(Error::Validation(
-            "Connections cannot go through a proxy or an SSH tunnel here".into(),
-        ))
+        Err(no_routes())
     }
+}
+
+/// Why a policy that cannot route connections refuses one that has a route.
+pub fn no_routes() -> Error {
+    Error::Validation("Connections cannot go through a proxy or an SSH tunnel here".into())
 }

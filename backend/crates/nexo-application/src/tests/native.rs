@@ -77,6 +77,24 @@ async fn run(application: &Application, operation: Operation, payload: Value) ->
 }
 
 #[tokio::test]
+async fn the_client_tools_do_not_go_through_a_route() {
+    let mut value = postgres();
+    value["route"] = json!({"via": "socks5", "host": "proxy.test"});
+    let (application, tools) = setup(value);
+    let options = json!({"options": {"path": file("shop.dump"), "format": "custom"}});
+    let refused = run(&application, Operation::NativeBackup, options)
+        .await
+        .unwrap_err();
+    assert!(
+        refused
+            .to_string()
+            .contains("SOCKS5 proxy or an SSH tunnel"),
+        "{refused}"
+    );
+    assert!(tools.started.lock().unwrap().is_empty());
+}
+
+#[tokio::test]
 async fn a_backup_runs_the_tool_of_the_connection_folder_with_its_password_kept_out() {
     let (application, tools) = setup(postgres());
     let started = run(
