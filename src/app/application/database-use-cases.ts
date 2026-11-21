@@ -4,6 +4,7 @@ import { DatabaseDiagramCases } from './database-use-cases/diagrams';
 import { DatabaseAdminCases } from './database-use-cases/admin';
 import { DatabaseDashboardCases } from './database-use-cases/dashboards';
 import { DatabaseNativeCases } from './database-use-cases/native';
+import { DatabaseCompareCases } from './database-use-cases/compare';
 import { DatabaseNavigatorCases } from './database-use-cases/navigator';
 import { DatabasePlanCases } from './database-use-cases/plans';
 import { DatabaseSearchCases } from './database-use-cases/search';
@@ -82,6 +83,8 @@ export class DatabaseUseCases {
   readonly dashboards: DatabaseDashboardCases;
   /** Backups, restores and scripts with the local client tools (desktop). */
   readonly native: DatabaseNativeCases;
+  /** Comparing and synchronizing schemas and data (DB-24). */
+  readonly compare: DatabaseCompareCases;
 
   constructor(
     engine: DatabasePorts & StatementPorts,
@@ -111,5 +114,6 @@ export class DatabaseUseCases {
     this.admin = new DatabaseAdminCases(api);
     this.dashboards = new DatabaseDashboardCases(api);
     this.native = new DatabaseNativeCases(api);
+    this.compare = new DatabaseCompareCases(api);
   }
 }

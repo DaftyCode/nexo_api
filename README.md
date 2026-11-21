@@ -51,6 +51,7 @@ Requests leave from your computer. Set `NEXO_EGRESS=deny-private` to refuse priv
 - **Data grid:** virtualized (100 000 rows and 200 columns), with striped rows, column and row menus, a status bar and rows read while scrolling. Keyboard, find, record view, copy as TSV, JSON, CSV, Markdown, `IN` or `INSERT`, Value, Metadata, Calc and Grouping panels, and formats in Settings. Rows are edited with their pending changes until they are all saved together.
 - **Moving data:** export to eight formats, import CSV and JSON, and copy data between connections of different engines. In the desktop app, back up and restore PostgreSQL, MySQL and MariaDB databases, or run a large `.sql` script, with the engine's own client tools (`pg_dump`, `pg_restore`, `psql`, `mysqldump`, `mysql`), the password kept off the command line.
 - **Objects and structure:** an object's sheet with its figures and views, properties in cards, sections, DDL and data filtered and ordered on the server, with foreign keys followed both ways. Tables are created and changed with forms or in their Columns view, with every type of the engine and its DDL shown before it runs. Views, routines and other objects start from a template of their engine.
+- **Comparing and syncing:** two schemas, databases, SQLite files or tables, of the same connection or another, also of another engine (types then compared by what they hold and marked equivalent): tables part by part with both DDLs side by side, and the script that makes the target like the source, opened in a SQL tab. The rows of two tables paired by their key, with counts and the first 1000 differences, synchronized in one transaction once the target table's name is typed, or written as an `INSERT`, `UPDATE` and `DELETE` script.
 - **Entity-relationship diagrams:** a table with its neighbours or every table of a schema, in IDEF1X, crow's foot or UML. They move with the mouse or the keyboard, are saved as your own diagrams with notes and export to SVG, PNG or PDF.
 - **Administration:** session and lock managers (who is connected and who waits for whom; cancel a query or end a session after asking), users and roles with their memberships and privileges, and a dashboard per server that draws sessions, transactions, reads, size and locks every few seconds, with your own panels from read-only queries.
 - **Working session:** tabs come back when reopened, without results. Closing, reloading or leaving the page closes the connections it opened, and the desktop app closes them on exit.
@@ -162,7 +163,6 @@ What Nexo keeps by itself is capped, so it never fills the disk: the request his
 In the planned order:
 
 1. **More databases** (next):
-   - Comparing and syncing data and schemas.
    - Advanced connections: the SSH tunnels and SOCKS5 proxies requests and MongoDB already use, in the drivers too; network settings, connection startup and importing connections from other tools.
    - A visual query builder, a test data generator, result charts and a spatial data viewer.
    - Files as a database (CSV, JSON, Parquet and Excel).

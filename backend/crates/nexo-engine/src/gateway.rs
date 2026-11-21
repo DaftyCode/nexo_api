@@ -189,6 +189,10 @@ impl ExecutionGateway for Engine {
             | Operation::DbDashboardRead
             | Operation::DbSplit
             | Operation::DbDialect
+            | Operation::DbCompareSchema
+            | Operation::DbCompareScript
+            | Operation::DbCompareData
+            | Operation::DbSyncData
             // The application schedules the monitors and runs them through `run`.
             | Operation::MonitorStatus
             | Operation::MonitorRun

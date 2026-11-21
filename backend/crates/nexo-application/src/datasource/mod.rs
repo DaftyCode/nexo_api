@@ -3,6 +3,7 @@
 //! session. Every statement is checked by `rules` before its driver sees it and recorded in
 //! the history; the connection's vault values never come back in an answer or an error.
 mod admin;
+mod compare;
 mod connection;
 mod dashboard;
 mod explain;
@@ -128,6 +129,10 @@ impl Application {
             Operation::DbRowsWrite => self.write_rows(sources, read(payload)?).await,
             Operation::DbExplain => self.explain_statement(sources, read(payload)?).await,
             Operation::DbImport => self.import_rows(sources, read(payload)?).await,
+            Operation::DbCompareSchema => self.compare_schema(sources, read(payload)?).await,
+            Operation::DbCompareScript => self.compare_script(sources, read(payload)?).await,
+            Operation::DbCompareData => self.compare_data(sources, read(payload)?).await,
+            Operation::DbSyncData => self.sync_data(sources, read(payload)?).await,
             Operation::DbConvert => self.convert_columns(read(payload)?),
             Operation::DbCopy => self.copy_page(sources, read(payload)?).await,
             Operation::DbSearch => self.search_session(sources, read(payload)?).await,

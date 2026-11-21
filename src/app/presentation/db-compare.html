@@ -1,0 +1,245 @@
+@if (task.error()) {
+  <div class="global-alert panel-alert" role="alert">
+    <span>{{ task.error() | transloco }}</span><button
+      type="button"
+      class="icon-button"
+      (click)="task.error.set('')"
+      [attr.aria-label]="'Dismiss error' | transloco"
+    >
+      ×
+    </button>
+  </div>
+}
+@let d = draft();
+<div class="db-compare">
+  <p class="muted">{{ 'db.compare.source' | transloco: { v0: source() } }}</p>
+  @if (d.kind === 'table') {
+    <nav class="editor-tabs" [attr.aria-label]="'What to compare' | transloco">
+      @for (each of ['structure', 'data']; track each) {
+        <button
+          type="button"
+          [class.active]="d.mode() === each"
+          [attr.aria-current]="d.mode() === each ? 'page' : null"
+          (click)="d.mode.set($any(each))"
+        >
+          {{ 'db.compare.mode.' + each | transloco }}
+        </button>
+      }
+    </nav>
+  }
+  <div class="db-compare-form">
+    <label class="field"
+      >{{ 'Compare with the connection' | transloco
+      }}<select [value]="d.model().target" (change)="chooseTarget($event)">
+        <option value="">{{ 'Choose a connection' | transloco }}</option>
+        @for (target of targets(); track target.id) {
+          <option [value]="target.id">{{ target.name }}</option>
+        }
+      </select></label
+    >
+    <label class="field"
+      >{{ (d.kind === 'table' ? 'Table' : 'Schema or database') | transloco
+      }}<select [formField]="d.fields.targetPath">
+        <option value="">{{ 'Choose one' | transloco }}</option>
+        @for (candidate of d.candidates(); track candidateKey(candidate.path)) {
+          <option [value]="candidateKey(candidate.path)">{{ candidate.label }}</option>
+        }
+      </select></label
+    >
+    @if (d.mode() === 'structure') {
+      <label class="check-field"
+        ><input type="checkbox" [formField]="d.fields.ignoreColumnOrder" />{{
+          'Leave out the order of columns' | transloco
+        }}</label
+      >
+      <label class="check-field"
+        ><input type="checkbox" [formField]="d.fields.ignoreConstraintNames" />{{
+          'Pair keys and indexes by what they hold, not by name' | transloco
+        }}</label
+      >
+      <label class="check-field"
+        ><input type="checkbox" [formField]="d.fields.ignoreComments" />{{
+          'Leave out comments' | transloco
+        }}</label
+      >
+    } @else {
+      <label class="field"
+        >{{ 'Key columns (empty: the primary key)' | transloco }}<input [formField]="d.fields.key"
+      /></label>
+      <label class="field"
+        >{{ 'Columns left out' | transloco }}<input [formField]="d.fields.ignore"
+      /></label>
+      <label class="field"
+        >{{ 'Filter (a condition of both tables)' | transloco
+        }}<input [formField]="d.fields.filter"
+      /></label>
+    }
+    <div class="button-grid">
+      <button
+        type="button"
+        class="button primary"
+        [disabled]="d.running() || !d.model().targetPath"
+        (click)="compare()"
+      >
+        {{ 'Compare' | transloco }}
+      </button>
+      @if (d.running()) {
+        <button type="button" class="button" (click)="cancel()">{{ 'Cancel' | transloco }}</button>
+      }
+    </div>
+  </div>
+
+  @if (d.mode() === 'structure' && d.structure(); as result) {
+    <section class="db-compare-result" [attr.aria-label]="'Differences' | transloco">
+      <p role="status">
+        @for (status of statuses; track status) {
+          <span class="db-compare-count" [attr.data-status]="status"
+            >{{ statusLabel(status) | transloco }}: {{ result.counts[status] }}</span
+          >
+        }
+      </p>
+      <ul class="db-compare-objects">
+        @for (object of objects(); track object.kind + object.name) {
+          <li>
+            <button
+              type="button"
+              class="db-compare-object"
+              [class.active]="d.chosen() === object"
+              [attr.data-status]="object.status"
+              (click)="show(object)"
+            >
+              <span>{{ object.name }}</span>
+              <span class="muted">{{ statusLabel(object.status) | transloco }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+      @if (d.chosen(); as object) {
+        @if (object.differences.length) {
+          <table class="db-compare-parts">
+            <thead>
+              <tr>
+                <th>{{ 'Part' | transloco }}</th>
+                <th>{{ 'Name' | transloco }}</th>
+                <th>{{ 'State' | transloco }}</th>
+                <th>{{ 'What differs' | transloco }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (part of object.differences; track $index) {
+                <tr [attr.data-status]="part.status">
+                  <td>{{ partLabel(part.part) | transloco }}</td>
+                  <td>{{ part.name }}</td>
+                  <td>{{ statusLabel(part.status) | transloco }}</td>
+                  <td>
+                    @for (field of part.fields; track field) {
+                      {{ fieldLabel(field) | transloco }}
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+        @if (d.definitions(); as lines) {
+          <div class="db-compare-ddl">
+            @for (side of lines; track $index) {
+              <pre
+                tabindex="0"
+                [attr.aria-label]="($index ? 'Target' : 'Source') | transloco"
+              >@for (line of side; track $index) {<span [class.changed]="line.changed">{{ line.text }}
+</span>}</pre>
+            }
+          </div>
+        }
+      }
+      <label class="check-field"
+        ><input type="checkbox" [formField]="d.fields.drop" />{{
+          'Also drop the tables only the target has' | transloco
+        }}</label
+      >
+    </section>
+  }
+
+  @if (d.mode() === 'data' && d.data(); as result) {
+    <section class="db-compare-result" [attr.aria-label]="'Differences' | transloco">
+      <p role="status">
+        {{
+          'db.compare.rows'
+            | transloco
+              : {
+                  v0: result.counts.onlySource,
+                  v1: result.counts.onlyTarget,
+                  v2: result.counts.different,
+                  v3: result.counts.equal,
+                }
+        }}
+      </p>
+      @if (!result.complete) {
+        <p class="muted">{{ 'db.compare.kept' | transloco: { v0: result.differences.length } }}</p>
+      }
+      @if (result.differences.length) {
+        <table class="db-compare-parts">
+          <thead>
+            <tr>
+              <th>{{ 'State' | transloco }}</th>
+              <th>{{ 'Source' | transloco }}</th>
+              <th>{{ 'Target' | transloco }}</th>
+              <th>{{ 'Columns that differ' | transloco }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of result.differences; track $index) {
+              <tr [attr.data-status]="row.kind">
+                <td>{{ statusLabel(row.kind) | transloco }}</td>
+                <td>{{ values(row, 'source') }}</td>
+                <td>{{ values(row, 'target') }}</td>
+                <td>{{ row.columns.join(', ') }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      <label class="check-field"
+        ><input type="checkbox" [formField]="d.fields.remove" />{{
+          'Also delete the rows only the target has' | transloco
+        }}</label
+      >
+      <label class="field"
+        >{{ 'db.compare.typeTable' | transloco: { v0: d.targetTable() }
+        }}<input [formField]="d.fields.confirmName" autocomplete="off"
+      /></label>
+      <div class="button-grid">
+        <button
+          type="button"
+          class="button danger"
+          [disabled]="d.model().confirmName.trim() !== d.targetTable()"
+          (click)="sync()"
+        >
+          {{ 'Synchronize the target' | transloco }}
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (d.structure() || d.data()) {
+    <div class="button-grid">
+      <button type="button" class="button" (click)="makeScript()">
+        {{ 'Write the script' | transloco }}
+      </button>
+    </div>
+  }
+  @if (d.script()) {
+    @for (warning of d.warnings(); track $index) {
+      <p class="alert">{{ warning.text | transloco: warning.params }}</p>
+    }
+    <pre class="db-compare-script" tabindex="0" [attr.aria-label]="'Script' | transloco">{{
+      d.script()
+    }}</pre>
+    <div class="button-grid">
+      <button type="button" class="button primary" (click)="d.openScript()">
+        {{ 'Open in a SQL tab of the target' | transloco }}
+      </button>
+    </div>
+  }
+</div>

@@ -72,6 +72,15 @@ impl State {
     }
 }
 
+/// A date and time as MySQL reads it: `T` as a space and without the `Z` of UTC (how other
+/// drivers write a time with its zone; DATETIME keeps no zone).
+fn datetime(text: &str) -> String {
+    let text = text.trim();
+    let text = text.strip_suffix(['Z', 'z']).unwrap_or(text);
+    let text = text.strip_suffix("+00:00").unwrap_or(text);
+    text.replacen('T', " ", 1)
+}
+
 /// A value bound to a statement, as MySQL takes it.
 pub(crate) fn param(value: &Value) -> MyValue {
     match value {
@@ -84,6 +93,11 @@ pub(crate) fn param(value: &Value) -> MyValue {
             kind: ValueKind::Binary,
             ..
         } => MyValue::Bytes(value.as_bytes().unwrap_or_default()),
+        Value::Typed {
+            kind: ValueKind::Timestamp | ValueKind::Timestamptz,
+            text,
+            ..
+        } => MyValue::Bytes(datetime(text).into_bytes()),
         Value::Typed { text, .. } => MyValue::Bytes(text.clone().into_bytes()),
         Value::Array(_) => MyValue::Bytes(serde_json::to_vec(value).unwrap_or_default()),
     }
@@ -186,4 +200,21 @@ pub(crate) fn spawn(
         let _ = conn.disconnect().await;
         closed.store(true, Ordering::Relaxed);
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn times_with_a_zone_are_bound_as_mysql_reads_them() {
+        for (written, read) in [
+            ("2026-01-01T09:00:00Z", "2026-01-01 09:00:00"),
+            ("2026-01-01T09:00:00.5+00:00", "2026-01-01 09:00:00.5"),
+            ("2026-01-01 09:00:00", "2026-01-01 09:00:00"),
+        ] {
+            let value = Value::typed(ValueKind::Timestamptz, written.to_string());
+            assert_eq!(param(&value), MyValue::Bytes(read.as_bytes().to_vec()));
+        }
+    }
 }

@@ -15,6 +15,7 @@ import { DbLocks } from './db-locks';
 import { DbSessions } from './db-sessions';
 import { DbDashboard } from './db-dashboard';
 import { DbNative } from './db-native';
+import { DbCompare } from './db-compare';
 import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -50,6 +51,7 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbLocks,
     DbDashboard,
     DbNative,
+    DbCompare,
   ],
   providers: [DbSection],
   host: {
@@ -95,6 +97,7 @@ export class DbPanel {
     if (tab.kind === 'locks') return `${connection} · Locks`;
     if (tab.kind === 'dashboard') return `${connection} · Dashboard`;
     if (tab.kind === 'native') return `${connection} · Backup and restore`;
+    if (tab.kind === 'compare') return `${tab.path?.at(-1) ?? connection} · Compare`;
     const script = this.section
       .scripts()
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
@@ -106,6 +109,7 @@ export class DbPanel {
     if (tab.kind === 'locks') return 'lock';
     if (tab.kind === 'dashboard') return 'datasets';
     if (tab.kind === 'native') return 'download';
+    if (tab.kind === 'compare') return 'columns';
     return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {

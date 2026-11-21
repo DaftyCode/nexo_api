@@ -116,6 +116,10 @@ export const EXECUTION_OPERATIONS = [
   'native.script',
   'native.status',
   'native.cancel',
+  'db.compare.schema',
+  'db.compare.script',
+  'db.compare.data',
+  'db.sync.data',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

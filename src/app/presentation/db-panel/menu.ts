@@ -38,4 +38,5 @@ export type MenuAction =
   | 'sessions'
   | 'locks'
   | 'dashboard'
-  | 'native';
+  | 'native'
+  | 'compare';

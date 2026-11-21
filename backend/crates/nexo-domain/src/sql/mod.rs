@@ -1,6 +1,7 @@
 //! SQL as Nexo reads it, without running anything: scripts split into statements, what
 //! each statement does, and the rules of a saved SQL connection.
 mod classify;
+pub mod compare;
 mod connection;
 mod convert;
 mod scanner;

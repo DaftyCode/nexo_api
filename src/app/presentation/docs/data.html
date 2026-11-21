@@ -108,6 +108,18 @@
     </li>
     <li>
       {{
+        'Compare with… in the menu of a schema, database, table or SQLite file compares it with another one, of the same connection or of another, also of another engine (types are then compared by what they hold and marked equivalent). Structure: tables part by part (columns, keys, indexes, checks, foreign keys) with both DDLs side by side; Write the script makes the DDL that leaves the target like the source, opened in a SQL tab to read and run.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Data (two tables): rows paired by the primary key or the columns you name, with columns left out and a filter; it counts the rows only on each side, those that differ and those that are equal, and shows the first 1000 differences. Synchronize the target inserts, updates and, if asked, deletes in one transaction once you type the table’s name; or write the INSERT, UPDATE and DELETE script instead.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'In the desktop app, Backup and restore… in the menu of a PostgreSQL, MySQL or MariaDB connection backs up a database (or a whole PostgreSQL server), restores a backup or runs a large .sql script with the engine’s own tools: pg_dump, pg_restore, psql, mysqldump or mysql. Nexo finds them where they are usually installed, or in the folder you choose in the connection’s General settings (Local client).'
           | transloco
       }}

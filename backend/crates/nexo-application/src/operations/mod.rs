@@ -150,6 +150,10 @@ operations!(
         NativeScript => "native.script",
         NativeStatus => "native.status",
         NativeCancel => "native.cancel",
+        DbCompareSchema => "db.compare.schema",
+        DbCompareScript => "db.compare.script",
+        DbCompareData => "db.compare.data",
+        DbSyncData => "db.sync.data",
     }
 );
 

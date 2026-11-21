@@ -18,6 +18,8 @@ pub fn typescript_contract() -> String {
         MongoCollectionRef::TYPESCRIPT.to_string(),
         ComparedHeader::TYPESCRIPT.to_string(),
         ComparedResponse::TYPESCRIPT.to_string(),
+        CompareSide::TYPESCRIPT.to_string(),
+        CompareTable::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
     parts.push(GitPayload::TYPESCRIPT.to_string());

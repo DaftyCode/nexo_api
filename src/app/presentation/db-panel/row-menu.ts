@@ -147,6 +147,11 @@ import { DbSection } from './section';
           </button>
         }
       }
+      @if (compares()) {
+        <button type="button" role="menuitem" (click)="chosen.emit('compare')">
+          {{ 'Compare with…' | transloco }}
+        </button>
+      }
       @if (row().type === 'connection' || row().type === 'node' || row().type === 'script-group') {
         <button type="button" role="menuitem" (click)="chosen.emit('newScript')">
           {{ 'New SQL script' | transloco }} <kbd>Ctrl+]</kbd>
@@ -239,6 +244,17 @@ export class DbRowMenu {
     );
   });
   private readonly nativeFiles = inject(NATIVE_FILES);
+  /** A SQLite file, a schema, a database or a table can be compared with another (DB-24). */
+  protected readonly compares = computed(() => {
+    const row = this.row();
+    if (row.type === 'node') return ['schema', 'database', 'table'].includes(row.node?.kind ?? '');
+    const document = this.section.connection(row.connection ?? '');
+    return (
+      row.type === 'connection' &&
+      !!document &&
+      readDbConnection(document.value).driver === 'sqlite'
+    );
+  });
   /** Tables, schemas, databases and folders of tables have a diagram (DB-20). */
   protected readonly diagrammed = computed(() => {
     const node = this.row().node;

@@ -78,6 +78,19 @@ export interface ComparedResponse {
   error?: string;
 }
 
+export interface CompareSide {
+  session: string;
+  path: readonly string[];
+  table?: boolean;
+}
+
+export interface CompareTable {
+  session: string;
+  path: readonly string[];
+  table: string;
+  schema?: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -945,6 +958,31 @@ export interface NativeRunPayload {
   timeoutSeconds?: number;
 }
 
+export interface DbCompareSchemaPayload {
+  source: CompareSide;
+  target: CompareSide;
+  workspace?: string;
+  ignoreComments?: boolean;
+  ignoreColumnOrder?: boolean;
+  ignoreConstraintNames?: boolean;
+  drop?: boolean;
+  tables?: readonly string[];
+}
+
+export interface DbCompareDataPayload {
+  source: CompareTable;
+  target: CompareTable;
+  workspace?: string;
+  key?: readonly string[];
+  ignore?: readonly string[];
+  filter?: string;
+  statement?: string;
+  delete?: boolean;
+  confirm?: boolean;
+  confirmName?: string;
+  script?: boolean;
+}
+
 export interface GitPayload {
   workspace?: string;
   branch?: string;
@@ -1073,6 +1111,10 @@ export interface OperationPayloads {
   'native.script': NativeRunPayload;
   'native.status': IdPayload;
   'native.cancel': IdPayload;
+  'db.compare.schema': DbCompareSchemaPayload;
+  'db.compare.script': DbCompareSchemaPayload;
+  'db.compare.data': DbCompareDataPayload;
+  'db.sync.data': DbCompareDataPayload;
 }
 
 /** The payload of an operation. */

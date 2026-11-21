@@ -18,6 +18,7 @@ mod auth;
 mod common;
 mod datasource;
 mod datasource_admin;
+mod datasource_compare;
 mod git;
 mod http;
 mod masking;
@@ -38,6 +39,7 @@ pub use auth::*;
 pub use common::*;
 pub use datasource::*;
 pub use datasource_admin::*;
+pub use datasource_compare::*;
 pub use git::*;
 pub use http::*;
 pub use masking::*;
@@ -232,6 +234,10 @@ operation_payloads! {
     NativeScript => NativeRunPayload,
     NativeStatus => IdPayload,
     NativeCancel => IdPayload,
+    DbCompareSchema => DbCompareSchemaPayload,
+    DbCompareScript => DbCompareSchemaPayload,
+    DbCompareData => DbCompareDataPayload,
+    DbSyncData => DbCompareDataPayload,
 }
 
 /// Checks the payload of a Git operation.

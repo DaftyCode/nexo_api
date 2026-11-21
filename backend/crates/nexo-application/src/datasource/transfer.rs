@@ -42,7 +42,7 @@ fn writable(session: &Session, confirm: Option<bool>) -> Result<()> {
 
 impl Application {
     /// Writes a batch with the target's driver, and logs it in its transaction.
-    async fn write_batch(
+    pub(in crate::datasource) async fn write_batch(
         &self,
         sources: &dyn DataSources,
         name: &str,
