@@ -3,7 +3,7 @@
 //! connection it runs only once confirmed. Nothing found is kept.
 use super::{redacted, sessions::session_name};
 use crate::{Application, payloads::DbSearchPayload, ports::DataSources};
-use nexo_domain::{Error, Result, sql::ConnectionType};
+use nexo_domain::{Error, Result};
 use serde_json::{Value, json};
 
 impl Application {
@@ -14,9 +14,9 @@ impl Application {
     ) -> Result<Value> {
         let session = self.sql_sessions.get(session_name(&payload.session)?)?;
         let data = payload.mode.as_deref() == Some("data");
-        if data && session.kind == ConnectionType::Production && !payload.confirm.unwrap_or(false) {
+        if data && session.rules.confirm_writes && !payload.confirm.unwrap_or(false) {
             return Err(Error::Validation(format!(
-                "The connection {} is for production: confirm the search, as it may read whole tables",
+                "The connection {} asks to confirm each change: confirm the search, as it may read whole tables",
                 session.name
             )));
         }

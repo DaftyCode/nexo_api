@@ -11,7 +11,7 @@ use crate::{
     payloads::{DbAdminPayload, DbSessionKillPayload},
     ports::DataSources,
 };
-use nexo_domain::{Error, Result, sql::ConnectionType};
+use nexo_domain::{Error, Result};
 use serde_json::{Value, json};
 
 /// The id of a session of the server: digits and the separators some engines use
@@ -76,9 +76,9 @@ impl Application {
             )));
         }
         let typed = payload.confirm_name.as_deref().map(str::trim);
-        if session.kind == ConnectionType::Production && typed != Some(target) {
+        if session.rules.confirm_writes && typed != Some(target) {
             return Err(Error::Validation(format!(
-                "The connection {} is for production: type {target} to {what} that session",
+                "The connection {} asks to confirm each change: type {target} to {what} that session",
                 session.name
             )));
         }

@@ -130,7 +130,11 @@ describe('DbSessions', () => {
     const dialog = panel.dialog('Cancel the query');
     const confirm = () => panel.buttons(/^Cancel the query$/, dialog)[0] as HTMLButtonElement;
     expect(confirm().disabled).toBe(true);
-    await panel.fill('This connection is for production: type 42 to confirm', '42', dialog);
+    await panel.fill(
+      'This connection asks to confirm each change: type 42 to confirm',
+      '42',
+      dialog,
+    );
     expect(confirm().disabled).toBe(false);
     confirm().click();
     await panel.settle(10);

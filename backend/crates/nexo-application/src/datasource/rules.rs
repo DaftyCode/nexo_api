@@ -1,10 +1,11 @@
 //! What a statement may do on a connection. The rules live here, not in the interface, so
-//! they hold for every client: a read-only connection runs only reads, a production one
-//! asks before every write, and a write to every row, a `TRUNCATE` and a `DROP` always ask.
+//! they hold for every client: a read-only connection runs only reads, one whose type asks
+//! for it confirms every write or every change of structure (production does both), and a
+//! write to every row, a `TRUNCATE` and a `DROP` always ask.
 use super::sessions::Session;
 use nexo_domain::{
     Error, Result,
-    sql::{Classification, ConnectionType, Dialect, StatementKind, classify, split},
+    sql::{Classification, Dialect, StatementKind, classify, split},
 };
 
 /// What `sql` does, read as every statement it holds: the most dangerous one decides.
@@ -68,9 +69,18 @@ pub(crate) fn check(
             "Confirm the statement: it changes every row of the table",
         ));
     }
-    if session.kind == ConnectionType::Production && classification.writes() && !confirm {
+    if session.rules.confirm_writes && classification.writes() && !confirm {
         return Err(refused(format!(
-            "The connection {} is for production: confirm the statement before it changes anything",
+            "The connection {} asks to confirm each change: confirm the statement before it changes anything",
+            session.name
+        )));
+    }
+    if session.rules.confirm_structure
+        && classification.kind == StatementKind::Structure
+        && !confirm
+    {
+        return Err(refused(format!(
+            "The connection {} asks to confirm changes of structure: confirm the statement first",
             session.name
         )));
     }

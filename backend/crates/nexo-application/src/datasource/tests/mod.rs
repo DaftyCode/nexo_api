@@ -13,6 +13,7 @@ mod search;
 mod structure;
 mod transactions;
 mod transfer;
+mod types;
 
 async fn connect(application: &Application, session: &str) -> Result<Value> {
     application

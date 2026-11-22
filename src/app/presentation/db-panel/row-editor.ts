@@ -1,5 +1,5 @@
 import { computed, signal } from '@angular/core';
-import { connectionType, readDbConnection, tableKey } from '../../domain/db/connection';
+import { autoCommits, readDbConnection, tableKey } from '../../domain/db/connection';
 import {
   EditHistory,
   addRow,
@@ -180,7 +180,8 @@ export class RowEditor implements GridEditing {
     const found = this.changes();
     if (!found || !found.changes.length || this.saving()) return;
     const deleted = found.changes.filter((change) => change.kind === 'delete').length;
-    const production = connectionType(this.value()) === 'production';
+    const rules = this.section.rulesOf(this.source.connection());
+    const production = rules.confirmWrites;
     let confirm = false;
     if (production || deleted > MANY_DELETED) {
       const message = production ? 'db.edit.confirmProduction' : 'db.edit.confirmDeletes';
@@ -203,7 +204,7 @@ export class RowEditor implements GridEditing {
         },
       );
       this.discard();
-      const manual = this.value().autoCommit === false || production;
+      const manual = !autoCommits(this.value(), rules);
       this.section.state.tell(
         success(manual ? 'db.edit.savedPending' : 'db.edit.saved', 'db.edit.rows', {
           v0: String(written.affected),

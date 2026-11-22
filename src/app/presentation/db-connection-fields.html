@@ -166,8 +166,8 @@
       <label class="field grow"
         >{{ 'Connection type' | transloco }}
         <select [formField]="fields().type">
-          @for (type of types; track type) {
-            <option [value]="type">{{ typeLabel(type) | transloco }}</option>
+          @for (type of types(); track type.id) {
+            <option [value]="type.id">{{ typeLabel(type) | transloco }}</option>
           }
         </select>
       </label>

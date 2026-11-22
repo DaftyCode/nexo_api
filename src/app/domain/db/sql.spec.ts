@@ -41,23 +41,29 @@ describe('the SQL editor decisions', () => {
   });
 
   it('asks what the backend will demand, before sending', () => {
-    expect(confirmationOf(classify(), true)).toBeUndefined();
-    expect(confirmationOf(classify({ kind: 'write' }), false)).toBeUndefined();
-    expect(confirmationOf(classify({ kind: 'write' }), true)?.message).toBe(
-      'db.confirm.production',
-    );
-    expect(confirmationOf(classify({ kind: 'write', missingWhere: true }), false)?.message).toBe(
+    const none = { confirmWrites: false, confirmStructure: false };
+    const all = { confirmWrites: true, confirmStructure: true };
+    expect(confirmationOf(classify(), all)).toBeUndefined();
+    expect(confirmationOf(classify({ kind: 'write' }), none)).toBeUndefined();
+    expect(confirmationOf(classify({ kind: 'write' }), all)?.message).toBe('db.confirm.production');
+    expect(confirmationOf(classify({ kind: 'write', missingWhere: true }), none)?.message).toBe(
       'db.confirm.everyRow',
     );
-    expect(confirmationOf(classify({ kind: 'write', truncate: true }), false)?.message).toBe(
+    expect(confirmationOf(classify({ kind: 'write', truncate: true }), none)?.message).toBe(
       'db.confirm.truncate',
     );
     expect(
-      confirmationOf(classify({ kind: 'structure', drops: true, drop: ['a', 'b'] }), false),
+      confirmationOf(classify({ kind: 'structure', drops: true, drop: ['a', 'b'] }), none),
     ).toEqual({ message: 'db.confirm.dropNamed', params: { v0: 'a, b' }, names: 'a, b' });
     expect(
-      confirmationOf(classify({ kind: 'structure', drops: true }), false)?.names,
+      confirmationOf(classify({ kind: 'structure', drops: true }), none)?.names,
     ).toBeUndefined();
+    // A type of your own may confirm only changes of structure.
+    const structure = { confirmWrites: false, confirmStructure: true };
+    expect(confirmationOf(classify({ kind: 'write' }), structure)).toBeUndefined();
+    expect(confirmationOf(classify({ kind: 'structure' }), structure)?.message).toBe(
+      'db.confirm.structure',
+    );
   });
 
   it('writes the name of a tree object with its schema, quoted as needed', () => {

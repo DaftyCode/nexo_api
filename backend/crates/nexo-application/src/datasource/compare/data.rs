@@ -19,7 +19,7 @@ use crate::{
 };
 use nexo_domain::{
     Result,
-    sql::{ConnectionType, StatementKind, classify},
+    sql::{StatementKind, classify},
 };
 use serde_json::Value;
 use tally::Tally;
@@ -191,9 +191,9 @@ impl Application {
                     "Type the name of the target table to change its rows",
                 ));
             }
-            if target.kind == ConnectionType::Production && payload.confirm != Some(true) {
+            if target.rules.confirm_writes && payload.confirm != Some(true) {
                 return Err(refused(format!(
-                    "The connection {} is for production: confirm the changes first",
+                    "The connection {} asks to confirm each change: confirm the changes first",
                     target.name
                 )));
             }

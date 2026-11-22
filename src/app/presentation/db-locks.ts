@@ -48,7 +48,7 @@ export class DbLocks {
     killModes(this.section, this.tab().connection).includes('terminate'),
   );
   protected readonly production = computed(
-    () => this.section.typeOf(this.tab().connection) === 'production',
+    () => this.section.typeOf(this.tab().connection).rules.confirmWrites,
   );
   protected readonly duration = duration;
 

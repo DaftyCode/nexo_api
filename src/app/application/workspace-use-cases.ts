@@ -34,6 +34,7 @@ import { VariableCases } from './workspace-use-cases/variables';
 import { BRUNO_MAX_FILES, brunoFile, readImportReport } from '../domain/import-report';
 import { SessionCases } from './workspace-use-cases/sessions';
 import { SshProfileCases } from './workspace-use-cases/ssh';
+import { ConnectionTypeCases } from './workspace-use-cases/connection-types';
 import { MonitorCases } from './workspace-use-cases/monitors';
 import { CompareCases } from './workspace-use-cases/compare';
 import { MaskingCases } from './workspace-use-cases/masking';
@@ -82,6 +83,8 @@ export class WorkspaceUseCases {
   readonly sessions: SessionCases;
   /** SSH profiles to tunnel requests and connections through a bastion. */
   readonly ssh: SshProfileCases;
+  /** The types of SQL connections of the person's own (DB-25). */
+  readonly connectionTypes: ConnectionTypeCases;
   /** Collections run on a schedule while Nexo is open. */
   readonly monitors: MonitorCases;
   /** What changed between two responses. */
@@ -105,6 +108,7 @@ export class WorkspaceUseCases {
     this.variables = new VariableCases(api, files, preferences);
     this.sessions = new SessionCases(api, preferences);
     this.ssh = new SshProfileCases(api);
+    this.connectionTypes = new ConnectionTypeCases(api);
     this.monitors = new MonitorCases(api, notifications);
     this.compare = new CompareCases(api);
     this.masking = new MaskingCases(api);

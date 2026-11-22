@@ -64,7 +64,9 @@ export class DbNative {
   protected readonly document = computed(() => this.section.connection(this.tab().connection));
   protected readonly value = computed(() => readDbConnection(this.document()?.value));
   protected readonly postgres = computed(() => this.value().driver === 'postgres');
-  protected readonly production = computed(() => this.value().type === 'production');
+  protected readonly production = computed(
+    () => this.section.rulesOf(this.tab().connection).confirmWrites,
+  );
   /** The database a restore or a script goes to. */
   protected readonly database = computed(
     () => this.model().database.trim() || this.value().database || '',

@@ -115,7 +115,7 @@ test('a read-only connection refuses writes before its driver sees them', async 
 test('a production connection asks before every write', async () => {
   await connect('prod', 'prod-1');
   const refused = await run('prod-1', 'insert person Bob');
-  assert.match(refused.body.error, /for production/);
+  assert.match(refused.body.error, /asks to confirm each change/);
   const written = await run('prod-1', 'insert person Bob', { confirm: true });
   assert.equal(written.body.affected, 1);
   assert.equal((await run('prod-1', 'select people')).body.rows.length, 3);

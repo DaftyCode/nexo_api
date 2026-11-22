@@ -183,6 +183,9 @@ impl Document {
         if self.kind == DocumentKind::Masking {
             masking::validate(&self.value)?;
         }
+        if self.kind == DocumentKind::ConnectionType {
+            sql::TypeRules::read(&self.value)?;
+        }
         if matches!(
             self.kind,
             DocumentKind::Query | DocumentKind::QueryHistory | DocumentKind::DatabaseChange

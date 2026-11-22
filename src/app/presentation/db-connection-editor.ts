@@ -13,6 +13,7 @@ import { FormField, form, max, min } from '@angular/forms/signals';
 import { failureCode } from '../application/ports';
 import { readDbConnection } from '../domain/db/connection';
 import { engineProfile } from '../domain/db/engines';
+import { connectionTypes, typeOf } from '../domain/db/connection-types';
 import {
   DbForm,
   emptyDbForm,
@@ -84,6 +85,7 @@ export class DbConnectionEditor {
   private readonly stored = computed(() => readDbConnection(this.document()?.value));
   protected readonly profile = computed(() => engineProfile(this.model().driver));
   protected readonly pages = computed(() => editorPages(this.profile()));
+  protected readonly types = computed(() => connectionTypes(this.state.documents()));
   protected readonly pageLabels = PAGE_LABELS;
   /** How a URL of the engine looks, under the field where one is pasted. */
   protected readonly urlExample = computed(() =>
@@ -122,9 +124,9 @@ export class DbConnectionEditor {
       const chosen = this.model().type;
       if (chosen === this.type) return;
       this.type = chosen;
-      untracked(() =>
-        this.model.update((form) => ({ ...form, autoCommit: chosen !== 'production' })),
-      );
+      // The type says whether its sessions commit each statement (DB-25).
+      const auto = untracked(() => typeOf(chosen, this.state.documents()).rules.autoCommit);
+      untracked(() => this.model.update((form) => ({ ...form, autoCommit: auto })));
     });
   }
 

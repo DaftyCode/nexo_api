@@ -146,7 +146,7 @@ export class DbPanel {
   }
 
   protected production(tab: DbTab) {
-    return !!tab.connection && this.section.typeOf(tab.connection) === 'production';
+    return !!tab.connection && this.section.rulesOf(tab.connection).confirmWrites;
   }
 
   /** Arrows move between tabs, as in a WAI-ARIA tab list. */

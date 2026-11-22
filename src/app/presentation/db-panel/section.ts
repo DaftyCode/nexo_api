@@ -3,14 +3,13 @@ import type { TransferRequest } from './transfer-request';
 import type { StructureRequest } from './structure-draft';
 import type { DatabaseUseCases } from '../../application/database-use-cases';
 import { PasswordPrompts } from './password-prompt';
-import { DATABASES, MODULES } from '../../composition/providers';
 import {
-  ConnectionType,
-  connectionType,
-  dbFolders,
-  isDbConnection,
-  readDbConnection,
-} from '../../domain/db/connection';
+  ConnectionTypeChoice,
+  TypeRules,
+  typeOf as typeOfConnection,
+} from '../../domain/db/connection-types';
+import { DATABASES, MODULES } from '../../composition/providers';
+import { dbFolders, isDbConnection, readDbConnection } from '../../domain/db/connection';
 import { NavigatorRow, navigatorRows } from '../../domain/db/rows';
 import { SqlDraft, restoredDrafts, storedDrafts } from '../../domain/db/session';
 import { readScript } from '../../domain/db/sql';
@@ -234,9 +233,14 @@ export class DbSection {
   connection(id: string): WorkspaceDocument | undefined {
     return this.connections().find((document) => document.id === id);
   }
-  typeOf(id: string): ConnectionType {
-    const document = this.connection(id);
-    return document ? connectionType(readDbConnection(document.value)) : 'development';
+  /** The type of a connection: built in, or one of the person's own (DB-25). */
+  typeOf(id: string): ConnectionTypeChoice {
+    const type = readDbConnection(this.connection(id)?.value).type;
+    return typeOfConnection(type, this.state.documents());
+  }
+  /** What the type of a connection asks before a statement is sent. */
+  rulesOf(id: string): TypeRules {
+    return this.typeOf(id).rules;
   }
 
   /**

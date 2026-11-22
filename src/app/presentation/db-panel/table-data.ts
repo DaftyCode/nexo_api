@@ -100,7 +100,7 @@ export class TableData {
       {
         ...(database ? { database } : {}),
         // Saved edits wait for a commit when the connection commits by hand (DB-13).
-        manual: !autoCommits(readDbConnection(document.value)),
+        manual: !autoCommits(readDbConnection(document.value), this.section.rulesOf(document.id)),
       },
     );
     this.opened = true;

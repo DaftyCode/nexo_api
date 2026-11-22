@@ -32,7 +32,8 @@ describe('the database section, at its edges', () => {
     expect(panel.section().tabs.active()?.id).toBe('s1');
     panel.section().openScript('nothing');
     panel.section().newScript('gone');
-    expect(panel.section().typeOf('gone')).toBe('development');
+    expect(panel.section().typeOf('gone').id).toBe('development');
+    expect(panel.section().rulesOf('gone').confirmWrites).toBe(false);
   });
 
   it('views the data of a table of another database on that database', async () => {

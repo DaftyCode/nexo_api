@@ -24,7 +24,7 @@ async fn objects_and_data_are_searched_by_the_driver() {
     let data = json!({"session": "s1", "statement": "find-2", "text": "Ana", "mode": "data",
                       "tables": [{"name": "people"}]});
     let unconfirmed = application.execute(Operation::DbSearch, data.clone()).await;
-    assert!(message(unconfirmed).contains("for production"));
+    assert!(message(unconfirmed).contains("asks to confirm each change"));
     let mut confirmed = data;
     confirmed["confirm"] = json!(true);
     application

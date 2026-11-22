@@ -12,7 +12,6 @@ use crate::{
 use nexo_domain::{
     DocumentKind, Error, Result, WorkspaceId,
     native::{self, Backup, BackupFormat, Need, Restore, Script, Target},
-    sql::ConnectionType,
 };
 use serde_json::{Map, Value, json};
 use std::time::Duration;
@@ -155,17 +154,18 @@ impl Application {
             .map(|name| name.trim().to_owned())
             .filter(|name| !name.is_empty())
             .or(connection.database.clone());
+        // What the connection's type asks: only reading, confirming each change.
+        let rules = self.type_rules(&workspace, &stored.value).await?;
         if !matches!(action, Action::Backup(_)) {
-            if connection.read_only {
+            if connection.read_only || rules.read_only {
                 return Err(invalid(format!(
                     "The connection {} is read-only: it restores and runs nothing",
                     stored.name
                 )));
             }
-            let production = ConnectionType::of(&stored.value) == ConnectionType::Production;
-            if production && payload.confirm != Some(true) {
+            if rules.confirm_writes && payload.confirm != Some(true) {
                 return Err(invalid(format!(
-                    "The connection {} is for production: confirm it before it changes anything",
+                    "The connection {} asks to confirm each change: confirm it before it changes anything",
                     stored.name
                 )));
             }

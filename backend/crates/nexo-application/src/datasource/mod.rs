@@ -21,6 +21,7 @@ mod structure;
 mod tests;
 mod transactions;
 mod transfer;
+mod types;
 
 pub(crate) use passwords::Source as PasswordSource;
 pub(crate) use sessions::Sessions;

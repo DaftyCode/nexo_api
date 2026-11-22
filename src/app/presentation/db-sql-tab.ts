@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { failureCode } from '../application/ports';
-import { connectionType, readDbConnection } from '../domain/db/connection';
+import { readDbConnection } from '../domain/db/connection';
 import { engineProfile } from '../domain/db/engines';
 import { SqlTemplate } from '../domain/db/sql-templates';
 import { formatSql } from '../domain/db/sql-format';
@@ -78,7 +78,9 @@ export class DbSqlTab {
   protected readonly draft = computed(() => this.section.tabs.draft(this.tab().id));
   protected readonly connection = computed(() => this.section.connection(this.tab().connection));
   protected readonly value = computed(() => readDbConnection(this.connection()?.value));
-  protected readonly production = computed(() => connectionType(this.value()) === 'production');
+  protected readonly production = computed(
+    () => this.section.rulesOf(this.tab().connection).confirmWrites,
+  );
   protected readonly profile = computed(() => engineProfile(this.value().driver));
   protected readonly script = computed(() =>
     this.section.scripts().find((document) => document.id === this.draft().script),

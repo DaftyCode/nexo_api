@@ -66,9 +66,14 @@ pub enum DocumentKind {
     /// A set of masking rules: the fields it hides or replaces when data is exported, and
     /// whether MCP agents and the AI assistant read through it too (`masking`).
     Masking,
+    /// A type of SQL connection of the person's own, besides development, test and
+    /// production: its color and what its sessions do (confirm writes or DDL, commit by hand,
+    /// only read, a time limit).
+    #[serde(rename = "connection-type")]
+    ConnectionType,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 25] = [
+    pub const ALL: [DocumentKind; 26] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -94,6 +99,7 @@ impl DocumentKind {
         Self::SshProfile,
         Self::MonitorHistory,
         Self::Masking,
+        Self::ConnectionType,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -122,6 +128,7 @@ impl DocumentKind {
             Self::SshProfile => "ssh-profile",
             Self::MonitorHistory => "monitor-history",
             Self::Masking => "masking",
+            Self::ConnectionType => "connection-type",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

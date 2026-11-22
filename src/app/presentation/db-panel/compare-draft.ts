@@ -74,9 +74,9 @@ export class CompareDraft {
     const path = this.targetPath();
     return path ? tableOf(path).table : '';
   });
-  /** The target is for production: synchronizing asks once more. */
+  /** The target's type confirms each change: synchronizing asks once more. */
   readonly production = computed(
-    () => readDbConnection(this.targetDocument()?.value).type === 'production',
+    () => !!this.model().target && this.section.rulesOf(this.model().target).confirmWrites,
   );
 
   constructor(

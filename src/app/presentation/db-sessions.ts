@@ -90,7 +90,7 @@ export class DbSessions {
     return session ? '' : 'db.admin.choose';
   });
   protected readonly production = computed(
-    () => this.section.typeOf(this.tab().connection) === 'production',
+    () => this.section.typeOf(this.tab().connection).rules.confirmWrites,
   );
 
   constructor() {

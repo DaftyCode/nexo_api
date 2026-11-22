@@ -24,6 +24,7 @@ import { NavigatorDrag } from './db-navigator/drag';
 import { DbRowMenu } from './db-panel/row-menu';
 import { menuKeys } from './menu-keys';
 import { PopupPlace, placeAt, placeBy } from './popup-place';
+import { BUILTIN_TYPES, typeOf } from '../domain/db/connection-types';
 import { DbSection } from './db-panel/section';
 
 /** Where the actions menu of a row is open. */
@@ -94,6 +95,11 @@ export class DbNavigator {
   }
   protected rowId(row: NavigatorRow) {
     return `db-node-${encodeURIComponent(row.key).replace(/%/g, '_')}`;
+  }
+  /** The name of a connection's type of the person's own; none for the built-in ones. */
+  protected ownType(kind: string | undefined): string | undefined {
+    if (!kind || BUILTIN_TYPES.some((type) => type.id === kind)) return undefined;
+    return typeOf(kind, this.section.state.documents()).name;
   }
   protected statusLabel(row: NavigatorRow) {
     return `db.status.${row.status ?? 'disconnected'}`;

@@ -80,6 +80,7 @@ import { GridFormatSettings } from './grid-format-settings';
 import { SettingsTabs } from './settings-tabs';
 import { SshProfiles } from './ssh-profiles';
 import { MaskingSets } from './masking-sets';
+import { ConnectionTypesSettings } from './connection-types-settings';
 import { DocumentRevisions } from './document-revisions';
 @Component({
   imports: [
@@ -100,6 +101,7 @@ import { DocumentRevisions } from './document-revisions';
     SettingsTabs,
     SshProfiles,
     MaskingSets,
+    ConnectionTypesSettings,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-integration-panel',

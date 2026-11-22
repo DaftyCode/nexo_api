@@ -4,7 +4,7 @@
 //! placeholders instead of values) and to the log of the session's transaction.
 use super::{redacted, sessions::session_name};
 use crate::{Application, payloads::DbRowsWritePayload, ports::DataSources};
-use nexo_domain::{Error, Result, sql::ConnectionType};
+use nexo_domain::{Error, Result};
 use serde_json::{Value, json};
 use std::time::Instant;
 
@@ -42,9 +42,9 @@ impl Application {
                 "Confirm the save: it deletes {deleted} rows"
             )));
         }
-        if session.kind == ConnectionType::Production && !confirm {
+        if session.rules.confirm_writes && !confirm {
             return Err(refused(format!(
-                "The connection {} is for production: confirm the save before it changes anything",
+                "The connection {} asks to confirm each change: confirm the save before it changes anything",
                 session.name
             )));
         }

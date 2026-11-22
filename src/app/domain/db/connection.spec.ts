@@ -131,7 +131,7 @@ describe('a stored database connection', () => {
         driver: 'mysql',
         port: ' ',
         tls: { mode: 'disable' },
-        type: 'staging',
+        type: 7,
         readOnly: 'yes',
         timeoutSeconds: -1,
         filters: 'all',
@@ -148,6 +148,16 @@ describe('a stored database connection', () => {
     expect(autoCommits({ driver: 'x' })).toBe(true);
     expect(autoCommits({ driver: 'x', type: 'production' })).toBe(false);
     expect(autoCommits({ driver: 'x', type: 'production', autoCommit: true })).toBe(true);
+    // A type of your own: its rules say, unless the connection does.
+    const own = {
+      autoCommit: false,
+      confirmWrites: false,
+      confirmStructure: true,
+      readOnly: false,
+    };
+    expect(readDbConnection({ driver: 'x', type: 'staging' }).type).toBe('staging');
+    expect(autoCommits({ driver: 'x', type: 'staging' }, own)).toBe(false);
+    expect(autoCommits({ driver: 'x', type: 'staging', autoCommit: true }, own)).toBe(true);
   });
 
   it('is a connection of a database module, not of MongoDB', () => {

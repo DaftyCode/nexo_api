@@ -48,7 +48,7 @@ async fn read_only_production_and_many_deletes_are_refused_or_confirmed() {
     let (application, _, sources) = with_sources(json!({"type": "production"}));
     connect(&application, "s1").await.unwrap();
     let unconfirmed = save(&application, vec![change("update")], false).await;
-    assert!(message(unconfirmed).contains("for production"));
+    assert!(message(unconfirmed).contains("asks to confirm each change"));
     save(&application, vec![change("update")], true)
         .await
         .unwrap();

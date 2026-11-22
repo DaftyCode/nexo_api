@@ -2,7 +2,8 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { FieldTree, FormField } from '@angular/forms/signals';
 import { DATABASE_FILES, NATIVE_FILES } from '../composition/providers';
-import { CONNECTION_TYPES, TLS_MODES } from '../domain/db/connection';
+import { TLS_MODES } from '../domain/db/connection';
+import { BUILTIN_TYPES, ConnectionTypeChoice } from '../domain/db/connection-types';
 import { EngineProfile } from '../domain/db/engines';
 import { DbForm } from '../domain/db/form';
 import { hasNativeTools } from '../domain/db/native';
@@ -25,7 +26,8 @@ export class DbConnectionFields {
   readonly passwordStored = input(false);
   readonly keyStored = input(false);
   readonly folders = input<readonly string[]>([]);
-  protected readonly types = CONNECTION_TYPES;
+  /** The types a connection may have: built in, and the person's own (DB-25). */
+  readonly types = input<readonly ConnectionTypeChoice[]>(BUILTIN_TYPES);
   protected readonly tlsModes = TLS_MODES;
   protected readonly colors = CONNECTION_COLORS;
   /** The desktop dialog that chooses the file of a SQLite connection. */
@@ -80,7 +82,7 @@ export class DbConnectionFields {
   protected tlsLabel(mode: string) {
     return `db.tls.${mode}`;
   }
-  protected typeLabel(type: string) {
-    return `db.type.${type}`;
+  protected typeLabel(type: ConnectionTypeChoice) {
+    return type.builtin ? `db.type.${type.id}` : type.name;
   }
 }

@@ -88,7 +88,7 @@ describe('DbLocks', () => {
     expect(panel.root().querySelector('app-db-kill-dialog')).toBeNull();
     await panel.click('End session 42', view(panel));
     await panel.fill(
-      'This connection is for production: type 42 to confirm',
+      'This connection asks to confirm each change: type 42 to confirm',
       '42',
       panel.dialog('End the session'),
     );

@@ -166,7 +166,7 @@ async fn a_restore_needs_the_database_typed_and_production_a_confirmation() {
         refused
             .unwrap_err()
             .to_string()
-            .contains("is for production")
+            .contains("asks to confirm each change")
     );
     let script = run(
         &application,
@@ -178,7 +178,7 @@ async fn a_restore_needs_the_database_typed_and_production_a_confirmation() {
         script
             .unwrap_err()
             .to_string()
-            .contains("is for production")
+            .contains("asks to confirm each change")
     );
     assert!(tools.started.lock().unwrap().is_empty());
     run(

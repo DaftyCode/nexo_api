@@ -124,6 +124,8 @@
             <span class="db-hidden-text">, {{ statusLabel(row) | transloco }}</span>
             @if (row.kind === 'production') {
               <span class="db-badge db-badge-production">{{ 'Production' | transloco }}</span>
+            } @else if (ownType(row.kind); as type) {
+              <span class="db-badge">{{ type }}</span>
             }
             @if (row.readOnly) {
               <span class="db-badge">{{ 'Read-only' | transloco }}</span>

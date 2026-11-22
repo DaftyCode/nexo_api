@@ -194,6 +194,9 @@
           @case ('masking') {
             <app-masking-sets />
           }
+          @case ('types') {
+            <app-connection-types-settings />
+          }
           @case ('oauth') {
             <app-token-exchange [fields]="fields" (exchange)="oauth()" />
           }

@@ -1,0 +1,114 @@
+<h2>{{ 'Connection types' | transloco }}</h2>
+<p class="muted">
+  {{
+    'A connection type says what every session of its connections does: commit by hand, confirm each change or only changes of structure, only read, a time limit. Nexo applies it to every statement.'
+      | transloco
+  }}
+</p>
+@if (task.error(); as error) {
+  <p class="global-alert" role="alert">{{ error | transloco }}</p>
+}
+<ul class="ssh-profiles">
+  @for (type of builtin; track type.id) {
+    <li class="card">
+      <div class="row">
+        <strong class="grow">{{ type.name | transloco }}</strong>
+        <span class="muted">{{ 'Built in' | transloco }}</span>
+      </div>
+      <p class="muted">
+        @for (rule of said(type); track rule) {
+          <span>{{ rule | transloco }}. </span>
+        }
+      </p>
+    </li>
+  }
+  @for (type of own(); track type.id) {
+    <li class="card">
+      <div class="row">
+        @if (type.color) {
+          <span class="db-swatch" [style.background]="type.color" aria-hidden="true"></span>
+        }
+        <strong class="grow">{{ type.name }}</strong>
+      </div>
+      <p class="muted">
+        @for (rule of said(type); track rule) {
+          <span>{{ rule | transloco }}. </span>
+        }
+      </p>
+      <div class="button-grid">
+        <button type="button" class="button" (click)="edit(type)">
+          {{ 'Edit' | transloco }}
+        </button>
+        <button type="button" class="text-button danger" (click)="remove(type)">
+          {{ 'Delete' | transloco }}
+        </button>
+      </div>
+    </li>
+  }
+</ul>
+@if (editing()) {
+  <form class="card" (submit)="$event.preventDefault(); save()">
+    <h3>
+      {{ (editing() === 'new' ? 'New connection type' : 'Edit connection type') | transloco }}
+    </h3>
+    <label class="field">{{ 'Name' | transloco }}<input [formField]="fields.name" /></label>
+    <div class="db-colors" role="group" [attr.aria-label]="'Color' | transloco">
+      <button
+        type="button"
+        class="db-swatch none"
+        [attr.aria-pressed]="!model().color"
+        [attr.aria-label]="'No color' | transloco"
+        (click)="setColor('')"
+      ></button>
+      @for (color of colors; track color; let index = $index) {
+        <button
+          type="button"
+          class="db-swatch"
+          [style.background]="color"
+          [attr.aria-pressed]="model().color === color"
+          [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
+          (click)="setColor(color)"
+        ></button>
+      }
+    </div>
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.autoCommit" />{{
+        'Commit each statement by itself' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.confirmWrites" />{{
+        'Confirm each change' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.confirmStructure" />{{
+        'Confirm changes of structure' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.readOnly" />{{
+        'Read-only: no writes' | transloco
+      }}</label
+    >
+    <label class="field db-port"
+      >{{ 'Statement time limit (seconds, 0 for none)' | transloco
+      }}<input type="number" [formField]="fields.timeoutSeconds"
+    /></label>
+    @if (problem(); as problem) {
+      <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+    }
+    <div class="button-grid">
+      <button type="submit" class="button primary" [disabled]="!!problem()">
+        {{ 'Save' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="editing.set(undefined)">
+        {{ 'Cancel' | transloco }}
+      </button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="button" (click)="create()">
+    {{ '+ New connection type' | transloco }}
+  </button>
+}

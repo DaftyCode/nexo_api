@@ -50,7 +50,11 @@ fn a_sql_connection_keeps_its_secrets_in_the_vault() {
             json!({"keyPem": "-----BEGIN PRIVATE KEY-----"}),
             "Keep the client key",
         ),
-        ("type", json!("staging"), "development, test or production"),
+        (
+            "type",
+            json!(""),
+            "development, test, production or a type of yours",
+        ),
         ("port", json!(70000), "The port"),
         ("port", json!("http"), "The port"),
         ("driver", json!("Postgres"), "Unknown database driver"),

@@ -165,7 +165,9 @@ describe('the database search', () => {
     search.click();
     await panel.settle();
     expect(panel.calls('db.search').filter((payload) => payload['mode'] === 'data')).toEqual([]);
-    (panel.control('This connection is for production', dialog) as HTMLInputElement).click();
+    (
+      panel.control('This connection asks to confirm each change', dialog) as HTMLInputElement
+    ).click();
     await panel.settle();
     await panel.click(/^Search$/, dialog);
     const data = panel.calls('db.search').filter((payload) => payload['mode'] === 'data');

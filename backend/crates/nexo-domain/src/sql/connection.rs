@@ -172,14 +172,7 @@ pub fn validate_connection(value: &Value) -> Result<()> {
         super::Dialect::parse(driver),
         value.get("readOnly") == Some(&Value::Bool(true)),
     )?;
-    if let Some(kind) = value.get("type")
-        && !kind.is_null()
-        && serde_json::from_value::<ConnectionType>(kind.clone()).is_err()
-    {
-        return Err(invalid(
-            "A connection is for development, test or production",
-        ));
-    }
+    super::TypeOf::read(value)?;
     match value.get("params") {
         None | Some(Value::Null) => {}
         Some(Value::Object(params))

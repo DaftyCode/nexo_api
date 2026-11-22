@@ -58,7 +58,7 @@ export interface Confirmation {
  */
 export function confirmationOf(
   classification: Classification,
-  production: boolean,
+  rules: { confirmWrites: boolean; confirmStructure: boolean },
 ): Confirmation | undefined {
   if (classification.drops) {
     const names = classification.drop.join(', ');
@@ -68,8 +68,10 @@ export function confirmationOf(
   }
   if (classification.missingWhere) return { message: 'db.confirm.everyRow' };
   if (classification.truncate) return { message: 'db.confirm.truncate' };
-  if (production && (classification.kind === 'write' || classification.kind === 'structure'))
+  const structure = classification.kind === 'structure';
+  if (rules.confirmWrites && (classification.kind === 'write' || structure))
     return { message: 'db.confirm.production' };
+  if (rules.confirmStructure && structure) return { message: 'db.confirm.structure' };
   return undefined;
 }
 

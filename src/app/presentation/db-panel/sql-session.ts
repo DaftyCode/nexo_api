@@ -136,7 +136,10 @@ export abstract class SqlSession {
         connection,
         this.session,
         this.section.state.scopes(),
-        { database: this.section.tabs.draft(this.tab).database, manual: !autoCommits(value) },
+        {
+          database: this.section.tabs.draft(this.tab).database,
+          manual: !autoCommits(value, this.section.rulesOf(connection.id)),
+        },
       );
       this.server.set(server);
       for (const failed of server.startup ?? [])

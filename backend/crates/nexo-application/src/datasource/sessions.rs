@@ -2,7 +2,7 @@
 //! each to apply its rules without the client sending the connection again.
 use super::journal::Journal;
 use crate::ports::SqlConnection;
-use nexo_domain::{DocumentId, Error, Result, WorkspaceId, sql::ConnectionType};
+use nexo_domain::{DocumentId, Error, Result, WorkspaceId, sql::TypeRules};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
@@ -19,7 +19,8 @@ pub(crate) struct Session {
     pub name: String,
     pub driver: String,
     pub read_only: bool,
-    pub kind: ConnectionType,
+    /// What the connection's type asks of it: confirmations, only reading, a time limit.
+    pub rules: TypeRules,
     pub timeout: Option<Duration>,
     /// The vault values the connection used, to keep them out of every answer.
     pub secrets: Vec<(String, String)>,

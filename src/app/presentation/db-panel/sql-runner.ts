@@ -1,6 +1,5 @@
 import { signal } from '@angular/core';
 import { ApiFailure } from '../../application/ports';
-import { connectionType, readDbConnection } from '../../domain/db/connection';
 import { Group } from '../../domain/db/grid/calc';
 import { FurtherResult, ResultTab, cellText } from '../../domain/db/results';
 import {
@@ -141,8 +140,8 @@ export class SqlRunner extends SqlSession {
       this.results.note({ kind: 'error', text, ...(params ? { params } : {}) });
       return 'failed';
     }
-    const production = connectionType(readDbConnection(this.connection()?.value)) === 'production';
-    const confirmation = confirmationOf(statement.classification, production);
+    const rules = this.section.rulesOf(this.connection()?.id ?? '');
+    const confirmation = confirmationOf(statement.classification, rules);
     if (confirmation && !(await this.confirm(confirmation, sql))) {
       this.results.note({ kind: 'info', text: 'Not run: it was not confirmed' });
       return 'cancelled';

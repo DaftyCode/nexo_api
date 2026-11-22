@@ -11,7 +11,7 @@ use crate::{
 };
 use nexo_domain::{
     Error, Result,
-    sql::{ConnectionType, Dialect, SourceColumn, StatementKind, create_table},
+    sql::{Dialect, SourceColumn, StatementKind, create_table},
 };
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -31,9 +31,9 @@ fn writable(session: &Session, confirm: Option<bool>) -> Result<()> {
             session.name
         )));
     }
-    if session.kind == ConnectionType::Production && !confirm.unwrap_or(false) {
+    if session.rules.confirm_writes && !confirm.unwrap_or(false) {
         return Err(refused(format!(
-            "The connection {} is for production: confirm the import before it writes",
+            "The connection {} asks to confirm each change: confirm the import before it writes",
             session.name
         )));
     }

@@ -39,7 +39,7 @@ export class DbSearch {
   ];
   protected readonly kinds = OBJECT_KINDS;
   protected readonly production = computed(
-    () => this.section.typeOf(this.draft.model().connection) === 'production',
+    () => this.section.typeOf(this.draft.model().connection).rules.confirmWrites,
   );
   /** The data search reads whole tables: on production, only once the person agrees. */
   protected readonly canSearchData = computed(

@@ -56,6 +56,11 @@ function fixture(value: Partial<DbConnectionValue> = {}, options: { failing?: bo
   let reloads = 0;
   const section = {
     connection: (id: string) => (id === 'c1' ? document() : undefined),
+    // Production confirms each change; the others do not.
+    rulesOf: () => {
+      const production = (document().value as { type?: string }).type === 'production';
+      return { autoCommit: !production, confirmWrites: production, confirmStructure: production };
+    },
     sqlStyle: () => ({ name: 'postgresql', quoteOpen: '"', quoteClose: '"' }),
     cases: async () => cases,
     state: {

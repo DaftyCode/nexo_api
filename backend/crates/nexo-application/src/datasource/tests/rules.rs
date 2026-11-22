@@ -37,7 +37,7 @@ async fn production_asks_before_every_write_and_everyone_before_every_row() {
     connect(&application, "s1").await.unwrap();
     run(&application, "select 1", json!({})).await.unwrap();
     let error = message(run(&application, "insert into orders values (1)", json!({})).await);
-    assert!(error.contains("for production"), "{error}");
+    assert!(error.contains("asks to confirm each change"), "{error}");
     run(
         &application,
         "insert into orders values (1)",

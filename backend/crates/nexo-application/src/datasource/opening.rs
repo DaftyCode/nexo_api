@@ -18,7 +18,7 @@ use crate::{
 };
 use nexo_domain::{
     Error, Result, WorkspaceId,
-    sql::{ConnectionType, Dialect, SessionSettings, StatementKind},
+    sql::{Dialect, SessionSettings, StatementKind},
 };
 use serde_json::{Value, json};
 use std::time::Duration;
@@ -72,6 +72,8 @@ impl Application {
         if let Some(database) = payload.database.filter(|name| !name.trim().is_empty()) {
             connection.database = Some(database.trim().to_owned());
         }
+        let rules = self.type_rules(&workspace, &stored.value).await?;
+        connection.read_only |= rules.read_only;
         let source = Source::of(&stored.value);
         let remembered = self.sql_sessions.asked(&workspace, &stored.id);
         self.supply_password(
@@ -94,10 +96,11 @@ impl Application {
             name: stored.name.clone(),
             driver: connection.driver.clone(),
             read_only: connection.read_only,
-            kind: ConnectionType::of(&stored.value),
+            rules,
             timeout: stored.value["timeoutSeconds"]
                 .as_u64()
-                .map(Duration::from_secs),
+                .map(Duration::from_secs)
+                .or(rules.timeout),
             secrets: values.clone(),
             journal: Default::default(),
             opened: connection.clone(),
@@ -108,7 +111,20 @@ impl Application {
         let session = self.sql_sessions.get(name)?;
         let opened = async {
             let server = sources.connect(name, connection).await?;
-            let failed = self.run_opening(sources, name, &session).await;
+            let mut failed = self.run_opening(sources, name, &session).await;
+            // Commits by hand from the start when its type (or the connection) asks.
+            let auto = stored.value["autoCommit"]
+                .as_bool()
+                .unwrap_or(rules.auto_commit);
+            if failed.is_ok() && !auto {
+                failed = match sources.transaction(name, "manual", None).await {
+                    Ok(_) => {
+                        session.journal.lock().unwrap().auto_commit = false;
+                        failed
+                    }
+                    Err(error) => Err(error),
+                };
+            }
             if failed.is_err() {
                 let _ = sources.disconnect(name).await;
             }

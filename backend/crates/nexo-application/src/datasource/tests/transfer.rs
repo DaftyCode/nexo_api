@@ -39,7 +39,7 @@ async fn a_batch_is_written_by_the_target_driver_with_its_rules() {
             json!({"session": "s1", "table": "t", "columns": ["a"], "rows": [[1]]}),
         )
         .await;
-    assert!(message(unconfirmed).contains("for production"));
+    assert!(message(unconfirmed).contains("asks to confirm each change"));
 }
 
 #[tokio::test]

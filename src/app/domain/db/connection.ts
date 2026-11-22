@@ -8,8 +8,10 @@ import { StoredRoute, readRoute, storedRoute } from '../route';
 import { sessionSettings } from './connection/session';
 
 /** How careful Nexo is with a connection, as DBeaver's connection types. */
-export type ConnectionType = 'development' | 'test' | 'production';
+/** `development`, `test`, `production`, or the id of a type of the person's own (DB-25). */
+export type ConnectionType = string;
 export const CONNECTION_TYPES: readonly ConnectionType[] = ['development', 'test', 'production'];
+import type { TypeRules } from './connection-types';
 
 /** How a connection uses TLS, as every driver understands it. */
 export type TlsMode = 'disable' | 'prefer' | 'require' | 'verify';
@@ -165,7 +167,7 @@ export function readDbConnection(value: unknown): DbConnectionValue {
   const tlsText = (key: string) =>
     typeof tls[key] === 'string' && tls[key].trim() ? { [key]: tls[key] } : {};
   const port = source['port'];
-  const type = CONNECTION_TYPES.find((candidate) => candidate === source['type']);
+  const type = text('type');
   const timeout = source['timeoutSeconds'];
   const params = texts(source['params']);
   const kept = filters(source['filters']);
@@ -214,8 +216,8 @@ export function connectionType(value: DbConnectionValue): ConnectionType {
 }
 
 /** Whether statements commit by themselves: production connections start with it off. */
-export function autoCommits(value: DbConnectionValue): boolean {
-  return value.autoCommit ?? connectionType(value) !== 'production';
+export function autoCommits(value: DbConnectionValue, rules?: TypeRules): boolean {
+  return value.autoCommit ?? rules?.autoCommit ?? connectionType(value) !== 'production';
 }
 
 /** The filter kept for the children of a node, if any. */
