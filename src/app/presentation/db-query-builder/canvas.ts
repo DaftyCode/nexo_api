@@ -1,7 +1,7 @@
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import type { QueryModel } from '../../domain/db/query-model';
-import { BOX, BuilderLayout } from '../../domain/db/query-model/layout';
+import type { BuilderLayout } from '../../domain/db/query-model/layout';
 
 /** A column being dragged to another, to join them. */
 const COLUMN_DRAG = 'application/x-nexo-column';
@@ -60,11 +60,11 @@ interface ColumnAt {
           [attr.aria-label]="table.label"
           [style.left.px]="table.x"
           [style.top.px]="table.y"
-          [style.width.px]="width"
+          [style.width.px]="table.width"
           [style.height.px]="table.height"
         >
           <div class="qb-head">
-            <strong class="grow">{{ table.label }}</strong>
+            <strong class="grow qb-name" [attr.title]="table.label">{{ table.label }}</strong>
             <span class="muted">{{ table.alias }}</span>
             <button
               type="button"
@@ -105,7 +105,6 @@ export class DbQueryCanvas {
   readonly joined = output<{ from: ColumnAt; to: ColumnAt }>();
   readonly kind = output<number>();
   readonly removed = output<number>();
-  protected readonly width = BOX.width;
   protected readonly chosen = computed(
     () => new Set(this.model().columns.map((column) => column.expression)),
   );

@@ -3446,5 +3446,10 @@
   "Paste from code": "Paste from code",
   "Put it in the editor": "Put it in the editor",
   "No statement at the cursor": "No statement at the cursor",
-  "Code, in the SQL editor or in a result tab, writes a whole program that runs the statement in Node.js, Python, Java, C#, Go, Rust, PHP or Ruby with the usual library of its engine, or its command line, with its parameters bound. It reads the connection from the DATABASE_URL environment variable. Copy as string gives the statement alone as a string of that language, and Paste from code turns a string copied from a program back into SQL.": "Code, in the SQL editor or in a result tab, writes a whole program that runs the statement in Node.js, Python, Java, C#, Go, Rust, PHP or Ruby with the usual library of its engine, or its command line, with its parameters bound. It reads the connection from the DATABASE_URL environment variable. Copy as string gives the statement alone as a string of that language, and Paste from code turns a string copied from a program back into SQL."
+  "Code, in the SQL editor or in a result tab, writes a whole program that runs the statement in Node.js, Python, Java, C#, Go, Rust, PHP or Ruby with the usual library of its engine, or its command line, with its parameters bound. It reads the connection from the DATABASE_URL environment variable. Copy as string gives the statement alone as a string of that language, and Paste from code turns a string copied from a program back into SQL.": "Code, in the SQL editor or in a result tab, writes a whole program that runs the statement in Node.js, Python, Java, C#, Go, Rust, PHP or Ruby with the usual library of its engine, or its command line, with its parameters bound. It reads the connection from the DATABASE_URL environment variable. Copy as string gives the statement alone as a string of that language, and Paste from code turns a string copied from a program back into SQL.",
+  "Write the script as text": "Write the script as text",
+  "Resize the list of tables": "Resize the list of tables",
+  "Resize the canvas and the panels": "Resize the canvas and the panels",
+  "db.empty.workspaces": "Each workspace keeps its own connections. If you created one in another workspace, it is still there: open that workspace to see it.",
+  "db.empty.open": "Open {{v0}}"
 }

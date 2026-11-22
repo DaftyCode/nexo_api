@@ -7,8 +7,17 @@
       {{ 'db.builder.unsupported' | transloco: { v0: reason } }}
     </p>
   }
-  <div class="db-builder-top">
-    <aside class="db-builder-tables" [attr.aria-label]="'Tables' | transloco">
+  <div
+    class="db-builder-top"
+    [class.db-builder-sized]="topHeight() > 0"
+    [style.height.px]="topHeight() || null"
+  >
+    <aside
+      class="db-builder-tables"
+      [attr.aria-label]="'Tables' | transloco"
+      [style.width.px]="listWidth() || null"
+      [style.max-width]="listWidth() ? 'none' : null"
+    >
       <input
         type="search"
         [value]="filter()"
@@ -19,15 +28,17 @@
       />
       <ul>
         @for (table of choices(); track table.path.join('/')) {
+          @let shown = (table.schema ? table.schema + '.' : '') + table.name;
           <li>
             <button
               type="button"
               class="text-button"
               [disabled]="!!reason()"
-              [attr.aria-label]="'db.builder.add' | transloco: { v0: table.name }"
+              [attr.aria-label]="'db.builder.add' | transloco: { v0: shown }"
+              [attr.title]="shown"
               (click)="add(table)"
             >
-              ＋ {{ table.schema ? table.schema + '.' : '' }}{{ table.name }}
+              ＋ {{ shown }}
             </button>
           </li>
         } @empty {
@@ -37,6 +48,14 @@
         }
       </ul>
     </aside>
+    <app-splitter
+      target=".db-builder-tables"
+      neighbor=".db-builder-canvas"
+      [neighborMin]="200"
+      [label]="'Resize the list of tables' | transloco"
+      (resized)="listWidth.set($event)"
+      (restore)="listWidth.set(0)"
+    />
     <div class="db-builder-canvas" (dragover)="over($event)" (drop)="dropped($event)">
       @if (model().tables.length) {
         <app-db-query-canvas
@@ -55,6 +74,13 @@
       }
     </div>
   </div>
+  <app-splitter
+    axis="y"
+    target=".db-builder-top"
+    [label]="'Resize the canvas and the panels' | transloco"
+    (resized)="topHeight.set($event)"
+    (restore)="topHeight.set(0)"
+  />
   @if (ready()) {
     <app-db-query-panels [model]="model()" [readOnly]="!!reason()" (changed)="update($event)" />
   }

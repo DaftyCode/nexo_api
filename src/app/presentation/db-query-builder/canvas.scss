@@ -45,6 +45,10 @@
   overflow: hidden;
   white-space: nowrap;
 }
+.qb-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .qb-column {
   display: flex;
   gap: var(--nexo-space-2);

@@ -197,6 +197,8 @@
           [connection]="tab().connection"
           [script]="draft().text"
           [cursor]="draft().cursor"
+          [style.height.px]="codeHeight() || null"
+          [class.db-sql-code-sized]="codeHeight() > 0"
           (edited)="built($event)"
           (run)="command('run')"
         />
@@ -221,7 +223,7 @@
       </div>
       <app-splitter
         axis="y"
-        target=".db-sql-code"
+        [target]="view() === 'visual' ? 'app-db-query-builder' : '.db-sql-code'"
         neighbor="app-db-results"
         [neighborMin]="120"
         [label]="'Resize the editor and the results' | transloco"

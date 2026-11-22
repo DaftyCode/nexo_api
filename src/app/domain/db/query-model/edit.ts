@@ -20,6 +20,9 @@ export type Quote = (name: string) => string;
 export const columnOf = (alias: string, column: string, quote: Quote) =>
   `${quote(alias)}.${quote(column)}`;
 
+/** How a table is named in the statement: its alias, or its name when it has none. */
+export const referenceOf = (table: QueryTable) => table.alias || (table.path.at(-1) ?? '');
+
 /** An alias for a table that no other has: its first letter, then a number. */
 export function aliasFor(name: string, taken: readonly string[]): string {
   const base = (name.match(/[a-z]/i)?.[0] ?? 't').toLowerCase();
@@ -63,7 +66,7 @@ export function addTable(
           ...key.columns.map((column, at) => ({
             left: columnOf(alias, column, quote),
             operator: '=' as const,
-            right: columnOf(existing.alias, key.referencedColumns[at] ?? column, quote),
+            right: columnOf(referenceOf(existing), key.referencedColumns[at] ?? column, quote),
           })),
         );
     // One already there references the new table.
@@ -76,7 +79,7 @@ export function addTable(
           ...key.columns.map((column, at) => ({
             left: columnOf(alias, key.referencedColumns[at] ?? column, quote),
             operator: '=' as const,
-            right: columnOf(model.tables[index].alias, column, quote),
+            right: columnOf(referenceOf(model.tables[index]), column, quote),
           })),
         );
     if (on.length) break;
@@ -140,7 +143,8 @@ export function nextJoinKind(model: QueryModel, table: number): QueryModel {
 export function removeTable(model: QueryModel, index: number, quote: Quote): QueryModel {
   const table = model.tables[index];
   if (!table) return model;
-  const prefixes = [`${table.alias}.`, `${quote(table.alias)}.`];
+  const reference = referenceOf(table);
+  const prefixes = [`${reference}.`, `${quote(reference)}.`];
   const names = (text: string) => prefixes.some((prefix) => text.includes(prefix));
   const tables = model.tables.filter((_, at) => at !== index);
   const joins = model.joins

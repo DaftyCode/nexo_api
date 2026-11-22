@@ -30,6 +30,7 @@ import { connectionTables, readTables } from './db-panel/diagram-load';
 import { TABLE_DRAG } from './db-panel/diagrams';
 import { DbSection } from './db-panel/section';
 import { PanelTask } from './panel-task';
+import { Splitter } from './splitter';
 
 /** The text of the statement the builder writes, in the script. */
 export interface BuilderEdit {
@@ -45,7 +46,7 @@ export interface BuilderEdit {
  * the reason, and never rewritten.
  */
 @Component({
-  imports: [TranslocoPipe, DbQueryCanvas, DbQueryPanels],
+  imports: [TranslocoPipe, DbQueryCanvas, DbQueryPanels, Splitter],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-query-builder',
   templateUrl: './db-query-builder.html',
@@ -58,6 +59,10 @@ export class DbQueryBuilder {
   readonly edited = output<BuilderEdit>();
   readonly run = output<void>();
   protected readonly section = inject(DbSection);
+  /** The width of the list of tables dragged by the person; 0 fits its text. */
+  protected readonly listWidth = signal(0);
+  /** The height of the canvas dragged by the person; 0 fits its tables. */
+  protected readonly topHeight = signal(0);
   protected readonly task = new PanelTask(this.section.state);
   protected readonly model = signal<QueryModel>(emptyQuery());
   /** Why the statement is only shown: what it has that the model cannot hold. */

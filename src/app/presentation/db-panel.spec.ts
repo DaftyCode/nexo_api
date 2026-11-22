@@ -132,6 +132,21 @@ describe('DbPanel', () => {
     expect(rows()).toEqual(['Shop']);
   });
 
+  it('says, without connections, that another workspace may have them, and opens it', async () => {
+    expect(text()).not.toContain('Each workspace keeps its own connections');
+    state.workspaces.set([
+      { id: 'local', name: 'Test workspace' },
+      { id: 'team', name: 'Team' },
+    ]);
+    await settle();
+    expect(text()).toContain('Each workspace keeps its own connections');
+    const chosen: string[] = [];
+    state.selectWorkspace = async (id: string) => void chosen.push(id);
+    await clickButton(fixture, 'Open Team');
+    expect(chosen).toEqual(['team']);
+    expect(buttons(fixture.nativeElement as HTMLElement, 'Open Test workspace')).toEqual([]);
+  });
+
   it('connects when a connection is expanded and browses it with the keyboard', async () => {
     await create();
     await clickButton(fixture, 'Save');

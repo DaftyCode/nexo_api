@@ -132,3 +132,11 @@
 .db-empty {
   padding: var(--nexo-space-4);
 }
+.db-empty p {
+  margin: 0 0 var(--nexo-space-3);
+}
+.db-empty-workspaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2);
+}

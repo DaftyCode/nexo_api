@@ -6,7 +6,27 @@
 import type { QueryModel } from '../query-model';
 import type { BuilderTable } from './edit';
 
-export const BOX = { width: 200, header: 28, row: 22, gapX: 60, gapY: 40, perRow: 3 } as const;
+/**
+ * The sizes of the canvas. A table is as wide as its text (`char` per character and `padding`
+ * for its box, check boxes and button), from `width` to `maxWidth`.
+ */
+export const BOX = {
+  width: 200,
+  maxWidth: 420,
+  char: 7.5,
+  padding: 56,
+  header: 28,
+  row: 22,
+  gapX: 60,
+  gapY: 40,
+  perRow: 3,
+} as const;
+
+/** The width of a table's box: its name and alias, or its longest column. */
+export function boxWidth(label: string, alias: string, columns: readonly string[]): number {
+  const longest = Math.max(label.length + alias.length, ...columns.map((name) => name.length));
+  return Math.round(Math.min(BOX.maxWidth, Math.max(BOX.width, longest * BOX.char + BOX.padding)));
+}
 
 export interface LaidColumn {
   name: string;
@@ -20,6 +40,7 @@ export interface LaidTable {
   label: string;
   x: number;
   y: number;
+  width: number;
   height: number;
   columns: LaidColumn[];
 }
@@ -63,20 +84,26 @@ export function builderLayout(
   const tables: LaidTable[] = [];
   let height = 0;
   const rowHeights: number[] = [];
+  // Where the next table of each row starts, as wide as the ones before it.
+  const rowEnds: number[] = [];
   for (const [index, table] of model.tables.entries()) {
     const columns = knownTable(table, known)?.columns ?? [];
     const row = Math.floor(index / BOX.perRow);
     const boxHeight = BOX.header + Math.max(columns.length, 1) * BOX.row;
     rowHeights[row] = Math.max(rowHeights[row] ?? 0, boxHeight);
     const y = rowHeights.slice(0, row).reduce((sum, each) => sum + each + BOX.gapY, 0);
-    const x = (index % BOX.perRow) * (BOX.width + BOX.gapX);
     const alias = table.alias || (table.path.at(-1) ?? '');
+    const label = table.path.join('.');
+    const width = boxWidth(label, alias, columns);
+    const x = rowEnds[row] ?? 0;
+    rowEnds[row] = x + width + BOX.gapX;
     tables.push({
       index,
       alias,
-      label: table.path.join('.'),
+      label,
       x,
       y,
+      width,
       height: boxHeight,
       columns: columns.map((name, at) => ({
         name,
@@ -107,17 +134,16 @@ export function builderLayout(
       lines.push({
         table: join.table,
         kind: join.kind,
-        x1: a.table.x + (sameColumn ? 0 : BOX.width),
+        x1: a.table.x + (sameColumn ? 0 : a.table.width),
         y1: a.y,
         x2: b.table.x,
         y2: b.y,
       });
     }
-  const columns = Math.min(model.tables.length, BOX.perRow);
   return {
     tables,
     lines,
-    width: Math.max(columns * BOX.width + Math.max(columns - 1, 0) * BOX.gapX, BOX.width),
+    width: Math.max(BOX.width, ...rowEnds.map((end) => end - BOX.gapX)),
     height: Math.max(height, BOX.header),
   };
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { QueryModel, emptyQuery } from './query-model';
-import { BOX, builderLayout, knownTable } from './query-model/layout';
+import { BOX, boxWidth, builderLayout, knownTable } from './query-model/layout';
 
 const known = [
   { path: ['a'], schema: 'public', name: 'orders', columns: ['id', 'user_id'], keys: [] },
@@ -15,6 +15,26 @@ describe('the layout of the canvas', () => {
     expect(knownTable({ path: ['public', 'orders'], alias: '' }, known)?.path).toEqual(['a']);
     expect(knownTable({ path: ['other', 'orders'], alias: '' }, known)).toBeUndefined();
     expect(knownTable({ path: ['users'], alias: '' }, known)?.path).toEqual(['b']);
+  });
+
+  it('makes each table as wide as its text, within limits, and the next one starts after it', () => {
+    expect(boxWidth('t', 't', ['id'])).toBe(BOX.width);
+    const wide = boxWidth('public.lpc_users', 'lpc_users', ['id', 'whatsapp_consent']);
+    expect(wide).toBe(Math.round(25 * BOX.char + BOX.padding));
+    expect(boxWidth('x', '', ['a'.repeat(200)])).toBe(BOX.maxWidth);
+    const long = [{ path: ['p'], schema: 'public', name: 'lpc_users', columns: ['id'], keys: [] }];
+    const model: QueryModel = {
+      ...emptyQuery(),
+      tables: [
+        { path: ['public', 'lpc_users'], alias: '' },
+        { path: ['public', 'lpc_users'], alias: 'u2' },
+      ],
+    };
+    const layout = builderLayout(model, long, expression);
+    const first = layout.tables[0];
+    expect(first.width).toBe(boxWidth('public.lpc_users', 'lpc_users', ['id']));
+    expect(layout.tables[1].x).toBe(first.width + BOX.gapX);
+    expect(layout.width).toBe(layout.tables[1].x + layout.tables[1].width);
   });
 
   it('lays tables out in rows of three and draws each comparison of a join', () => {

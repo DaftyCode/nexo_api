@@ -43,7 +43,7 @@
   color: var(--nexo-color-text-muted);
 }
 .db-sql-where input {
-  width: calc(var(--nexo-size-unit) * 32);
+  width: calc(var(--nexo-size-unit) * 60);
 }
 .db-sql-reuse {
   margin: 0;
@@ -69,6 +69,14 @@
   min-height: calc(var(--nexo-size-unit) * 20);
 }
 .db-sql-code.db-sql-code-sized {
+  flex: none;
+}
+// The visual builder shares the height with the results as the editor does (two thirds).
+app-db-query-builder {
+  flex: 2;
+  min-height: calc(var(--nexo-size-unit) * 40);
+}
+app-db-query-builder.db-sql-code-sized {
   flex: none;
 }
 app-db-results {

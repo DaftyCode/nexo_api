@@ -76,8 +76,35 @@ describe('the visual query builder', () => {
   it('builds a SELECT of two related tables, joined by their foreign key, and runs it', async () => {
     const panel = await start('');
     expect(panel.text()).toContain('Drag tables here from the navigator');
-    await panel.click('Add users');
-    await panel.click('Add orders');
+    // The list fits its text until it is resized with its divider; a double click fits it again.
+    const list = panel.root().querySelector<HTMLElement>('.db-builder-tables')!;
+    expect(list.querySelector('button')?.getAttribute('title')).toBe('public.orders');
+    const divider = panel
+      .root()
+      .querySelector<HTMLElement>('app-splitter[aria-label="Resize the list of tables"]')!;
+    // The canvas beside it has room to give.
+    const canvas = panel.root().querySelector<HTMLElement>('.db-builder-canvas')!;
+    canvas.getBoundingClientRect = () => ({ width: 800, height: 300 }) as DOMRect;
+    divider.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    await panel.settle();
+    expect(list.style.width).toBe('16px');
+    expect(list.style.maxWidth).toBe('none');
+    divider.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    await panel.settle();
+    expect(list.style.width).toBe('');
+    // The canvas is as tall as its tables until its own divider gives it a height.
+    const top = panel.root().querySelector<HTMLElement>('.db-builder-top')!;
+    const below = panel
+      .root()
+      .querySelector<HTMLElement>('app-splitter[aria-label="Resize the canvas and the panels"]')!;
+    below.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    await panel.settle();
+    expect(top.style.height).toBe('16px');
+    below.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    await panel.settle();
+    expect(top.style.height).toBe('');
+    await panel.click('Add public.users');
+    await panel.click('Add public.orders');
     await panel.settle(20);
     expect(script(panel)).toBe(
       'SELECT *\nFROM public.users u\n  INNER JOIN public.orders o ON o.user_id = u.id',
@@ -146,7 +173,7 @@ describe('the visual query builder', () => {
   it('only shows a statement it cannot hold, and never rewrites it', async () => {
     const other = await start('select * from (select 1) x', () => ({ unsupported: 'subqueries' }));
     expect(other.text()).toContain('Visual only shows this statement: it has subqueries');
-    expect((other.buttons('Add orders')[0] as HTMLButtonElement).disabled).toBe(true);
+    expect((other.buttons('Add public.orders')[0] as HTMLButtonElement).disabled).toBe(true);
     expect(script(other)).toBe('select * from (select 1) x');
     await other.click(/^Text$/);
     expect(other.root().querySelector('app-db-query-builder')).toBeNull();

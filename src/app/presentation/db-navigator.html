@@ -181,9 +181,26 @@
 } @else if (section.connections().length) {
   <p id="db-tree" class="muted db-empty">{{ 'Nothing loaded matches the filter.' | transloco }}</p>
 } @else {
-  <p id="db-tree" class="muted db-empty">
-    {{ 'No database connections yet. Create one to choose its engine.' | transloco }}
-  </p>
+  <div id="db-tree" class="muted db-empty">
+    <p>{{ 'No database connections yet. Create one to choose its engine.' | transloco }}</p>
+    <!-- Connections belong to a workspace: one saved in another is seen from that one. -->
+    @if (section.state.workspaces().length > 1) {
+      <p>{{ 'db.empty.workspaces' | transloco }}</p>
+      <div class="db-empty-workspaces">
+        @for (workspace of section.state.workspaces(); track workspace.id) {
+          @if (workspace.id !== section.state.workspaceId()) {
+            <button
+              type="button"
+              class="button small"
+              (click)="section.state.selectWorkspace(workspace.id)"
+            >
+              {{ 'db.empty.open' | transloco: { v0: workspace.name } }}
+            </button>
+          }
+        }
+      </div>
+    }
+  </div>
 }
 
 @if (options(); as at) {

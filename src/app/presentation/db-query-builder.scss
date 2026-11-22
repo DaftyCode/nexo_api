@@ -1,4 +1,11 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
 .db-builder {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--nexo-space-3);
@@ -13,24 +20,46 @@
   background: var(--nexo-color-warning-soft);
   color: var(--nexo-color-text);
 }
+// The tables and the canvas take the room the panels and the SQL below leave, and scroll;
+// what is being built stays in sight.
 .db-builder-top {
   display: flex;
+  flex: 1 1 auto;
   gap: var(--nexo-space-3);
-  min-height: calc(var(--nexo-size-unit) * 100);
+  min-height: calc(var(--nexo-size-unit) * 60);
+}
+.db-builder-top.db-builder-sized {
+  flex: none;
 }
 .db-builder-tables {
   display: flex;
   flex-direction: column;
   gap: var(--nexo-space-2);
-  width: calc(var(--nexo-size-unit) * 100);
+  // As wide as its longest table while there is room; the divider beside it resizes it.
+  width: max-content;
+  min-width: calc(var(--nexo-size-unit) * 80);
+  max-width: 40%;
   flex: none;
+  min-height: 0;
 }
+// The list fills the height of the canvas beside it, one table per line.
 .db-builder-tables ul {
+  flex: 1;
+  min-height: 0;
   margin: 0;
   padding: 0;
   list-style: none;
-  max-height: calc(var(--nexo-size-unit) * 150);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.db-builder-tables li button {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .db-builder-canvas {
   flex: 1;
@@ -44,6 +73,7 @@
   margin: 0;
 }
 .db-builder-sql {
+  flex: none;
   display: flex;
   gap: var(--nexo-space-3);
   align-items: flex-start;
@@ -58,4 +88,9 @@
   font-size: var(--nexo-font-size-sm);
   white-space: pre-wrap;
   min-height: calc(var(--nexo-size-unit) * 16);
+  max-height: calc(var(--nexo-size-unit) * 60);
+  overflow: auto;
+}
+app-db-query-panels {
+  flex: none;
 }
