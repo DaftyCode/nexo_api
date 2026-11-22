@@ -16,6 +16,14 @@
           | transloco
       }}
     </p>
+    @if (module().id === 'mongodb') {
+      <p class="module-moved" role="note">
+        {{
+          'MongoDB is now a downloadable module: your connections and queries stay as they were.'
+            | transloco
+        }}
+      </p>
+    }
     <dl class="module-facts">
       <dt>{{ 'Size' | transloco }}</dt>
       <dd>{{ bytes(module().downloadSize) }}</dd>

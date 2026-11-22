@@ -117,6 +117,14 @@
     "shop/schemas/public",
     "users.password, *_token",
     "proxy.example.com",
-    "GeoJSON"
+    "GeoJSON",
+    "C:/exports/orders-{date}.csv",
+    "0 9 * * mon-fri",
+    "user:*",
+    "user:1",
+    "GET user:1",
+    "ID",
+    "news, orders",
+    "news.*"
   ]
 }

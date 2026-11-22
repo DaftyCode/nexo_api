@@ -2,7 +2,9 @@
 //! transaction or sets the session. What cannot be told counts as a write. It also finds the
 //! statements that need a confirmation: `UPDATE` and `DELETE` without `WHERE`, `TRUNCATE`
 //! and `DROP`.
-use super::vocabulary::{ACCESS, DROP_WORDS, READS, SESSION, STRUCTURE, TRANSACTION, WRITES};
+use super::vocabulary::{
+    ACCESS, CQL_SESSION, DROP_WORDS, READS, SESSION, STRUCTURE, TRANSACTION, WRITES,
+};
 use super::{
     Dialect,
     scanner::{Kind, Rules, Scanner},
@@ -33,6 +35,9 @@ pub struct Classification {
     pub drop: Vec<String>,
     /// The statement is a `DROP`, even when its names could not be read.
     pub drops: bool,
+    /// A CQL query with `ALLOW FILTERING`: it may read every partition of the cluster.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub scans_cluster: bool,
 }
 impl Classification {
     /// Whether a read-only connection may run it.
@@ -139,6 +144,7 @@ pub fn classify(statement: &str, dialect: Dialect) -> Classification {
         truncate: false,
         drop: Vec::new(),
         drops: false,
+        scans_cluster: false,
     };
     let Some(first) = words.first() else {
         result.kind = StatementKind::Read;
@@ -191,6 +197,9 @@ pub fn classify(statement: &str, dialect: Dialect) -> Classification {
         _ if READS.contains(&verb) => StatementKind::Read,
         _ if WRITES.contains(&verb) => StatementKind::Write,
         _ if STRUCTURE.contains(&verb) => StatementKind::Structure,
+        // CQL has no transactions: `BEGIN BATCH` writes.
+        "BEGIN" if dialect == Dialect::Cql => StatementKind::Write,
+        _ if dialect == Dialect::Cql && CQL_SESSION.contains(&verb) => StatementKind::Session,
         "BEGIN" if matches!(dialect, Dialect::TSql | Dialect::PlSql) => {
             match words.get(1).map(|word| word.upper.as_str()) {
                 Some("TRAN" | "TRANSACTION" | "DISTRIBUTED") => StatementKind::Transaction,
@@ -211,6 +220,11 @@ pub fn classify(statement: &str, dialect: Dialect) -> Classification {
         }
         _ => StatementKind::Write,
     };
+    if dialect == Dialect::Cql {
+        result.scans_cluster = after
+            .windows(2)
+            .any(|pair| top(&&pair[0]) && pair[0].upper == "ALLOW" && pair[1].upper == "FILTERING");
+    }
     match verb {
         "UPDATE" | "DELETE" => result.missing_where = !has("WHERE"),
         "TRUNCATE" => result.truncate = true,

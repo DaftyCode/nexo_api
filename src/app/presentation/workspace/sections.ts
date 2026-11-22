@@ -9,9 +9,14 @@ export const workspaceSections = [
   { id: 'mocks', icon: '◇', label: 'Mocks' },
   { id: 'datasets', icon: '▦', label: 'Datasets' },
   { id: 'databases', icon: '⛁', label: 'Databases' },
-  { id: 'mongo', icon: '⬮', label: 'MongoDB' },
   { id: 'git', icon: '⑂', label: 'Git' },
   { id: 'mcp', icon: '⌘', label: 'MCP' },
   { id: 'settings', icon: '⚙', label: 'Settings' },
 ] as const;
 export const sectionIds: readonly string[] = workspaceSections.map((section) => section.id);
+
+/** The section a stored one is shown in now: MongoDB joined the databases (DB-39). */
+export function shownSection(stored: string | undefined): string {
+  if (stored === 'mongo') return 'databases';
+  return stored && sectionIds.includes(stored) ? stored : 'collections';
+}

@@ -1,7 +1,7 @@
 // End-to-end test of the Schema tab: a sample of 100 000 documents analysed, a frequent value
 // opened in the Documents tab, and field names suggested in the filter.
 import { expect, test } from './fixture.mjs';
-import { deleteMongoConnection, violations } from './helpers.mjs';
+import { deleteMongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: the schema of a sample shows each field, and a value opens its documents', async ({
   page,
@@ -9,10 +9,7 @@ test('MongoDB: the schema of a sample shows each field, and a value opens its do
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

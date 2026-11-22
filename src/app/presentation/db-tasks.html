@@ -27,6 +27,8 @@
         [connections]="connections()"
         [scripts]="scripts()"
         [tasks]="others()"
+        [transfers]="saved('mongo-transfer')"
+        [comparisons]="saved('mongo-compare')"
         (saved)="save($event)"
         (cancelled)="editing.set(undefined)"
       />

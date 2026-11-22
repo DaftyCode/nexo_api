@@ -190,7 +190,8 @@ export function readDbConnection(value: unknown): DbConnectionValue {
     description: text('description'),
   };
   return {
-    driver: text('driver') ?? '',
+    // A MongoDB connection saved before the driver was written keeps only its URI (DB-39).
+    driver: text('driver') ?? (text('uri') ? 'mongodb' : ''),
     ...Object.fromEntries(Object.entries(optional).filter(([, item]) => item !== undefined)),
     ...(typeof port === 'number' || (typeof port === 'string' && port.trim()) ? { port } : {}),
     ...(Object.keys(params).length ? { params } : {}),

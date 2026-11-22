@@ -117,7 +117,9 @@ describe('workspace session store', () => {
     expect(tabs[0].request.url).toBe('http://changed');
     expect(tabs[1].request.name).toBe('a');
     expect(second.context.tabs.activeId()).toBe(tabs[1].id);
-    expect(second.context.section()).toBe('mongo');
+    // The MongoDB section joined the databases one (DB-39): a session that had it open
+    // comes back there.
+    expect(second.context.section()).toBe('databases');
   });
 
   it('keeps only the collection order when tabs do not reopen, and says what was dropped', async () => {

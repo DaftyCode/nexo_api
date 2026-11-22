@@ -10,6 +10,7 @@ import {
   prettyJson,
   prettyXml,
   truncation,
+  uuidTime,
 } from '../../domain/db/grid/cells';
 import { ResultColumn, cellText } from '../../domain/db/results';
 import { CodeEditor } from '../code-editor';
@@ -81,6 +82,12 @@ import { WorkspaceState } from '../workspace-state';
       }
       @default {
         <pre class="viewer-text" tabindex="0">{{ text() }}</pre>
+        @if (madeAt(); as made) {
+          <dl class="viewer-dates">
+            <dt>{{ 'Time of the UUID' | transloco }}</dt>
+            <dd>{{ made }}</dd>
+          </dl>
+        }
       }
     }
   `,
@@ -147,6 +154,11 @@ export class ValueViewer {
     return type ? `data:${type};base64,${(this.value() as { v: string }).v}` : undefined;
   });
   protected readonly dates = computed(() => dateForms(this.text()));
+  /** When a time UUID (Cassandra's `timeuuid`) was made, as an ObjectId says its date. */
+  protected readonly madeAt = computed(() => {
+    const value = this.value() as { $t?: unknown; v?: unknown } | null;
+    return value?.$t === 'uuid' ? uuidTime(String(value.v)) : undefined;
+  });
 
   /** Saves the value as it came: a binary with its bytes, anything else as text. */
   protected save() {

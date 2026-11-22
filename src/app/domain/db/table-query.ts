@@ -27,6 +27,8 @@ export interface TableQuery {
   where: string;
   quick: QuickFilter[];
   order: OrderLevel[];
+  /** CQL: the person confirmed `ALLOW FILTERING`, which may read the whole cluster (DB-34). */
+  allowFiltering?: boolean;
 }
 
 export function emptyTableQuery(): TableQuery {
@@ -95,6 +97,19 @@ function conditions(query: TableQuery, style: QueryStyle) {
   return { where: parts.length ? ` WHERE ${parts.join(' AND ')}` : '', params };
 }
 
+/** ` ALLOW FILTERING` when the person confirmed it on a CQL table, else nothing. */
+function filtering(query: TableQuery, style: QueryStyle) {
+  return style.name === 'cql' && query.allowFiltering ? ' ALLOW FILTERING' : '';
+}
+
+/**
+ * Cassandra refuses a filter that is not on the partition key until `ALLOW FILTERING` is
+ * added: whether this error says so.
+ */
+export function asksToFilter(error: string, style: QueryStyle) {
+  return style.name === 'cql' && /ALLOW FILTERING/i.test(error);
+}
+
 /** The rows of a table with the filter and order of its «Data» tab. */
 export function tableSelect(table: string, query: TableQuery, style: QueryStyle) {
   const { where, params } = conditions(query, style);
@@ -103,13 +118,13 @@ export function tableSelect(table: string, query: TableQuery, style: QueryStyle)
         .map((level) => `${quoteName(level.column, style)} ${level.descending ? 'DESC' : 'ASC'}`)
         .join(', ')}`
     : '';
-  return { sql: `SELECT * FROM ${table}${where}${order}`, params };
+  return { sql: `SELECT * FROM ${table}${where}${order}${filtering(query, style)}`, params };
 }
 
 /** How many rows the same filter keeps. */
 export function tableCount(table: string, query: TableQuery, style: QueryStyle) {
   const { where, params } = conditions(query, style);
-  return { sql: `SELECT count(*) FROM ${table}${where}`, params };
+  return { sql: `SELECT count(*) FROM ${table}${where}${filtering(query, style)}`, params };
 }
 
 /** Puts a column first in the order, or turns it round when it already is. */

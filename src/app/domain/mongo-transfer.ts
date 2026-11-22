@@ -78,6 +78,11 @@ export interface TransferValue {
   continueOnError: boolean;
   /** Export: the masking set the documents go through (empty: none). */
   mask: string;
+  /**
+   * What it reads, compiled when it was saved (its variables filled in), so a scheduled task
+   * runs it without the shell syntax of the query (DB-40); absent for a page.
+   */
+  built?: { query: Record<string, unknown>; pipeline?: Record<string, unknown> };
 }
 
 export function emptyTransfer(
@@ -154,6 +159,9 @@ export function transferValue(value: unknown): TransferValue {
     key: texts(stored['key']),
     continueOnError: stored['continueOnError'] !== false,
     mask: text('mask'),
+    ...(isPlain(stored['built']) && isPlain(stored['built']['query'])
+      ? { built: stored['built'] as NonNullable<TransferValue['built']> }
+      : {}),
   };
 }
 

@@ -4,6 +4,7 @@
  * accepts (any other is refused by the driver, with its name).
  */
 import { TLS_MODES, TlsMode } from './connection';
+import { OTHER_ENGINES } from './engines/other';
 
 export interface EngineProperty {
   name: string;
@@ -44,6 +45,13 @@ export interface EngineProfile {
   properties: readonly EngineProperty[];
   /** What its form does not offer, said under it: a message key. */
   limits?: string;
+  /** A key-value store (Redis): its databases open on their keys, not as tables (DB-35). */
+  keyValue?: boolean;
+  /** An engine with an HTTP API (Elasticsearch): it has a console of requests (DB-36). */
+  rest?: boolean;
+  /** A document database (MongoDB): its connections have their own form, and their
+   * collections open in the explorer of documents (DB-39). */
+  documents?: boolean;
   /** The statement that makes a schema the session's default, with its name quoted. */
   schemaStatement?: (schema: string) => string;
 }
@@ -133,32 +141,7 @@ const ENGINES: Record<string, EngineProfile> = {
     ],
     limits: 'db.limits.sqlite',
   },
-  // Files as tables and DuckDB databases (DB-30): a folder, files or a `.duckdb` file.
-  files: {
-    id: 'files',
-    name: 'Files and DuckDB',
-    summary: 'db.engine.files',
-    file: true,
-    folder: true,
-    fileLabel: 'Folder, files or DuckDB database',
-    fileHelp: 'db.files.help',
-    filePlaceholder: 'db.files.placeholder',
-    defaultHost: '',
-    defaultDatabase: '',
-    defaultUser: '',
-    schemes: ['duckdb'],
-    tlsModes: [],
-    properties: [
-      { name: 'delimiter', description: 'db.property.delimiter' },
-      { name: 'header', description: 'db.property.header' },
-      { name: 'quote', description: 'db.property.quote' },
-      { name: 'encoding', description: 'db.property.encoding' },
-      { name: 'sheet', description: 'db.property.sheet' },
-      { name: 'json_format', description: 'db.property.json_format' },
-      { name: 'all_varchar', description: 'db.property.all_varchar' },
-    ],
-    limits: 'db.limits.files',
-  },
+  ...OTHER_ENGINES,
 };
 
 /** The profile of an engine; an engine the form does not know gets the common fields. */

@@ -1,0 +1,25 @@
+[package]
+name = "nexo-driver-cassandra"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Apache Cassandra and ScyllaDB, with the ScyllaDB driver over rustls"
+
+[package.metadata.nexo]
+module = "cassandra"
+
+[dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["tls"] }
+async-trait.workspace = true
+base64.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+# The ScyllaDB driver speaks CQL to Cassandra and ScyllaDB; its TLS is rustls on aws-lc-rs
+# (rustls' default provider), never OpenSSL nor ring (DB-34).
+scylla = { version = "~1.10.0", default-features = false, features = ["rustls-023"] }
+
+[dev-dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["conformance", "tls"] }

@@ -37,12 +37,32 @@ const DRIVERS = [
     description: 'SQLite databases, in a file of this computer that the person chose',
     licenses: ['MIT OR Apache-2.0', 'Public Domain'],
   },
+  {
+    id: 'redis',
+    name: 'Redis',
+    description: 'Redis, Valkey and the servers that speak RESP',
+    licenses: ['MIT OR Apache-2.0', 'BSD-3-Clause'],
+  },
+  {
+    id: 'mongodb',
+    name: 'MongoDB',
+    description: 'MongoDB and the servers compatible with it',
+    licenses: ['MIT OR Apache-2.0', 'Apache-2.0'],
+  },
+  {
+    id: 'elastic',
+    name: 'Elasticsearch',
+    description: 'Elasticsearch and OpenSearch, through their HTTP API',
+    licenses: ['MIT OR Apache-2.0'],
+  },
 ];
 
 /**
  * The test database driver (built with `cargo build -p nexo-driver-test`), the PostgreSQL
  * one (`-p nexo-driver-postgres`), the SQL Server one (`-p nexo-driver-mssql`), the MySQL
- * one (`-p nexo-driver-mysql`) and the SQLite one (`-p nexo-driver-sqlite`) as downloadable
+ * one (`-p nexo-driver-mysql`), the SQLite one (`-p nexo-driver-sqlite`), the Redis one
+ * (`-p nexo-driver-redis`), the MongoDB one (`-p nexo-driver-mongodb`) and the Elasticsearch
+ * one (`-p nexo-driver-elastic`) as downloadable
  * modules, served by a local server that
  * stands for the releases. None when the test driver is not built; `ids` lists those served.
  */

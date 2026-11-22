@@ -116,6 +116,12 @@ impl Connections {
         connection.last_used = Instant::now();
         Some((connection.module.clone(), connection.generation))
     }
+    /// The module and process of a connection, without marking it as used.
+    pub fn peek(&self, name: &str) -> Option<(String, u64)> {
+        let connections = self.open.lock().unwrap();
+        let connection = connections.get(name)?;
+        Some((connection.module.clone(), connection.generation))
+    }
     /// The secrets of a connection of `module` that are limited to some hosts, and its route.
     pub fn secret_hosts(&self, name: &str, module: &str) -> Option<(SecretHosts, ConnectionRoute)> {
         let connections = self.open.lock().unwrap();

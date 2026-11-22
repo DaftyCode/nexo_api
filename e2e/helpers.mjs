@@ -52,14 +52,40 @@ export async function nextAuthorizationUrl(page) {
 export async function deleteMongoConnection(page, name) {
   await page
     .getByRole('navigation', { name: 'Databases' })
-    .getByRole('button', { name: '← Connections' })
+    .getByRole('button', { name: 'Edit connection' })
     .click();
-  const list = page.getByRole('navigation', { name: 'Connections' });
-  await list.getByRole('button', { name, exact: true }).click();
   page.once('dialog', (confirm) => confirm.accept());
   await page
     .getByRole('region', { name: 'Connection', exact: true })
     .getByRole('button', { name: 'Delete connection' })
     .click();
-  await expect(list.getByRole('button', { name, exact: true })).toHaveCount(0);
+  await expect(mongoConnection(page, name)).toHaveCount(0);
+}
+
+/**
+ * The form of a new MongoDB connection, in the databases section (DB-39): MongoDB is chosen in
+ * the gallery of engines, and its module downloaded the first time.
+ */
+export async function openMongoForm(page) {
+  await page
+    .getByRole('navigation', { name: 'Workspace sections' })
+    .getByRole('button', { name: 'Databases' })
+    .click();
+  await page.getByRole('toolbar', { name: 'Navigator' }).getByRole('button').first().click();
+  await page.getByRole('button', { name: /^MongoDB/ }).click();
+  const download = page.getByRole('dialog', { name: 'Download the MongoDB module' });
+  const form = page.getByRole('region', { name: 'Connection', exact: true });
+  await expect(download.or(form)).toBeVisible();
+  if (await download.isVisible()) {
+    await download.getByRole('button', { name: 'Download' }).click();
+    await expect(download).toBeHidden();
+  }
+  await expect(form).toBeVisible();
+}
+
+/** A MongoDB connection in the tree of the databases section, by its name. */
+export function mongoConnection(page, name) {
+  return page
+    .getByRole('tree', { name: 'Connections' })
+    .getByRole('treeitem', { name: new RegExp(`^${name}\\b`) });
 }

@@ -46,38 +46,17 @@ for (const [crate, forbidden] of [
       'reqwest',
       'tokio',
       'mongodb',
-      'nexo-mongo',
     ],
   ],
   [
     'nexo-application',
-    [
-      'nexo-infrastructure',
-      'nexo-http',
-      'axum',
-      'rusqlite',
-      'tauri',
-      'reqwest',
-      'mongodb',
-      'nexo-mongo',
-    ],
+    ['nexo-infrastructure', 'nexo-http', 'axum', 'rusqlite', 'tauri', 'reqwest', 'mongodb'],
   ],
-  [
-    'nexo-http',
-    ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest', 'mongodb', 'nexo-mongo'],
-  ],
+  ['nexo-http', ['nexo-infrastructure', 'nexo-engine', 'rusqlite', 'reqwest', 'mongodb']],
   // The engine is an adapter: it implements application ports and never reaches the
   // HTTP layer, the other adapters or the desktop shell.
-  [
-    'nexo-engine',
-    ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri', 'mongodb', 'nexo-mongo'],
-  ],
-  [
-    'nexo-infrastructure',
-    ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri', 'mongodb', 'nexo-mongo'],
-  ],
-  // MongoDB is one more adapter: only it uses the driver, and nexo-server composes it.
-  ['nexo-mongo', ['nexo-infrastructure', 'nexo-http', 'nexo-engine', 'nexo-server', 'tauri']],
+  ['nexo-engine', ['nexo-infrastructure', 'nexo-http', 'nexo-server', 'tauri', 'mongodb']],
+  ['nexo-infrastructure', ['nexo-http', 'nexo-engine', 'nexo-server', 'tauri', 'mongodb']],
   // The host of the database drivers is one more adapter too.
   [
     'nexo-modules',
@@ -86,7 +65,6 @@ for (const [crate, forbidden] of [
       'nexo-http',
       'nexo-engine',
       'nexo-server',
-      'nexo-mongo',
       'tauri',
       'mongodb',
       'axum',
@@ -123,6 +101,14 @@ for (const crate of await directories('backend/crates'))
     if (crate === 'nexo-driver-sdk')
       failures.push(`nexo-driver-sdk: depends on no other Nexo crate (${dependency})`);
   }
+// MongoDB is a module (DB-39): its library and BSON live only in its driver.
+const products = (await directories('backend/crates')).map((c) => `backend/crates/${c}`);
+for (const crate of [...products, 'src-tauri']) {
+  const manifest = await readFile(`${crate}/Cargo.toml`, 'utf8');
+  for (const library of ['mongodb', 'bson'])
+    if (new RegExp(`^${library}\\s*=`, 'm').test(manifest))
+      failures.push(`${crate}: ${library} lives only in backend/drivers/nexo-driver-mongodb`);
+}
 for (const driver of await directories('backend/drivers')) {
   for (const dependency of await nexoDependencies(`backend/drivers/${driver}/Cargo.toml`))
     if (dependency !== 'nexo-driver-sdk')

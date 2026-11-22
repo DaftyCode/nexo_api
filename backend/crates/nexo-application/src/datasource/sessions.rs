@@ -39,6 +39,9 @@ pub(crate) struct Session {
 pub(crate) struct Sessions {
     open: Mutex<HashMap<String, Arc<Session>>>,
     asked: Mutex<HashMap<(WorkspaceId, DocumentId), String>>,
+    /// The subscriptions of key-value stores open in the realtime panel: id and what they
+    /// follow (DB-35).
+    followed: Mutex<std::collections::BTreeMap<String, String>>,
 }
 
 /// A session name: letters, digits and `_ . : -`, as the client chooses it (one per editor).
@@ -55,6 +58,19 @@ pub(crate) fn session_name(name: &str) -> Result<&str> {
 }
 
 impl Sessions {
+    pub fn follow(&self, id: &str, what: String) {
+        self.followed.lock().unwrap().insert(id.to_owned(), what);
+    }
+    pub fn unfollow(&self, id: &str) {
+        self.followed.lock().unwrap().remove(id);
+    }
+    pub fn followed(&self) -> Vec<(String, String)> {
+        let followed = self.followed.lock().unwrap();
+        followed
+            .iter()
+            .map(|(id, what)| (id.clone(), what.clone()))
+            .collect()
+    }
     pub fn get(&self, name: &str) -> Result<Arc<Session>> {
         self.open
             .lock()

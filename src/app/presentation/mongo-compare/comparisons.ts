@@ -135,7 +135,9 @@ export class MongoComparisons {
     const { explorer } = this;
     await explorer.state.announce('The comparison could not be saved', async () => {
       const existing = explorer.state.documents().find((d) => d.id === this.savedId());
-      const value = draft.value();
+      // The filter compiled too, so a scheduled task runs it (DB-40).
+      const filter = compiledFilter(draft);
+      const value = { ...draft.value(), ...(filter ? { builtFilter: filter } : {}) };
       const name = draft.model().name.trim() || `${value.collection} ↔ ${value.target.collection}`;
       const saved = await explorer.use((cases) =>
         cases.compare.save(
@@ -161,5 +163,14 @@ export class MongoComparisons {
       if (this.savedId() === document.id) this.savedId.set('');
       return named('Comparison deleted', document.name);
     });
+  }
+}
+
+/** The filter of a comparison compiled, when it is typed and can be read. */
+function compiledFilter(draft: Comparison): Record<string, unknown> | undefined {
+  try {
+    return draft.rules().filter;
+  } catch {
+    return undefined;
   }
 }

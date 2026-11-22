@@ -196,6 +196,8 @@ describe('MongoTransfer', { timeout: 20_000 }, () => {
     const saved = api.documentsStore.find((d) => d.kind === 'mongo-transfer')!;
     expect(saved.name).toBe('Reload orders');
     expect(saved.value).toMatchObject({ direction: 'import', mode: 'replace', format: 'jsonl' });
+    // What it reads is kept compiled too, for a scheduled task (DB-40).
+    expect((saved.value as { built?: unknown }).built).toEqual({ query: {} });
     await click(/^Reload orders$/);
     expect((control(dialog(), 'Mode') as HTMLSelectElement).value).toBe('replace');
     expect((control(dialog(), 'Type orders to confirm') as HTMLInputElement).value).toBe('');

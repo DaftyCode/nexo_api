@@ -46,6 +46,32 @@ export class MongoBrowser {
     }
     await this.loadCollections(name);
   }
+  /**
+   * Shows a collection by name, listing its database first: the navigator's runs its query,
+   * as choosing it here does; a saved query or pipeline only chooses it (`run` false).
+   */
+  async show(database: string, name: string, run = true) {
+    const { explorer } = this;
+    const target = explorer.target();
+    if (run && target?.database === database && target.collection === name) {
+      explorer.shellOpen.set(false);
+      return;
+    }
+    if (!this.collections()[database]) await this.loadCollections(database);
+    explorer.choose(database, this.found(database, name), run);
+  }
+  /** Chooses a collection by its name, or none (after it was dropped). */
+  async select(database: string, name?: string) {
+    const { explorer } = this;
+    if (name) return explorer.choose(database, this.found(database, name));
+    explorer.pager.reset();
+    explorer.target.set(undefined);
+    this.stats.set(undefined);
+  }
+  private found(database: string, name: string): CollectionSummary {
+    const listed = this.listed(database).find((collection) => collection.name === name);
+    return listed ?? { name, kind: 'collection', capped: false };
+  }
   async loadCollections(name: string) {
     const { explorer } = this;
     this.collections.update((all) => ({ ...all, [name]: 'loading' }));

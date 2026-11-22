@@ -1,7 +1,7 @@
 // End-to-end test of MongoDB exports and imports in the browser: a query exported to a file
 // the browser downloads, and that file imported into a new collection.
 import { expect, test } from './fixture.mjs';
-import { deleteMongoConnection, violations } from './helpers.mjs';
+import { deleteMongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: a query exported to JSON Lines and imported again keeps its documents', async ({
   page,
@@ -11,10 +11,7 @@ test('MongoDB: a query exported to JSON Lines and imported again keeps its docum
   // Exporting and importing 2 500 documents through the browser takes most of a minute.
   test.setTimeout(120_000);
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

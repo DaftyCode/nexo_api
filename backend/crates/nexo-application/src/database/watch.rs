@@ -120,6 +120,7 @@ impl Application {
             Value::Array(list) => list,
             _ => Vec::new(),
         };
+        list.extend(self.kv_subscriptions());
         for watch in self.database.watches().await? {
             list.push(
                 serde_json::to_value(watch)

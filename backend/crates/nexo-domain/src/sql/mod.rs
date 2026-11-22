@@ -31,6 +31,8 @@ pub enum Dialect {
     TSql,
     PlSql,
     Sqlite,
+    /// CQL of Cassandra and ScyllaDB (DB-34).
+    Cql,
 }
 impl Dialect {
     /// The dialect a driver names (`postgresql`, `mysql`, `tsql`…), or of a module id; any
@@ -42,6 +44,7 @@ impl Dialect {
             "tsql" | "mssql" | "sqlserver" => Self::TSql,
             "plsql" | "oracle" => Self::PlSql,
             "sqlite" => Self::Sqlite,
+            "cql" | "cassandra" | "scylla" => Self::Cql,
             _ => Self::Ansi,
         }
     }

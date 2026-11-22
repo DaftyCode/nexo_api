@@ -79,6 +79,18 @@ pub trait UserFiles: Send + Sync {
     async fn pgpass(&self) -> Result<Option<String>>;
 }
 
+/// The files saved tasks write and read (DB-40): only in the desktop app, at the absolute
+/// paths the person wrote in the task, never inside Nexo's own data.
+#[async_trait]
+pub trait TaskFiles: Send + Sync {
+    /// Starts an empty file; one that exists is refused unless `overwrite`. Answers its path.
+    async fn create(&self, path: &str, overwrite: bool) -> Result<String>;
+    /// Adds to the end of a file `create` started.
+    async fn append(&self, path: &str, bytes: Vec<u8>) -> Result<()>;
+    /// A file whole, of `limit` bytes at most.
+    async fn read(&self, path: &str, limit: u64) -> Result<Vec<u8>>;
+}
+
 #[async_trait]
 pub trait DataSources: Send + Sync {
     /// What the driver of a module says about itself: its capabilities and dialect.
@@ -137,5 +149,13 @@ pub trait DataSources: Send + Sync {
     /// transaction would be lost with it.
     async fn hold(&self, _session: &str, _held: bool) -> Result<()> {
         Ok(())
+    }
+    /// A method of an extension of engines that are not relational, with `{connection, …}`:
+    /// a key-value store's (DB-35: `kv.scan`, `kv.get`, `kv.write`, `kv.command`,
+    /// `kv.subscribe`, `kv.events`, `kv.unsubscribe`) or a REST API's (DB-36: `rest.request`).
+    async fn extension(&self, _session: &str, method: &str, _request: Value) -> Result<Value> {
+        Err(nexo_domain::Error::Validation(format!(
+            "This connection does not answer {method}"
+        )))
     }
 }

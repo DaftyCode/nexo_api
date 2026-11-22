@@ -6,10 +6,10 @@ use nexo_http::{AccessConfig, router};
 pub use nexo_http::{Mode, Sessions};
 use nexo_infrastructure::{
     clock::SystemClock, git::GitAdapter, infrastructure as err, native::NativeAdapter,
-    sqlite::SqliteStore, user_files::HomeFiles, vault::desktop_master_key,
+    sqlite::SqliteStore, task_files::LocalTaskFiles, user_files::HomeFiles,
+    vault::desktop_master_key,
 };
 use nexo_modules::{HostConfig, Modules, StoreConfig};
-use nexo_mongo::MongoAdapter;
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -85,16 +85,6 @@ pub fn engine(config: &Config) -> Result<Arc<Engine>> {
 pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engine>)> {
     let store = Arc::new(SqliteStore::open(&config.data.join("nexo.sqlite"))?);
     let engine = engine(config)?;
-    let application = Application::new(
-        store,
-        engine.clone(),
-        engine.clone(),
-        Arc::new(GitAdapter::new(
-            config.data.join("projects"),
-            engine.clone(),
-        )),
-        Arc::new(MongoAdapter::new(&config.data, engine.clone())),
-    );
     // Database drivers are downloaded modules, run in their own processes; their network
     // goes through the engine's egress policy.
     // A module that opens a file (SQLite) never opens one of Nexo's own data.
@@ -107,6 +97,20 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         host,
         engine.clone(),
     )?);
+    // MongoDB is a module too (DB-39): the document database port goes to its driver, which
+    // writes certificates in a temporary folder of its own. The folder the built-in adapter
+    // used is no longer needed.
+    let _ = std::fs::remove_dir_all(config.data.join("mongo-tls"));
+    let application = Application::new(
+        store,
+        engine.clone(),
+        engine.clone(),
+        Arc::new(GitAdapter::new(
+            config.data.join("projects"),
+            engine.clone(),
+        )),
+        Arc::new(modules.documents()),
+    );
     // A connection may read the user's pgpass file, only when it says so (DB-25).
     let mut application = application
         .with_modules(modules.clone())
@@ -115,10 +119,13 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
     // The local client tools (`pg_dump`, `mysql`…) run programs of the computer with files
     // chosen in native dialogs: only the desktop app has them.
     if config.mode == Mode::Desktop {
-        application = application.with_native_tools(Arc::new(NativeAdapter::new(
-            engine.clone(),
-            vec![config.data.clone()],
-        )));
+        application = application
+            .with_native_tools(Arc::new(NativeAdapter::new(
+                engine.clone(),
+                vec![config.data.clone()],
+            )))
+            // Saved tasks write and read files at the paths the person wrote (DB-40).
+            .with_task_files(Arc::new(LocalTaskFiles::new(vec![config.data.clone()])));
     }
     let application = Arc::new(application);
     // Scripts reach the databases through the application, with its rules (`nx.mongo`).

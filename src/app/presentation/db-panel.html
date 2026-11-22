@@ -117,7 +117,14 @@
       >
         @switch (tab.kind) {
           @case ('connection') {
-            <app-db-connection-editor [tab]="tab" />
+            @if (mongoForm(tab)) {
+              <!-- MongoDB's form, in its own chunk with its explorer (DB-39). -->
+              @defer (on immediate) {
+                <app-db-mongo-editor [tab]="tab" />
+              }
+            } @else {
+              <app-db-connection-editor [tab]="tab" />
+            }
           }
           @case ('sql') {
             <app-db-sql-tab [tab]="tab" />
@@ -145,6 +152,19 @@
           }
           @case ('dashboard') {
             <app-db-dashboard [tab]="tab" />
+          }
+          @case ('keys') {
+            <app-db-keys [tab]="tab" />
+          }
+          @case ('rest') {
+            <app-db-rest-console [tab]="tab" />
+          }
+          @case ('mongo') {
+            @defer (on immediate) {
+              <app-db-mongo [tab]="tab" />
+            } @placeholder {
+              <div class="spinner" role="status" [attr.aria-label]="'Loading' | transloco"></div>
+            }
           }
         }
       </div>

@@ -36,6 +36,8 @@ pub(crate) struct Rules {
     pub brackets: bool,
     /// `q'[…]'` alternative quoting (Oracle).
     pub q_quotes: bool,
+    /// `// …` comments to the end of the line (CQL).
+    pub slash_comments: bool,
 }
 impl Rules {
     pub fn of(dialect: Dialect) -> Self {
@@ -61,6 +63,12 @@ impl Rules {
             Dialect::Sqlite => Self {
                 backticks: true,
                 brackets: true,
+                ..Self::default()
+            },
+            // `$$ … $$` bodies of functions, `//` comments.
+            Dialect::Cql => Self {
+                dollar_quotes: true,
+                slash_comments: true,
                 ..Self::default()
             },
             Dialect::Ansi => Self::default(),
@@ -125,6 +133,7 @@ impl<'a> Scanner<'a> {
                 b' ' | b'\t' | b'\r' | 0x0b | 0x0c => self.pos += 1,
                 b'-' if self.peek(1) == Some(b'-') => self.skip_line(),
                 b'#' if self.rules.mysql => self.skip_line(),
+                b'/' if self.rules.slash_comments && self.peek(1) == Some(b'/') => self.skip_line(),
                 // MySQL runs what is inside `/*! … */`: it is not a comment.
                 b'/' if self.peek(1) == Some(b'*')
                     && !(self.rules.mysql && self.peek(2) == Some(b'!')) =>

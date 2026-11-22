@@ -77,7 +77,7 @@
   (click)="folded.set(!folded())"
 >
   <app-studio-icon class="db-chevron" name="chevron" [class.open]="!folded()" />
-  {{ 'db.connections' | transloco: { v0: section.connections().length } }}
+  {{ 'db.connections' | transloco: { v0: section.navigable().length } }}
 </button>
 @if (folded()) {
   <span id="db-tree" hidden></span>
@@ -178,7 +178,7 @@
       </li>
     }
   </ul>
-} @else if (section.connections().length) {
+} @else if (section.navigable().length) {
   <p id="db-tree" class="muted db-empty">{{ 'Nothing loaded matches the filter.' | transloco }}</p>
 } @else {
   <div id="db-tree" class="muted db-empty">

@@ -156,6 +156,11 @@ export class DbConnectionEditor {
 
   protected start(module: ModuleSummary) {
     this.download.set(undefined);
+    // A document database has its own form (MongoDB, DB-39): the tab shows it instead.
+    if (engineProfile(module.id).documents) {
+      this.section.tabs.update(this.tab().id, { part: module.id });
+      return;
+    }
     this.model.set(emptyDbForm(module.id, module.name));
     this.type = this.model().type;
     this.page.set('main');

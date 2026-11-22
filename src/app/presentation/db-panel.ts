@@ -14,8 +14,12 @@ import { DbDiagram } from './db-diagram';
 import { DbLocks } from './db-locks';
 import { DbSessions } from './db-sessions';
 import { DbDashboard } from './db-dashboard';
+import { DbKeys } from './db-keys';
+import { DbRestConsole } from './db-rest-console';
 import { DbNative } from './db-native';
 import { DbCompare } from './db-compare';
+import { DbMongoEditor, DbMongoTab } from './db-mongo';
+import { MONGO_MODULE } from './db-panel/mongo';
 import { hasPendingWrites } from './db-panel/sql-transaction';
 import { DbSection } from './db-panel/section';
 import type { DbTab } from './db-panel/tabs-store';
@@ -51,8 +55,12 @@ const NAVIGATOR = { min: 200, initial: 300 };
     DbSessions,
     DbLocks,
     DbDashboard,
+    DbKeys,
+    DbRestConsole,
     DbNative,
     DbCompare,
+    DbMongoTab,
+    DbMongoEditor,
     MongoDialog,
   ],
   providers: [DbSection],
@@ -85,10 +93,16 @@ export class DbPanel {
   /** Editor tabs dragged to put them in another order. */
   protected readonly drag = new ListDrag('x', (id, over, side) => this.tabs.move(id, over, side));
 
+  /** The form of a MongoDB connection, saved or chosen in the gallery (DB-39). */
+  protected mongoForm(tab: DbTab) {
+    return !!this.section.mongo.connection(tab.connection) || tab.part === MONGO_MODULE;
+  }
+
   /** The name of a tab: its connection, script or object. */
   protected title(tab: DbTab): string {
-    const connection = this.section.connection(tab.connection)?.name ?? '';
+    const connection = this.section.anyConnection(tab.connection)?.name ?? '';
     if (tab.kind === 'connection') return connection || tab.title;
+    if (tab.kind === 'mongo') return connection || tab.title;
     if (tab.kind === 'object') return tab.title;
     if (tab.kind === 'diagram')
       return (
@@ -100,6 +114,8 @@ export class DbPanel {
     if (tab.kind === 'dashboard') return `${connection} · Dashboard`;
     if (tab.kind === 'native') return `${connection} · Backup and restore`;
     if (tab.kind === 'compare') return `${tab.path?.at(-1) ?? connection} · Compare`;
+    if (tab.kind === 'keys') return `${connection} · ${tab.path?.[0] ?? ''}`;
+    if (tab.kind === 'rest') return `${connection} · Query DSL`;
     const script = this.section
       .scripts()
       .find((document) => document.id === this.tabs.drafts()[tab.id]?.script);
@@ -112,6 +128,9 @@ export class DbPanel {
     if (tab.kind === 'dashboard') return 'datasets';
     if (tab.kind === 'native') return 'download';
     if (tab.kind === 'compare') return 'columns';
+    if (tab.kind === 'keys') return 'key';
+    if (tab.kind === 'rest') return 'console';
+    if (tab.kind === 'mongo') return 'datasets';
     return tab.kind === 'sql' ? 'code' : tab.kind === 'console' ? 'console' : 'databases';
   }
   protected dirty(tab: DbTab) {

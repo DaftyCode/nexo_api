@@ -66,6 +66,22 @@ fn each_kind_gets_the_closest_type_and_text_says_so() {
             "{kind} {source} to {to:?}"
         );
     }
+    // CQL has its own names, and text for what it has no type for.
+    for (kind, source, expected, text) in [
+        ("integer", "int8", "bigint", false),
+        ("integer", "tinyint", "tinyint", false),
+        ("float", "real", "float", false),
+        ("timestamptz", "timestamptz", "timestamp", false),
+        ("binary", "bytea", "blob", false),
+        ("json", "jsonb", "text", true),
+    ] {
+        let converted = convert(&column("c", kind, source), Dialect::Ansi, Dialect::Cql);
+        assert_eq!(
+            (converted.sql_type.as_str(), converted.as_text),
+            (expected, text),
+            "{kind} {source}"
+        );
+    }
     // The same engine keeps the type as written.
     let same = convert(
         &column("c", "array", "integer[]"),

@@ -1,0 +1,43 @@
+[package]
+name = "nexo-driver-mongodb"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "MongoDB and the servers compatible with it"
+
+[package.metadata.nexo]
+module = "mongodb"
+
+[dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk" }
+# The official driver, with rustls on aws-lc-rs (Nexo's only TLS provider: the default
+# `rustls-tls` would bring ring), hickory for `mongodb+srv://` (Atlas), errors that never
+# show credentials, and snappy and zlib compression. Left out: aws-auth (AWS SDK),
+# in-use-encryption (libmongocrypt, C), gssapi-auth (system Kerberos), openssl-tls,
+# zstd-compression (C) and cert-key-password, which needs a pkcs8 that is not released yet.
+# socks5-proxy takes connections through SOCKS5 proxies and SSH tunnels (fast-socks5).
+# Measured in docs/ARCHITECTURE.md, section "Database modules".
+mongodb = { version = "3.10.1", default-features = false, features = [
+    "rustls-tls-aws-lc",
+    "dns-resolver",
+    "compat-3-3-0",
+    "bson-3",
+    "redact-errors",
+    "snappy-compression",
+    "zlib-compression",
+    "socks5-proxy",
+] }
+# The same rustls the driver uses, asked for post-quantum key exchange too.
+rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum"] }
+# The BSON library of the driver (same version), with its Extended JSON conversions.
+bson = { version = "3.1.0", features = ["serde_json-1"] }
+serde.workspace = true
+serde_json.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+base64.workspace = true
+uuid.workspace = true
+# The system's certificate authorities, as the engine trusts them.
+rustls-native-certs = "0.8.5"

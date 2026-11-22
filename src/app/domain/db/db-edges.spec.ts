@@ -74,8 +74,9 @@ describe('engines, at their edges', () => {
     expect(tlsModeOf('prefer')).toBe('prefer');
     expect(tlsModeOf('verify-ca')).toBe('verify');
     expect(tlsModeOf('maybe')).toBeUndefined();
-    expect(engineOfScheme('redis', ['redis'])).toBe('redis');
-    expect(engineOfScheme('redis')).toBe('');
+    expect(engineOfScheme('neo4j', ['neo4j'])).toBe('neo4j');
+    expect(engineOfScheme('neo4j')).toBe('');
+    expect(engineOfScheme('rediss')).toBe('redis');
     expect(engineProfile('postgres').schemaStatement?.('shop')).toBe('SET search_path TO shop');
   });
 });

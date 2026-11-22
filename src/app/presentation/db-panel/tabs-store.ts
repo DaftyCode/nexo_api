@@ -25,8 +25,10 @@ export class DbTabsStore {
       if (other.kind !== tab.kind || other.connection !== tab.connection) return false;
       if (tab.kind === 'connection') return !!tab.connection;
       if (tab.kind === 'object') return other.path?.join('/') === tab.path?.join('/');
-      if (['sessions', 'locks', 'dashboard', 'native'].includes(tab.kind)) return true;
-      if (tab.kind === 'compare') return other.path?.join('/') === tab.path?.join('/');
+      if (['sessions', 'locks', 'dashboard', 'native', 'rest', 'mongo'].includes(tab.kind))
+        return true;
+      if (tab.kind === 'compare' || tab.kind === 'keys')
+        return other.path?.join('/') === tab.path?.join('/');
       if (tab.kind === 'diagram')
         return tab.diagram
           ? other.diagram === tab.diagram

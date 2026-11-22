@@ -40,9 +40,10 @@ pub enum ValueKind {
 /// The largest integer a JSON number holds exactly in every reader (2^53 − 1).
 pub const SAFE_INTEGER: i64 = 9_007_199_254_740_991;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(into = "Json", try_from = "Json")]
 pub enum Value {
+    #[default]
     Null,
     Bool(bool),
     Integer(i64),
@@ -143,6 +144,12 @@ impl From<Value> for Json {
     }
 }
 
+/// Digits, with a sign or not.
+fn integer_text(text: &str) -> bool {
+    let digits = text.strip_prefix(['-', '+']).unwrap_or(text);
+    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+}
+
 impl TryFrom<Json> for Value {
     type Error = String;
     fn try_from(json: Json) -> Result<Self, String> {
@@ -169,8 +176,13 @@ impl TryFrom<Json> for Value {
                             .collect::<Result<_, _>>()?,
                     ),
                     (ValueKind::Array, _) => return Err("an array without its items".into()),
+                    // An integer wider than 64 bits (a `varint`) stays text of its kind.
                     (ValueKind::Integer, Json::String(text)) if full_size.is_none() => {
-                        Self::Integer(text.parse().map_err(|_| "an integer out of range")?)
+                        match text.parse() {
+                            Ok(integer) => Self::Integer(integer),
+                            Err(_) if integer_text(&text) => Self::typed(ValueKind::Integer, text),
+                            Err(_) => return Err("not an integer".into()),
+                        }
                     }
                     (ValueKind::Float, Json::String(text)) if full_size.is_none() => {
                         Self::Float(text.parse().map_err(|_| "not a number")?)

@@ -7,6 +7,9 @@ import { DatabaseTaskCases } from './database-use-cases/tasks';
 import { DatabaseDiagramCases } from './database-use-cases/diagrams';
 import { DatabaseAdminCases } from './database-use-cases/admin';
 import { DatabaseDashboardCases } from './database-use-cases/dashboards';
+import { DatabaseKeyValueCases } from './database-use-cases/keyvalue';
+export { DatabaseRestCases, type RestAnswer, type RestCall } from './database-use-cases/rest';
+import { DatabaseRestCases } from './database-use-cases/rest';
 import { DatabaseNativeCases } from './database-use-cases/native';
 import { DatabaseCompareCases } from './database-use-cases/compare';
 import { DatabaseNavigatorCases } from './database-use-cases/navigator';
@@ -29,6 +32,12 @@ export { DatabaseStructureCases } from './database-use-cases/structure';
 export { DatabaseDiagramCases } from './database-use-cases/diagrams';
 export { DatabaseAdminCases } from './database-use-cases/admin';
 export { DatabaseDashboardCases } from './database-use-cases/dashboards';
+export {
+  DatabaseKeyValueCases,
+  type KvChange,
+  type KvQuery,
+  type KvReply,
+} from './database-use-cases/keyvalue';
 export {
   DatabaseSearchCases,
   type SearchAnswer,
@@ -101,6 +110,10 @@ export class DatabaseUseCases {
   readonly native: DatabaseNativeCases;
   /** Comparing and synchronizing schemas and data (DB-24). */
   readonly compare: DatabaseCompareCases;
+  /** Keys, values and the console of Redis and Valkey (DB-35). */
+  readonly keyValue: DatabaseKeyValueCases;
+  /** The API of Elasticsearch and OpenSearch (DB-36). */
+  readonly rest: DatabaseRestCases;
 
   constructor(
     engine: DatabasePorts & StatementPorts,
@@ -135,5 +148,7 @@ export class DatabaseUseCases {
     this.dashboards = new DatabaseDashboardCases(api);
     this.native = new DatabaseNativeCases(api);
     this.compare = new DatabaseCompareCases(api);
+    this.keyValue = new DatabaseKeyValueCases(api);
+    this.rest = new DatabaseRestCases(api);
   }
 }

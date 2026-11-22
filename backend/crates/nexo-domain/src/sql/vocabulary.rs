@@ -38,6 +38,8 @@ pub(super) const TRANSACTION: &[&str] = &[
     "SAVE",
 ];
 pub(super) const SESSION: &[&str] = &["SET", "USE", "RESET", "DISCARD"];
+/// The commands of cqlsh that set how the next statements run.
+pub(super) const CQL_SESSION: &[&str] = &["CONSISTENCY", "SERIAL", "TRACING", "PAGING"];
 /// Words that make a session statement change what the session may do.
 pub(super) const ACCESS: &[&str] = &[
     "READ",

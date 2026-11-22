@@ -928,6 +928,66 @@ export interface DbTaskRunPayload {
   workspace?: string;
 }
 
+export interface DbKvScanPayload {
+  session: string;
+  pattern?: string;
+  type?: string;
+  cursor?: string;
+  count?: number;
+  workspace?: string;
+}
+
+export interface DbKvGetPayload {
+  session: string;
+  key: unknown;
+  cursor?: string;
+  count?: number;
+  workspace?: string;
+}
+
+export interface DbKvWritePayload {
+  session: string;
+  key: unknown;
+  action: 'set' | 'rename' | 'expire' | 'delete' | 'put' | 'remove';
+  type?: string;
+  value?: unknown;
+  field?: unknown;
+  score?: number;
+  index?: number;
+  fields?: readonly unknown[];
+  to?: unknown;
+  ttlMs?: number;
+  confirm?: boolean;
+  workspace?: string;
+}
+
+export interface DbKvCommandPayload {
+  session: string;
+  line?: string;
+  args?: readonly unknown[];
+  confirm?: boolean;
+  confirmName?: string;
+  workspace?: string;
+}
+
+export interface DbKvSubscribePayload {
+  workspace: string;
+  connectionId: string;
+  channels?: readonly string[];
+  patterns?: readonly string[];
+  variables?: Readonly<Record<string, string>>;
+}
+
+export interface DbRestRequestPayload {
+  session: string;
+  method: string;
+  path: string;
+  body?: unknown;
+  confirm?: boolean;
+  confirmName?: string;
+  workspace?: string;
+}
+
 export interface DbDriverPayload {
   driver: string;
   workspace?: string;
@@ -1136,6 +1196,12 @@ export interface OperationPayloads {
   'db.query.parse': DbQueryParsePayload;
   'db.mock.rows': DbMockRowsPayload;
   'db.task.run': DbTaskRunPayload;
+  'db.kv.scan': DbKvScanPayload;
+  'db.kv.get': DbKvGetPayload;
+  'db.kv.write': DbKvWritePayload;
+  'db.kv.command': DbKvCommandPayload;
+  'db.kv.subscribe': DbKvSubscribePayload;
+  'db.rest.request': DbRestRequestPayload;
   'db.dialect': DbDriverPayload;
   'monitor.status': MonitorStatusPayload;
   'monitor.run': MonitorRunPayload;

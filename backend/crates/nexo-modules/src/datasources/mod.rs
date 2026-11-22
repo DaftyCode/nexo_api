@@ -22,8 +22,8 @@ use nexo_driver_sdk::{
 };
 use serde::Serialize;
 use serde_json::{Value, json};
-use std::time::Duration;
 
+mod extensions;
 mod messages;
 mod route;
 use messages::{connect_params, database_error, settings, to_json};
@@ -158,7 +158,7 @@ impl DataSources for Modules {
         // The driver stops the statement at its limit; the host waits a little longer.
         let limit = request
             .timeout
-            .map(|timeout| timeout + Duration::from_secs(5));
+            .map(|timeout| timeout + std::time::Duration::from_secs(5));
         let result: ExecuteResult = self
             .host()
             .call_within(session, methods::EXECUTE, &message, limit)
@@ -287,6 +287,10 @@ impl DataSources for Modules {
     async fn dashboards(&self, session: &str, request: Value) -> Result<Value> {
         self.relay::<DashboardParams, Dashboards>(session, methods::DASHBOARDS, request, "request")
             .await
+    }
+
+    async fn extension(&self, session: &str, method: &str, request: Value) -> Result<Value> {
+        self.extension_relay(session, method, request).await
     }
 
     async fn hold(&self, session: &str, held: bool) -> Result<()> {

@@ -134,3 +134,43 @@ fn what_a_read_only_connection_may_run() {
     assert!(!allowed("create table t (id int)"));
     assert!(!allowed("anything unknown"));
 }
+
+#[test]
+fn cql_batches_write_and_the_commands_of_cqlsh_are_session() {
+    use StatementKind::*;
+    for (statement, expected) in [
+        (
+            "BEGIN BATCH INSERT INTO t (k) VALUES (1); APPLY BATCH",
+            Write,
+        ),
+        ("CONSISTENCY QUORUM", Session),
+        ("TRACING ON", Session),
+        ("USE shop", Session),
+        ("SELECT * FROM t WHERE k = 1 ALLOW FILTERING", Read),
+        ("LIST ROLES", Read),
+    ] {
+        assert_eq!(
+            classify(statement, Dialect::Cql).kind,
+            expected,
+            "{statement}"
+        );
+    }
+}
+
+#[test]
+fn allow_filtering_scans_the_cluster_only_in_cql_and_outside_strings() {
+    let scans = |statement: &str, dialect| classify(statement, dialect).scans_cluster;
+    assert!(scans(
+        "SELECT * FROM t WHERE v = 1 allow filtering",
+        Dialect::Cql
+    ));
+    assert!(!scans(
+        "SELECT * FROM t WHERE v = 'ALLOW FILTERING'",
+        Dialect::Cql
+    ));
+    assert!(!scans("SELECT * FROM t WHERE k = 1", Dialect::Cql));
+    assert!(!scans(
+        "SELECT allow, filtering FROM t",
+        Dialect::PostgreSql
+    ));
+}

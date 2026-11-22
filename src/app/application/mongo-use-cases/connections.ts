@@ -1,4 +1,6 @@
 import { WorkspaceDocument } from '../../domain/models';
+import type { DbNode } from '../../domain/db/tree';
+import { collectionNodes, databaseNodes } from '../../domain/mongo/tree';
 import { CollectionStats, CollectionSummary, DatabaseSummary } from '../../domain/mongo-query';
 import {
   ConnectionReport,
@@ -119,6 +121,20 @@ export class MongoConnectionCases {
       { workspace, connection: savedConnection(connection, scopes), database },
     );
     return answer.collections;
+  }
+
+  /**
+   * The nodes of a connection in the navigator of the databases (DB-39): its databases, or
+   * the collections of one of them.
+   */
+  async tree(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    path: readonly string[],
+  ): Promise<DbNode[]> {
+    if (!path.length) return databaseNodes(await this.databases(workspace, connection, scopes));
+    return collectionNodes(await this.collections(workspace, connection, scopes, path[0]));
   }
 
   stats(

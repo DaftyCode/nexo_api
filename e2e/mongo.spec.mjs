@@ -1,16 +1,13 @@
 // End-to-end tests of MongoDB connections, queries, writes and indexes.
 import { expect, test } from './fixture.mjs';
-import { violations } from './helpers.mjs';
+import { mongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: a pasted URI keeps its password in the vault, and a test explains failures', async ({
   page,
   nexo,
 }) => {
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor
     .getByLabel('Paste a connection string')
@@ -24,9 +21,10 @@ test('MongoDB: a pasted URI keeps its password in the vault, and a test explains
   await editor.getByLabel('Connection name').fill('Local test');
   await editor.getByLabel('Folder').fill('Local');
   await editor.getByRole('button', { name: 'Save connection' }).click();
-  const list = page.getByRole('navigation', { name: 'Connections' });
-  await expect(list.getByRole('button', { name: 'Local test' })).toBeVisible();
-  await expect(list).toContainText('Local');
+  // In the tree of the databases, in its folder.
+  const tree = page.getByRole('tree', { name: 'Connections' });
+  await expect(mongoConnection(page, 'Local test')).toBeVisible();
+  await expect(tree.getByRole('treeitem', { name: /^Local$/ })).toBeVisible();
 
   // Nothing listens on port 9: the test says so, with the password never shown.
   await editor.getByRole('button', { name: 'Test connection' }).click();
@@ -46,7 +44,7 @@ test('MongoDB: a pasted URI keeps its password in the vault, and a test explains
 
   page.once('dialog', (confirm) => confirm.accept());
   await editor.getByRole('button', { name: 'Delete connection' }).click();
-  await expect(list).toContainText('No connections yet.');
+  await expect(mongoConnection(page, 'Local test')).toHaveCount(0);
 });
 
 test('MongoDB: browse 100 000 documents, filter an embedded field, sort, page, count and cancel', async ({
@@ -56,10 +54,7 @@ test('MongoDB: browse 100 000 documents, filter an embedded field, sort, page, c
   // The data of tools/mongo-fixture.sh (CI starts it before the E2E tests).
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();
@@ -118,10 +113,7 @@ test('MongoDB: a database is created, written, edited keeping types, undone and 
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();
@@ -196,10 +188,7 @@ test('MongoDB: a query scans the collection until an index created in Nexo serve
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

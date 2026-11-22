@@ -39,9 +39,14 @@ export class DbActions {
     this.task = new PanelTask(section.state);
   }
 
-  private document(row: NavigatorRow): WorkspaceDocument | undefined {
-    return row.connection ? this.section.connection(row.connection) : undefined;
-  }
+  /** The connection of a row: SQL, or MongoDB (which opens, refreshes and edits too). */
+  private document = (row: NavigatorRow) => this.section.anyConnection(row.connection ?? '');
+  /** A SQL connection: MongoDB's are renamed, moved and deleted in their form. */
+  private sql = (row: NavigatorRow) => this.section.connection(row.connection ?? '');
+  /** The explorer of a MongoDB connection, or its shell (DB-39). */
+  openMongo = (row: NavigatorRow) => this.section.mongo.open(row.connection ?? '');
+  mongoShell = (row: NavigatorRow) =>
+    this.section.mongo.open(row.connection ?? '', { shell: true });
 
   private saveOver(
     document: WorkspaceDocument,
@@ -104,6 +109,11 @@ export class DbActions {
   newScript(row: NavigatorRow) {
     if (row.connection) this.section.newScript(row.connection);
   }
+  /** The console of Query DSL of an Elasticsearch or OpenSearch connection (DB-36). */
+  restConsole(row: NavigatorRow) {
+    if (row.connection)
+      this.section.tabs.open({ kind: 'rest', connection: row.connection, title: 'Query DSL' });
+  }
   console(row: NavigatorRow) {
     if (row.connection)
       this.section.tabs.open({ kind: 'console', connection: row.connection, title: 'Console' });
@@ -143,7 +153,7 @@ export class DbActions {
   }
 
   duplicate(row: NavigatorRow) {
-    const document = this.document(row);
+    const document = this.sql(row);
     if (!document) return;
     void this.task.announce('The connection could not be duplicated', async () => {
       const cases = await this.section.cases();
@@ -161,7 +171,7 @@ export class DbActions {
   }
 
   rename(row: NavigatorRow) {
-    const document = this.document(row);
+    const document = this.sql(row);
     if (!document || row.type !== 'connection') return;
     this.dialog.set({
       failure: 'The connection could not be renamed',
@@ -184,7 +194,7 @@ export class DbActions {
   }
 
   moveTo(row: NavigatorRow) {
-    const document = this.document(row);
+    const document = this.sql(row);
     if (!document) return;
     this.dialog.set({
       failure: 'The connection could not be moved',
@@ -207,7 +217,7 @@ export class DbActions {
   }
 
   remove(row: NavigatorRow) {
-    const document = this.document(row);
+    const document = this.sql(row);
     if (!document || row.type !== 'connection') return;
     this.dialog.set({
       failure: 'The connection could not be deleted',

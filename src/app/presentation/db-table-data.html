@@ -30,8 +30,21 @@
     </button>
   </div>
 </div>
-@if (query().quick.length || query().order.length) {
+@if (query().quick.length || query().order.length || query().allowFiltering) {
   <ul class="db-data-chips" [attr.aria-label]="'Filters and order' | transloco">
+    @if (query().allowFiltering) {
+      <li>
+        <code>ALLOW FILTERING</code>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-label]="'Remove ALLOW FILTERING' | transloco"
+          (click)="allowFiltering(false)"
+        >
+          ×
+        </button>
+      </li>
+    }
     @for (filter of query().quick; track $index; let index = $index) {
       <li>
         <span>{{ filter.column }} {{ quickLabel(filter.operator) | transloco }}</span>
@@ -69,6 +82,14 @@
 }
 @if (rows.error()) {
   <p class="db-data-error" role="alert">{{ rows.error() }}</p>
+}
+@if (rows.filtering()) {
+  <p class="db-data-filtering" role="note">
+    {{ 'db.data.partitionKey' | transloco }}
+    <button type="button" class="button small" (click)="allowFiltering()">
+      {{ 'Filter with ALLOW FILTERING' | transloco }}
+    </button>
+  </p>
 }
 @if (chart(); as config) {
   <app-result-chart

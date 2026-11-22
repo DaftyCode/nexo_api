@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import type { DatabaseUseCases, DbServerInfo } from '../../application/database-use-cases';
 import { treeSession } from '../../application/database-use-cases';
 import { readDbConnection } from '../../domain/db/connection';
+import { engineProfile } from '../../domain/db/engines';
 import { ConnectionStatus, DbNode, nodeKey } from '../../domain/db/tree';
 import { WorkspaceDocument } from '../../domain/models';
 import { VariableScopes } from '../../domain/variables';
@@ -16,6 +17,16 @@ export interface TreeContext {
   describe: (error: unknown) => string;
   /** Asks the driver of a connection about itself (what it can do), once it connected. */
   learn?: (connection: string) => Promise<void>;
+  /**
+   * The nodes of a document database (MongoDB, DB-39) under a path: it opens no session of
+   * the tree, its explorer's operations each reach its connection.
+   */
+  documents?: (connection: WorkspaceDocument, path: readonly string[]) => Promise<DbNode[]>;
+}
+
+/** Whether a connection is of a document database, whose tree comes from its own cases. */
+export function isDocuments(connection: WorkspaceDocument): boolean {
+  return !!engineProfile(readDbConnection(connection.value).driver).documents;
 }
 
 const without = <T>(set: ReadonlySet<T>, item: T) => new Set([...set].filter((x) => x !== item));
@@ -60,6 +71,10 @@ export class DbTreeStore {
       if (!(await this.context.ensure(driver))) {
         this.setStatus(connection.id, 'disconnected');
         return false;
+      }
+      if (this.context.documents && isDocuments(connection)) {
+        this.setStatus(connection.id, 'connected');
+        return true;
       }
       const cases = await this.context.cases();
       const server = await cases.navigator.connect(
@@ -130,12 +145,16 @@ export class DbTreeStore {
     this.setError(key, undefined);
     let nodes: DbNode[] = [];
     try {
-      const cases = await this.context.cases();
-      nodes = await cases.navigator.tree(
-        this.context.workspace(),
-        treeSession(connection.id),
-        path,
-      );
+      const documents = isDocuments(connection) ? this.context.documents : undefined;
+      if (documents) nodes = await documents(connection, path);
+      else {
+        const cases = await this.context.cases();
+        nodes = await cases.navigator.tree(
+          this.context.workspace(),
+          treeSession(connection.id),
+          path,
+        );
+      }
       this.children.update((all) => new Map(all).set(key, nodes));
     } catch (error) {
       this.setError(key, this.context.describe(error));

@@ -57,6 +57,12 @@ pub fn provider() -> Arc<CryptoProvider> {
     Arc::new(aws_lc_rs::default_provider())
 }
 
+/// Makes aws-lc-rs the provider of the process, for a driver whose library builds its own
+/// rustls configuration with the default provider (Redis's). Done once; later calls do nothing.
+pub fn install_provider() {
+    let _ = aws_lc_rs::default_provider().install_default();
+}
+
 /// The client configuration of a connection: the system's certificate authorities plus the
 /// connection's own, and its client certificate. `None` when the connection does not use
 /// TLS.

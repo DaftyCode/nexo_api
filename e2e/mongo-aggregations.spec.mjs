@@ -1,7 +1,7 @@
 // End-to-end test of the Aggregations tab: a pipeline of five stages with $lookup previewed
 // stage by stage, run, and written with $out once the collection is named again.
 import { expect, test } from './fixture.mjs';
-import { deleteMongoConnection, violations } from './helpers.mjs';
+import { deleteMongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: a pipeline of five stages is previewed stage by stage and written with $out', async ({
   page,
@@ -9,10 +9,7 @@ test('MongoDB: a pipeline of five stages is previewed stage by stage and written
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

@@ -3,6 +3,7 @@ import { ExecutionPort } from './ports';
 import { WorkspaceDocument } from '../domain/models';
 import { WatchOptions } from '../domain/mongo-watch';
 import { VariableScopes } from '../domain/variables';
+import { connectionVariables } from './database-use-cases/connections';
 import { savedConnection } from './mongo-use-cases/payload';
 
 export interface StreamEvent {
@@ -117,6 +118,20 @@ export class ProtocolUseCases {
       workspace,
       connection: savedConnection(connection, scopes),
       ...options,
+    });
+  }
+  /** Follows channels and patterns of a saved Redis connection (DB-35), read like the others. */
+  subscribe(
+    workspace: string,
+    connection: WorkspaceDocument,
+    scopes: VariableScopes,
+    follow: { channels: string[]; patterns: string[] },
+  ) {
+    return this.api.execute<ConnectionState>('db.kv.subscribe', {
+      workspace,
+      connectionId: connection.id,
+      ...follow,
+      variables: connectionVariables(connection.value, scopes),
     });
   }
   poll(workspace: string, id: string, after: number) {

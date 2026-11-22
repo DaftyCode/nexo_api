@@ -9,283 +9,234 @@
     </button>
   </div>
 }
-@if (exploring(); as connection) {
-  <app-mongo-explorer [connection]="connection" (closed)="exploring.set(undefined)" />
-} @else {
-  <div class="feature-heading">
-    <div>
-      <span class="eyebrow">{{ 'YOUR DATA, NEXT TO YOUR API.' | transloco }}</span>
-      <h1>{{ 'MongoDB' | transloco }}</h1>
-      <p>
-        {{
-          'Connect to MongoDB and compatible servers. Passwords and keys stay in the vault.'
-            | transloco
-        }}
-      </p>
-    </div>
+<section class="feature-card mongo-editor" [attr.aria-label]="'Connection' | transloco">
+  @if (!selected()) {
+    <p class="muted">
+      {{
+        'Connect to MongoDB and compatible servers. Passwords and keys stay in the vault.'
+          | transloco
+      }}
+    </p>
+    <label class="file-label">
+      {{ 'Import from MongoDB Compass' | transloco }}
+      <input type="file" accept=".json,application/json" (change)="importCompass($event)" />
+    </label>
+  }
+  <div class="row mongo-paste">
+    <label class="field grow"
+      >{{ 'Paste a connection string' | transloco
+      }}<input
+        [formField]="fields.paste"
+        placeholder="mongodb+srv://user:password@cluster0.example.net/"
+        spellcheck="false"
+        autocomplete="off"
+        (keydown.enter)="useUri()"
+    /></label>
+    <button type="button" class="button" (click)="useUri()">
+      {{ 'Use URI' | transloco }}
+    </button>
   </div>
-  <div class="mongo-layout">
-    <nav class="mongo-connections feature-card" [attr.aria-label]="'Connections' | transloco">
-      <div class="row between">
-        <h2>{{ 'Connections' | transloco }}</h2>
-        <button type="button" class="button small" (click)="newConnection()">
-          {{ '＋ New connection' | transloco }}
-        </button>
-      </div>
-      @for (group of folders(); track group.folder) {
-        @if (group.folder) {
-          <h3 class="mongo-folder">{{ group.folder }}</h3>
-        }
-        <ul>
-          @for (connection of group.connections; track connection.id) {
-            <li>
-              <button
-                type="button"
-                class="mongo-connection"
-                [class.selected]="connection.id === selectedId()"
-                [attr.aria-current]="connection.id === selectedId() ? 'true' : null"
-                (click)="open(connection)"
-              >
-                <span
-                  class="mongo-color"
-                  aria-hidden="true"
-                  [style.background]="colorOf(connection) || 'transparent'"
-                ></span>
-                <span class="grow">{{ connection.name }}</span>
-                @if (isReadOnly(connection)) {
-                  <span class="mongo-badge">{{ 'Read-only' | transloco }}</span>
-                }
-              </button>
-            </li>
-          }
-        </ul>
-      } @empty {
-        <p class="muted">{{ 'No connections yet. Create one or paste a URI.' | transloco }}</p>
+  <div class="mongo-identity">
+    <label class="field grow"
+      >{{ 'Connection name' | transloco }}<input [formField]="fields.name"
+    /></label>
+    <label class="field"
+      >{{ 'Folder' | transloco
+      }}<input [formField]="fields.folder" list="mongo-folders" autocomplete="off"
+    /></label>
+    <datalist id="mongo-folders">
+      @for (folder of folderNames(); track folder) {
+        <option [value]="folder"></option>
       }
-      <label class="file-label">
-        {{ 'Import from MongoDB Compass' | transloco }}
-        <input type="file" accept=".json,application/json" (change)="importCompass($event)" />
-      </label>
-    </nav>
-
-    <section class="feature-card mongo-editor" [attr.aria-label]="'Connection' | transloco">
-      <div class="row mongo-paste">
-        <label class="field grow"
-          >{{ 'Paste a connection string' | transloco
-          }}<input
-            [formField]="fields.paste"
-            placeholder="mongodb+srv://user:password@cluster0.example.net/"
-            spellcheck="false"
-            autocomplete="off"
-            (keydown.enter)="useUri()"
-        /></label>
-        <button type="button" class="button" (click)="useUri()">
-          {{ 'Use URI' | transloco }}
-        </button>
-      </div>
-      <div class="mongo-identity">
-        <label class="field grow"
-          >{{ 'Connection name' | transloco }}<input [formField]="fields.name"
-        /></label>
-        <label class="field"
-          >{{ 'Folder' | transloco
-          }}<input [formField]="fields.folder" list="mongo-folders" autocomplete="off"
-        /></label>
-        <datalist id="mongo-folders">
-          @for (folder of folderNames(); track folder) {
-            <option [value]="folder"></option>
-          }
-        </datalist>
-        <div class="mongo-colors" role="group" [attr.aria-label]="'Color' | transloco">
-          <button
-            type="button"
-            class="mongo-swatch none"
-            [attr.aria-pressed]="!model().color"
-            [attr.aria-label]="'No color' | transloco"
-            (click)="setColor('')"
-          ></button>
-          @for (color of colors; track color; let index = $index) {
-            <button
-              type="button"
-              class="mongo-swatch"
-              [style.background]="color"
-              [attr.aria-pressed]="model().color === color"
-              [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
-              (click)="setColor(color)"
-            ></button>
-          }
-        </div>
-        <label class="check-field"
-          ><input type="checkbox" [formField]="fields.readOnly" />{{
-            'Read-only: no writes' | transloco
-          }}</label
-        >
-        <label class="check-field"
-          ><input type="checkbox" [formField]="fields.mcp" />{{
-            'Let MCP agents read it (never write)' | transloco
-          }}</label
-        >
-        @if (model().mcp) {
-          <label class="field"
-            >{{ 'Fields hidden from MCP agents' | transloco
-            }}<input [formField]="fields.mcpHidden" placeholder="email, phone" spellcheck="false"
-          /></label>
-        }
-      </div>
-
-      <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">
-        @for (t of tabs; track t) {
-          <button
-            type="button"
-            [class.active]="tab() === t"
-            [attr.aria-current]="tab() === t ? 'page' : null"
-            (click)="tab.set(t)"
-          >
-            {{
-              t === 'server'
-                ? ('Server' | transloco)
-                : t === 'authentication'
-                  ? ('Authentication' | transloco)
-                  : t === 'tls'
-                    ? ('TLS' | transloco)
-                    : t === 'options'
-                      ? ('Options' | transloco)
-                      : ('Connect through' | transloco)
-            }}
-          </button>
-        }
-      </nav>
-
-      @switch (tab()) {
-        @case ('server') {
-          <app-mongo-connection-settings
-            tab="server"
-            [fields]="fields"
-            [passwordStored]="passwordStored()"
-            [keyStored]="keyStored()"
-          />
-        }
-        @case ('authentication') {
-          <app-mongo-connection-settings
-            tab="authentication"
-            [fields]="fields"
-            [passwordStored]="passwordStored()"
-            [keyStored]="keyStored()"
-          />
-        }
-        @case ('tls') {
-          <app-mongo-connection-settings
-            tab="tls"
-            [fields]="fields"
-            [passwordStored]="passwordStored()"
-            [keyStored]="keyStored()"
-          />
-        }
-        @case ('options') {
-          <app-mongo-connection-settings
-            tab="options"
-            [fields]="fields"
-            [passwordStored]="passwordStored()"
-            [keyStored]="keyStored()"
-          />
-        }
-        @case ('route') {
-          <app-mongo-connection-settings
-            tab="route"
-            [fields]="fields"
-            [passwordStored]="passwordStored()"
-            [keyStored]="keyStored()"
-          />
-        }
-      }
-
-      <div class="field">
-        <span>{{ 'Connection URI (without the password)' | transloco }}</span>
-        <code class="mongo-uri" data-testid="mongo-uri">{{ uri() }}</code>
-      </div>
-      @if (problem(); as problem) {
-        <p class="mongo-warning" role="note">{{ problem | transloco }}</p>
-      }
-      <div class="button-grid">
+    </datalist>
+    <div class="mongo-colors" role="group" [attr.aria-label]="'Color' | transloco">
+      <button
+        type="button"
+        class="mongo-swatch none"
+        [attr.aria-pressed]="!model().color"
+        [attr.aria-label]="'No color' | transloco"
+        (click)="setColor('')"
+      ></button>
+      @for (color of colors; track color; let index = $index) {
         <button
           type="button"
-          class="button primary"
-          [disabled]="!!problem() || state.busy()"
-          (click)="test()"
-        >
-          {{ 'Test connection' | transloco }}
-        </button>
-        <button type="button" class="button" [disabled]="!!problem()" (click)="save()">
-          {{ 'Save connection' | transloco }}
-        </button>
-        @if (selected(); as connection) {
-          <button type="button" class="button" (click)="exploring.set(connection)">
-            {{ 'Browse data' | transloco }}
-          </button>
-        }
-        <button type="button" class="button subtle" (click)="copyUri()">
-          {{ 'Copy URI' | transloco }}
-        </button>
-        @if (selected()) {
-          <button type="button" class="button subtle danger" (click)="remove()">
-            {{ 'Delete connection' | transloco }}
-          </button>
-        }
-      </div>
-      @if (notice().key) {
-        <p class="success" role="status">{{ notice().key | transloco: notice().params }}</p>
+          class="mongo-swatch"
+          [style.background]="color"
+          [attr.aria-pressed]="model().color === color"
+          [attr.aria-label]="'mongo.color' | transloco: { v0: index + 1 }"
+          (click)="setColor(color)"
+        ></button>
       }
-
-      @if (report(); as report) {
-        <section class="mongo-report" [attr.aria-label]="'Connection test' | transloco">
-          <h3>{{ 'Connected' | transloco }}</h3>
-          <dl>
-            <dt>{{ 'Server version' | transloco }}</dt>
-            <dd>{{ report.serverVersion }}{{ report.flavor ? ' · ' + report.flavor : '' }}</dd>
-            <dt>{{ 'Topology' | transloco }}</dt>
-            <dd>
-              {{ 'topology.' + report.topology | transloco
-              }}{{ report.replicaSet ? ' · ' + report.replicaSet : '' }}
-            </dd>
-            <dt>{{ 'Round trip' | transloco }}</dt>
-            <dd>{{ report.pingMs }} ms</dd>
-            <dt>TLS</dt>
-            <dd>{{ (report.tls ? 'Yes' : 'No') | transloco }}</dd>
-            <dt>{{ 'Authentication' | transloco }}</dt>
-            <dd>{{ report.authMechanism ?? ('None' | transloco) }}</dd>
-          </dl>
-          @if (report.direct) {
-            <p class="mongo-warning" role="note">
-              {{
-                'Connected to the first server only: the egress policy or a secret does not allow every server of the replica set.'
-                  | transloco
-              }}
-            </p>
-          }
-          <table class="mongo-hosts" [attr.aria-label]="'Servers' | transloco">
-            <thead>
-              <tr>
-                <th scope="col">{{ 'Server' | transloco }}</th>
-                <th scope="col">{{ 'Role' | transloco }}</th>
-                <th scope="col">{{ 'Egress policy' | transloco }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (host of report.hosts; track host.address) {
-                <tr>
-                  <td>
-                    <code>{{ host.address }}</code>
-                  </td>
-                  <td>{{ 'role.' + host.role | transloco }}</td>
-                  <td [class.success]="host.allowed" [class.danger]="!host.allowed">
-                    {{ host.allowed ? ('Allowed' | transloco) : host.reason }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </section>
-      }
-    </section>
+    </div>
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.readOnly" />{{
+        'Read-only: no writes' | transloco
+      }}</label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields.mcp" />{{
+        'Let MCP agents read it (never write)' | transloco
+      }}</label
+    >
+    @if (model().mcp) {
+      <label class="field"
+        >{{ 'Fields hidden from MCP agents' | transloco
+        }}<input [formField]="fields.mcpHidden" placeholder="email, phone" spellcheck="false"
+      /></label>
+    }
   </div>
-}
+
+  <nav class="editor-tabs" [attr.aria-label]="'Connection settings' | transloco">
+    @for (t of tabs; track t) {
+      <button
+        type="button"
+        [class.active]="tab() === t"
+        [attr.aria-current]="tab() === t ? 'page' : null"
+        (click)="tab.set(t)"
+      >
+        {{
+          t === 'server'
+            ? ('Server' | transloco)
+            : t === 'authentication'
+              ? ('Authentication' | transloco)
+              : t === 'tls'
+                ? ('TLS' | transloco)
+                : t === 'options'
+                  ? ('Options' | transloco)
+                  : ('Connect through' | transloco)
+        }}
+      </button>
+    }
+  </nav>
+
+  @switch (tab()) {
+    @case ('server') {
+      <app-mongo-connection-settings
+        tab="server"
+        [fields]="fields"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+      />
+    }
+    @case ('authentication') {
+      <app-mongo-connection-settings
+        tab="authentication"
+        [fields]="fields"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+      />
+    }
+    @case ('tls') {
+      <app-mongo-connection-settings
+        tab="tls"
+        [fields]="fields"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+      />
+    }
+    @case ('options') {
+      <app-mongo-connection-settings
+        tab="options"
+        [fields]="fields"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+      />
+    }
+    @case ('route') {
+      <app-mongo-connection-settings
+        tab="route"
+        [fields]="fields"
+        [passwordStored]="passwordStored()"
+        [keyStored]="keyStored()"
+      />
+    }
+  }
+
+  <div class="field">
+    <span>{{ 'Connection URI (without the password)' | transloco }}</span>
+    <code class="mongo-uri" data-testid="mongo-uri">{{ uri() }}</code>
+  </div>
+  @if (problem(); as problem) {
+    <p class="mongo-warning" role="note">{{ problem | transloco }}</p>
+  }
+  <div class="button-grid">
+    <button
+      type="button"
+      class="button primary"
+      [disabled]="!!problem() || state.busy()"
+      (click)="test()"
+    >
+      {{ 'Test connection' | transloco }}
+    </button>
+    <button type="button" class="button" [disabled]="!!problem()" (click)="save()">
+      {{ 'Save connection' | transloco }}
+    </button>
+    @if (selected(); as connection) {
+      <button type="button" class="button" (click)="explore.emit(connection)">
+        {{ 'Browse data' | transloco }}
+      </button>
+    }
+    <button type="button" class="button subtle" (click)="copyUri()">
+      {{ 'Copy URI' | transloco }}
+    </button>
+    @if (selected()) {
+      <button type="button" class="button subtle danger" (click)="remove()">
+        {{ 'Delete connection' | transloco }}
+      </button>
+    }
+  </div>
+  @if (notice().key) {
+    <p class="success" role="status">{{ notice().key | transloco: notice().params }}</p>
+  }
+
+  @if (report(); as report) {
+    <section class="mongo-report" [attr.aria-label]="'Connection test' | transloco">
+      <h3>{{ 'Connected' | transloco }}</h3>
+      <dl>
+        <dt>{{ 'Server version' | transloco }}</dt>
+        <dd>{{ report.serverVersion }}{{ report.flavor ? ' · ' + report.flavor : '' }}</dd>
+        <dt>{{ 'Topology' | transloco }}</dt>
+        <dd>
+          {{ 'topology.' + report.topology | transloco
+          }}{{ report.replicaSet ? ' · ' + report.replicaSet : '' }}
+        </dd>
+        <dt>{{ 'Round trip' | transloco }}</dt>
+        <dd>{{ report.pingMs }} ms</dd>
+        <dt>TLS</dt>
+        <dd>{{ (report.tls ? 'Yes' : 'No') | transloco }}</dd>
+        <dt>{{ 'Authentication' | transloco }}</dt>
+        <dd>{{ report.authMechanism ?? ('None' | transloco) }}</dd>
+      </dl>
+      @if (report.direct) {
+        <p class="mongo-warning" role="note">
+          {{
+            'Connected to the first server only: the egress policy or a secret does not allow every server of the replica set.'
+              | transloco
+          }}
+        </p>
+      }
+      <table class="mongo-hosts" [attr.aria-label]="'Servers' | transloco">
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Server' | transloco }}</th>
+            <th scope="col">{{ 'Role' | transloco }}</th>
+            <th scope="col">{{ 'Egress policy' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (host of report.hosts; track host.address) {
+            <tr>
+              <td>
+                <code>{{ host.address }}</code>
+              </td>
+              <td>{{ 'role.' + host.role | transloco }}</td>
+              <td [class.success]="host.allowed" [class.danger]="!host.allowed">
+                {{ host.allowed ? ('Allowed' | transloco) : host.reason }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+</section>

@@ -51,6 +51,8 @@ struct Current {
     pending_begin: bool,
     /// A block that only `GO` or `/` ends: a procedure of SQL Server, a PL/SQL block.
     block: bool,
+    /// The word read last, upper case (`APPLY BATCH` of CQL).
+    previous: String,
 }
 
 /// Whether the first words open a block that only a line with `/` (Oracle) or `GO` (SQL
@@ -215,6 +217,15 @@ fn read_word(current: &mut Current, dialect: Dialect, word: &str) {
             _ => {}
         }
     }
+    if dialect == Dialect::Cql && word == "BATCH" {
+        // `BEGIN [UNLOGGED | COUNTER] BATCH … APPLY BATCH`: its statements end with `;`.
+        if current.previous == "APPLY" {
+            current.depth = current.depth.saturating_sub(1);
+        } else if current.words.first().is_some_and(|first| first == "BEGIN") {
+            current.depth += 1;
+        }
+    }
+    current.previous.clone_from(&word);
     if current.words.len() < 6 {
         current.words.push(word);
         if !current.block && opens_block(dialect, &current.words) {

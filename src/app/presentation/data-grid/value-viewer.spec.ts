@@ -72,4 +72,13 @@ describe('the value viewer of the grid', () => {
     expect(root().querySelector('app-db-spatial svg')).not.toBeNull();
     expect(root().querySelector('.viewer-text')?.textContent).toBe('POINT (1 2)');
   });
+
+  it('says when a time UUID was made, and nothing for the other UUIDs', async () => {
+    await show({ $t: 'uuid', v: '50554d6e-29bb-11e5-b345-feff819cdc9f' }, 'id');
+    expect(root().querySelector('.viewer-dates')?.textContent).toContain(
+      '2015-07-14T00:00:18.805Z',
+    );
+    await show({ $t: 'uuid', v: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' }, 'id');
+    expect(root().querySelector('.viewer-dates')).toBeNull();
+  });
 });

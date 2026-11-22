@@ -66,9 +66,9 @@ test('the workspace opens again as it was left: tabs, drafts and every order', a
   await expect.poll(tabs).toEqual(['three', 'Untitled request', 'one']);
   const rail = page.getByRole('navigation', { name: 'Workspace sections' });
   await rail
-    .getByRole('button', { name: 'MongoDB' })
+    .getByRole('button', { name: 'Databases' })
     .dragTo(rail.getByRole('button', { name: 'Collections' }), { targetPosition: { x: 20, y: 2 } });
-  await expect(rail.getByRole('button').first()).toHaveText(/MongoDB/);
+  await expect(rail.getByRole('button').first()).toHaveText(/Databases/);
   expect(await violations(page)).toEqual([]);
 
   // Saved in the workspace shortly after the last change.
@@ -92,7 +92,7 @@ test('the workspace opens again as it was left: tabs, drafts and every order', a
     'Session A',
   ]);
   await expect.poll(() => rows('Session B')).toEqual(['three', 'two']);
-  await expect(rail.getByRole('button').first()).toHaveText(/MongoDB/);
+  await expect(rail.getByRole('button').first()).toHaveText(/Databases/);
   // Responses are never kept: the request sent shows none.
   await tab('one').locator('button').first().click();
   await expect(page.locator('.response-placeholder')).toBeVisible();

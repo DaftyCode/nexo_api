@@ -158,6 +158,12 @@ operations!(
         DbQueryParse => "db.query.parse",
         DbMockRows => "db.mock.rows",
         DbTaskRun => "db.task.run",
+        DbKvScan => "db.kv.scan",
+        DbKvGet => "db.kv.get",
+        DbKvWrite => "db.kv.write",
+        DbKvCommand => "db.kv.command",
+        DbKvSubscribe => "db.kv.subscribe",
+        DbRestRequest => "db.rest.request",
     }
 );
 

@@ -131,6 +131,35 @@ describe('MongoUseCases', () => {
     expect(resolveVariables('{{$guid}}', scopes({}))).toBe('{{$guid}}');
   });
 
+  it('answers the nodes of a connection in the navigator of the databases', async () => {
+    const answers: Record<string, unknown> = {
+      'mongo.databases': { databases: [{ name: 'shop', empty: false }] },
+      'mongo.collections': { collections: [{ name: 'orders', kind: 'collection', capped: false }] },
+    };
+    const calls: unknown[][] = [];
+    const api = {
+      execute: async (operation: string, payload: unknown) => {
+        calls.push([operation, payload]);
+        return answers[operation];
+      },
+    };
+    const mongo = new MongoUseCases(api as never, () => 'c1');
+    const connection = {
+      id: 'c1',
+      kind: 'connection',
+      name: 'Shop',
+      value: { uri: 'mongodb://db/' },
+    } as WorkspaceDocument;
+    const none = scopes({});
+    expect(
+      (await mongo.connections.tree('local', connection, none, [])).map((n) => n.name),
+    ).toEqual(['shop']);
+    const inside = await mongo.connections.tree('local', connection, none, ['shop']);
+    expect(inside).toMatchObject([{ kind: 'collection', name: 'orders', hasChildren: false }]);
+    expect(calls.map(([operation]) => operation)).toEqual(['mongo.databases', 'mongo.collections']);
+    expect(calls[1][1]).toMatchObject({ database: 'shop' });
+  });
+
   it('imports Compass connections with their passwords in the vault', async () => {
     const { api, calls } = fakeApi();
     let id = 0;

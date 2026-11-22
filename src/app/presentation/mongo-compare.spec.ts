@@ -140,8 +140,11 @@ describe('MongoDB comparison of two collections', { timeout: 20_000 }, () => {
     await click('Compare…');
     await fill(fixture, 'Collection', 'products_copy', dialog());
     await fill(fixture, 'Key', 'sku', dialog());
+    await fill(fixture, 'Filter of both', "{ status: 'A' }", dialog());
     await click('Save comparison', dialog());
     const saved = api.documentsStore.find((d) => d.kind === 'mongo-compare')!;
+    // The filter is kept compiled too, for a scheduled task (DB-40).
+    expect((saved.value as { builtFilter?: unknown }).builtFilter).toEqual({ status: 'A' });
     expect(saved).toMatchObject({
       name: 'products ↔ products_copy',
       value: {

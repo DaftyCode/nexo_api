@@ -52,6 +52,10 @@ impl Modules {
     pub fn host(&self) -> &DriverHost {
         &self.host
     }
+    /// MongoDB, a module since DB-39, behind the application's document database port.
+    pub fn documents(&self) -> crate::Documents {
+        crate::Documents::new(self.host.clone())
+    }
 
     fn set(installs: &Installs, progress: InstallProgress) {
         installs

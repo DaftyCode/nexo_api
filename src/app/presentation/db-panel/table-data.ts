@@ -4,6 +4,7 @@ import { ResultColumn, cellText } from '../../domain/db/results';
 import {
   ForeignKey,
   TableQuery,
+  asksToFilter,
   emptyTableQuery,
   tableCount,
   tableSelect,
@@ -39,6 +40,8 @@ export class TableData {
   readonly cursor = signal<string | undefined>(undefined);
   readonly loading = signal(false);
   readonly error = signal('');
+  /** Cassandra asked for `ALLOW FILTERING` to apply the filter (DB-34). */
+  readonly filtering = signal(false);
   readonly count = signal<number | undefined>(undefined);
   /** The statement last run, to see it or open it in a script. */
   readonly statement = signal('');
@@ -117,6 +120,8 @@ export class TableData {
       {
         pageRows,
         ...(params.length ? { params } : {}),
+        // The person confirmed it when choosing it; the backend asks again otherwise.
+        ...(this.query().allowFiltering ? { confirm: true } : {}),
       },
     );
   }
@@ -134,6 +139,7 @@ export class TableData {
   async load() {
     this.loading.set(true);
     this.error.set('');
+    this.filtering.set(false);
     try {
       if (!(await this.open())) return;
       const old = this.cursor();
@@ -147,7 +153,9 @@ export class TableData {
       this.elapsed.set(answer.elapsedMs);
       this.count.set(undefined);
     } catch (error) {
-      this.error.set(this.section.state.describe(error));
+      const message = this.section.state.describe(error);
+      this.error.set(message);
+      this.filtering.set(asksToFilter(message, this.style()));
     } finally {
       this.loading.set(false);
     }

@@ -11,6 +11,9 @@ description = "What a Nexo database driver and its host share: the protocol, typ
 # TLS settings for drivers that open their own connections: rustls on aws-lc-rs, Nexo's
 # only provider, preferring post-quantum key exchange.
 tls = ["dep:rustls", "dep:rustls-native-certs", "dep:rustls-pki-types"]
+# HTTP for the drivers of engines whose API is HTTP (Elasticsearch, Drill): hyper with
+# tokio-rustls on the TLS settings above, each node at the address the host resolved.
+http = ["tls", "dep:bytes", "dep:http-body-util", "dep:hyper", "dep:hyper-util", "dep:tokio-rustls"]
 # The checks every driver runs against a real server.
 conformance = []
 
@@ -25,3 +28,8 @@ base64.workspace = true
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "prefer-post-quantum", "std", "tls12", "logging"], optional = true }
 rustls-native-certs = { version = "0.8.5", optional = true }
 rustls-pki-types = { version = "1.16.0", optional = true }
+bytes = { version = "1.12.2", optional = true }
+http-body-util = { version = "0.1.5", optional = true }
+hyper = { version = "1.12.0", features = ["client", "http1"], optional = true }
+hyper-util = { version = "0.1.21", features = ["tokio"], optional = true }
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["tls12", "logging"], optional = true }

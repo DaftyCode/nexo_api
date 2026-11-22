@@ -1,0 +1,175 @@
+@let key = value();
+<header class="kv-head">
+  <h2 class="kv-name">{{ text(key.key) }}</h2>
+  <span class="kv-type">{{ key.type }}</span>
+  <dl class="kv-facts">
+    <dt>{{ 'Expires in' | transloco }}</dt>
+    <dd>{{ ttl(key.ttlMs) }}</dd>
+    @if (key.length !== null && key.length !== undefined) {
+      <dt>{{ 'Length' | transloco }}</dt>
+      <dd>{{ key.length }}</dd>
+    }
+    @if (key.size) {
+      <dt>{{ 'Memory' | transloco }}</dt>
+      <dd>{{ 'db.kv.bytes' | transloco: { v0: key.size } }}</dd>
+    }
+    @if (key.encoding) {
+      <dt>{{ 'Encoding' | transloco }}</dt>
+      <dd>{{ key.encoding }}</dd>
+    }
+  </dl>
+</header>
+<div class="kv-actions">
+  <label class="kv-inline">
+    <span>{{ 'Expiry' | transloco }}</span>
+    <input
+      [formField]="fields.ttl"
+      placeholder="60s, 5m, 2h, 1d"
+      [attr.aria-invalid]="invalidTtl()"
+    />
+  </label>
+  <button type="button" class="button small" (click)="setTtl()">
+    {{ 'Set expiry' | transloco }}
+  </button>
+  @if (key.ttlMs) {
+    <button type="button" class="button small" (click)="persist()">
+      {{ 'Never expire' | transloco }}
+    </button>
+  }
+  <label class="kv-inline">
+    <span>{{ 'Name' | transloco }}</span>
+    <input [formField]="fields.to" />
+  </label>
+  <button type="button" class="button small" (click)="rename()">{{ 'Rename' | transloco }}</button>
+  <button type="button" class="button small danger" (click)="remove()">
+    {{ 'Delete key' | transloco }}
+  </button>
+</div>
+@switch (key.type) {
+  @case ('string') {
+    @if (binary()) {
+      <p class="muted" role="note">{{ 'db.kv.binary' | transloco }}</p>
+      <pre class="kv-text" tabindex="0">{{ text(key.value) }}</pre>
+    } @else {
+      <textarea
+        class="kv-value"
+        [formField]="fields.value"
+        [attr.aria-label]="'Value' | transloco"
+      ></textarea>
+      <div class="kv-actions">
+        <button type="button" class="button primary small" (click)="save()">
+          {{ 'Save' | transloco }}
+        </button>
+        @if (json()) {
+          <button type="button" class="button small" (click)="format()">
+            {{ 'Format JSON' | transloco }}
+          </button>
+        }
+      </div>
+    }
+  }
+  @case ('json') {
+    <textarea
+      class="kv-value"
+      [formField]="fields.value"
+      [attr.aria-label]="'Value' | transloco"
+    ></textarea>
+    <div class="kv-actions">
+      <button type="button" class="button primary small" (click)="save()">
+        {{ 'Save' | transloco }}
+      </button>
+      <button type="button" class="button small" (click)="format()">
+        {{ 'Format JSON' | transloco }}
+      </button>
+    </div>
+  }
+  @default {
+    @if (['hash', 'list', 'set', 'zset', 'stream'].includes(key.type)) {
+      <table class="kv-elements">
+        <thead>
+          <tr>
+            @if (key.type === 'list') {
+              <th scope="col">#</th>
+            }
+            @if (key.type === 'hash') {
+              <th scope="col">{{ 'Field' | transloco }}</th>
+            }
+            @if (key.type === 'stream') {
+              <th scope="col">ID</th>
+            }
+            <th scope="col">
+              {{ key.type === 'stream' ? ('Fields' | transloco) : ('Value' | transloco) }}
+            </th>
+            @if (key.type === 'zset') {
+              <th scope="col">{{ 'Score' | transloco }}</th>
+            }
+            <th scope="col">
+              <span class="kv-hidden">{{ 'Actions' | transloco }}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (element of key.elements; track $index) {
+            <tr>
+              @if (key.type === 'list') {
+                <td>{{ element.index }}</td>
+              }
+              @if (key.type === 'hash') {
+                <td class="kv-cell">{{ text(element.field) }}</td>
+              }
+              @if (key.type === 'stream') {
+                <td>{{ element.id }}</td>
+              }
+              <td class="kv-cell">{{ text(element.value) }}</td>
+              @if (key.type === 'zset') {
+                <td>{{ element.score }}</td>
+              }
+              <td class="kv-row-actions">
+                @if (key.type !== 'stream') {
+                  <button type="button" class="button small subtle" (click)="edit(element)">
+                    {{ 'Edit' | transloco }}
+                  </button>
+                }
+                <button type="button" class="button small subtle" (click)="drop(element)">
+                  {{ 'Remove' | transloco }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (key.cursor) {
+        <button type="button" class="button small" (click)="run().select(key.key, true)">
+          {{ 'Load more' | transloco }}
+        </button>
+      }
+      <form class="kv-add" (submit)="$event.preventDefault(); put()">
+        @if (key.type === 'hash') {
+          <input [formField]="fields.field" [attr.aria-label]="'Field' | transloco" />
+        }
+        <input
+          [formField]="fields.value"
+          [attr.aria-label]="(key.type === 'stream' ? 'Fields' : 'Value') | transloco"
+          [placeholder]="key.type === 'stream' ? '{&quot;field&quot;: &quot;value&quot;}' : ''"
+        />
+        @if (key.type === 'zset') {
+          <input
+            [formField]="fields.score"
+            [attr.aria-label]="'Score' | transloco"
+            inputmode="decimal"
+          />
+        }
+        <button type="submit" class="button small primary">
+          {{ (editing() ? 'Save' : 'Add') | transloco }}
+        </button>
+        @if (editing()) {
+          <button type="button" class="button small" (click)="cancel()">
+            {{ 'Cancel' | transloco }}
+          </button>
+        }
+      </form>
+    } @else {
+      <p class="muted">{{ 'db.kv.otherType' | transloco: { v0: key.type } }}</p>
+    }
+  }
+}

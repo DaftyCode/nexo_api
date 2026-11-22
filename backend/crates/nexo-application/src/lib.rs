@@ -21,7 +21,7 @@ mod workspaces;
 
 use ports::{
     DataSources, DocumentDatabase, ExecutionGateway, ModuleCatalog, NativeTools, SecretVault,
-    UserFiles, VersionControl, WorkspaceRepository,
+    TaskFiles, UserFiles, VersionControl, WorkspaceRepository,
 };
 use std::sync::Arc;
 
@@ -56,6 +56,8 @@ pub struct Application {
     native: Option<Arc<dyn NativeTools>>,
     /// The user's own files a connection may read (pgpass).
     user_files: Option<Arc<dyn UserFiles>>,
+    /// The files of saved tasks: the desktop app only (DB-40).
+    task_files: Option<Arc<dyn TaskFiles>>,
     /// What the monitors are doing now.
     monitors: monitors::Board,
 }
@@ -78,6 +80,7 @@ impl Application {
             sql_sessions: datasource::Sessions::default(),
             native: None,
             user_files: None,
+            task_files: None,
             monitors: monitors::Board::default(),
         }
     }
@@ -94,6 +97,11 @@ impl Application {
     /// Adds the user's own files a connection may read (pgpass).
     pub fn with_user_files(mut self, files: Arc<dyn UserFiles>) -> Self {
         self.user_files = Some(files);
+        self
+    }
+    /// Adds the files saved tasks write and read (the desktop app).
+    pub fn with_task_files(mut self, files: Arc<dyn TaskFiles>) -> Self {
+        self.task_files = Some(files);
         self
     }
     /// Adds the database modules.

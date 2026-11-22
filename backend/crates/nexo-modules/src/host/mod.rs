@@ -2,6 +2,7 @@
 //! it what the application asks, and stops it when nobody uses it.
 mod files;
 mod idle;
+mod open;
 mod shared;
 
 use crate::connections::{Connection, ConnectionSettings, Destination};
@@ -152,6 +153,9 @@ impl DriverHost {
         };
         process.secrets.add(params.password.as_deref());
         process.secrets.add(params.tls.key_pem.as_deref());
+        if let Some(proxy) = &params.proxy {
+            process.secrets.add(proxy.password.as_deref());
+        }
         // Registered first: the driver asks about this connection while it opens it.
         let connection = Connection {
             module: module.to_owned(),

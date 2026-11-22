@@ -62,6 +62,18 @@ fn literals_are_written_for_each_engine_and_definitions_compare_without_noise() 
     );
     assert_eq!(literal(&json!("O'Neil"), Dialect::PostgreSql), "'O''Neil'");
     assert_eq!(literal(&json!("é"), Dialect::TSql), "N'é'");
+    // CQL writes blobs in hexadecimal and UUIDs bare.
+    assert_eq!(
+        literal(&json!({"$t": "binary", "v": "AQL/"}), Dialect::Cql),
+        "0x0102ff"
+    );
+    assert_eq!(
+        literal(
+            &json!({"$t": "uuid", "v": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"}),
+            Dialect::Cql
+        ),
+        "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11"
+    );
     assert_eq!(literal(&json!(null), Dialect::Ansi), "NULL");
     assert_eq!(literal(&json!(true), Dialect::TSql), "1");
     assert_eq!(literal(&json!(false), Dialect::PostgreSql), "FALSE");

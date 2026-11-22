@@ -1,9 +1,18 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+} from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { WorkspaceState, named, success } from './workspace-state';
 import { PanelTask } from './panel-task';
-import { MongoExplorer } from './mongo-explorer';
 import { MONGO } from '../composition/providers';
 import { MongoConnectionSettings } from './mongo-connection-settings';
 import { WorkspaceDocument } from '../domain/models';
@@ -21,59 +30,32 @@ import {
   isVaultReference,
   parseMongoUri,
 } from '../domain/mongo';
-import { Route, emptyRoute, readRoute, routeProblem, storedRoute } from '../domain/route';
+import { readRoute, routeProblem } from '../domain/route';
+import { PanelModel, emptyModel, storedValue, typedSecrets } from './mongo-panel/model';
 
 type Tab = 'server' | 'authentication' | 'tls' | 'options' | 'route';
-
-export interface PanelModel extends ConnectionForm {
-  name: string;
-  folder: string;
-  color: string;
-  readOnly: boolean;
-  /** Exposed to MCP agents, read-only, and the fields they never see. */
-  mcp: boolean;
-  mcpHidden: string;
-  /** Typed here; blank keeps what the vault has. */
-  password: string;
-  caPem: string;
-  certPem: string;
-  /** Typed here; blank keeps what the vault has. */
-  keyPem: string;
-  /** A URI pasted to fill the form. */
-  paste: string;
-  route: Route;
-}
-
-function emptyModel(): PanelModel {
-  return {
-    ...emptyConnectionForm(),
-    name: 'Local MongoDB',
-    folder: '',
-    color: '',
-    readOnly: false,
-    mcp: false,
-    mcpHidden: '',
-    password: '',
-    caPem: '',
-    certPem: '',
-    keyPem: '',
-    paste: '',
-    route: emptyRoute(),
-  };
-}
+export type { PanelModel } from './mongo-panel/model';
 
 /**
- * MongoDB connections: kept in the workspace with their passwords in the vault, edited from
- * a URI or field by field, and tested against the egress policy before anything is sent.
+ * A MongoDB connection, in its tab of the databases section (DB-39): kept in the workspace
+ * with its password in the vault, edited from a URI or field by field, and tested against
+ * the egress policy before anything is sent.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, MongoExplorer, MongoConnectionSettings],
+  imports: [TranslocoPipe, FormField, MongoConnectionSettings],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-panel',
   styleUrl: './mongo-panel.scss',
   templateUrl: './mongo-panel.html',
 })
 export class MongoPanel {
+  /** The saved connection edited, or none for a new one. */
+  readonly connectionId = input('');
+  /** Saved: the tab now belongs to it. */
+  readonly saved = output<WorkspaceDocument>();
+  readonly removed = output<void>();
+  /** «Browse data»: its explorer. */
+  readonly explore = output<WorkspaceDocument>();
   protected readonly state = inject(WorkspaceState);
   protected readonly task = new PanelTask(this.state);
   private readonly mongo = inject(MONGO);
@@ -85,8 +67,6 @@ export class MongoPanel {
   /** The connection being edited, or none for a new one. */
   protected readonly selectedId = signal('');
   protected readonly report = signal<ConnectionReport | undefined>(undefined);
-  /** The saved connection being browsed, or none while connections are edited. */
-  protected readonly exploring = signal<WorkspaceDocument | undefined>(undefined);
   /** What the last action did, as a message key with its values. */
   protected readonly notice = signal<{ key: string; params?: Record<string, unknown> }>({
     key: '',
@@ -110,11 +90,15 @@ export class MongoPanel {
   protected readonly passwordStored = computed(() => !!this.stored().password);
   protected readonly keyStored = computed(() => !!this.stored().keyPem);
 
-  protected colorOf(document: WorkspaceDocument) {
-    return connectionValue(document.value).color ?? '';
-  }
-  protected isReadOnly(document: WorkspaceDocument) {
-    return !!connectionValue(document.value).readOnly;
+  constructor() {
+    effect(() => {
+      const id = this.connectionId();
+      untracked(() => {
+        const document = this.connections().find((connection) => connection.id === id);
+        if (document) this.open(document);
+        else this.newConnection();
+      });
+    });
   }
 
   protected newConnection() {
@@ -177,33 +161,10 @@ export class MongoPanel {
   }
 
   private value(): MongoConnectionValue {
-    const model = this.model();
-    const stored = this.stored();
-    const route = storedRoute(model.route);
-    const hidden = model.mcpHidden
-      .split(',')
-      .map((name) => name.trim())
-      .filter(Boolean);
-    return {
-      uri: this.uri(),
-      ...(stored.password && model.auth !== 'none' ? { password: stored.password } : {}),
-      ...(model.caPem.trim() ? { caPem: model.caPem.trim() } : {}),
-      ...(model.certPem.trim() ? { certPem: model.certPem.trim() } : {}),
-      ...(stored.keyPem && model.certPem.trim() ? { keyPem: stored.keyPem } : {}),
-      ...(model.folder.trim() ? { folder: model.folder.trim() } : {}),
-      ...(model.color ? { color: model.color } : {}),
-      ...(model.readOnly ? { readOnly: true } : {}),
-      ...(model.mcp ? { mcp: true } : {}),
-      ...(model.mcp && hidden.length ? { mcpHidden: hidden } : {}),
-      ...(route ? { nexoRoute: route } : {}),
-    };
+    return storedValue(this.model(), this.stored(), this.uri());
   }
   private typed() {
-    const model = this.model();
-    return {
-      ...(model.auth !== 'none' && model.password ? { password: model.password } : {}),
-      ...(model.keyPem.trim() ? { keyPem: model.keyPem } : {}),
-    };
+    return typedSecrets(this.model());
   }
   private check() {
     const problem = this.problem();
@@ -226,6 +187,7 @@ export class MongoPanel {
       await this.state.refresh();
       this.selectedId.set(saved.id);
       this.model.update((model) => ({ ...model, name: saved.name, password: '', keyPem: '' }));
+      this.saved.emit(saved);
       return named('Connection saved', saved.name);
     });
   }
@@ -255,7 +217,7 @@ export class MongoPanel {
     void this.task.announce('The connection could not be deleted', async () => {
       await (await this.mongo()).connections.remove(document);
       await this.state.refresh();
-      this.newConnection();
+      this.removed.emit();
       return named('Connection deleted', document.name);
     });
   }

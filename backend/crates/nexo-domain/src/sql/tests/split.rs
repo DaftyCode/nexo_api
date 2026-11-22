@@ -163,3 +163,20 @@ end;"
         [trigger, "begin", "insert into a values (1)", "end"]
     );
 }
+
+#[test]
+fn a_cql_batch_is_one_statement_and_double_slashes_comment() {
+    let script = "BEGIN UNLOGGED BATCH\n  INSERT INTO t (k) VALUES (1);\n  UPDATE t SET v = 'a;b' WHERE k = 2;\nAPPLY BATCH;\n\
+        // a comment; with a semicolon\n\
+        CREATE FUNCTION f(x int) RETURNS NULL ON NULL INPUT RETURNS int LANGUAGE java AS $$ return x; $$;\n\
+        SELECT * FROM t";
+    assert_eq!(
+        texts(script, Dialect::Cql),
+        [
+            "BEGIN UNLOGGED BATCH\n  INSERT INTO t (k) VALUES (1);\n  UPDATE t SET v = 'a;b' WHERE k = 2;\nAPPLY BATCH",
+            "CREATE FUNCTION f(x int) RETURNS NULL ON NULL INPUT RETURNS int LANGUAGE java AS $$ return x; $$",
+            "SELECT * FROM t",
+        ]
+    );
+    assert_eq!(Dialect::parse("cql"), Dialect::Cql);
+}

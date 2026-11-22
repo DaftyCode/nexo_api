@@ -3,6 +3,8 @@
 //! with every rule of the statements. Nobody is there to confirm: what asks for a
 //! confirmation runs only if the task authorizes it, option by option, and fails with the
 //! reason otherwise. A connection that asks for its password each time cannot run in a task.
+mod files;
+mod mongo;
 mod runs;
 mod script;
 #[cfg(test)]
@@ -150,7 +152,10 @@ impl Application {
             "statements": report.statements,
             "rows": report.rows,
         });
-        if task.value["type"] == "compare" {
+        if matches!(
+            task.value["type"].as_str(),
+            Some("compare" | "mongo-compare")
+        ) {
             entry["differences"] = json!(report.differences);
         }
         if let Err(error) = outcome {

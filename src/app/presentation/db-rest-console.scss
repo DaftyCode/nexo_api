@@ -1,0 +1,68 @@
+:host {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  min-height: 0;
+  padding: var(--nexo-space-3);
+}
+.rest-bar,
+.rest-confirm,
+.rest-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  margin: 0;
+}
+.rest-cluster {
+  display: inline-flex;
+  gap: var(--nexo-space-1);
+  margin-inline-start: auto;
+}
+.rest-error,
+.failed {
+  margin: 0;
+  color: var(--nexo-color-danger-text);
+}
+.rest-curl {
+  margin: 0;
+  padding: var(--nexo-space-2);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-2);
+  white-space: pre-wrap;
+  font-family: var(--nexo-font-mono);
+}
+.rest-body {
+  display: flex;
+  flex: 1;
+  gap: var(--nexo-space-4);
+  min-height: 0;
+}
+.rest-requests,
+.rest-answer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+.rest-history ul {
+  margin: 0;
+  padding-inline-start: var(--nexo-space-5);
+}
+.rest-table {
+  overflow: auto;
+  table {
+    border-collapse: collapse;
+  }
+  th,
+  td {
+    padding: var(--nexo-space-1) var(--nexo-space-2);
+    border-bottom: var(--nexo-border-width) solid var(--nexo-color-border);
+    text-align: start;
+    white-space: nowrap;
+  }
+}

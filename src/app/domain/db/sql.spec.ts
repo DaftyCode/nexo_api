@@ -52,6 +52,9 @@ describe('the SQL editor decisions', () => {
     expect(confirmationOf(classify({ kind: 'write', truncate: true }), none)?.message).toBe(
       'db.confirm.truncate',
     );
+    expect(confirmationOf(classify({ scansCluster: true }), none)?.message).toBe(
+      'db.confirm.allowFiltering',
+    );
     expect(
       confirmationOf(classify({ kind: 'structure', drops: true, drop: ['a', 'b'] }), none),
     ).toEqual({ message: 'db.confirm.dropNamed', params: { v0: 'a, b' }, names: 'a, b' });

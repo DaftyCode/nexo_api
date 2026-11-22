@@ -19,6 +19,7 @@ mod common;
 mod datasource;
 mod datasource_admin;
 mod datasource_compare;
+mod datasource_kv;
 mod datasource_network;
 mod datasource_query;
 mod git;
@@ -42,6 +43,7 @@ pub use common::*;
 pub use datasource::*;
 pub use datasource_admin::*;
 pub use datasource_compare::*;
+pub use datasource_kv::*;
 pub use datasource_network::*;
 pub use datasource_query::*;
 pub use git::*;
@@ -229,6 +231,12 @@ operation_payloads! {
     DbQueryParse => DbQueryParsePayload,
     DbMockRows => DbMockRowsPayload,
     DbTaskRun => DbTaskRunPayload,
+    DbKvScan => DbKvScanPayload,
+    DbKvGet => DbKvGetPayload,
+    DbKvWrite => DbKvWritePayload,
+    DbKvCommand => DbKvCommandPayload,
+    DbKvSubscribe => DbKvSubscribePayload,
+    DbRestRequest => DbRestRequestPayload,
     DbDialect => DbDriverPayload,
     MonitorStatus => MonitorStatusPayload,
     MonitorRun => MonitorRunPayload,

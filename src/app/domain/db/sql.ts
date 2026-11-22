@@ -14,6 +14,8 @@ export interface Classification {
   truncate: boolean;
   drop: string[];
   drops: boolean;
+  /** A CQL query with `ALLOW FILTERING`, which may read the whole cluster (DB-34). */
+  scansCluster?: boolean;
 }
 
 /** A statement of a script, with its place in UTF-16 units and its first line. */
@@ -55,7 +57,8 @@ export interface Confirmation {
 
 /**
  * The confirmation a statement needs, in the order the backend checks: a `DROP`, a change of
- * every row, then any write on production. None for the rest.
+ * every row, a CQL query that reads the whole cluster, then any write on production. None for
+ * the rest.
  */
 export function confirmationOf(
   classification: Classification,
@@ -69,6 +72,7 @@ export function confirmationOf(
   }
   if (classification.missingWhere) return { message: 'db.confirm.everyRow' };
   if (classification.truncate) return { message: 'db.confirm.truncate' };
+  if (classification.scansCluster) return { message: 'db.confirm.allowFiltering' };
   const structure = classification.kind === 'structure';
   if (rules.confirmWrites && (classification.kind === 'write' || structure))
     return { message: 'db.confirm.production' };

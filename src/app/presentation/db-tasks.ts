@@ -82,8 +82,13 @@ export class DbTasks {
   protected others() {
     return this.tasks().filter((task) => task.id !== this.editing());
   }
+  /** The saved MongoDB transfers or comparisons of the workspace. */
+  protected saved(kind: string) {
+    return this.documents().filter((document) => document.kind === kind);
+  }
   protected schedule(document: WorkspaceDocument) {
     const form = taskForm(document);
+    if (form.cron) return { key: 'db.task.onCron', minutes: form.cron };
     if (!form.every) return { key: 'db.task.byHand', minutes: 0 };
     return form.every >= 60
       ? { key: 'db.task.everyHours', minutes: form.every / 60 }

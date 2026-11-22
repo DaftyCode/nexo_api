@@ -17,6 +17,7 @@
 mod catalog;
 mod connections;
 mod datasources;
+mod documents;
 mod download;
 mod host;
 mod modules;
@@ -27,6 +28,7 @@ mod store;
 
 pub use catalog::{Manifest, ModuleEntry, executable_name};
 pub use connections::{ConnectionSettings, Destination};
+pub use documents::Documents;
 pub use host::{DriverHost, Executables, Folder, HostConfig, LogSink, NoModules};
 pub use modules::Modules;
 pub use store::{ModuleStore, StoreConfig};

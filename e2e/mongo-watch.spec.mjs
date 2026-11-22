@@ -2,7 +2,7 @@
 // set watched while the API inserts, updates and deletes a document, the three changes shown
 // in order.
 import { expect, test } from './fixture.mjs';
-import { violations } from './helpers.mjs';
+import { mongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: a change stream shows an insert, an update and a delete in order', async ({
   page,
@@ -12,15 +12,13 @@ test('MongoDB: a change stream shows an insert, an update and a delete in order'
   test.skip(!uri, 'Needs the MongoDB replica set of tools/mongo-fixture.sh');
   await nexo.signIn(page);
   const sections = page.getByRole('navigation', { name: 'Workspace sections' });
-  await sections.getByRole('button', { name: 'MongoDB' }).click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(uri);
   await editor.getByRole('button', { name: 'Use URI' }).click();
   await editor.getByLabel('Connection name').fill('Replica');
   await editor.getByRole('button', { name: 'Save connection' }).click();
-  await expect(
-    page.getByRole('navigation', { name: 'Connections' }).getByRole('button', { name: 'Replica' }),
-  ).toBeVisible();
+  await expect(mongoConnection(page, 'Replica')).toBeVisible();
 
   const database = `e2e_watch_${Date.now()}`;
   await sections.getByRole('button', { name: 'Protocols' }).click();
@@ -72,11 +70,10 @@ test('MongoDB: a change stream shows an insert, an update and a delete in order'
   });
   expect(response.ok(), await response.text()).toBe(true);
 
-  // The tests share one server: the connection does not stay for the next one.
-  await sections.getByRole('button', { name: 'MongoDB' }).click();
-  const list = page.getByRole('navigation', { name: 'Connections' });
-  await list.getByRole('button', { name: 'Replica', exact: true }).click();
+  // The tests share one server: the connection does not stay for the next one. Its form is
+  // still the tab of the databases section.
+  await sections.getByRole('button', { name: 'Databases' }).click();
   page.once('dialog', (confirm) => confirm.accept());
   await editor.getByRole('button', { name: 'Delete connection' }).click();
-  await expect(list.getByRole('button', { name: 'Replica', exact: true })).toHaveCount(0);
+  await expect(mongoConnection(page, 'Replica')).toHaveCount(0);
 });

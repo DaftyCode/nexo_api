@@ -120,3 +120,16 @@ test('a task runs only in its workspace, and a missing script fails it', async (
   const lost = await runTask('lost');
   assert.equal(lost.body.state, 'failed');
 });
+
+test('tasks with files run only in the desktop app', async () => {
+  await put('to-file', 'db-task', 'To a file', {
+    type: 'export',
+    connection: 'shop',
+    sql: 'SELECT 1',
+    format: 'csv',
+    file: join(folder, 'out.csv'),
+  });
+  const refused = await runTask('to-file');
+  assert.equal(refused.body.state, 'failed');
+  assert.match(refused.body.error, /desktop app/);
+});

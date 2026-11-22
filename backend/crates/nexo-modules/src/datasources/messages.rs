@@ -53,6 +53,7 @@ pub(super) fn connect_params(session: &str, connection: SqlConnection) -> Result
         connect_timeout_ms: connection
             .connect_timeout
             .map(|limit| limit.as_millis() as u64),
+        proxy: None,
     })
 }
 

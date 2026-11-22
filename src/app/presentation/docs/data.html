@@ -2,7 +2,7 @@
   <h2>{{ 'MongoDB' | transloco }}</h2>
   <p>
     {{
-      'In MongoDB, paste a connection string (its password goes to the vault) and test it. Then:'
+      'MongoDB is a module of Databases: choose MongoDB in the gallery of a new connection, paste a connection string (its password goes to the vault) and test it. Its connections are in the same tree, and a collection opens in the explorer of its connection. Then:'
         | transloco
     }}
   </p>
@@ -86,7 +86,37 @@
     </li>
     <li>
       {{
+        'The Cassandra module connects to Cassandra and ScyllaDB: write several contact points separated by commas, the keyspace as the database and the local data center in Driver settings. Write CQL in the SQL editor; CONSISTENCY QUORUM and TRACING ON work as in cqlsh, and a query with ALLOW FILTERING asks first, because it may read the whole cluster. In the Data tab of a table, filter by the partition key, or add ALLOW FILTERING when Cassandra asks for it.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Redis module connects to Redis and Valkey (one server, Sentinel or a cluster). Open a database of the tree to see its keys by pages, grouped by :, with a pattern and a type to filter them; the sheet of a key changes its value, expiry and name. The Console runs commands as redis-cli, with ↑ ↓ for the history; FLUSHDB and the other dangerous ones ask for their name typed. Follow channels in the realtime panel with Redis subscription.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Elasticsearch module connects to Elasticsearch and OpenSearch: write the nodes separated by commas and choose basic, apiKey or bearer in Driver settings. Indices show their fields; SQL runs in the SQL editor and in the Data tab of an index. Query DSL console, in the menu of the connection, runs requests as in Kibana: METHOD path and its JSON body, Ctrl+Enter for the one at the cursor. Deleting an index asks for its name typed.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Apache Drill module connects to a Drillbit through its REST API (port 8047). Its storage plugins show their schemas, tables and files; query a file as a table, such as dfs.`/data/sales.parquet`. Each page of a result runs the statement again, and values go in the statement, without parameters.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'Database tasks (▶ in the navigator) save SQL scripts on some connections, a copy of a query into a table of another connection, a comparison of two schemas or tables, a backup or other tasks in order. Run one now or every few minutes or hours while Nexo is open: each run stays in its history, and a failure or a difference found is notified. Nobody confirms a scheduled run, so what would ask (changes in production, statements on every row, DROP) runs only if the task authorizes it.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Tasks also write what a query reads to a CSV, JSON or JSON Lines file, write a file into a table, and run a MongoDB transfer or comparison you saved (a comparison can sync the target if the task authorizes it). Files are for the desktop app: write an absolute path, and {date} in its name for one file per run. A task can also run on a cron expression, such as 0 9 * * mon-fri.'
           | transloco
       }}
     </li>

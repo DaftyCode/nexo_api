@@ -123,6 +123,31 @@ pub struct ConnectParams {
     /// How long the connection may take to open, when not [`crate::limits::CONNECT`].
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connect_timeout_ms: Option<u64>,
+    /// The SOCKS5 proxy of the connection's route (its own, or the loopback end of its SSH
+    /// tunnel), for a driver whose library goes through a proxy itself (MongoDB). Other
+    /// drivers reach a routed server at the loopback port `net.resolve` answers.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proxy: Option<ProxySettings>,
+}
+
+/// A SOCKS5 proxy, at an address the egress policy allows, with its credentials.
+#[derive(Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default, deny_unknown_fields)]
+pub struct ProxySettings {
+    pub host: String,
+    pub port: u16,
+    pub user: Option<String>,
+    pub password: Option<String>,
+}
+impl std::fmt::Debug for ProxySettings {
+    /// Never shows the password.
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ProxySettings")
+            .field("host", &self.host)
+            .field("port", &self.port)
+            .finish_non_exhaustive()
+    }
 }
 impl std::fmt::Debug for ConnectParams {
     /// Never shows the password or the key, should a connection end up in a log.

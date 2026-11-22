@@ -213,6 +213,23 @@ export function dateForms(text: string): { label: string; text: string }[] {
   ];
 }
 
+/** 100-nanosecond intervals from the Gregorian reform (1582-10-15) to 1970-01-01. */
+const GREGORIAN_OFFSET = 0x01b21dd213814000n;
+
+/**
+ * When a time UUID (version 1: Cassandra's `timeuuid`) was made, in ISO 8601; nothing for
+ * the other versions.
+ */
+export function uuidTime(text: string): string | undefined {
+  const parts = /^([0-9a-f]{8})-([0-9a-f]{4})-1([0-9a-f]{3})-[0-9a-f]{4}-[0-9a-f]{12}$/i.exec(
+    text.trim(),
+  );
+  if (!parts) return undefined;
+  const ticks = BigInt(`0x${parts[3]}${parts[2]}${parts[1]}`);
+  const date = new Date(Number((ticks - GREGORIAN_OFFSET) / 10000n));
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 /** The width a column starts with, in characters: its name or its longest first values. */
 export function columnChars(column: ResultColumn, rows: readonly unknown[][], index: number) {
   let longest = column.name.length;

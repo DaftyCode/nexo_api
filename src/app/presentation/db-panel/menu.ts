@@ -18,6 +18,7 @@ export type MenuAction =
   | 'newScript'
   | 'deleteScript'
   | 'console'
+  | 'restConsole'
   | 'generateSelect'
   | 'generateInsert'
   | 'generateUpdate'
@@ -40,4 +41,6 @@ export type MenuAction =
   | 'locks'
   | 'dashboard'
   | 'native'
-  | 'compare';
+  | 'compare'
+  | 'openMongo'
+  | 'mongoShell';

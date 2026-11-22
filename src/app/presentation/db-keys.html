@@ -1,0 +1,120 @@
+@let keys = run();
+<div class="db-keys">
+  <div class="db-keys-bar">
+    <span class="db-keys-views" role="group" [attr.aria-label]="'View' | transloco">
+      <button type="button" [attr.aria-pressed]="view() === 'keys'" (click)="show('keys')">
+        <app-studio-icon name="key" />{{ 'Keys' | transloco }}
+      </button>
+      <button type="button" [attr.aria-pressed]="view() === 'console'" (click)="show('console')">
+        <app-studio-icon name="console" />{{ 'Console' | transloco }}
+      </button>
+      <button type="button" [attr.aria-pressed]="view() === 'server'" (click)="show('server')">
+        <app-studio-icon name="bars" />{{ 'Server' | transloco }}
+      </button>
+    </span>
+    <span class="muted">{{ tab().path?.[0] }}</span>
+    @if (keys.status() === 'opening') {
+      <span class="muted" role="status">{{ 'Connecting…' | transloco }}</span>
+    }
+  </div>
+  @if (keys.console.waiting(); as waiting) {
+    <form class="db-keys-confirm" (submit)="$event.preventDefault(); confirm()">
+      <span role="alert">{{ 'db.kv.typeToRun' | transloco: { v0: waiting.name } }}</span>
+      <input [formField]="typed.name" [attr.aria-label]="'Command name' | transloco" />
+      <button type="submit" class="button danger small">{{ 'Run' | transloco }}</button>
+      <button type="button" class="button small" (click)="keys.console.waiting.set(undefined)">
+        {{ 'Cancel' | transloco }}
+      </button>
+    </form>
+  }
+  @if (keys.error()) {
+    <p class="db-keys-error" role="alert">{{ keys.error() | transloco }}</p>
+  }
+  @switch (view()) {
+    @case ('keys') {
+      <div class="db-keys-body">
+        <section class="db-keys-list" [attr.aria-label]="'Keys' | transloco">
+          <form class="db-keys-filter" (submit)="$event.preventDefault(); search()">
+            <input
+              [formField]="fields.pattern"
+              [attr.aria-label]="'Pattern' | transloco"
+              placeholder="user:*"
+            />
+            <select [formField]="fields.type" [attr.aria-label]="'Type' | transloco">
+              <option value="">{{ 'Any type' | transloco }}</option>
+              @for (type of types; track type) {
+                <option [value]="type">{{ type }}</option>
+              }
+            </select>
+            <button type="submit" class="button small">{{ 'Search' | transloco }}</button>
+            <button type="button" class="button small" (click)="newKey()">
+              {{ '＋ Key' | transloco }}
+            </button>
+          </form>
+          <ul class="db-keys-rows">
+            @for (row of keys.rows(); track row.id) {
+              <li [style.padding-inline-start.em]="row.depth * 1.2">
+                <button
+                  type="button"
+                  class="db-keys-row"
+                  [class.chosen]="chosen(row)"
+                  [attr.aria-expanded]="row.key ? null : row.expanded"
+                  [attr.title]="row.id"
+                  (click)="choose(row)"
+                >
+                  @if (row.key) {
+                    <span class="db-keys-type" [attr.data-type]="row.key.type">{{
+                      row.key.type
+                    }}</span>
+                    <span class="db-keys-name">{{ row.label }}</span>
+                    @if (row.key.ttlMs) {
+                      <span class="muted">{{ ttl(row.key.ttlMs) }}</span>
+                    }
+                  } @else {
+                    <span aria-hidden="true">{{ row.expanded ? '▾' : '▸' }}</span>
+                    <span class="db-keys-name">{{ row.label }}</span>
+                    <span class="muted">{{ row.count }}</span>
+                  }
+                </button>
+              </li>
+            } @empty {
+              @if (!keys.loading()) {
+                <li class="muted">
+                  {{ (keys.cursor() ? 'db.kv.scanOn' : 'No keys found.') | transloco }}
+                </li>
+              }
+            }
+          </ul>
+          <p class="db-keys-footer">
+            <span class="muted">{{ 'db.kv.read' | transloco: { v0: keys.keys().length } }}</span>
+            @if (keys.cursor()) {
+              <button
+                type="button"
+                class="button small"
+                [disabled]="keys.loading()"
+                (click)="keys.load(true)"
+              >
+                {{ 'Load more' | transloco }}
+              </button>
+            }
+          </p>
+        </section>
+        <section class="db-keys-sheet" [attr.aria-label]="'Key' | transloco">
+          @if (creating()) {
+            <app-db-new-key [run]="keys" (done)="creating.set(false)" />
+          } @else if (keys.selected()) {
+            <app-db-key-sheet [run]="keys" />
+          } @else {
+            <p class="muted">{{ 'Choose a key to see its value.' | transloco }}</p>
+          }
+        </section>
+      </div>
+    }
+    @case ('console') {
+      <app-db-keys-console [run]="keys" />
+    }
+    @case ('server') {
+      <app-db-keys-server [run]="keys" />
+    }
+  }
+</div>

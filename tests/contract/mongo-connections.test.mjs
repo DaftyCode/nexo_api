@@ -11,6 +11,7 @@ import {
   document,
   plain,
   auth,
+  modules,
 } from './mongo-fixture.mjs';
 
 test('a connection keeps its password out of the URI it stores', async () => {
@@ -143,6 +144,7 @@ test('a replica set lists its members', { skip: !environment.NEXO_MONGO_REPLICA_
   // Under a restrictive policy the members are asked for and checked before the driver
   // contacts them; allowed ones keep the replica set.
   const allowed = await startServer({
+    ...modules,
     NEXO_EGRESS: 'deny-private',
     NEXO_EGRESS_ALLOW: '127.0.0.1',
   });

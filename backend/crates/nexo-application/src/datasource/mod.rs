@@ -9,9 +9,11 @@ mod dashboard;
 mod explain;
 mod history;
 mod journal;
+mod keyvalue;
 mod mock;
 mod opening;
 mod passwords;
+mod rest;
 mod route;
 mod rows;
 mod rules;
@@ -173,6 +175,12 @@ impl Application {
             Operation::DbSessionKill => self.kill_session(sources, read(payload)?).await,
             Operation::DbDashboards => self.dashboards(sources, read(payload)?).await,
             Operation::DbDashboardRead => self.read_dashboard(sources, read(payload)?).await,
+            Operation::DbKvScan => self.kv_scan(sources, read(payload)?).await,
+            Operation::DbKvGet => self.kv_get(sources, read(payload)?).await,
+            Operation::DbKvWrite => self.kv_write(sources, read(payload)?).await,
+            Operation::DbKvCommand => self.kv_command(sources, read(payload)?).await,
+            Operation::DbKvSubscribe => self.kv_subscribe(sources, read(payload)?).await,
+            Operation::DbRestRequest => self.rest_request(sources, read(payload)?).await,
             _ => Err(Error::Validation(format!(
                 "{operation} is not an operation of the database connections"
             ))),

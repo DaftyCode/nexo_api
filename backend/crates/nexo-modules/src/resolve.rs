@@ -1,4 +1,5 @@
-//! What the host answers a driver: the addresses it may connect to, and its log lines.
+//! What the host answers a driver: the addresses it may connect to, whether it may reach a
+//! server it connects to by name, and its log lines.
 use crate::{
     connections::{Connections, Destination},
     host::LogSink,
@@ -47,7 +48,7 @@ impl Answers {
 #[async_trait]
 impl Handler for Answers {
     async fn request(&self, method: &str, params: Value) -> Result<Value> {
-        if method != methods::NET_RESOLVE {
+        if method != methods::NET_RESOLVE && method != methods::NET_CHECK {
             return Err(DriverError::unsupported(format!(
                 "The host does not answer {method}"
             )));
@@ -75,11 +76,42 @@ impl Handler for Answers {
         };
         for (secret, hosts) in &secret_hosts {
             if !hosts.allows(&params.host) {
-                return Err(refused(format!(
-                    "The secret {secret} may not be sent to {}: it is not among its allowed domains",
-                    params.host
-                )));
+                // `net.check` answers as the MongoDB adapter always did; the driver adds
+                // which server it is.
+                return Err(refused(if method == methods::NET_CHECK {
+                    format!("secret {secret} cannot be sent to {}", params.host)
+                } else {
+                    format!(
+                        "The secret {secret} may not be sent to {}: it is not among its allowed domains",
+                        params.host
+                    )
+                }));
             }
+        }
+        if method == methods::NET_CHECK {
+            // The driver's library connects by name: the name is checked as it would be
+            // reached, directly or as the far side of the route resolves it.
+            let checked = if route.is_direct() {
+                self.network
+                    .check_destination(&params.host, params.port)
+                    .await
+            } else {
+                self.network
+                    .check_routed_destination(&params.host, params.port)
+                    .await
+            };
+            checked.map_err(|error| refused(error.to_string()))?;
+            self.connections.record(
+                &params.connection,
+                Destination {
+                    host: params.host.clone(),
+                    port: params.port,
+                    allowed: true,
+                    addresses: Vec::new(),
+                    reason: None,
+                },
+            );
+            return Ok(json!({}));
         }
         let addresses: Vec<String> = if route.is_direct() {
             self.network

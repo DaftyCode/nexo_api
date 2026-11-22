@@ -1,5 +1,6 @@
 import { readDatabaseSession } from './session';
 import {
+  asksToFilter,
   emptyTableQuery,
   foreignKeys,
   orderBy,
@@ -26,6 +27,24 @@ describe("the queries of an object's Data tab", () => {
       sql: 'SELECT * FROM `shop`.`orders` WHERE status = ? AND CAST(note AS CHAR) LIKE ?',
       params: ['paid', '%50\\%%'],
     });
+  });
+
+  it('adds ALLOW FILTERING to a CQL table only once the person chose it', () => {
+    const cql = { name: 'cql', quoteOpen: '"', quoteClose: '"', parameters: 'question' };
+    const query = { ...emptyTableQuery(), where: 'value > 2' };
+    expect(tableSelect('shop.readings', query, cql).sql).toBe(
+      'SELECT * FROM shop.readings WHERE (value > 2)',
+    );
+    const allowed = { ...query, allowFiltering: true };
+    expect(tableSelect('shop.readings', allowed, cql).sql).toBe(
+      'SELECT * FROM shop.readings WHERE (value > 2) ALLOW FILTERING',
+    );
+    expect(tableCount('shop.readings', allowed, cql).sql).toMatch(/ALLOW FILTERING$/);
+    expect(tableSelect('orders', allowed, postgres).sql).not.toMatch(/ALLOW/);
+    const refused = 'Cannot execute this query … use ALLOW FILTERING';
+    expect(asksToFilter(refused, cql)).toBe(true);
+    expect(asksToFilter(refused, postgres)).toBe(false);
+    expect(asksToFilter('syntax error', cql)).toBe(false);
   });
 
   it('filters by the condition and the quick filters, with the values as parameters', () => {

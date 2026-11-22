@@ -20,7 +20,7 @@ import { CodeEditor } from './code-editor';
 import { GraphqlSubscriptionSettings } from './graphql-subscription-settings';
 import { KafkaSettings } from './kafka-settings';
 import { MongoWatchSettings } from './mongo-watch-settings';
-import { watchLabel } from '../domain/mongo-watch';
+import { RedisSubscribeSettings } from './redis-subscribe-settings';
 import { PanelWatch } from './protocol-panel/watch';
 import { ProtocolSettings, defaultProtocolSettings } from './protocol-settings';
 import { Route, readRoute, storedRoute } from '../domain/route';
@@ -36,6 +36,7 @@ import { RoutePicker } from './route-picker';
     GraphqlSubscriptionSettings,
     KafkaSettings,
     MongoWatchSettings,
+    RedisSubscribeSettings,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-protocol-panel',
@@ -66,7 +67,7 @@ export class ProtocolPanel {
   protected readonly watch = new PanelWatch(this.state, this.protocols, this.model);
   /** Protocols whose connections only receive. */
   protected readonly receiveOnly = computed(() =>
-    ['graphql-subscription', 'mongodb'].includes(this.model().protocol),
+    ['graphql-subscription', 'mongodb', 'redis'].includes(this.model().protocol),
   );
   /** The schema of the subscription's endpoint, if loaded here or for its queries. */
   protected readonly subscriptionSchema = computed(() => this.state.schemaFor(this.model().url));
@@ -162,10 +163,10 @@ export class ProtocolPanel {
         ...tab.request,
         name:
           tab.request.name === 'Untitled request'
-            ? `${m.protocol} ${m.protocol === 'mongodb' ? watchLabel(m) : m.url}`
+            ? `${m.protocol} ${this.watch.active() ? this.watch.label() : m.url}`
             : tab.request.name,
         protocol: settings.protocol,
-        url: m.protocol === 'mongodb' ? watchLabel(m) : m.url,
+        url: this.watch.active() ? this.watch.label() : m.url,
         realtime: settings,
       });
       await this.state.saveActive();
@@ -175,10 +176,9 @@ export class ProtocolPanel {
     void this.task.run(async () => {
       // Only one connection per panel: close the previous one first.
       await this.close();
-      const result =
-        this.model().protocol === 'mongodb'
-          ? await this.watch.open()
-          : await this.protocols.connect(this.state.workspaceId(), this.options());
+      const result = this.watch.active()
+        ? await this.watch.open()
+        : await this.protocols.connect(this.state.workspaceId(), this.options());
       this.connection.set(result.id);
       this.status.set(result.state);
       this.events.set([]);

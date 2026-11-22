@@ -1,0 +1,144 @@
+@let f = form();
+@switch (f.type) {
+  @case ('mongo-transfer') {
+    <label class="field"
+      >{{ 'Saved transfer' | transloco
+      }}<select [value]="f.transfer" (change)="patch.emit({ transfer: value($event) })">
+        <option value="">{{ 'Choose a saved transfer' | transloco }}</option>
+        @for (saved of transfers(); track saved.id) {
+          <option [value]="saved.id">{{ saved.name }}</option>
+        }
+      </select></label
+    >
+    @if (!transfers().length) {
+      <p class="muted">{{ 'db.task.noTransfers' | transloco }}</p>
+    }
+  }
+  @case ('mongo-compare') {
+    <label class="field"
+      >{{ 'Saved comparison' | transloco
+      }}<select [value]="f.comparison" (change)="patch.emit({ comparison: value($event) })">
+        <option value="">{{ 'Choose a saved comparison' | transloco }}</option>
+        @for (saved of comparisons(); track saved.id) {
+          <option [value]="saved.id">{{ saved.name }}</option>
+        }
+      </select></label
+    >
+    @if (!comparisons().length) {
+      <p class="muted">{{ 'db.task.noComparisons' | transloco }}</p>
+    }
+    <label class="check-field"
+      ><input
+        type="checkbox"
+        [checked]="f.sync"
+        (change)="patch.emit({ sync: checked($event) })"
+      />{{ 'db.task.sync' | transloco }}</label
+    >
+  }
+  @default {
+    <div class="row">
+      <label class="field"
+        >{{ 'Connection' | transloco
+        }}<select [value]="f.connection" (change)="patch.emit({ connection: value($event) })">
+          <option value="">{{ 'Choose a connection' | transloco }}</option>
+          @for (connection of connections(); track connection.id) {
+            <option [value]="connection.id">{{ connection.name }}</option>
+          }
+        </select></label
+      >
+      <label class="field"
+        >{{ 'Format' | transloco
+        }}<select [value]="f.format" (change)="patch.emit({ format: $any(value($event)) })">
+          @for (format of formats; track format) {
+            <option [value]="format">{{ 'db.task.format.' + format | transloco }}</option>
+          }
+        </select></label
+      >
+    </div>
+    @if (f.type === 'export') {
+      <label class="field"
+        >{{ 'Query that reads' | transloco
+        }}<textarea
+          rows="3"
+          spellcheck="false"
+          [value]="f.sql"
+          (input)="patch.emit({ sql: value($event) })"
+        ></textarea>
+      </label>
+    } @else {
+      <div class="row">
+        <label class="field"
+          >{{ 'Schema' | transloco
+          }}<input
+            [value]="f.schema"
+            spellcheck="false"
+            (input)="patch.emit({ schema: value($event) })"
+        /></label>
+        <label class="field grow"
+          >{{ 'Table' | transloco
+          }}<input
+            [value]="f.table"
+            spellcheck="false"
+            (input)="patch.emit({ table: value($event) })"
+        /></label>
+        <label class="field"
+          >{{ 'Mode' | transloco
+          }}<select
+            [value]="f.importMode"
+            (change)="patch.emit({ importMode: $any(value($event)) })"
+          >
+            <option value="insert">{{ 'Insert' | transloco }}</option>
+            <option value="upsert">{{ 'Insert or update by key' | transloco }}</option>
+          </select></label
+        >
+      </div>
+      @if (f.importMode === 'upsert') {
+        <label class="field"
+          >{{ 'Columns of the key' | transloco
+          }}<input [value]="f.key" spellcheck="false" (input)="patch.emit({ key: value($event) })"
+        /></label>
+      }
+    }
+    @if (f.format === 'csv') {
+      <div class="row">
+        <label class="field"
+          >{{ 'Separator' | transloco
+          }}<input
+            [value]="f.separator"
+            maxlength="1"
+            spellcheck="false"
+            (input)="patch.emit({ separator: value($event) })"
+        /></label>
+        @if (f.type === 'export') {
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="f.header"
+              (change)="patch.emit({ header: checked($event) })"
+            />{{ 'The first line names the columns' | transloco }}</label
+          >
+        }
+      </div>
+    }
+  }
+}
+@if (files()) {
+  <label class="field"
+    >{{ 'File' | transloco
+    }}<input
+      [value]="f.file"
+      spellcheck="false"
+      placeholder="C:/exports/orders-{date}.csv"
+      (input)="patch.emit({ file: value($event) })"
+  /></label>
+  @if (f.type !== 'import' && !(f.type === 'mongo-transfer' && importing())) {
+    <label class="check-field"
+      ><input
+        type="checkbox"
+        [checked]="f.overwrite"
+        (change)="patch.emit({ overwrite: checked($event) })"
+      />{{ 'Replace the file when it exists' | transloco }}</label
+    >
+  }
+  <p class="muted">{{ 'db.task.files' | transloco }}</p>
+}

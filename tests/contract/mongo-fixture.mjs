@@ -12,15 +12,21 @@
 // The files run one after another (tools/contract-tests.mjs), as they share these servers.
 import { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import { startServer } from './server.mjs';
 
 export const environment = process.env;
+/** MongoDB is a module (DB-39): its driver, built by Cargo, runs as its own process. */
+export const modules = {
+  NEXO_MODULES_DIR: resolve(environment.CARGO_TARGET_DIR ?? 'target', 'debug'),
+  NEXO_MODULES_CATALOG: '',
+};
 export let server;
 export let restricted;
 before(async () => {
   [server, restricted] = await Promise.all([
-    startServer(),
-    startServer({ NEXO_EGRESS: 'deny-private' }),
+    startServer(modules),
+    startServer({ ...modules, NEXO_EGRESS: 'deny-private' }),
   ]);
 });
 after(async () => {

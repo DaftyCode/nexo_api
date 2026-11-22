@@ -10,12 +10,14 @@ import {
 } from '../../domain/db/connection-types';
 import { DATABASES, MODULES } from '../../composition/providers';
 import { dbFolders, isDbConnection, readDbConnection } from '../../domain/db/connection';
+import { SectionMongo } from './mongo';
+import { engineProfile } from '../../domain/db/engines';
 import { NavigatorRow, navigatorRows } from '../../domain/db/rows';
 import { SqlDraft, restoredDrafts, storedDrafts } from '../../domain/db/session';
 import { readScript } from '../../domain/db/sql';
 import { QueryStyle } from '../../domain/db/table-query';
 import { DbBookmark, DbNode, QuoteStyle, keyPath, nodeKey } from '../../domain/db/tree';
-import { ModuleSummary } from '../../domain/modules';
+import { ModuleWait, waitForModule } from './module-wait';
 import { WorkspaceDocument } from '../../domain/models';
 import { WorkspaceState } from '../workspace-state';
 import { DriverFacts } from './drivers';
@@ -26,12 +28,6 @@ import { SectionDashboards } from './dashboards';
 import { DbTreeStore } from './tree-store';
 import { SchemaCache } from './schema-cache';
 import { SectionTransactions } from './transactions';
-
-/** A module the section waits for: the download dialog asks, then says how it went. */
-export interface ModuleWait {
-  module: ModuleSummary;
-  done: (installed: boolean) => void;
-}
 
 /**
  * The state of the database section, shared by its navigator and its editors: the saved
@@ -48,6 +44,8 @@ export class DbSection {
   readonly cases: () => Promise<DatabaseUseCases> = this.passwords.asking(this.loader);
   /** The module whose download dialog is open, if any. */
   readonly moduleWait = signal<ModuleWait | undefined>(undefined);
+  /** MongoDB's connections, in the same tree (DB-39), and their explorers. */
+  readonly mongo = new SectionMongo(this);
   readonly tree = new DbTreeStore({
     cases: this.cases,
     workspace: () => this.state.workspaceId(),
@@ -55,6 +53,7 @@ export class DbSection {
     ensure: (driver) => this.ensure(driver),
     describe: (error) => this.state.describe(error),
     learn: (connection) => this.drivers.learn(connection),
+    documents: (connection, path) => this.mongo.tree(connection, path),
   });
   readonly tabs = new DbTabsStore(() => this.state.cases.files.id());
   readonly bookmarks = signal<readonly DbBookmark[]>([]);
@@ -84,6 +83,8 @@ export class DbSection {
   readonly dashboards = new SectionDashboards(this);
 
   readonly connections = computed(() => this.state.documents().filter(isDbConnection));
+  /** Every connection of the navigator: SQL, and MongoDB. */
+  readonly navigable = computed(() => [...this.connections(), ...this.mongo.connections()]);
   /** Saved SQL scripts. */
   readonly scripts = computed(() => this.state.documents().filter((d) => d.kind === 'sql-script'));
   /** SQL tabs that run their text as soon as they open («View data»). */
@@ -93,7 +94,7 @@ export class DbSection {
   /** The search dialog is open (DB-18), and the table editor (DB-19). */
   readonly searching = signal(false);
   readonly structureRequest = signal<StructureRequest | undefined>(undefined);
-  readonly folders = computed(() => dbFolders(this.connections()));
+  readonly folders = computed(() => dbFolders(this.navigable()));
   readonly folderNames = computed(() =>
     this.folders()
       .map((group) => group.folder)
@@ -101,7 +102,7 @@ export class DbSection {
   );
   readonly rows = computed(() =>
     navigatorRows({
-      connections: this.connections(),
+      connections: this.navigable(),
       folders: this.folders(),
       expanded: this.tree.expanded(),
       closedFolders: this.tree.closedFolders(),
@@ -152,7 +153,7 @@ export class DbSection {
     drafts: Readonly<Record<string, SqlDraft>>,
     active: string,
   ) {
-    const kept = tabs.filter((tab) => !tab.connection || !!this.connection(tab.connection));
+    const kept = tabs.filter((tab) => !tab.connection || !!this.anyConnection(tab.connection));
     const script = (id: string) => {
       const found = this.scripts().find((document) => document.id === id);
       return found && readScript(found.value).sql;
@@ -212,13 +213,16 @@ export class DbSection {
 
   /** Opens the tab of an object of the tree. */
   openObject(row: NavigatorRow) {
-    if (!row.connection || !row.path?.length) return;
-    this.tabs.open({
-      kind: 'object',
-      connection: row.connection,
-      title: row.label,
-      path: row.path,
-    });
+    const { connection, label: title, path } = row;
+    if (!connection || !path?.length) return;
+    // A collection of MongoDB opens in the explorer of its connection (DB-39).
+    if (this.mongo.connection(connection)) {
+      if (path.length > 1) void this.mongo.open(connection, { path: path.slice(0, 2) });
+      return;
+    }
+    // A database of a key-value store opens on its keys (DB-35).
+    const kind = engineProfile(this.driverOf(connection)).keyValue ? 'keys' : 'object';
+    this.tabs.open({ kind, connection, title, path });
   }
 
   /** The nodes along a path of the tree, as loaded. */
@@ -234,6 +238,10 @@ export class DbSection {
   connection(id: string): WorkspaceDocument | undefined {
     return this.connections().find((document) => document.id === id);
   }
+  /** Any connection of the navigator: SQL, or MongoDB. */
+  anyConnection(id: string): WorkspaceDocument | undefined {
+    return this.connection(id) ?? this.mongo.connection(id);
+  }
   /** The type of a connection: built in, or one of the person's own (DB-25). */
   typeOf(id: string): ConnectionTypeChoice {
     const type = readDbConnection(this.connection(id)?.value).type;
@@ -248,18 +256,8 @@ export class DbSection {
    * Whether a module can run now. When it is missing or outdated, its download dialog asks
    * first; this resolves once it is installed or the person closes the dialog.
    */
-  async ensure(driver: string): Promise<boolean> {
-    const need = await this.modules.ensure(driver);
-    if (need.ready) return true;
-    return new Promise<boolean>((done) =>
-      this.moduleWait.set({
-        module: need.module,
-        done: (installed) => {
-          this.moduleWait.set(undefined);
-          done(installed);
-        },
-      }),
-    );
+  ensure(driver: string): Promise<boolean> {
+    return waitForModule(this.modules, this.moduleWait, driver);
   }
 
   /** Opens the editor of a saved connection, or of a new one. */

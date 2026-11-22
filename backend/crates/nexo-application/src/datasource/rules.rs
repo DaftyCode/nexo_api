@@ -27,6 +27,7 @@ pub(crate) fn classify_all(sql: &str, dialect: Dialect) -> Classification {
         all.missing_where |= one.missing_where;
         all.truncate |= one.truncate;
         all.drops |= one.drops;
+        all.scans_cluster |= one.scans_cluster;
         for name in one.drop {
             if !all.drop.contains(&name) {
                 all.drop.push(name);
@@ -67,6 +68,11 @@ pub(crate) fn check(
     if (classification.missing_where || classification.truncate) && !confirm {
         return Err(refused(
             "Confirm the statement: it changes every row of the table",
+        ));
+    }
+    if classification.scans_cluster && !confirm {
+        return Err(refused(
+            "Confirm the statement: ALLOW FILTERING may read every partition of the cluster",
         ));
     }
     if session.rules.confirm_writes && classification.writes() && !confirm {

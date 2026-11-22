@@ -50,6 +50,12 @@ impl Operation {
                 | Self::DbSyncData
                 | Self::DbRouteTest
                 | Self::DbMockRows
+                | Self::DbKvScan
+                | Self::DbKvGet
+                | Self::DbKvWrite
+                | Self::DbKvCommand
+                | Self::DbKvSubscribe
+                | Self::DbRestRequest
         )
     }
     /// Operations on the monitors, which the application schedules, not the engine.

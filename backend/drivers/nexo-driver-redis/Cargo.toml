@@ -1,0 +1,23 @@
+[package]
+name = "nexo-driver-redis"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Redis, Valkey and the servers that speak RESP"
+
+[package.metadata.nexo]
+module = "redis"
+
+[dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["tls"] }
+async-trait.workspace = true
+base64.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+redis = { version = "~1.8.2", default-features = false, features = ["tokio-comp", "tokio-rustls-comp", "tls-rustls-insecure", "cluster-async", "streams"] }
+
+[dev-dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["conformance", "tls"] }

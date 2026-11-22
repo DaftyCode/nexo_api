@@ -134,6 +134,18 @@ jobs:
         run: node tools/cargo.mjs test --locked -p nexo-driver-mssql
       - name: MySQL driver against MySQL and MariaDB
         run: node tools/cargo.mjs test --locked -p nexo-driver-mysql
+      - name: Start Cassandra, Redis, Valkey, Elasticsearch, OpenSearch and Drill for their driver and contract tests
+        run: bash tools/nosql-fixture.sh start cassandra redis elastic drill
+      - name: Cassandra driver against a real node
+        run: node tools/cargo.mjs test --locked -p nexo-driver-cassandra
+      - name: Redis driver against Redis and Valkey
+        run: node tools/cargo.mjs test --locked -p nexo-driver-redis
+      - name: Elasticsearch driver against Elasticsearch and OpenSearch
+        run: node tools/cargo.mjs test --locked -p nexo-driver-elastic
+      - name: Drill driver against an embedded Drillbit
+        run: node tools/cargo.mjs test --locked -p nexo-driver-drill
+      - name: MongoDB driver against a real server
+        run: node tools/cargo.mjs test --locked -p nexo-driver-mongodb
       - run: npm run engine:test
       - name: Stop the Kafka broker
         if: always()
@@ -151,6 +163,9 @@ jobs:
       - name: Stop the SQL servers
         if: always()
         run: bash tools/sql-fixture.sh stop
+      - name: Stop the NoSQL servers
+        if: always()
+        run: bash tools/nosql-fixture.sh stop
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with:

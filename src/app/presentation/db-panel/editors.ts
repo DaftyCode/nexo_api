@@ -2,6 +2,8 @@ import { readDbConnection } from '../../domain/db/connection';
 import { databaseOf } from '../../domain/db/sql';
 import { emptyTableQuery, tableOfPath } from '../../domain/db/table-query';
 import type { DbSection } from './section';
+import { KeysRun } from './keys-run';
+import { RestRun } from './rest-run';
 import { SqlRunner } from './sql-runner';
 import { TableData } from './table-data';
 
@@ -13,6 +15,8 @@ import { TableData } from './table-data';
 export class OpenEditors {
   private readonly runners = new Map<string, SqlRunner>();
   private readonly tables = new Map<string, TableData>();
+  private readonly keyTabs = new Map<string, KeysRun>();
+  private readonly restTabs = new Map<string, RestRun>();
 
   constructor(private readonly section: DbSection) {}
 
@@ -60,10 +64,28 @@ export class OpenEditors {
     return data;
   }
 
+  /** The keys of a Redis or Valkey database open in a tab (DB-35). */
+  keys(tab: string): KeysRun {
+    let run = this.keyTabs.get(tab);
+    if (!run) this.keyTabs.set(tab, (run = new KeysRun(this.section, tab)));
+    return run;
+  }
+
+  /** The console of Query DSL of a connection open in a tab (DB-36). */
+  rest(tab: string): RestRun {
+    let run = this.restTabs.get(tab);
+    if (!run) this.restTabs.set(tab, (run = new RestRun(this.section, tab)));
+    return run;
+  }
+
   close(tab: string) {
     void this.runners.get(tab)?.dispose();
     void this.tables.get(tab)?.dispose();
+    void this.keyTabs.get(tab)?.stop();
+    void this.restTabs.get(tab)?.stop();
     this.runners.delete(tab);
     this.tables.delete(tab);
+    this.keyTabs.delete(tab);
+    this.restTabs.delete(tab);
   }
 }

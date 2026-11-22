@@ -58,6 +58,12 @@ import {
 } from '../domain/mongo-query';
 import type { QueryTarget } from '../application/mongo-use-cases';
 
+/** What the explorer of a tab shows when the navigator opens it: a collection, or the shell. */
+export interface ExplorerFocus {
+  path?: readonly string[];
+  shell?: boolean;
+}
+
 /** The views of a collection. */
 export type ExplorerTab =
   'documents' | 'aggregations' | 'sql' | 'schema' | 'indexes' | 'explain' | 'profiler';
@@ -112,6 +118,9 @@ const SUGGESTED = 50;
 })
 export class MongoExplorer {
   readonly connection = input.required<WorkspaceDocument>();
+  /** What the navigator of the databases asked to see (DB-39). */
+  readonly focus = input<ExplorerFocus>({});
+  /** «Edit connection»: the tab of its form. */
   readonly closed = output<void>();
   readonly state = inject(WorkspaceState);
   private readonly mongo = inject(MONGO);
@@ -187,7 +196,7 @@ export class MongoExplorer {
     refresh: () => this.pager.find(this.pager.current()?.offset),
     reloadCollections: (database) => this.browser.loadCollections(database),
     reloadDatabases: () => this.browser.loadDatabases(),
-    choose: (database, collection) => this.select(database, collection),
+    choose: (database, collection) => this.browser.select(database, collection),
     fail: (error) => this.fail(error),
   });
 
@@ -195,6 +204,13 @@ export class MongoExplorer {
     effect(() => {
       this.connection();
       untracked(() => void this.browser.loadDatabases());
+    });
+    effect(() => {
+      const { path, shell } = this.focus();
+      untracked(() => {
+        if (shell) this.openShell();
+        else if (path?.length === 2) void this.browser.show(path[0], path[1]);
+      });
     });
     inject(DestroyRef).onDestroy(() => {
       this.pager.closeCursor();
@@ -209,21 +225,6 @@ export class MongoExplorer {
   }
   fail(error: unknown) {
     this.error.set(this.state.describe(error));
-  }
-  /** Chooses a collection by its name, or none (after it was dropped). */
-  private async select(database: string, name?: string) {
-    if (!name) {
-      this.pager.reset();
-      this.target.set(undefined);
-      this.browser.stats.set(undefined);
-      return;
-    }
-    const found = this.browser.listed(database).find((c) => c.name === name) ?? {
-      name,
-      kind: 'collection' as const,
-      capped: false,
-    };
-    this.choose(database, found);
   }
   undoable(change: WorkspaceDocument) {
     return changeValue(change.value).changes.length > 0;
@@ -265,14 +266,8 @@ export class MongoExplorer {
   }
   protected readonly tabLabels = TAB_LABELS;
   /** Chooses a collection by name, listing its database first, without running a query. */
-  async openCollection(database: string, name: string) {
-    if (!this.browser.collections()[database]) await this.browser.loadCollections(database);
-    const found = this.browser.listed(database).find((c) => c.name === name) ?? {
-      name,
-      kind: 'collection' as const,
-      capped: false,
-    };
-    this.choose(database, found, false);
+  openCollection(database: string, name: string) {
+    return this.browser.show(database, name, false);
   }
   /** Driver code for the query of the bar. */
   showQueryCode() {

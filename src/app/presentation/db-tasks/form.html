@@ -169,6 +169,15 @@
       </fieldset>
     }
   }
+  @if (['export', 'import', 'mongo-transfer', 'mongo-compare'].includes(f.type)) {
+    <app-db-task-transfer-fields
+      [form]="f"
+      [connections]="connections()"
+      [transfers]="transfers()"
+      [comparisons]="comparisons()"
+      (patch)="set($event)"
+    />
+  }
   @if (f.type === 'script' || f.type === 'composite') {
     <label class="field"
       >{{ 'After a failure' | transloco
@@ -196,12 +205,13 @@
   <div class="row">
     <label class="field"
       >{{ 'Runs' | transloco
-      }}<select [value]="f.every" (change)="set({ every: +value($event) })">
+      }}<select [value]="f.cron ? -1 : f.every" (change)="schedule(+value($event))">
         @for (minutes of every; track minutes) {
           <option [value]="minutes">
             {{ everyLabel(minutes) | transloco: { v0: minutes >= 60 ? minutes / 60 : minutes } }}
           </option>
         }
+        <option [value]="-1">{{ 'On a cron expression' | transloco }}</option>
       </select></label
     >
     <label class="check-field"
@@ -210,7 +220,17 @@
       }}</label
     >
   </div>
-  @if (f.every) {
+  @if (f.cron) {
+    <label class="field"
+      >{{ 'Cron expression' | transloco
+      }}<input
+        [value]="f.cron"
+        spellcheck="false"
+        placeholder="0 9 * * mon-fri"
+        (input)="set({ cron: value($event) })"
+    /></label>
+  }
+  @if (f.every || f.cron) {
     <p class="muted">{{ 'db.task.whileOpen' | transloco }}</p>
   }
   @if (problem(); as problem) {

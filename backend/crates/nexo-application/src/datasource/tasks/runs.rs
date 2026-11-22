@@ -24,6 +24,10 @@ impl Application {
             "copy" => self.run_copy(workspace, value, report).await,
             "compare" => self.run_compare(workspace, value, report).await,
             "backup" => self.run_backup(workspace, value).await,
+            "export" => self.run_export(workspace, value, report).await,
+            "import" => self.run_import(workspace, value, report).await,
+            "mongo-transfer" => self.run_mongo_transfer(workspace, value, report).await,
+            "mongo-compare" => self.run_mongo_compare(workspace, value, report).await,
             "composite" => {
                 if depth >= DEPTH {
                     return Err(Error::Validation(

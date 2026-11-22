@@ -80,13 +80,26 @@ export class MongoTransferCases {
     );
   }
 
-  /** Saves a transfer in the workspace, to run it again. */
+  /**
+   * Saves a transfer in the workspace, to run it again; with what it reads compiled from
+   * `source`, a task runs it too (DB-40).
+   */
   save(
     workspace: string,
     name: string,
     value: TransferValue,
     existing?: WorkspaceDocument,
+    source?: ExportSource,
   ): Promise<WorkspaceDocument> {
+    const built =
+      source && !source.page
+        ? {
+            built: {
+              query: { ...source.query },
+              ...(source.pipeline ? { pipeline: { ...source.pipeline } } : {}),
+            },
+          }
+        : {};
     return this.api.save({
       id: existing?.id ?? this.id(),
       workspace_id: workspace,
@@ -94,7 +107,7 @@ export class MongoTransferCases {
       name: name.trim() || `${value.direction} ${value.database}.${value.collection}`,
       revision: existing?.revision ?? 0,
       updated_at: existing?.updated_at ?? 0,
-      value: transferValue(value),
+      value: transferValue({ ...value, ...built }),
     });
   }
 

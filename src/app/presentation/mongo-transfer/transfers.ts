@@ -270,6 +270,7 @@ export class MongoTransfers {
           draft.model().name,
           draft.value(explorer.connection().id),
           existing,
+          draft.model().scope === 'page' ? undefined : this.source(draft),
         ),
       );
       explorer.state.applySaved([saved]);

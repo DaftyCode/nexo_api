@@ -105,8 +105,12 @@ impl Application {
         mut payload: Map<String, Value>,
         sender: Sender,
     ) -> Result<Value> {
-        // Change streams are sessions of the database, read like the engine's connections.
+        // Change streams and subscriptions are sessions of their databases, read like the
+        // engine's connections.
         if let Some(answer) = self.realtime_watch(operation, &payload).await? {
+            return Ok(answer);
+        }
+        if let Some(answer) = self.kv_realtime(operation, &payload).await? {
             return Ok(answer);
         }
         if operation == Operation::RealtimeList {

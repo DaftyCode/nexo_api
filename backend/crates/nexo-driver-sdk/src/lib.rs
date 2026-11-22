@@ -6,7 +6,9 @@
 //! may ask. The driver's standard error is its log.
 //!
 //! - [`protocol`] and [`statements`]: the messages; [`rows`], [`explain`], [`import`],
-//!   [`search`] and [`admin`], the ones every driver answers the same way.
+//!   [`search`] and [`admin`], the ones every driver answers the same way; [`keyvalue`],
+//!   the extension of key-value stores, [`rest`], of the engines with an HTTP API, and
+//!   [`document`], of document databases.
 //! - [`value`]: values and columns that lose no type on their way to the interface.
 //! - [`Driver`] and [`run`]: what a driver implements and the loop that serves it.
 //! - [`Client`]: the same messages from the host's side.
@@ -21,14 +23,19 @@ mod client;
 pub mod conformance;
 pub mod dashboard;
 pub mod ddl;
+pub mod document;
 mod driver;
 mod error;
 pub mod explain;
+#[cfg(feature = "http")]
+pub mod http;
 pub mod import;
+pub mod keyvalue;
 pub mod limits;
 pub mod net;
 mod peer;
 pub mod protocol;
+pub mod rest;
 pub mod rows;
 pub mod search;
 mod serve;
@@ -86,6 +93,10 @@ pub mod methods {
     pub const DASHBOARDS: &str = "dashboards";
     /// Asked by the driver: the addresses of a host it may connect to.
     pub const NET_RESOLVE: &str = "net.resolve";
+    /// Whether a server may be reached, for a driver whose library connects by name
+    /// (MongoDB): the host checks it as `net.resolve` does, without resolving it for the
+    /// driver.
+    pub const NET_CHECK: &str = "net.check";
     /// Notified by the driver: a line for the host's log.
     pub const LOG: &str = "log";
 }

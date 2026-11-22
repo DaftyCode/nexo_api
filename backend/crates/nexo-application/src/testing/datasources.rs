@@ -27,6 +27,8 @@ pub(crate) struct FakeSources {
     pub(crate) closing: Mutex<usize>,
     /// Transaction actions asked for, in order.
     pub(crate) transactions: Mutex<Vec<String>>,
+    /// Methods of the key-value extension asked for: session, method and request.
+    pub(crate) key_values: Mutex<Vec<(String, String, Value)>>,
 }
 impl FakeSources {
     /// Whether this call finds its connection closed, as a driver would say it.
@@ -207,6 +209,23 @@ impl DataSources for FakeSources {
     async fn hold(&self, session: &str, held: bool) -> Result<()> {
         self.held.lock().unwrap().push((session.into(), held));
         Ok(())
+    }
+    async fn extension(&self, session: &str, method: &str, request: Value) -> Result<Value> {
+        self.key_values
+            .lock()
+            .unwrap()
+            .push((session.into(), method.into(), request));
+        Ok(match method {
+            "kv.subscribe" => json!({"subscription": "s1"}),
+            "kv.events" => json!({"state": "connected", "events": [
+                {"sequence": 1, "type": "message", "channel": "news", "payload": "secret-of-db-password:c1", "time": 1}
+            ]}),
+            "kv.command" => json!({"reply": "OK", "elapsedMs": 1}),
+            "rest.request" => {
+                json!({"status": 200, "body": {"acknowledged": true}, "elapsedMs": 1})
+            }
+            _ => json!({"keys": [], "cursor": null}),
+        })
     }
 }
 

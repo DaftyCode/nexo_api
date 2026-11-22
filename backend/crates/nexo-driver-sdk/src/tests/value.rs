@@ -16,6 +16,10 @@ fn cases() -> Vec<(Value, Json)> {
             Value::Integer(i64::MIN),
             json!({"$t": "integer", "v": "-9223372036854775808"}),
         ),
+        (
+            Value::typed(ValueKind::Integer, "-123456789012345678901234567890"),
+            json!({"$t": "integer", "v": "-123456789012345678901234567890"}),
+        ),
         (Value::Float(1.5), json!(1.5)),
         (Value::Float(2.0), json!(2.0)),
         (
@@ -81,6 +85,7 @@ fn what_is_not_a_value_is_refused() {
         json!({"$t": "nonsense", "v": "x"}),
         json!({"$t": "decimal", "v": 12}),
         json!({"$t": "integer", "v": "twelve"}),
+        json!({"$t": "integer", "v": "-"}),
         json!({"$t": "array", "v": "x"}),
     ] {
         assert!(

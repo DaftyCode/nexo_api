@@ -18,13 +18,14 @@ import {
   taskProblem,
 } from '../../domain/db/tasks';
 import type { WorkspaceDocument } from '../../domain/models';
+import { DbTaskTransferFields } from './transfer-fields';
 
 /**
  * The editor of a database task (DB-31): its type and what it runs, what it authorizes when
  * nobody is there to confirm (with a warning), and when it runs on its own.
  */
 @Component({
-  imports: [TranslocoPipe],
+  imports: [TranslocoPipe, DbTaskTransferFields],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-task-form',
   templateUrl: './form.html',
@@ -53,6 +54,9 @@ export class DbTaskForm {
   readonly scripts = input.required<readonly WorkspaceDocument[]>();
   /** The other tasks, to chain. */
   readonly tasks = input.required<readonly WorkspaceDocument[]>();
+  /** Saved MongoDB transfers and comparisons, to run (DB-40). */
+  readonly transfers = input<readonly WorkspaceDocument[]>([]);
+  readonly comparisons = input<readonly WorkspaceDocument[]>([]);
   readonly saved = output<TaskForm>();
   readonly cancelled = output<void>();
   protected readonly form = signal<TaskForm>(emptyTaskForm());
@@ -85,6 +89,14 @@ export class DbTaskForm {
   protected allow(key: (typeof AUTHORIZATIONS)[number]) {
     const authorize = { ...this.form().authorize, [key]: !this.form().authorize[key] };
     this.set({ authorize });
+  }
+  /** Every some minutes, by hand (0) or on a cron expression (-1). */
+  protected schedule(minutes: number) {
+    this.set(
+      minutes < 0
+        ? { every: 0, cron: this.form().cron || '0 9 * * *' }
+        : { every: minutes, cron: '' },
+    );
   }
   protected everyLabel(minutes: number) {
     return minutes === 0

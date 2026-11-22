@@ -220,7 +220,8 @@ describe('MongoDB writes in the explorer', () => {
       await open(true);
       expect(text()).toContain('Read-only');
       expect(buttons(root(), 'Insert documents')).toEqual([]);
-      expect(buttons(root(), 'Edit')).toEqual([]);
+      // «Edit connection» opens its form; no document can be edited.
+      expect(buttons(root(), /^Edit\b(?! connection)/)).toEqual([]);
       expect(buttons(root(), '＋ New collection')).toEqual([]);
     },
     SLOW,

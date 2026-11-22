@@ -1,0 +1,131 @@
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.db-keys {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  min-height: 0;
+  padding: var(--nexo-space-3);
+}
+.db-keys-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-3);
+}
+.db-keys-views {
+  display: inline-flex;
+  border: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  border-radius: var(--nexo-radius-sm);
+  overflow: hidden;
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--nexo-space-2);
+    padding: var(--nexo-space-1) var(--nexo-space-4);
+    border: 0;
+    background: var(--nexo-color-surface);
+    color: var(--nexo-color-text);
+    font: inherit;
+    font-size: var(--nexo-font-size-sm);
+    cursor: pointer;
+  }
+  button + button {
+    border-inline-start: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  }
+  button[aria-pressed='true'] {
+    background: var(--nexo-color-accent);
+    color: var(--nexo-color-on-accent);
+  }
+  button:focus-visible {
+    outline: var(--nexo-focus-ring-width) solid var(--nexo-color-focus-ring);
+  }
+}
+.db-keys-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nexo-space-2);
+}
+.db-keys-error {
+  margin: 0;
+  color: var(--nexo-color-danger-text);
+}
+.db-keys-body {
+  display: flex;
+  flex: 1;
+  gap: var(--nexo-space-4);
+  min-height: 0;
+}
+.db-keys-list {
+  display: flex;
+  flex: 0 0 var(--nexo-sidebar-width);
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  min-height: 0;
+}
+.db-keys-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2);
+  input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+.db-keys-rows {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.db-keys-row {
+  display: flex;
+  align-items: center;
+  gap: var(--nexo-space-2);
+  width: 100%;
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border: 0;
+  border-radius: var(--nexo-radius-sm);
+  background: transparent;
+  color: var(--nexo-color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  &:hover,
+  &.chosen {
+    background: var(--nexo-color-accent-soft);
+  }
+}
+.db-keys-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--nexo-font-mono);
+}
+.db-keys-type {
+  padding: 0 var(--nexo-space-1);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-2);
+  font-size: var(--nexo-font-size-xs);
+  text-transform: uppercase;
+}
+.db-keys-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0;
+}
+.db-keys-sheet {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}

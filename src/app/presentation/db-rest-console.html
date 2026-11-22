@@ -1,0 +1,118 @@
+@let rest = run();
+<div class="rest-bar">
+  <button
+    type="button"
+    class="button primary small"
+    aria-keyshortcuts="Control+Enter"
+    [disabled]="rest.running()"
+    (click)="send()"
+  >
+    {{ 'Run (Ctrl+Enter)' | transloco }}
+  </button>
+  <button type="button" class="button small" (click)="curl()">
+    {{ 'Copy as cURL' | transloco }}
+  </button>
+  <span class="rest-cluster" role="group" [attr.aria-label]="'Cluster' | transloco">
+    <button type="button" class="button small subtle" (click)="cluster('_cluster/health')">
+      {{ 'Health' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="cluster('_cat/nodes?v')">
+      {{ 'Nodes' | transloco }}
+    </button>
+  </span>
+  @if (rest.status() === 'opening') {
+    <span class="muted" role="status">{{ 'Connecting…' | transloco }}</span>
+  }
+</div>
+@if (rest.waiting(); as waiting) {
+  <form class="rest-confirm" (submit)="$event.preventDefault(); confirm()">
+    <span role="alert">{{ 'db.rest.typeToRun' | transloco: { v0: waiting.name } }}</span>
+    <input [formField]="typed.name" [attr.aria-label]="'Name to confirm' | transloco" />
+    <button type="submit" class="button danger small">{{ 'Run' | transloco }}</button>
+    <button type="button" class="button small" (click)="rest.waiting.set(undefined)">
+      {{ 'Cancel' | transloco }}
+    </button>
+  </form>
+}
+@if (rest.error()) {
+  <p class="rest-error" role="alert">{{ rest.error() | transloco }}</p>
+}
+@if (copied(); as text) {
+  <pre class="rest-curl" role="status" [attr.aria-label]="'cURL copied' | transloco">{{
+    text
+  }}</pre>
+}
+<div class="rest-body">
+  <section class="rest-requests">
+    <app-code-editor
+      #requests
+      [(value)]="text"
+      size="large"
+      [words]="words()"
+      [label]="'Requests' | transloco"
+    />
+    @if (rest.history().length) {
+      <details class="rest-history">
+        <summary>{{ 'History' | transloco }}</summary>
+        <ul>
+          @for (line of rest.history(); track line) {
+            <li>
+              <code>{{ line }}</code>
+            </li>
+          }
+        </ul>
+      </details>
+    }
+  </section>
+  <section class="rest-answer" [attr.aria-label]="'Answer' | transloco">
+    @if (rest.answer(); as answer) {
+      <p class="rest-status">
+        <code>{{ answer.request }}</code>
+        <span [class.failed]="answer.status >= 400">{{ answer.status }}</span>
+        <span class="muted">{{ 'db.rest.elapsed' | transloco: { v0: answer.elapsedMs } }}</span>
+        @if (hits()) {
+          <button
+            type="button"
+            class="button small subtle"
+            [attr.aria-pressed]="asTable()"
+            (click)="asTable.set(!asTable())"
+          >
+            {{ 'Show as a table' | transloco }}
+          </button>
+        }
+      </p>
+      @if (asTable() && hits(); as table) {
+        <div class="rest-table" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                @for (column of table.columns; track column) {
+                  <th scope="col">{{ column }}</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of table.rows; track $index) {
+                <tr>
+                  @for (cell of row; track $index) {
+                    <td>{{ cell }}</td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <app-code-editor
+          language="json"
+          size="large"
+          [value]="pretty()"
+          [readonly]="true"
+          [label]="'Answer' | transloco"
+        />
+      }
+    } @else {
+      <p class="muted">{{ 'db.rest.help' | transloco }}</p>
+    }
+  </section>
+</div>

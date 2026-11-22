@@ -234,10 +234,12 @@ pub fn literal(value: &Value, dialect: Dialect) -> String {
                     let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
                     match dialect {
                         Dialect::PostgreSql => format!("'\\x{hex}'::bytea"),
-                        Dialect::TSql => format!("0x{hex}"),
+                        Dialect::TSql | Dialect::Cql => format!("0x{hex}"),
                         _ => format!("X'{hex}'"),
                     }
                 }
+                // CQL writes a UUID bare.
+                "uuid" if dialect == Dialect::Cql => text,
                 _ => quoted(&text),
             }
         }

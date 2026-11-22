@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_VALUE } from '../edits';
 import type { ResultColumn } from '../results';
 import { calculate, groupRows } from './calc';
-import { dateForms, formatCell, hexDump, imageType, readGridFormats, truncation } from './cells';
+import {
+  dateForms,
+  formatCell,
+  hexDump,
+  imageType,
+  readGridFormats,
+  truncation,
+  uuidTime,
+} from './cells';
 import { copyAs, jsonValue, sqlLiteral } from './copy';
 import { clickSelection, moveSelection, selectedRange, startSelection } from './selection';
 import { compareValues, emptyView, moveColumn, shownRows } from './view';
@@ -114,6 +122,13 @@ describe('cells of the grid', () => {
     );
     expect(dateForms('never')).toEqual([{ label: 'As stored', text: 'never' }]);
     expect(dateForms('2026-01-02T00:00:00Z').map((form) => form.label)).toContain('Unix time (ms)');
+  });
+
+  it('reads when a time UUID was made, and nothing of the other versions', () => {
+    // The timeuuid of Cassandra's documentation, made on 2015-07-14.
+    expect(uuidTime('50554d6e-29bb-11e5-b345-feff819cdc9f')).toBe('2015-07-14T00:00:18.805Z');
+    expect(uuidTime('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')).toBeUndefined();
+    expect(uuidTime('not a uuid')).toBeUndefined();
   });
 });
 

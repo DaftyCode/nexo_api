@@ -48,6 +48,7 @@ fn text_type(to: Dialect, length: Option<u32>) -> String {
         (Dialect::PlSql, Some(length)) if length <= 4_000 => format!("VARCHAR2({length} CHAR)"),
         (Dialect::PlSql, _) => "CLOB".into(),
         (Dialect::Sqlite | Dialect::Ansi, _) => "TEXT".into(),
+        (Dialect::Cql, _) => "text".into(),
     }
 }
 
@@ -68,14 +69,41 @@ pub fn convert(column: &SourceColumn, from: Dialect, to: Dialect) -> Converted {
     }
 }
 
+/// The CQL type of a kind of value; what CQL has no type for is text.
+fn cql_target(kind: &str, lower: &str) -> (String, bool) {
+    let typed = match kind {
+        "integer" if lower.contains("tiny") => "tinyint",
+        "integer" if lower.contains("small") || lower.contains("int2") => "smallint",
+        "integer" if lower.contains("big") || lower.contains("int8") || lower.contains("long") => {
+            "bigint"
+        }
+        "integer" => "int",
+        "decimal" => "decimal",
+        "float" if lower.contains("real") || lower.contains("float4") => "float",
+        "float" => "double",
+        "boolean" => "boolean",
+        "date" => "date",
+        "time" => "time",
+        "timestamp" | "timestamptz" => "timestamp",
+        "binary" => "blob",
+        "uuid" => "uuid",
+        "text" => "text",
+        _ => return ("text".into(), true),
+    };
+    (typed.into(), false)
+}
+
 fn target(kind: &str, lower: &str, to: Dialect) -> (String, bool) {
-    use Dialect::{Ansi, MySql, PlSql, PostgreSql, Sqlite, TSql};
+    use Dialect::{Ansi, Cql, MySql, PlSql, PostgreSql, Sqlite, TSql};
+    if to == Cql {
+        return cql_target(kind, lower);
+    }
     let pick = |postgres: &str, mysql: &str, tsql: &str, sqlite: &str| -> String {
         match to {
             PostgreSql => postgres,
             MySql => mysql,
             TSql => tsql,
-            PlSql | Sqlite | Ansi => sqlite,
+            PlSql | Sqlite | Ansi | Cql => sqlite,
         }
         .to_owned()
     };

@@ -5,7 +5,21 @@
 use crate::{Error, Result, monitor::Schedule};
 use serde_json::Value;
 
-pub const TASK_TYPES: [&str; 5] = ["script", "copy", "compare", "backup", "composite"];
+pub const TASK_TYPES: [&str; 9] = [
+    "script",
+    "copy",
+    "compare",
+    "backup",
+    "composite",
+    // DB-40: a query to a file, a file into a table, and MongoDB's saved transfers and
+    // comparisons.
+    "export",
+    "import",
+    "mongo-transfer",
+    "mongo-compare",
+];
+/// The formats of the files of tasks.
+pub const FILE_FORMATS: [&str; 3] = ["csv", "json", "jsonl"];
 /// What a task may authorize, each one ticked by the person: changes on a connection whose
 /// type confirms them (production), statements on every row (`DELETE` without `WHERE`,
 /// `TRUNCATE`) and `DROP`.
@@ -57,7 +71,7 @@ pub fn validate(value: &Value) -> Result<()> {
     let kind = text(value, "type").unwrap_or_default();
     if !TASK_TYPES.contains(&kind) {
         return Err(invalid(
-            "A task runs scripts, a copy, a comparison, a backup or other tasks",
+            "A task runs scripts, a copy, a comparison, a backup, a transfer or other tasks",
         ));
     }
     if let Some(on_error) = text(value, "onError")
@@ -100,6 +114,32 @@ pub fn validate(value: &Value) -> Result<()> {
                 ));
             }
         }
+        "export" | "import" => {
+            if text(value, "connection").is_none() || text(value, "file").is_none() {
+                return Err(invalid("A transfer names its connection and its file"));
+            }
+            if !FILE_FORMATS.contains(&text(value, "format").unwrap_or_default()) {
+                return Err(invalid("A file of a task is CSV, JSON or JSON Lines"));
+            }
+            let (field, what) = if kind == "export" {
+                ("sql", "An export names the query it writes")
+            } else {
+                ("table", "An import names the table it writes")
+            };
+            if text(value, field).is_none() {
+                return Err(invalid(what));
+            }
+        }
+        "mongo-transfer" => {
+            if text(value, "transfer").is_none() {
+                return Err(invalid("Choose the saved MongoDB transfer the task runs"));
+            }
+        }
+        "mongo-compare" => {
+            if text(value, "comparison").is_none() {
+                return Err(invalid("Choose the saved MongoDB comparison the task runs"));
+            }
+        }
         _ => {
             ids(value, "tasks", "Choose the tasks it runs, in order")?;
         }
@@ -139,6 +179,11 @@ mod tests {
                 "target": {"connection": "c2", "path": ["b"]}}),
             json!({"type": "backup", "connection": "c1", "file": "C:/backups/shop.sql", "options": {}}),
             json!({"type": "composite", "tasks": ["t1", "t2"], "onError": "stop"}),
+            json!({"type": "export", "connection": "c1", "sql": "SELECT 1", "format": "csv",
+                "file": "C:/out/{date}.csv", "schedule": {"cron": "0 9 * * mon-fri"}}),
+            json!({"type": "import", "connection": "c1", "table": "t", "format": "jsonl", "file": "/in/t.jsonl"}),
+            json!({"type": "mongo-transfer", "transfer": "m1", "file": "/out/a.json"}),
+            json!({"type": "mongo-compare", "comparison": "m2", "sync": true}),
         ] {
             assert!(validate(&valid).is_ok(), "{valid}");
         }
@@ -177,6 +222,24 @@ mod tests {
                 json!({"type": "composite", "tasks": []}),
                 "Choose the tasks",
             ),
+            (
+                json!({"type": "export", "connection": "c1", "format": "csv"}),
+                "its connection and its file",
+            ),
+            (
+                json!({"type": "export", "connection": "c1", "file": "f", "format": "xml"}),
+                "CSV, JSON or JSON Lines",
+            ),
+            (
+                json!({"type": "export", "connection": "c1", "file": "f", "format": "csv"}),
+                "the query it writes",
+            ),
+            (
+                json!({"type": "import", "connection": "c1", "file": "f", "format": "csv"}),
+                "the table it writes",
+            ),
+            (json!({"type": "mongo-transfer"}), "saved MongoDB transfer"),
+            (json!({"type": "mongo-compare"}), "saved MongoDB comparison"),
             (
                 json!({"type": "composite", "tasks": ["a"], "onError": "panic"}),
                 "stops or goes on",

@@ -20,6 +20,9 @@ export const DB_TAB_KINDS = [
   'dashboard',
   'native',
   'compare',
+  'keys',
+  'rest',
+  'mongo',
 ] as const;
 export type DbTabKind = (typeof DB_TAB_KINDS)[number];
 
@@ -31,11 +34,12 @@ export interface DbTab {
   connection: string;
   /** Shown while it has nothing better to take its name from. */
   title: string;
-  /** An object tab: the object's path in the tree. */
+  /** An object tab: the object's path in the tree; a MongoDB tab: the collection it shows. */
   path?: string[];
   /** An object tab: the filter and order of its «Data» tab. */
   query?: TableQuery;
-  /** An object tab: the view it shows (properties, data, a section, DDL), as it was left. */
+  /** An object tab: the view it shows (properties, data, a section, DDL), as it was left; a
+   * MongoDB tab: `shell` while its shell is open. */
   part?: string;
   /** A diagram tab: the saved diagram it shows; without one, the tables under `path`. */
   diagram?: string;

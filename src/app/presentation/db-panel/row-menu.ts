@@ -3,6 +3,7 @@ import { TEMPLATE_FOLDERS } from '../../domain/db/ddl-templates';
 import { editsStructure } from './structure-request';
 import { takesTestData } from './mock-request';
 import { administers } from './admin';
+import { engineProfile } from '../../domain/db/engines';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -54,6 +55,11 @@ export class DbRowMenu {
   protected readonly templated = computed(() =>
     (TEMPLATE_FOLDERS as readonly string[]).includes(this.row().node?.name ?? ''),
   );
+  /** A row of a MongoDB connection, which has its own short menu (DB-39). */
+  protected readonly mongo = computed(() => {
+    const row = this.row();
+    return row.type !== 'folder' && !!this.section.mongo.connection(row.connection ?? '');
+  });
   /** The sessions and locks of the server of a connection (DB-21), when its driver lists them. */
   protected readonly admin = computed(() => administers(this.section, this.row().connection));
   /** The local client tools of its engine, in the desktop app (DB-23). */
@@ -66,6 +72,11 @@ export class DbRowMenu {
     );
   });
   private readonly nativeFiles = inject(NATIVE_FILES);
+  /** An engine with an HTTP API has its console of requests (DB-36). */
+  protected readonly rest = computed(() => {
+    const document = this.section.connection(this.row().connection ?? '');
+    return !!document && !!engineProfile(readDbConnection(document.value).driver).rest;
+  });
   /** A SQLite file, a schema, a database or a table can be compared with another (DB-24). */
   protected readonly compares = computed(() => {
     const row = this.row();

@@ -124,6 +124,12 @@ export const EXECUTION_OPERATIONS = [
   'db.query.parse',
   'db.mock.rows',
   'db.task.run',
+  'db.kv.scan',
+  'db.kv.get',
+  'db.kv.write',
+  'db.kv.command',
+  'db.kv.subscribe',
+  'db.rest.request',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

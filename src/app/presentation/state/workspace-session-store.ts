@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { DatabaseSession } from '../../domain/db/session';
 import { moveWithin } from '../../domain/ordering';
-import { sectionIds } from '../workspace/sections';
+import { shownSection } from '../workspace/sections';
 import { DocumentsStore } from './documents-store';
 import { StateContext } from './state-context';
 
@@ -50,8 +50,7 @@ export class WorkspaceSessionStore {
       );
       if (restored.tabs.length) {
         tabs.restore(restored.tabs, restored.activeTab);
-        const shown = stored.session.section;
-        section.set(shown && sectionIds.includes(shown) ? shown : 'collections');
+        section.set(shownSection(stored.session.section));
         reopened = true;
       }
       if (restored.dropped)

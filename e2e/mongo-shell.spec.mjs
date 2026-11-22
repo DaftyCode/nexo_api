@@ -1,7 +1,7 @@
 // End-to-end test of the MongoDB shell: the usual commands of mongosh against the seeded
 // server, and a drop that runs only after the collection's name is typed.
 import { expect, test } from './fixture.mjs';
-import { deleteMongoConnection, violations } from './helpers.mjs';
+import { deleteMongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: the shell runs mongosh commands and asks before dropping', async ({
   page,
@@ -9,10 +9,7 @@ test('MongoDB: the shell runs mongosh commands and asks before dropping', async 
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

@@ -163,6 +163,11 @@ export class DbTableData {
   protected removeQuick(index: number) {
     this.change({ ...this.query(), quick: this.query().quick.filter((_, at) => at !== index) });
   }
+  /** Adds `ALLOW FILTERING` to the filter of a Cassandra table, once the person confirms. */
+  protected allowFiltering(allow = true) {
+    if (allow && !this.section.state.confirm('db.confirm.allowFiltering')) return;
+    this.change({ ...this.query(), allowFiltering: allow });
+  }
   protected removeOrder(index: number) {
     this.change({ ...this.query(), order: this.query().order.filter((_, at) => at !== index) });
   }

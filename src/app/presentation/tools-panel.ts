@@ -8,7 +8,6 @@ import { ProtocolPanel } from './protocol-panel';
 import { DataPanel } from './data-panel';
 import { IntegrationPanel } from './integration-panel';
 import { CollectionSettingsPanel } from './collection-settings-panel';
-import { MongoPanel } from './mongo-panel';
 import { DbPanel } from './db-panel';
 import { ResponseCompare } from './compare/response-compare';
 
@@ -42,7 +41,6 @@ const sectionLabels: Record<string, string> = {
     DataPanel,
     IntegrationPanel,
     CollectionSettingsPanel,
-    MongoPanel,
     DbPanel,
     ResponseCompare,
   ],

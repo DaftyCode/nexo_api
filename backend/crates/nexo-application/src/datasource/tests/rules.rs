@@ -80,3 +80,25 @@ async fn production_asks_before_every_write_and_everyone_before_every_row() {
     .unwrap();
     assert_eq!(sources.executed.lock().unwrap().len(), 2);
 }
+
+#[tokio::test]
+async fn allow_filtering_on_cassandra_asks_first_and_a_batch_is_a_write() {
+    let (application, _, sources) = with_sources(json!({"driver": "cassandra", "port": 9042}));
+    connect(&application, "s1").await.unwrap();
+    let sql = "SELECT * FROM shop.readings WHERE value > 2 ALLOW FILTERING";
+    let error = message(run(&application, sql, json!({})).await);
+    assert!(error.contains("ALLOW FILTERING"), "{error}");
+    run(&application, sql, json!({"confirm": true}))
+        .await
+        .unwrap();
+    // CQL has no transactions: a batch is refused on a read-only connection as a write.
+    let (application, _, _) = with_sources(json!({"driver": "cassandra", "readOnly": true}));
+    connect(&application, "s1").await.unwrap();
+    let batch = "BEGIN BATCH INSERT INTO t (k) VALUES (1); APPLY BATCH";
+    let error = message(run(&application, batch, json!({})).await);
+    assert!(error.contains("is read-only"), "{error}");
+    run(&application, "CONSISTENCY QUORUM", json!({}))
+        .await
+        .unwrap();
+    assert_eq!(sources.executed.lock().unwrap().len(), 1);
+}

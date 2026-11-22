@@ -1,7 +1,7 @@
 // End-to-end test of the query tools of the MongoDB explorer: a SELECT translated by the
 // engine and run against the seeded server, its filter shown as blocks, and its driver code.
 import { expect, test } from './fixture.mjs';
-import { deleteMongoConnection, violations } from './helpers.mjs';
+import { deleteMongoConnection, openMongoForm, violations } from './helpers.mjs';
 
 test('MongoDB: SQL becomes a query that runs, shows as blocks and as code', async ({
   page,
@@ -9,10 +9,7 @@ test('MongoDB: SQL becomes a query that runs, shows as blocks and as code', asyn
 }) => {
   test.skip(!process.env.NEXO_MONGO_PLAIN, 'Needs the MongoDB servers of tools/mongo-fixture.sh');
   await nexo.signIn(page);
-  await page
-    .getByRole('navigation', { name: 'Workspace sections' })
-    .getByRole('button', { name: 'MongoDB' })
-    .click();
+  await openMongoForm(page);
   const editor = page.getByRole('region', { name: 'Connection', exact: true });
   await editor.getByLabel('Paste a connection string').fill(process.env.NEXO_MONGO_PLAIN);
   await editor.getByRole('button', { name: 'Use URI' }).click();

@@ -27,8 +27,9 @@
       <option value="graphql-subscription">{{ 'GraphQL subscription' | transloco }}</option>
       <option value="kafka">Kafka</option>
       <option value="mongodb">{{ 'MongoDB change stream' | transloco }}</option>
+      <option value="redis">{{ 'Redis subscription' | transloco }}</option>
     </select>
-    @if (model().protocol === 'mongodb') {
+    @if (watch.active()) {
       <span class="grow muted">{{ watch.label() }}</span>
     } @else {
       <input
@@ -58,8 +59,8 @@
           ? ('Service definition' | transloco)
           : model().protocol === 'graphql-subscription'
             ? ('Subscription' | transloco)
-            : model().protocol === 'mongodb'
-              ? ('Change stream' | transloco)
+            : watch.active()
+              ? ((model().protocol === 'redis' ? 'Channels' : 'Change stream') | transloco)
               : ('Compose message' | transloco)
       }}
     </h2>
@@ -180,6 +181,9 @@
     @if (model().protocol === 'mongodb') {
       <app-mongo-watch-settings [fields]="fields" [connections]="watch.connections()" />
     }
+    @if (model().protocol === 'redis') {
+      <app-redis-subscribe-settings [fields]="fields" [connections]="watch.redis()" />
+    }
     @if (model().protocol === 'graphql-subscription') {
       <app-graphql-subscription-settings [fields]="fields" (schemaRequested)="loadSchema()" />
     }
@@ -191,7 +195,7 @@
       <div class="section-caption">{{ 'Connection headers' | transloco }}</div>
       <app-key-value-editor [(rows)]="headers" />
     }
-    @if (model().protocol !== 'mongodb') {
+    @if (!watch.active()) {
       <app-route-picker [route]="model().route" (routeChange)="setRoute($event)" />
       <details class="advanced-tls">
         <summary>{{ 'TLS settings' | transloco }}</summary>

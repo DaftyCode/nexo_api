@@ -38,6 +38,11 @@ function fixture(options: { document?: WorkspaceDocument; update?: () => Promise
   };
   const section = {
     connection: (id: string) => documents().find((document) => document.id === id),
+    anyConnection: (id: string) => documents().find((document) => document.id === id),
+    mongo: {
+      open: async (id: string, focus?: { shell?: boolean }) =>
+        void done.push(focus?.shell ? `shell ${id}` : `mongo ${id}`),
+    },
     cases: async () => cases,
     scripts: () => [],
     connections: () => documents(),
@@ -109,6 +114,14 @@ describe('the actions of the navigator, at their edges', () => {
     actions.bookmark(row({ connection: 'c1', node: { kind: 'table' } as never }));
     expect(done).toEqual(['folder', 'collapse', 'expand', 'clear', 'refresh']);
     expect(actions.dialog()).toBeUndefined();
+  });
+
+  it('opens the explorer of a MongoDB connection, or its shell', async () => {
+    const { actions, done } = fixture({ document: shop });
+    await actions.openMongo(row({ connection: 'c1', type: 'connection' }));
+    await actions.mongoShell(row({ connection: 'c1', type: 'connection' }));
+    await actions.openMongo(row({ type: 'connection' }));
+    expect(done).toEqual(['mongo c1', 'shell c1', 'mongo ']);
   });
 
   it('renames nothing for an empty or the same name, and saves over a conflict once', async () => {

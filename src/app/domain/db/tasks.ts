@@ -6,14 +6,31 @@
  * Nexo is open. The application runs it (`db.task.run`) and keeps its last runs.
  */
 import type { WorkspaceDocument } from '../models';
+import {
+  TRANSFER_TASK_TYPES,
+  TransferFields,
+  TransferTaskType,
+  cronProblem,
+  emptyTransferFields,
+  readTransferFields,
+  transferProblem,
+  transferValue,
+} from './tasks/transfer';
 
-export type TaskType = 'script' | 'copy' | 'compare' | 'backup' | 'composite';
-export const TASK_TYPES: readonly TaskType[] = ['script', 'copy', 'compare', 'backup', 'composite'];
+export type TaskType = 'script' | 'copy' | 'compare' | 'backup' | 'composite' | TransferTaskType;
+export const TASK_TYPES: readonly TaskType[] = [
+  'script',
+  'copy',
+  'compare',
+  'backup',
+  'composite',
+  ...TRANSFER_TASK_TYPES,
+];
 export type Authorization = 'writes' | 'everyRow' | 'drop';
 export const AUTHORIZATIONS: readonly Authorization[] = ['writes', 'everyRow', 'drop'];
 
 /** What the form edits of a task: every field of every type, the ones of its type used. */
-export interface TaskForm {
+export interface TaskForm extends TransferFields {
   name: string;
   folder: string;
   type: TaskType;
@@ -33,8 +50,10 @@ export interface TaskForm {
   file: string;
   tasks: string[];
   authorize: Record<Authorization, boolean>;
-  /** Minutes between runs; 0 runs it only by hand. */
+  /** Minutes between runs; 0 runs it only by hand, or on `cron` when it has one. */
   every: number;
+  /** A cron expression of five fields (`0 9 * * mon-fri`); empty for none. */
+  cron: string;
   paused: boolean;
 }
 
@@ -73,7 +92,9 @@ export function emptyTaskForm(): TaskForm {
     tasks: [],
     authorize: { writes: false, everyRow: false, drop: false },
     every: 0,
+    cron: '',
     paused: false,
+    ...emptyTransferFields(),
   };
 }
 
@@ -126,7 +147,9 @@ export function taskForm(document: WorkspaceDocument): TaskForm {
       drop: authorize['drop'] === true,
     },
     every: schedule['unit'] === 'hours' ? every * 60 : every,
+    cron: text(schedule['cron']),
     paused: value['paused'] === true,
+    ...readTransferFields(value),
   };
 }
 
@@ -154,7 +177,13 @@ export function taskProblem(form: TaskForm): string {
       break;
     case 'composite':
       if (!form.tasks.length) return 'Choose the tasks it runs, in order';
+      break;
+    default: {
+      const problem = transferProblem(form.type, form);
+      if (problem) return problem;
+    }
   }
+  if (form.cron.trim()) return cronProblem(form.cron);
   if (form.every && ![1, 5, 10, 15, 30, 60, 120, 180, 360, 720, 1440].includes(form.every))
     return 'db.task.every';
   return '';
@@ -168,8 +197,9 @@ export function taskValue(form: TaskForm): Json {
   const authorize = Object.fromEntries(
     AUTHORIZATIONS.filter((key) => form.authorize[key]).map((key) => [key, true]),
   );
-  const schedule =
-    form.every >= 60 && form.every % 60 === 0
+  const schedule = form.cron.trim()
+    ? { cron: form.cron.trim() }
+    : form.every >= 60 && form.every % 60 === 0
       ? { every: form.every / 60, unit: 'hours' }
       : form.every
         ? { every: form.every, unit: 'minutes' }
@@ -217,6 +247,8 @@ export function taskValue(form: TaskForm): Json {
       return { ...common, connection: form.connection, file: form.file.trim(), options: {} };
     case 'composite':
       return { ...common, tasks: form.tasks, onError: form.onError };
+    default:
+      return { ...common, ...transferValue(form.type, form) };
   }
 }
 

@@ -61,6 +61,19 @@ impl HostLink {
         }
         Ok(addresses)
     }
+    /// Whether this connection may reach `host:port`: the host applies its egress policy
+    /// (as the far side of the connection's proxy or tunnel resolves it, when it has one) and
+    /// the allowed domains of the connection's secrets. For a driver whose library connects
+    /// by name and can be given no address (MongoDB).
+    pub async fn check(&self, connection: &str, host: &str, port: u16) -> Result<()> {
+        let params = NetResolveParams {
+            connection: connection.to_owned(),
+            host: host.to_owned(),
+            port,
+        };
+        self.peer.request(methods::NET_CHECK, json!(params)).await?;
+        Ok(())
+    }
     /// A line for the host's log. Never a secret.
     pub async fn log(&self, level: &str, message: impl Into<String>) {
         let params = LogParams {

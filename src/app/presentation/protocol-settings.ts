@@ -37,6 +37,10 @@ export const defaultProtocolSettings = {
   fullDocument: 'default',
   fullDocumentBeforeChange: 'off',
   resumeAfter: '',
+  /** A Redis subscription (DB-35): the saved connection, its channels and patterns. */
+  redisConnection: '',
+  channels: 'news',
+  patterns: '',
   /** How the connection reaches its server: directly, a proxy or an SSH tunnel. */
   route: emptyRoute(),
 };

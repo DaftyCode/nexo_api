@@ -10,25 +10,7 @@ import {
 } from '../testing/controls';
 import { MongoPanel } from './mongo-panel';
 import { WorkspaceState } from './workspace-state';
-
-const report = {
-  serverVersion: '8.0.4',
-  topology: 'replicaSet',
-  replicaSet: 'rs0',
-  hosts: [
-    { address: 'db1.test:27017', role: 'primary', allowed: true },
-    {
-      address: '10.0.0.5:27017',
-      role: 'secondary',
-      allowed: false,
-      reason: 'Destination 10.0.0.5 is blocked by the egress policy',
-    },
-  ],
-  pingMs: 3,
-  direct: true,
-  tls: true,
-  authMechanism: 'SCRAM',
-};
+import { mongoReport as report } from '../testing/mongo-report';
 
 describe('MongoPanel', () => {
   let fixture: ComponentFixture<MongoPanel>;
@@ -74,8 +56,24 @@ describe('MongoPanel', () => {
     await settle();
   });
 
+  /** What the form told its tab: saved, explore or removed. */
+  const outputs = () => {
+    const told: string[] = [];
+    const form = fixture.componentInstance;
+    form.saved.subscribe((document) => told.push(`saved ${document.name}`));
+    form.explore.subscribe((document) => told.push(`explore ${document.name}`));
+    form.removed.subscribe(() => told.push('removed'));
+    return told;
+  };
+  /** The connection the form edits: a saved one, or none for a new one. */
+  const edit = async (id: string) => {
+    fixture.componentRef.setInput('connectionId', id);
+    await settle();
+  };
+
   it('moves a pasted password to the vault and saves the connection without it', async () => {
-    expect(text()).toContain('No connections yet.');
+    expect(text()).toContain('Import from MongoDB Compass');
+    const emitted = outputs();
     await fill(
       fixture,
       'Paste a connection string',
@@ -107,9 +105,8 @@ describe('MongoPanel', () => {
       title: 'Connection saved',
       params: { v0: 'Atlas' },
     });
-    // Listed in its folder, marked read-only; the password field says it is stored.
-    expect(text()).toContain('Cloud');
-    expect(root().querySelector('.mongo-badge')?.textContent).toContain('Read-only');
+    expect(emitted).toEqual(['saved Atlas']);
+    expect(text()).not.toContain('Import from MongoDB Compass');
     await tab('Authentication');
     const password = root().querySelector<HTMLInputElement>('input[type="password"]')!;
     expect(password.value).toBe('');
@@ -158,9 +155,9 @@ describe('MongoPanel', () => {
     expect(call.payload['connection']).toEqual({ uri: 'mongodb://localhost:27017/', route });
     await click('Save connection');
     expect(api.documentsStore[0].value).toMatchObject({ nexoRoute: route });
-    await click(/New connection/);
+    await edit('another');
     expect(valueOf(root(), 'Connection name')).toBe('Local MongoDB');
-    await click(/^Local MongoDB$/);
+    await edit(api.documentsStore[0].id);
     await tab('Connect through');
     expect(valueOf(root(), 'Proxy host')).toBe('proxy.test');
   });
@@ -207,8 +204,7 @@ describe('MongoPanel', () => {
     });
     api.secretNames.push('mongo-password:c1');
     await state.refresh();
-    await settle();
-    await click('Local');
+    await edit('c1');
     expect(valueOf(root(), 'Connection name')).toBe('Local');
     expect(uri()).toBe('mongodb://ana@localhost:27117/?authSource=admin');
 
@@ -220,13 +216,9 @@ describe('MongoPanel', () => {
     await click('Copy URI');
     expect(copied).toEqual(['mongodb://ana@localhost:27117/?authSource=admin']);
 
-    // A saved connection is browsed in the explorer, and "Connections" comes back.
-    api.responses['mongo.databases'] = { databases: [{ name: 'shop', empty: false }] };
+    const asked = outputs();
     await click('Browse data');
-    expect(text()).toContain('shop');
-    expect(api.calls.at(-1)?.operation).toBe('mongo.databases');
-    await click('Connections');
-    expect(valueOf(root(), 'Connection name')).toBe('Local');
+    expect(asked).toEqual(['explore Local']);
 
     state.confirm = () => false;
     await click('Delete connection');
@@ -234,6 +226,7 @@ describe('MongoPanel', () => {
     state.confirm = () => true;
     await click('Delete connection');
     expect(api.documentsStore).toHaveLength(0);
+    expect(asked).toEqual(['explore Local', 'removed']);
     expect(api.secretNames).toEqual([]);
     expect(state.toast()).toMatchObject({ title: 'Connection deleted', params: { v0: 'Local' } });
 

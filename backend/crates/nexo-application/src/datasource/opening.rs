@@ -39,7 +39,9 @@ fn rerunnable(operation: Operation, payload: &Value, session: &Session) -> bool 
         | Operation::DbDashboards
         | Operation::DbDashboardRead
         | Operation::DbSessions
-        | Operation::DbLocks => true,
+        | Operation::DbLocks
+        | Operation::DbKvScan
+        | Operation::DbKvGet => true,
         Operation::DbExecute => read::<DbExecutePayload>(payload.clone()).is_ok_and(|payload| {
             let kind = classify_all(&payload.sql, Dialect::parse(&session.driver)).kind;
             matches!(kind, StatementKind::Read | StatementKind::Session)
