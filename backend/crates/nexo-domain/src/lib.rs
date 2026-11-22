@@ -6,11 +6,14 @@
 mod kind;
 pub use kind::DocumentKind;
 
+pub mod db_task;
 pub mod diff;
 pub mod hosts;
 pub mod masking;
+pub mod mock;
 pub mod monitor;
 pub mod native;
+pub mod proxy;
 pub mod schema;
 pub mod sql;
 pub mod ssh;
@@ -182,6 +185,12 @@ impl Document {
         }
         if self.kind == DocumentKind::Masking {
             masking::validate(&self.value)?;
+        }
+        if self.kind == DocumentKind::DbTask {
+            db_task::validate(&self.value)?;
+        }
+        if self.kind == DocumentKind::ProxyProfile {
+            proxy::validate_proxy_profile(&self.value)?;
         }
         if self.kind == DocumentKind::ConnectionType {
             sql::TypeRules::read(&self.value)?;

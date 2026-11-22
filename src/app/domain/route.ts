@@ -17,7 +17,7 @@ export interface Route {
   password: string;
   /** SOCKS5: the proxy resolves the name (`socks5h`). */
   remoteDns: boolean;
-  /** SSH: the id of the profile. */
+  /** SSH: the id of the profile; a proxy: the id of a proxy profile, or none when written. */
   profile: string;
 }
 
@@ -84,6 +84,7 @@ export function storedRoute(route: Route): StoredRoute | undefined {
     case 'ssh':
       return { via: 'ssh', profile: route.profile.trim() };
     default: {
+      if (route.profile.trim()) return { via: route.via, profile: route.profile.trim() };
       const stored: StoredRoute = { via: route.via, host: route.host.trim() };
       if (route.port.trim()) stored.port = route.port.trim();
       if (route.username.trim()) {
@@ -171,6 +172,7 @@ export function routeProblem(route: Route): string | undefined {
   if (route.via === 'ssh') {
     return route.profile ? undefined : 'Choose the SSH profile to connect through';
   }
+  if (route.profile.trim()) return undefined;
   if (!route.host.trim()) return 'Enter the host of the proxy';
   const port = route.port.trim();
   if (port && (!/^\d{1,5}$/.test(port) || Number(port) < 1 || Number(port) > 65535)) {

@@ -1,0 +1,195 @@
+@let o = options();
+<div class="db-mock-backdrop">
+  <section
+    class="feature-card db-mock-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-mock-title"
+    (keydown.escape)="closed.emit()"
+  >
+    <header class="row db-mock-head">
+      <h2 id="db-mock-title">
+        {{ 'db.mock.title' | transloco: { v0: request().table.qualified } }}
+      </h2>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Close' | transloco"
+        (click)="closed.emit()"
+      >
+        ×
+      </button>
+    </header>
+    @if (task.error(); as error) {
+      <p class="global-alert" role="alert">{{ error | transloco }}</p>
+    }
+    <div class="db-mock-columns">
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">{{ 'Fill' | transloco }}</th>
+            <th scope="col">{{ 'Column' | transloco }}</th>
+            <th scope="col">{{ 'Generator' | transloco }}</th>
+            <th scope="col">{{ 'Settings' | transloco }}</th>
+            <th scope="col">{{ 'NULL %' | transloco }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (column of plan(); track column.name; let at = $index) {
+            @let g = column.generator;
+            <tr>
+              <td>
+                <input
+                  type="checkbox"
+                  [checked]="column.include"
+                  [attr.aria-label]="'db.mock.fill' | transloco: { v0: column.name }"
+                  (change)="setColumn(at, { include: !column.include })"
+                />
+              </td>
+              <td>
+                <strong>{{ column.name }}</strong>
+                <span class="muted">{{ column.typeName }}</span>
+                @if (column.unique) {
+                  <span class="muted">{{ 'Unique' | transloco }}</span>
+                }
+                @if (column.filled) {
+                  <span class="muted">{{ 'db.mock.filled.' + column.filled | transloco }}</span>
+                }
+              </td>
+              <td>
+                <select
+                  [value]="g.kind"
+                  [attr.aria-label]="'db.mock.generator' | transloco: { v0: column.name }"
+                  (change)="setKind(at, $any($event.target).value)"
+                >
+                  @for (kind of kinds; track kind) {
+                    <option [value]="kind">{{ 'db.mock.kind.' + kind | transloco }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <app-db-mock-settings
+                  [generator]="g"
+                  [foreign]="column.foreign?.referencedTable"
+                  (changed)="setGenerator(at, $event)"
+                />
+              </td>
+              <td>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  [value]="column.nulls * 100"
+                  [disabled]="!column.nullable"
+                  [attr.aria-label]="'db.mock.nulls' | transloco: { v0: column.name }"
+                  (change)="setColumn(at, { nulls: number($event) / 100 })"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <div class="row db-mock-options">
+      <label class="field"
+        >{{ 'Rows' | transloco
+        }}<input
+          type="number"
+          min="1"
+          [value]="o.rows"
+          (change)="setOption({ rows: number($event) })"
+      /></label>
+      <label class="field"
+        >{{ 'Rows per batch' | transloco
+        }}<input
+          type="number"
+          min="1"
+          [value]="o.batch"
+          (change)="setOption({ batch: number($event) })"
+      /></label>
+      <label class="field"
+        >{{ 'Seed' | transloco
+        }}<input type="number" [value]="o.seed" (change)="setOption({ seed: number($event) })"
+      /></label>
+      <label class="check-field"
+        ><input type="checkbox" [checked]="o.empty" (change)="setOption({ empty: !o.empty })" />{{
+          'Empty the table first' | transloco
+        }}</label
+      >
+      @if (o.empty) {
+        <label class="field"
+          >{{ 'db.mock.typeName' | transloco: { v0: request().table.name }
+          }}<input
+            [value]="o.typed"
+            spellcheck="false"
+            (input)="setOption({ typed: text($event) })"
+        /></label>
+      }
+    </div>
+    @if (problem(); as problem) {
+      <p class="editor-hint" role="status">
+        {{ problem | transloco: { v0: 1000000, v1: 5000 } }}
+      </p>
+    }
+    @if (progress(); as progress) {
+      <p role="status">
+        {{ 'db.mock.progress' | transloco: { v0: progress.done, v1: progress.total } }}
+      </p>
+    }
+    @if (report(); as report) {
+      <section class="db-mock-report" role="status">
+        <p>{{ 'db.mock.report' | transloco: { v0: report.inserted, v1: report.failed } }}</p>
+        @for (failure of report.failures; track $index) {
+          <p class="muted">
+            {{ 'db.mock.failure' | transloco: { v0: failure.position, v1: failure.error } }}
+          </p>
+        }
+      </section>
+    }
+    <div class="button-grid">
+      <button type="button" class="button" [disabled]="!!problem()" (click)="showPreview()">
+        {{ 'Preview' | transloco }}
+      </button>
+      @if (progress()) {
+        <button type="button" class="button" (click)="stop()">{{ 'Stop' | transloco }}</button>
+      } @else {
+        <button type="button" class="button primary" [disabled]="!!problem()" (click)="generate()">
+          {{ 'Generate' | transloco }}
+        </button>
+      }
+      <button type="button" class="button subtle" [disabled]="!!problem()" (click)="save('sql')">
+        {{ 'As a script' | transloco }}
+      </button>
+      <button type="button" class="button subtle" [disabled]="!!problem()" (click)="save('csv')">
+        {{ 'As a CSV file' | transloco }}
+      </button>
+    </div>
+    @if (preview(); as preview) {
+      <div
+        class="db-mock-preview"
+        tabindex="0"
+        role="region"
+        [attr.aria-label]="'Preview' | transloco"
+      >
+        <table [attr.aria-label]="'Preview' | transloco">
+          <thead>
+            <tr>
+              @for (name of preview.columns; track $index) {
+                <th scope="col">{{ name }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of preview.rows; track $index) {
+              <tr>
+                @for (cell of row; track $index) {
+                  <td>{{ cell === null ? 'NULL' : cell }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

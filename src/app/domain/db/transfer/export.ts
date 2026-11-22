@@ -4,6 +4,8 @@
  * after an optional `CREATE TABLE`), Markdown, HTML, XML and aligned text. Each writer gives
  * the start of the file, the text of each page and its end.
  */
+import { BOM } from '../../export/bom';
+import { geojsonWriter } from './geojson';
 import { ResultColumn, cellText, isNull } from '../results';
 import { QuoteStyle, quoteName } from '../tree';
 import { base64Bytes, classOf } from '../grid/cells';
@@ -11,10 +13,10 @@ import { SqlStyle, jsonValue, sqlLiteral } from '../grid/copy';
 import { escapeHtml, escapeXml, markdownCell } from './escape';
 import { XLSX_TYPE } from '../../export/xlsx';
 
-/** The byte order mark some spreadsheets want first. */
-export const BOM = String.fromCharCode(0xfeff);
+export { BOM };
 
-export type ExportFormat = 'csv' | 'json' | 'jsonl' | 'sql' | 'markdown' | 'html' | 'xml' | 'text';
+export type ExportFormat =
+  'csv' | 'json' | 'jsonl' | 'sql' | 'markdown' | 'html' | 'xml' | 'text' | 'geojson';
 
 export const EXPORT_FORMATS: readonly ExportFormat[] = [
   'csv',
@@ -25,6 +27,7 @@ export const EXPORT_FORMATS: readonly ExportFormat[] = [
   'html',
   'xml',
   'text',
+  'geojson',
 ];
 export const EXPORT_EXTENSIONS: Record<ExportFormat, string> = {
   csv: 'csv',
@@ -35,6 +38,7 @@ export const EXPORT_EXTENSIONS: Record<ExportFormat, string> = {
   html: 'html',
   xml: 'xml',
   text: 'txt',
+  geojson: 'geojson',
 };
 export const EXPORT_TYPES: Record<ExportFormat, string> = {
   csv: 'text/csv',
@@ -45,6 +49,7 @@ export const EXPORT_TYPES: Record<ExportFormat, string> = {
   html: 'text/html',
   xml: 'application/xml',
   text: 'text/plain',
+  geojson: 'application/geo+json',
 };
 
 /** What an export writes: a format of the writers, or an Excel workbook (B-06). */
@@ -216,6 +221,8 @@ export function exportWriter(
       };
     case 'text':
       return textWriter(names, options, bom);
+    case 'geojson':
+      return geojsonWriter(names, (cell) => jsonValue(binaryAs(cell, options)), bom);
   }
 }
 

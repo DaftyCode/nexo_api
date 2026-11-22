@@ -1,0 +1,14 @@
+.rc-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2) var(--nexo-space-4);
+  align-items: end;
+}
+.rc-series-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-1) var(--nexo-space-3);
+  margin: 0;
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-sm);
+}

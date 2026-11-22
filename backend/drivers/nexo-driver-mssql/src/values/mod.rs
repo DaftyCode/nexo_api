@@ -65,6 +65,18 @@ pub(crate) fn refine(columns: &mut [Column], row: &tiberius::Row) {
             ("float", ColumnData::F32(_)) => "real",
             ("datetime", ColumnData::SmallDateTime(_)) => "smalldatetime",
             ("datetime", ColumnData::DateTime2(_)) => "datetime2",
+            // A spatial value (DB-29): its column is told by the value's SRID.
+            ("udt", ColumnData::Binary(Some(bytes)))
+                if crate::spatial::ewkb_hex(bytes).is_some() =>
+            {
+                column.kind = ValueKind::Spatial;
+                let srid = i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+                if (4000..5000).contains(&srid) {
+                    "geography"
+                } else {
+                    "geometry"
+                }
+            }
             _ => continue,
         };
         column.type_name = name.into();
@@ -132,6 +144,12 @@ pub(crate) fn value(data: &ColumnData<'static>, kind: ColumnType) -> Value {
         Guid(value) => value.map_or(Value::Null, |id| {
             Value::typed(ValueKind::Uuid, id.to_string())
         }),
+        Binary(Some(bytes))
+            if kind == ColumnType::Udt
+                && let Some(ewkb) = crate::spatial::ewkb_hex(bytes) =>
+        {
+            Value::typed(ValueKind::Spatial, ewkb)
+        }
         Binary(value) => value.as_ref().map_or(Value::Null, |bytes| {
             if bytes.len() <= limits::VALUE_BYTES {
                 Value::bytes(bytes)
@@ -253,36 +271,4 @@ pub(crate) fn row(row: tiberius::Row) -> Vec<Value> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::{day, fine, seconds, zoned};
-    use time::{Date, Month, Time, UtcOffset};
-
-    #[test]
-    fn writes_the_decimals_of_a_second_it_has() {
-        assert_eq!(seconds("10:20:30.123456700".into()), "10:20:30.1234567");
-        assert_eq!(
-            seconds("2026-11-13T10:20:30.000000000+02:00".into()),
-            "2026-11-13T10:20:30+02:00"
-        );
-        assert_eq!(
-            seconds("2026-11-13T10:20:30.120000000".into()),
-            "2026-11-13T10:20:30.12"
-        );
-        assert_eq!(seconds("2026-11-13".into()), "2026-11-13");
-    }
-
-    #[test]
-    fn writes_dates_times_and_offsets_in_iso_8601() {
-        let date = Date::from_calendar_date(1, Month::January, 9).unwrap();
-        assert_eq!(day(date), "0001-01-09");
-        let time = Time::from_hms_nano(7, 5, 3, 120_000_000).unwrap();
-        assert_eq!(seconds(fine(time)), "07:05:03.12");
-        let moment = date.with_time(time).assume_utc();
-        let west = UtcOffset::from_hms(-5, -30, 0).unwrap();
-        assert_eq!(
-            seconds(zoned(moment.to_offset(west))),
-            "0001-01-09T01:35:03.12-05:30"
-        );
-        assert_eq!(seconds(zoned(moment)), "0001-01-09T07:05:03.12+00:00");
-    }
-}
+mod tests;

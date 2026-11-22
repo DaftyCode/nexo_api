@@ -20,6 +20,9 @@ import { ChangeDetectionStrategy, Component, model } from '@angular/core';
       <button class="button" [class.selected]="tab() === 'ssh'" (click)="tab.set('ssh')">
         {{ 'SSH' | transloco }}
       </button>
+      <button class="button" [class.selected]="tab() === 'proxies'" (click)="tab.set('proxies')">
+        {{ 'Proxies' | transloco }}
+      </button>
       <button class="button" [class.selected]="tab() === 'types'" (click)="tab.set('types')">
         {{ 'Connection types' | transloco }}
       </button>

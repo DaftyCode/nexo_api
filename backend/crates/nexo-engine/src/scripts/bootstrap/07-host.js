@@ -42,6 +42,7 @@
           ...state,
           queue: undefined,
           mongo: undefined,
+          sql: undefined,
           callbacks: undefined,
           request: {
             ...state.request,
@@ -62,6 +63,12 @@
         return stringify(queue);
       },
       deliverMongo,
+      sqlQueue: () => {
+        const queue = state.sql;
+        state.sql = [];
+        return stringify(queue);
+      },
+      deliverSql,
       response: (value) => {
         api.response = responseApi(value);
       },

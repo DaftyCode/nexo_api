@@ -55,4 +55,25 @@ fn reads_text_by_the_class_of_its_column() {
         from_bytes(vec![0, 255], ValueKind::Spatial, false),
         Value::typed(ValueKind::Spatial, "00FF")
     );
+    // POINT(1 2) with SRID 4326 as MySQL keeps it, and as EWKB.
+    let mut point = vec![0xE6, 0x10, 0, 0, 1, 1, 0, 0, 0];
+    point.extend(1.0_f64.to_le_bytes());
+    point.extend(2.0_f64.to_le_bytes());
+    assert_eq!(
+        from_bytes(point, ValueKind::Spatial, false),
+        Value::typed(
+            ValueKind::Spatial,
+            "0101000020E6100000000000000000F03F0000000000000040"
+        )
+    );
+    let mut big = vec![0xE6, 0x10, 0, 0, 0, 0, 0, 0, 1];
+    big.extend(1.0_f64.to_be_bytes());
+    big.extend(2.0_f64.to_be_bytes());
+    assert_eq!(
+        from_bytes(big, ValueKind::Spatial, false),
+        Value::typed(
+            ValueKind::Spatial,
+            "0020000001000010E63FF00000000000004000000000000000"
+        )
+    );
 }

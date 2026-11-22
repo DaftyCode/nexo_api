@@ -80,8 +80,17 @@ async fn every_type_keeps_its_value() {
     ] {
         assert_eq!(kind[column].0, name, "{column}");
     }
-    // rowversion, hierarchyid and geography arrive as their bytes.
-    for column in ["a_rowversion", "a_hierarchy", "a_geography"] {
+    // A geography arrives as EWKB with its SRID, longitude first (DB-29): POINT(-3.7 40.4).
+    assert_eq!(
+        row["a_geography"],
+        &typed(
+            Spatial,
+            "0101000020E61000009A99999999990DC03333333333334440"
+        )
+    );
+    assert_eq!(kind["a_geography"].1, Spatial);
+    // rowversion and hierarchyid arrive as their bytes.
+    for column in ["a_rowversion", "a_hierarchy"] {
         assert!(
             matches!(row[column], Value::Typed { kind: Binary, .. }),
             "{column}: {:?}",

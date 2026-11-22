@@ -9,6 +9,7 @@
 #   23307 MariaDB 11.4 (user root), with the same data
 #   22222 an SSH bastion (user nexo), the only way to db.internal:5432: a PostgreSQL 18 with
 #         the same data, a certificate of the CA for that name and no port of its own (DB-25)
+#   25435 PostGIS (PostgreSQL 17, user nexo), with tools/sql-fixture-seed-postgis.sql (DB-29)
 # Prints the NEXO_SQL_* variables the driver and contract tests read, and adds them to
 # $GITHUB_ENV in CI.  Usage: tools/sql-fixture.sh start | stop
 set -euo pipefail
@@ -17,8 +18,9 @@ export MSYS_NO_PATHCONV=1
 
 current=postgres:18
 oldest=postgres:14
+postgis=postgis/postgis:17-3.5
 names=(nexo-sql-pg nexo-sql-pg-tls nexo-sql-pg-old nexo-sql-mssql nexo-sql-mysql nexo-sql-mariadb
-  nexo-sql-pg-hidden nexo-sql-bastion)
+  nexo-sql-pg-hidden nexo-sql-bastion nexo-sql-postgis)
 network=nexo-sql-net
 bastion=alpine:3.22
 bastion_password='bastion-secret'
@@ -38,8 +40,10 @@ fi
 
 tools="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 rm -rf "$directory"
-mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init" "$directory/hidden-init"
+mkdir -p "$directory/certs" "$directory/seed" "$directory/tls-init" "$directory/hidden-init" \
+  "$directory/postgis-seed"
 cp "$tools/sql-fixture-seed-postgres.sql" "$directory/seed/"
+cp "$tools/sql-fixture-seed-postgis.sql" "$directory/postgis-seed/"
 mkdir -p "$directory/mssql" "$directory/mysql-seed"
 cp "$tools/sql-fixture-seed-mssql.sql" "$directory/mssql/seed.sql"
 cp "$tools/sql-fixture-seed-mysql.sql" "$directory/mysql-seed/seed.sql"
@@ -100,6 +104,8 @@ docker run -d --name nexo-sql-pg-tls -p 25433:5432 "${server[@]}" \
   -v "$directory/certs:/certs:ro" -v "$directory/tls-init:/docker-entrypoint-initdb.d:ro" "$current" >/dev/null
 docker run -d --name nexo-sql-pg-old -p 25434:5432 "${server[@]}" \
   -v "$directory/seed:/docker-entrypoint-initdb.d:ro" "$oldest" >/dev/null
+docker run -d --name nexo-sql-postgis -p 25435:5432 "${server[@]}" \
+  -v "$directory/postgis-seed:/docker-entrypoint-initdb.d:ro" "$postgis" >/dev/null
 # A network of their own: the hidden server has no port on this computer; only the bastion,
 # an OpenSSH server that signs in nexo with a password and forwards TCP, reaches it.
 docker network rm "$network" >/dev/null 2>&1 || true
@@ -142,6 +148,7 @@ started=false
 for _ in $(seq 1 90); do
   if ready nexo-sql-pg "SELECT count(*) FROM public.every_type" \
     && ready nexo-sql-pg-old "SELECT count(*) FROM public.every_type" \
+    && ready nexo-sql-postgis "SELECT count(*) FROM public.places" \
     && docker exec nexo-sql-pg-tls pg_isready -h 127.0.0.1 -U nexo >/dev/null 2>&1 \
     && docker logs nexo-sql-pg-tls 2>&1 | grep -q "PostgreSQL init process complete" \
     && ready nexo-sql-pg-hidden "SELECT count(*) FROM public.every_type" \
@@ -195,6 +202,7 @@ variables="NEXO_SQL_PG_HOST=127.0.0.1
 NEXO_SQL_PG_PORT=25432
 NEXO_SQL_PG_TLS_PORT=25433
 NEXO_SQL_PG_OLD_PORT=25434
+NEXO_SQL_POSTGIS_PORT=25435
 NEXO_SQL_PG_USER=nexo
 NEXO_SQL_PG_PASSWORD=nexo-secret
 NEXO_SQL_PG_DATABASE=shop

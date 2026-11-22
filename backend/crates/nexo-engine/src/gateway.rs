@@ -86,6 +86,7 @@ impl ExecutionGateway for Engine {
             Operation::Cancel => self.runs.cancel(id(&payload)),
             Operation::MongoShell => shell::run(self.databases.clone(), payload).await,
             Operation::MongoSql => sql::translate(payload["sql"].as_str().unwrap_or_default()),
+            Operation::DbQueryParse => crate::sql_model::parse_payload(&payload),
             Operation::RunPause => self.runs.pause(id(&payload)),
             Operation::RunResume => self.runs.resume(id(&payload)),
             Operation::Import => interchange::import(&payload),
@@ -224,9 +225,11 @@ impl ExecutionGateway for Engine {
             | Operation::DbCompareData
             | Operation::DbSyncData
             | Operation::DbRouteTest
+            | Operation::DbMockRows
             // The application schedules the monitors and runs them through `run`.
             | Operation::MonitorStatus
             | Operation::MonitorRun
+            | Operation::DbTaskRun
             // The application runs the local client tools through its adapter.
             | Operation::NativeLocate
             | Operation::NativeBackup

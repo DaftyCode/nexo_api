@@ -68,7 +68,25 @@
     </li>
     <li>
       {{
+        'Navigator options → Import connections… reads the connections of DBeaver (data-sources.json), pgAdmin (servers.json), MySQL Workbench (connections.xml), a list of URLs or a file exported from Nexo, and shows what comes before saving it. No password comes: the connections ask for it. Export connections downloads yours, without secrets.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'In the navigator, a click expands a row and a double click opens a table on its data. F5 refreshes a node, Shift+F10 opens its actions and Ctrl+H searches objects, data and saved scripts.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Files and DuckDB module opens a folder (each CSV, TSV, JSON, Parquet and Excel file in it is a table named after the file), files separated by ;, or a .duckdb database. Join files with SQL as tables of one database. Nexo only reads these files, without network or extensions; the reader settings (delimiter, header, sheet…) are in Driver settings.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Database tasks (▶ in the navigator) save SQL scripts on some connections, a copy of a query into a table of another connection, a comparison of two schemas or tables, a backup or other tasks in order. Run one now or every few minutes or hours while Nexo is open: each run stays in its history, and a failure or a difference found is notified. Nobody confirms a scheduled run, so what would ask (changes in production, statements on every row, DROP) runs only if the task authorizes it.'
           | transloco
       }}
     </li>
@@ -104,6 +122,36 @@
     <li>
       {{
         'Export results to eight formats, import CSV or JSON, and copy data between connections of different engines.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Visual, beside Text in the toolbar of a SQL tab, shows the SELECT at the cursor as tables on a canvas: drag tables from the navigator (or add them from the list), tick their columns, drag a column onto another to join them, and click a join to change its kind. The panels edit columns, conditions, grouping, order, joins and the page; the SQL is written again with every change. A statement with subqueries, UNION, WITH or window functions is only shown, never rewritten.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Generate test data… in the menu of a table fills it with made-up rows: a generator for each column, chosen from its type and name (numbers, texts, lists, patterns, names, emails, phones, IBANs, dates, JSON, a key of the table it references), the rows to make and a seed that makes the same rows again. Preview twenty, then write them by batches, or save them as a script of INSERTs or a CSV file. It is not offered on production or read-only connections.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        "The Chart view of a result (and the chart button of a table's data) charts the rows loaded: a date gives a time line and a text bars, without setting anything. Choose lines, area, bars, horizontal or stacked bars, a pie or dots, the X column, the series or a series per value of another column, how repeated values add up, the order and the categories shown. The legend hides series; Show as a table has the same numbers; SVG, PNG and Print export it. The chart is kept with the saved script."
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'A result with geometries (PostGIS, MySQL, MariaDB, SQL Server) shows them as WKT in its cells and has a Spatial view: every geometry drawn on a canvas, zoomed with the wheel and moved by dragging, a click choosing its row, a color per value of a column, and a list of them. The Value panel shows a geometry on a small map. Copy one as WKT or GeoJSON, or export the rows as GeoJSON. There is no background map: nothing goes to a server outside Nexo.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'Code, in the SQL editor or in a result tab, writes a whole program that runs the statement in Node.js, Python, Java, C#, Go, Rust, PHP or Ruby with the usual library of its engine, or its command line, with its parameters bound. It reads the connection from the DATABASE_URL environment variable. Copy as string gives the statement alone as a string of that language, and Paste from code turns a string copied from a program back into SQL.'
           | transloco
       }}
     </li>

@@ -4,9 +4,10 @@ import { signal } from '@angular/core';
 import { Generated } from '../../domain/db/sql-generate';
 import { generateSql } from './generate';
 import { openTransfer } from './transfer-request';
+import { MockRequest, mockRequest } from './mock-request';
+import { saveOver } from './save-over';
 import { openStructure } from './structure-request';
 import { copyDdl, copyName, newObject, refreshView, viewData } from './node-scripts';
-import { failureCode } from '../../application/ports';
 import { filterAt, readDbConnection, withFilter } from '../../domain/db/connection';
 import { NavigatorRow } from '../../domain/db/rows';
 import { toggleBookmark } from '../../domain/db/tree';
@@ -30,6 +31,8 @@ interface OpenDialog {
  */
 export class DbActions {
   readonly dialog = signal<OpenDialog | undefined>(undefined);
+  /** The dialog of test data open on a table (DB-27). */
+  readonly mock = signal<MockRequest | undefined>(undefined);
   readonly task: PanelTask;
 
   constructor(private readonly section: DbSection) {
@@ -40,20 +43,11 @@ export class DbActions {
     return row.connection ? this.section.connection(row.connection) : undefined;
   }
 
-  /** Saves a change of a connection; one changed elsewhere is saved over its latest version. */
-  private async saveOver(
+  private saveOver(
     document: WorkspaceDocument,
     change: (latest: WorkspaceDocument) => Promise<WorkspaceDocument>,
   ) {
-    try {
-      return await change(document);
-    } catch (error) {
-      if (failureCode(error) !== 'conflict') throw error;
-      await this.section.state.refresh();
-      const latest = this.section.connection(document.id);
-      if (!latest) throw error;
-      return change(latest);
-    }
+    return saveOver(this.section, document, change);
   }
 
   async toggle(row: NavigatorRow) {
@@ -122,6 +116,7 @@ export class DbActions {
   exportData = (row: NavigatorRow) => openTransfer(this.section, row, 'export');
   importData = (row: NavigatorRow) => openTransfer(this.section, row, 'import');
   copyData = (row: NavigatorRow) => openTransfer(this.section, row, 'copy');
+  mockData = async (row: NavigatorRow) => this.mock.set(await mockRequest(this.section, row));
   editStructure = (row: NavigatorRow) => openStructure(this.section, row, 'edit');
   dropTable = (row: NavigatorRow) => openStructure(this.section, row, 'drop');
   emptyTable = (row: NavigatorRow) => openStructure(this.section, row, 'empty');

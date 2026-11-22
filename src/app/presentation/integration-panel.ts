@@ -79,6 +79,7 @@ import { ModulesSettings } from './modules-settings';
 import { GridFormatSettings } from './grid-format-settings';
 import { SettingsTabs } from './settings-tabs';
 import { SshProfiles } from './ssh-profiles';
+import { ProxyProfiles } from './proxy-profiles';
 import { MaskingSets } from './masking-sets';
 import { ConnectionTypesSettings } from './connection-types-settings';
 import { DocumentRevisions } from './document-revisions';
@@ -100,6 +101,7 @@ import { DocumentRevisions } from './document-revisions';
     DocumentRevisions,
     SettingsTabs,
     SshProfiles,
+    ProxyProfiles,
     MaskingSets,
     ConnectionTypesSettings,
   ],

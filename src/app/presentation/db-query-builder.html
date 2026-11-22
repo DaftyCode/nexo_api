@@ -1,0 +1,72 @@
+<section class="db-builder" [attr.aria-label]="'Visual query builder' | transloco">
+  @if (task.error(); as error) {
+    <p class="global-alert" role="alert">{{ error | transloco }}</p>
+  }
+  @if (reason(); as reason) {
+    <p class="db-builder-reason" role="status">
+      {{ 'db.builder.unsupported' | transloco: { v0: reason } }}
+    </p>
+  }
+  <div class="db-builder-top">
+    <aside class="db-builder-tables" [attr.aria-label]="'Tables' | transloco">
+      <input
+        type="search"
+        [value]="filter()"
+        (input)="filter.set($any($event.target).value)"
+        [attr.aria-label]="'Find a table' | transloco"
+        [placeholder]="'Find a table' | transloco"
+        spellcheck="false"
+      />
+      <ul>
+        @for (table of choices(); track table.path.join('/')) {
+          <li>
+            <button
+              type="button"
+              class="text-button"
+              [disabled]="!!reason()"
+              [attr.aria-label]="'db.builder.add' | transloco: { v0: table.name }"
+              (click)="add(table)"
+            >
+              ＋ {{ table.schema ? table.schema + '.' : '' }}{{ table.name }}
+            </button>
+          </li>
+        } @empty {
+          @if (ready()) {
+            <li class="muted">{{ 'No tables' | transloco }}</li>
+          }
+        }
+      </ul>
+    </aside>
+    <div class="db-builder-canvas" (dragover)="over($event)" (drop)="dropped($event)">
+      @if (model().tables.length) {
+        <app-db-query-canvas
+          [layout]="layout()"
+          [model]="model()"
+          [readOnly]="!!reason()"
+          (toggled)="toggle($event)"
+          (joined)="join($event)"
+          (kind)="nextKind($event)"
+          (removed)="remove($event)"
+        />
+      } @else if (ready()) {
+        <p class="muted db-builder-empty">
+          {{ 'Drag tables here from the navigator, or add them from the list.' | transloco }}
+        </p>
+      }
+    </div>
+  </div>
+  @if (ready()) {
+    <app-db-query-panels [model]="model()" [readOnly]="!!reason()" (changed)="update($event)" />
+  }
+  <div class="db-builder-sql">
+    <pre [attr.aria-label]="'The SQL it writes' | transloco">{{ sql() }}</pre>
+    <button
+      type="button"
+      class="button small primary"
+      [disabled]="!sql() || !!reason()"
+      (click)="run.emit()"
+    >
+      ▶ {{ 'Run' | transloco }}
+    </button>
+  </div>
+</section>

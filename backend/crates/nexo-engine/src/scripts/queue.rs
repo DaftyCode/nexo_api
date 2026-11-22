@@ -1,4 +1,4 @@
-//! What scripts queue for the host: requests of `pm.sendRequest` and `nx.mongo` calls, and
+//! What scripts queue for the host: requests of `pm.sendRequest`, `nx.mongo` and `nx.sql` calls, and
 //! their answers delivered back to the promises that wait for them.
 use super::*;
 
@@ -46,6 +46,32 @@ impl ScriptSession {
     ) -> Result<()> {
         self.evaluate(&format!(
             "__nexo.deliverMongo({},{},{})",
+            serde_json::to_string(id).map_err(infrastructure)?,
+            serde_json::to_string(&result).map_err(infrastructure)?,
+            serde_json::to_string(&error).map_err(infrastructure)?
+        ))?;
+        Ok(())
+    }
+    /// Calls queued by `nx.sql` since the last call: their id and the call.
+    pub fn take_sql(&self) -> Result<Vec<(String, Value)>> {
+        let queue = self.json("__nexo.sqlQueue()")?;
+        Ok(queue
+            .as_array()
+            .map(|items| {
+                items
+                    .iter()
+                    .map(|entry| {
+                        let id = entry["id"].as_str().unwrap_or_default().to_string();
+                        (id, entry["call"].clone())
+                    })
+                    .collect()
+            })
+            .unwrap_or_default())
+    }
+    /// Answers an `nx.sql` call: its rows and columns, or why it failed.
+    pub fn deliver_sql(&self, id: &str, result: Option<&Value>, error: Option<&str>) -> Result<()> {
+        self.evaluate(&format!(
+            "__nexo.deliverSql({},{},{})",
             serde_json::to_string(id).map_err(infrastructure)?,
             serde_json::to_string(&result).map_err(infrastructure)?,
             serde_json::to_string(&error).map_err(infrastructure)?

@@ -66,8 +66,8 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup show active-toolchain
       - run: cargo fmt --all -- --check
-      - run: cargo clippy --locked --workspace --exclude nexo-desktop --all-targets -- -D warnings
-      - run: cargo test --locked --workspace --exclude nexo-desktop
+      - run: cargo clippy --locked --workspace --exclude nexo-desktop --exclude nexo-driver-files --all-targets -- -D warnings
+      - run: cargo test --locked --workspace --exclude nexo-desktop --exclude nexo-driver-files
       - name: Check advisories and licenses
         run: |
           cargo install cargo-deny --locked
@@ -79,6 +79,31 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}" || echo "The run could not be cancelled"
+
+  files:
+    # The files driver compiles DuckDB (C++), which takes minutes: it has a job of its own.
+    name: Files driver (DuckDB)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - name: Install Linux build libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libdbus-1-dev pkg-config
+      - run: rustup show active-toolchain
+      - run: npm ci --no-audit --no-fund
+      - run: npm run files:test
+      - name: The files module through Nexo
+        run: |
+          cargo build --locked -p nexo-server -p nexo-driver-files
+          node --test tests/contract/db-files.test.mjs
 
   e2e:
     name: Engine contracts, local web service and E2E

@@ -5,7 +5,7 @@
  * (`address.city`); arrays stay in their cell as JSON.
  */
 import { RunReport } from '../reports';
-import { BOM } from '../db/transfer/export';
+import { BOM } from './bom';
 
 export type TableFormat = 'csv' | 'xlsx';
 export const TABLE_FORMATS: readonly TableFormat[] = ['csv', 'xlsx'];

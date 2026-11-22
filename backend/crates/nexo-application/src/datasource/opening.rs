@@ -73,7 +73,8 @@ impl Application {
             connection.database = Some(database.trim().to_owned());
         }
         let rules = self.type_rules(&workspace, &stored.value).await?;
-        connection.read_only |= rules.read_only;
+        // Whoever opens it may ask for less: MCP agents only read (DB-32).
+        connection.read_only |= rules.read_only || payload.read_only == Some(true);
         let source = Source::of(&stored.value);
         let remembered = self.sql_sessions.asked(&workspace, &stored.id);
         self.supply_password(

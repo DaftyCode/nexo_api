@@ -141,6 +141,26 @@ describe('DbConnectionFields of a server connection', () => {
     expect(fixture.componentInstance.model().color).toBe('');
   });
 
+  it('lets MCP agents read it, with the columns hidden from them', async () => {
+    const general = page('general');
+    expect(general.textContent).not.toContain('Columns hidden from MCP agents');
+    const box = [...general.querySelectorAll('label')]
+      .find((label) => label.textContent?.includes('Let MCP agents read it'))!
+      .querySelector('input')!;
+    box.click();
+    await settle();
+    const hidden = [...general.querySelectorAll('label')]
+      .find((label) => label.textContent?.includes('Columns hidden from MCP agents'))!
+      .querySelector('input')!;
+    hidden.value = 'users.password';
+    hidden.dispatchEvent(new Event('input'));
+    await settle();
+    expect(fixture.componentInstance.model()).toMatchObject({
+      mcp: true,
+      mcpHidden: 'users.password',
+    });
+  });
+
   it('says that the local client tools are in the desktop app', () => {
     expect(page('general').textContent).toContain(
       'Backups and restores with the local client tools are in the desktop app.',
@@ -172,5 +192,50 @@ describe('DbConnectionFields in the desktop app', () => {
     expect(fixture.componentInstance.model().localClient).toBe(
       'C:/Program Files/PostgreSQL/18/bin',
     );
+  });
+});
+
+@Component({
+  imports: [DbConnectionFields],
+  template: `<app-db-connection-fields page="main" [fields]="fields" [profile]="profile" />`,
+})
+class FilesHost {
+  readonly model = signal<DbForm>(emptyDbForm('files', 'Sales'));
+  readonly fields = form(this.model);
+  readonly profile = engineProfile('files');
+}
+
+describe('DbConnectionFields of a connection to files', () => {
+  it('asks for a folder, files or a DuckDB database, the folder chosen in the dialog', async () => {
+    await TestBed.configureTestingModule({
+      providers: [
+        ...testProviders(),
+        {
+          provide: DATABASE_FILES,
+          useValue: { available: true, choose: async () => '/data/shop.duckdb' },
+        },
+        {
+          provide: NATIVE_FILES,
+          useValue: {
+            available: true,
+            choose: async (what: string) => (what === 'folder' ? '/data/sales' : undefined),
+          },
+        },
+      ],
+      imports: [FilesHost],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(FilesHost);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.textContent).toContain('Folder, files or DuckDB database');
+    expect(root.textContent).toContain('Nexo reads only these files and never writes them');
+    expect(buttons(root, 'New file…')).toEqual([]);
+    buttons(root, 'Folder…')[0].click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.model().database).toBe('/data/sales');
+    buttons(root, 'Open…')[0].click();
+    await fixture.whenStable();
+    expect(fixture.componentInstance.model().database).toBe('/data/shop.duckdb');
   });
 });

@@ -3,6 +3,7 @@
  * confirmation it needs (as the backend will demand it), names written for the engine, and
  * the saved scripts.
  */
+import { ResultChartConfig, readCharts } from './result-chart/config';
 import { VariableScopes, resolveVariable } from '../variables';
 import { DbNode, QuoteStyle, quoteName } from './tree';
 
@@ -106,6 +107,8 @@ export interface ScriptValue {
   sql: string;
   folder?: string;
   database?: string;
+  /** The charts of its results, by statement (DB-28). */
+  charts?: Record<string, ResultChartConfig>;
 }
 
 export function readScript(value: unknown): ScriptValue {
@@ -116,6 +119,7 @@ export function readScript(value: unknown): ScriptValue {
     sql: text('sql'),
     ...(text('folder').trim() ? { folder: text('folder').trim() } : {}),
     ...(text('database').trim() ? { database: text('database').trim() } : {}),
+    ...readCharts(source['charts']),
   };
 }
 

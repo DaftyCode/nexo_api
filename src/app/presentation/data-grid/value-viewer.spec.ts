@@ -66,4 +66,10 @@ describe('the value viewer of the grid', () => {
     await show({ $t: 'text', v: 'abc', truncated: true });
     expect(root().textContent).toContain('?');
   });
+
+  it('shows a geometry on a small map with its WKT', async () => {
+    await show({ $t: 'spatial', v: '0101000020E6100000000000000000F03F0000000000000040' }, 'geom');
+    expect(root().querySelector('app-db-spatial svg')).not.toBeNull();
+    expect(root().querySelector('.viewer-text')?.textContent).toBe('POINT (1 2)');
+  });
 });

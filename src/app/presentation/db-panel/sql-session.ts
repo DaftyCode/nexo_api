@@ -1,3 +1,4 @@
+import type { SqlCodeQuery } from '../../domain/db/sql-codegen';
 import { signal } from '@angular/core';
 import {
   DbServerInfo,
@@ -28,6 +29,10 @@ export abstract class SqlSession {
   readonly isolation = signal('');
   readonly session: string;
   readonly results: SqlResults;
+  /** The code of a statement shown (DB-33), and how to put a pasted one in the editor. */
+  readonly code = signal<{ query: SqlCodeQuery; paste?: (sql: string) => void } | undefined>(
+    undefined,
+  );
   maxResults = DEFAULT_MAX_RESULTS;
 
   constructor(

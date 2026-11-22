@@ -165,8 +165,8 @@ async fn mcp_initializes_lists_tools_and_calls_use_cases() {
         .await
         .body
         .unwrap();
-    // Two of their own and seven of MongoDB.
-    assert_eq!(batch[0]["result"]["tools"].as_array().unwrap().len(), 9);
+    // Two of their own, seven of MongoDB and five of SQL databases.
+    assert_eq!(batch[0]["result"]["tools"].as_array().unwrap().len(), 14);
     assert_eq!(batch[1]["result"]["isError"], false);
     assert_eq!(batch[2]["result"]["isError"], true);
     assert_eq!(batch[3]["error"]["code"], -32601);

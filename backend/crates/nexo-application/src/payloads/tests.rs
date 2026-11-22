@@ -87,6 +87,8 @@ fn every_operation_has_a_payload_type() {
                     | Operation::PerformanceCancel
                     | Operation::MongoShell
                     | Operation::MongoSql
+                    | Operation::DbQueryParse
+                    | Operation::DbTaskRun
                     | Operation::ModulesInstall
                     | Operation::ModulesInstallFile
                     | Operation::ModulesProgress

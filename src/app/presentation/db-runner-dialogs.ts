@@ -2,16 +2,18 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import type { SqlRunner } from './db-panel/sql-runner';
+import { DbQueryCode } from './db-query-code';
 import { DbSqlParams } from './db-sql-params';
 import type { DialogRequest } from './mongo-dialog';
 import { MongoDialog } from './mongo-dialog';
 
 /**
  * What a runner asks while it runs, for a SQL tab and a console alike: to confirm a statement
- * that needs it, what to do after one fails, and the values of a statement's parameters.
+ * that needs it, what to do after one fails, and the values of a statement's parameters; and
+ * the code of a statement (DB-33).
  */
 @Component({
-  imports: [TranslocoPipe, FormField, MongoDialog, DbSqlParams],
+  imports: [TranslocoPipe, FormField, MongoDialog, DbSqlParams, DbQueryCode],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-runner-dialogs',
   template: `
@@ -54,6 +56,13 @@ import { MongoDialog } from './mongo-dialog';
     }
     @if (runner().client.question(); as question) {
       <app-db-sql-params [question]="question" />
+    }
+    @if (runner().code(); as code) {
+      <app-db-query-code
+        [query]="code.query"
+        [paste]="code.paste"
+        (closed)="runner().code.set(undefined)"
+      />
     }
   `,
   styles: `

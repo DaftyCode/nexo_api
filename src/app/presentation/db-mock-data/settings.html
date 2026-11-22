@@ -1,0 +1,163 @@
+@let g = generator();
+<div class="db-mock-settings">
+  @switch (g.kind) {
+    @case ('sequence') {
+      <input
+        type="number"
+        [value]="g.start"
+        [attr.aria-label]="'Start' | transloco"
+        (change)="changed.emit({ start: number($event) })"
+      />
+      <input
+        type="number"
+        [value]="g.step"
+        [attr.aria-label]="'Step' | transloco"
+        (change)="changed.emit({ step: number($event) })"
+      />
+    }
+    @case ('integer') {
+      <input
+        type="number"
+        [value]="g.min"
+        [attr.aria-label]="'Smallest' | transloco"
+        (change)="changed.emit({ min: number($event) })"
+      />
+      <input
+        type="number"
+        [value]="g.max"
+        [attr.aria-label]="'Largest' | transloco"
+        (change)="changed.emit({ max: number($event) })"
+      />
+    }
+    @case ('decimal') {
+      <input
+        type="number"
+        [value]="g.min"
+        [attr.aria-label]="'Smallest' | transloco"
+        (change)="changed.emit({ min: number($event) })"
+      />
+      <input
+        type="number"
+        [value]="g.max"
+        [attr.aria-label]="'Largest' | transloco"
+        (change)="changed.emit({ max: number($event) })"
+      />
+      <input
+        type="number"
+        [value]="g.scale"
+        [attr.aria-label]="'Decimals' | transloco"
+        (change)="changed.emit({ scale: number($event) })"
+      />
+    }
+    @case ('text') {
+      <input
+        type="number"
+        [value]="g.min"
+        [attr.aria-label]="'Shortest' | transloco"
+        (change)="changed.emit({ min: number($event) })"
+      />
+      <input
+        type="number"
+        [value]="g.max"
+        [attr.aria-label]="'Longest' | transloco"
+        (change)="changed.emit({ max: number($event) })"
+      />
+    }
+    @case ('list') {
+      <input
+        [value]="g.values.join(', ')"
+        [attr.aria-label]="'Values, separated by commas' | transloco"
+        (change)="changed.emit({ values: list($event) })"
+      />
+    }
+    @case ('pattern') {
+      <input
+        [value]="g.pattern"
+        [attr.aria-label]="'Pattern: A letter, 9 digit' | transloco"
+        spellcheck="false"
+        (change)="changed.emit({ pattern: text($event) })"
+      />
+    }
+    @case ('catalog') {
+      <select
+        [value]="g.catalog"
+        [attr.aria-label]="'Catalog' | transloco"
+        (change)="changed.emit({ catalog: text($event) })"
+      >
+        @for (catalog of catalogs; track catalog) {
+          <option [value]="catalog">{{ 'db.mock.catalog.' + catalog | transloco }}</option>
+        }
+      </select>
+      <select
+        [value]="g.language"
+        [attr.aria-label]="'Language' | transloco"
+        (change)="changed.emit({ language: text($event) })"
+      >
+        <option value="en">{{ 'English' | transloco }}</option>
+        <option value="es">{{ 'Spanish' | transloco }}</option>
+      </select>
+    }
+    @case ('date') {
+      <input
+        type="date"
+        [value]="g.from"
+        [attr.aria-label]="'From' | transloco"
+        (change)="changed.emit({ from: text($event) })"
+      />
+      <input
+        type="date"
+        [value]="g.to"
+        [attr.aria-label]="'To' | transloco"
+        (change)="changed.emit({ to: text($event) })"
+      />
+    }
+    @case ('timestamp') {
+      <input
+        type="date"
+        [value]="g.from"
+        [attr.aria-label]="'From' | transloco"
+        (change)="changed.emit({ from: text($event) })"
+      />
+      <input
+        type="date"
+        [value]="g.to"
+        [attr.aria-label]="'To' | transloco"
+        (change)="changed.emit({ to: text($event) })"
+      />
+    }
+    @case ('boolean') {
+      <input
+        type="number"
+        min="0"
+        max="1"
+        step="0.1"
+        [value]="g.ratio"
+        [attr.aria-label]="'Share of true' | transloco"
+        (change)="changed.emit({ ratio: number($event) })"
+      />
+    }
+    @case ('json') {
+      <input
+        [value]="g.template"
+        [attr.aria-label]="'JSON template' | transloco"
+        spellcheck="false"
+        (change)="changed.emit({ template: text($event) })"
+      />
+    }
+    @case ('binary') {
+      <input
+        type="number"
+        [value]="g.size"
+        [attr.aria-label]="'Bytes' | transloco"
+        (change)="changed.emit({ size: number($event) })"
+      />
+    }
+    @case ('foreign') {
+      <span class="muted">{{
+        foreign()
+          ? ('db.mock.keysOf' | transloco: { v0: foreign() })
+          : ('db.mock.noKey' | transloco)
+      }}</span>
+    }
+  }
+</div>

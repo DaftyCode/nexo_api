@@ -13,6 +13,8 @@ import {
 } from '../../domain/db/grid/cells';
 import { ResultColumn, cellText } from '../../domain/db/results';
 import { CodeEditor } from '../code-editor';
+import { geometryOf, toWkt } from '../../domain/db/geometry';
+import { DbSpatial } from '../db-spatial';
 import { WorkspaceState } from '../workspace-state';
 
 /**
@@ -21,7 +23,7 @@ import { WorkspaceState } from '../workspace-state';
  * forms), whether the driver cut it, and saving it to a file.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor],
+  imports: [TranslocoPipe, CodeEditor, DbSpatial],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-value-viewer',
   template: `
@@ -64,6 +66,10 @@ import { WorkspaceState } from '../workspace-state';
           <img class="viewer-image" [src]="source" [attr.alt]="column().name" />
         }
         <pre class="viewer-text" tabindex="0">{{ hex() }}</pre>
+      }
+      @case ('spatial') {
+        <app-db-spatial [columns]="[column()]" [rows]="[[value()]]" [compact]="true" />
+        <pre class="viewer-text" tabindex="0">{{ wkt() }}</pre>
       }
       @case ('date') {
         <dl class="viewer-dates">
@@ -115,7 +121,14 @@ export class ValueViewer {
   private readonly state = inject(WorkspaceState);
   protected readonly cut = computed(() => truncation(this.value()));
   protected readonly text = computed(() => cellText(this.value()));
+  /** A geometry, shown on a map with its WKT (DB-29). */
+  private readonly spatial = computed(() => geometryOf(this.value()));
+  protected readonly wkt = computed(() => {
+    const spatial = this.spatial();
+    return spatial ? toWkt(spatial.geometry) : '';
+  });
   protected readonly shape = computed(() => {
+    if (this.spatial()) return 'spatial';
     const kind = classOf(this.value());
     if ((this.value() as { $t?: unknown })?.$t === 'xml') return 'xml';
     return kind === 'number' || kind === 'boolean' ? 'text' : kind;

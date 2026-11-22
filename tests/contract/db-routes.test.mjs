@@ -2,7 +2,7 @@
 // only the fixture's SSH bastion reaches is browsed through the bastion's tunnel, its TLS
 // checked against its own name; a server key Nexo does not trust, or one that changed,
 // blocks it; a SOCKS5 proxy that alone knows the server's name takes another, with its
-// password from the vault; and «Test the tunnel» reaches the server without a session.
+// password from the vault, written in the connection or kept in a proxy profile; and «Test the tunnel» reaches the server without a session.
 // They need tools/sql-fixture.sh and are skipped without it.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
@@ -166,6 +166,30 @@ test(
       const refused = await call('db.connect', { connectionId: 'viasocks', session: 's2' });
       assert.equal(refused.status >= 400, true);
       assert.doesNotMatch(JSON.stringify(refused.body), /wrong-pw/);
+      // A proxy profile serves any connection: the proxy and its password are kept once.
+      await server.api('PUT', '/secrets/proxy-socks', { value: 'proxy-pw' });
+      const profile = await server.api('PUT', '/documents', {
+        id: 'socks',
+        workspace_id: 'local',
+        kind: 'proxy-profile',
+        name: 'Socks',
+        revision: 0,
+        updated_at: 0,
+        value: {
+          protocol: 'socks5',
+          host: '127.0.0.1',
+          port: proxy.port,
+          username: 'ana',
+          secret: 'proxy-socks',
+          remoteDns: true,
+        },
+      });
+      assert.equal(profile.status, 200, JSON.stringify(profile.body));
+      const profiled = { ...connection, route: { via: 'socks5', profile: 'socks' } };
+      assert.equal((await save('profiled', profiled)).status, 200);
+      await connect('profiled', 's3');
+      assert.deepEqual((await run('s3', 'SELECT 3 AS three')).rows, [[3]]);
+      await ok('db.disconnect', { session: 's3' });
       // A direct connection has no tunnel to test.
       await save('direct', { ...connection, route: { via: 'direct' } });
       const direct = await call('db.route.test', { connectionId: 'direct' });

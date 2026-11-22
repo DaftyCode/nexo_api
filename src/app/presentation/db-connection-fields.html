@@ -3,10 +3,10 @@
     @if (profile().file) {
       <div class="row db-file">
         <label class="field grow"
-          >{{ 'Database file' | transloco
+          >{{ profile().fileLabel ?? 'Database file' | transloco
           }}<input
             [formField]="fields().database"
-            [attr.placeholder]="'db.file.placeholder' | transloco"
+            [attr.placeholder]="profile().filePlaceholder ?? 'db.file.placeholder' | transloco"
             spellcheck="false"
             autocomplete="off"
         /></label>
@@ -14,12 +14,18 @@
           <button type="button" class="button" (click)="chooseFile(false)">
             {{ 'Open…' | transloco }}
           </button>
-          <button type="button" class="button" (click)="chooseFile(true)">
-            {{ 'New file…' | transloco }}
-          </button>
+          @if (profile().folder) {
+            <button type="button" class="button" (click)="chooseFolder()">
+              {{ 'Folder…' | transloco }}
+            </button>
+          } @else {
+            <button type="button" class="button" (click)="chooseFile(true)">
+              {{ 'New file…' | transloco }}
+            </button>
+          }
         }
       </div>
-      <p class="muted">{{ 'db.file.help' | transloco }}</p>
+      <p class="muted">{{ profile().fileHelp ?? 'db.file.help' | transloco }}</p>
     } @else {
       <div class="row">
         <label class="field grow"
@@ -196,6 +202,20 @@
         'Read-only: no writes' | transloco
       }}</label
     >
+    <label class="check-field"
+      ><input type="checkbox" [formField]="fields().mcp" />{{
+        'Let MCP agents read it (never write)' | transloco
+      }}</label
+    >
+    @if (settings().mcp) {
+      <label class="field"
+        >{{ 'Columns hidden from MCP agents' | transloco
+        }}<input
+          [formField]="fields().mcpHidden"
+          placeholder="users.password, *_token"
+          spellcheck="false"
+      /></label>
+    }
     <label class="check-field"
       ><input type="checkbox" [formField]="fields().autoCommit" />{{
         'Auto-commit: each statement is committed by itself' | transloco

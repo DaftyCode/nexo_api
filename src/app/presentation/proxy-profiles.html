@@ -1,0 +1,96 @@
+<h2>{{ 'Proxy profiles' | transloco }}</h2>
+<p class="muted">
+  {{
+    'Keep a proxy once and choose it in «Connect through» of a request, a collection, a protocol or a database connection. Passwords stay in the vault.'
+      | transloco
+  }}
+</p>
+@if (task.error(); as error) {
+  <p class="global-alert" role="alert">{{ error | transloco }}</p>
+}
+<ul class="ssh-profiles">
+  @for (profile of profiles(); track profile.id) {
+    <li class="card">
+      <div class="row">
+        <strong class="grow">{{ profile.name }}</strong>
+        <span class="muted">{{
+          (profile.protocol === 'http' ? 'HTTP proxy' : 'SOCKS5 proxy') | transloco
+        }}</span>
+        <code>{{ profile.host }}:{{ port(profile) }}</code>
+        @if (profile.username) {
+          <span class="muted">{{ profile.username }}</span>
+        }
+      </div>
+      <div class="button-grid">
+        <button type="button" class="button" (click)="edit(profile)">
+          {{ 'Edit' | transloco }}
+        </button>
+        <button type="button" class="text-button danger" (click)="remove(profile)">
+          {{ 'Delete' | transloco }}
+        </button>
+      </div>
+    </li>
+  } @empty {
+    <li class="muted">{{ 'No proxy profiles yet.' | transloco }}</li>
+  }
+</ul>
+@if (editing()) {
+  <form class="card" (submit)="$event.preventDefault(); save()">
+    <h3>{{ (editing() === 'new' ? 'New proxy profile' : 'Edit proxy profile') | transloco }}</h3>
+    <label class="field">{{ 'Name' | transloco }}<input [formField]="fields.name" /></label>
+    <label class="field"
+      >{{ 'Kind of proxy' | transloco
+      }}<select [formField]="fields.protocol">
+        <option value="socks5">{{ 'SOCKS5 proxy' | transloco }}</option>
+        <option value="http">{{ 'HTTP proxy' | transloco }}</option>
+      </select></label
+    >
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Proxy host' | transloco
+        }}<input [formField]="fields.host" spellcheck="false" placeholder="proxy.example.com"
+      /></label>
+      <label class="field"
+        >{{ 'Proxy port' | transloco
+        }}<input
+          [formField]="fields.port"
+          inputmode="numeric"
+          [placeholder]="model().protocol === 'socks5' ? '1080' : '8080'"
+      /></label>
+    </div>
+    <label class="field"
+      >{{ 'Proxy user' | transloco
+      }}<input [formField]="fields.username" spellcheck="false" autocomplete="off"
+    /></label>
+    @if (model().username.trim()) {
+      <label class="field"
+        >{{ 'Proxy password' | transloco
+        }}<input type="password" [formField]="fields.password" autocomplete="off"
+      /></label>
+      @if (stored()) {
+        <p class="editor-hint">
+          {{ 'Leave the secret blank to keep the stored one.' | transloco }}
+        </p>
+      }
+    }
+    @if (model().protocol === 'socks5') {
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields.remoteDns" />
+        {{ 'The proxy resolves names (socks5h)' | transloco }}</label
+      >
+    }
+    @if (problem(); as problem) {
+      <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+    }
+    <div class="button-grid">
+      <button type="submit" class="button primary" [disabled]="!!problem()">
+        {{ 'Save' | transloco }}
+      </button>
+      <button type="button" class="button" (click)="cancel()">{{ 'Cancel' | transloco }}</button>
+    </div>
+  </form>
+} @else {
+  <button type="button" class="button" (click)="create()">
+    {{ 'New proxy profile' | transloco }}
+  </button>
+}

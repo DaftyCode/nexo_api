@@ -732,6 +732,7 @@ export interface DbConnectPayload {
   workspace?: string;
   variables?: Readonly<Record<string, string>>;
   password?: string;
+  readOnly?: boolean;
 }
 
 export interface DbSessionPayload {
@@ -901,6 +902,29 @@ export interface DbSplitPayload {
   script: string;
   dialect?: string;
   offset?: number;
+  workspace?: string;
+}
+
+export interface DbQueryParsePayload {
+  sql: string;
+  dialect?: string;
+  workspace?: string;
+}
+
+export interface DbMockRowsPayload {
+  session: string;
+  table: string;
+  columns: readonly Record<string, unknown>[];
+  seed: number;
+  first: number;
+  count: number;
+  schema?: string;
+  write?: boolean;
+  workspace?: string;
+}
+
+export interface DbTaskRunPayload {
+  id: string;
   workspace?: string;
 }
 
@@ -1109,6 +1133,9 @@ export interface OperationPayloads {
   'db.dashboards': DbSessionPayload;
   'db.dashboard.read': DbDashboardReadPayload;
   'db.split': DbSplitPayload;
+  'db.query.parse': DbQueryParsePayload;
+  'db.mock.rows': DbMockRowsPayload;
+  'db.task.run': DbTaskRunPayload;
   'db.dialect': DbDriverPayload;
   'monitor.status': MonitorStatusPayload;
   'monitor.run': MonitorRunPayload;

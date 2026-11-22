@@ -20,6 +20,7 @@ mod datasource;
 mod datasource_admin;
 mod datasource_compare;
 mod datasource_network;
+mod datasource_query;
 mod git;
 mod http;
 mod masking;
@@ -42,6 +43,7 @@ pub use datasource::*;
 pub use datasource_admin::*;
 pub use datasource_compare::*;
 pub use datasource_network::*;
+pub use datasource_query::*;
 pub use git::*;
 pub use http::*;
 pub use masking::*;
@@ -224,6 +226,9 @@ operation_payloads! {
     DbDashboards => DbSessionPayload,
     DbDashboardRead => DbDashboardReadPayload,
     DbSplit => DbSplitPayload,
+    DbQueryParse => DbQueryParsePayload,
+    DbMockRows => DbMockRowsPayload,
+    DbTaskRun => DbTaskRunPayload,
     DbDialect => DbDriverPayload,
     MonitorStatus => MonitorStatusPayload,
     MonitorRun => MonitorRunPayload,

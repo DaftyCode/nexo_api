@@ -201,6 +201,24 @@ describe('the connection form', () => {
     });
   });
 
+  it('keeps whether MCP agents may read it and the columns hidden from them', () => {
+    const form = formOf('Shop', {
+      driver: 'postgres',
+      mcp: true,
+      mcpHidden: ['users.password', ' ', 3, '*_token'],
+    });
+    expect(form).toMatchObject({ mcp: true, mcpHidden: 'users.password, *_token' });
+    expect(valueOf(form)).toMatchObject({ mcp: true, mcpHidden: ['users.password', '*_token'] });
+    expect(valueOf({ ...form, mcpHidden: ' , ' })).not.toHaveProperty('mcpHidden');
+    const closed = valueOf({ ...form, mcp: false });
+    expect(closed).not.toHaveProperty('mcp');
+    expect(closed).not.toHaveProperty('mcpHidden');
+    expect(formOf('Old', { driver: 'postgres', mcpHidden: ['a'] })).toMatchObject({
+      mcp: false,
+      mcpHidden: '',
+    });
+  });
+
   it('gives the secrets typed, the key only with its certificate', () => {
     const form = emptyDbForm('postgres');
     expect(typedSecrets(form)).toEqual({});

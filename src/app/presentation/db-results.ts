@@ -15,12 +15,17 @@ import { FormField, form, max, min } from '@angular/forms/signals';
 import { ResultTab, resultTitle, summarize } from '../domain/db/results';
 import { sourceTable } from '../domain/db/grid/copy';
 import { DataGrid } from './data-grid/data-grid';
+import { DbResultMeta } from './db-results/meta';
+import { ResultChart } from './charts/result-chart';
+import { ResultChartConfig, chartKey } from '../domain/db/result-chart';
+import { geometryOf } from '../domain/db/geometry';
+import { DbSpatial } from './db-spatial';
 import { DbRowEdits, EDIT_ACTIONS, editAction } from './db-row-edits';
 import type { RowEditor } from './db-panel/row-editor';
 import { WorkspaceState } from './workspace-state';
 import type { SqlRunner } from './db-panel/sql-runner';
 
-type Part = 'rows' | 'meta' | 'info' | 'summary';
+type Part = 'rows' | 'meta' | 'info' | 'summary' | 'chart' | 'spatial';
 /** The tab of the messages, beside the results. */
 const MESSAGES = 'messages';
 
@@ -30,7 +35,17 @@ const MESSAGES = 'messages';
  * window, read further or repeated; and the messages of what ran without rows.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, DataGrid, DbRowEdits, DatePipe, DbPlan],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    DataGrid,
+    DbRowEdits,
+    DatePipe,
+    DbPlan,
+    DbResultMeta,
+    ResultChart,
+    DbSpatial,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-results',
   templateUrl: './db-results.html',
@@ -41,7 +56,22 @@ export class DbResults {
   /** Where the editor goes from an error: an offset of its text. */
   readonly goTo = output<number>();
   protected readonly part = signal<Part>('rows');
-  protected readonly parts: readonly Part[] = ['rows', 'meta', 'info', 'summary'];
+  protected readonly parts: readonly Part[] = [
+    'rows',
+    'meta',
+    'info',
+    'summary',
+    'chart',
+    'spatial',
+  ];
+  /** Whether a result holds geometries, for its «Spatial» view (DB-29). */
+  protected readonly spatial = (tab: ResultTab) =>
+    tab.columns.some((column) => column.kind === 'spatial') ||
+    tab.rows.slice(0, 20).some((row) => row.some((cell) => !!geometryOf(cell)));
+  /** The charts of the script, by statement (DB-28). */
+  readonly charts = input<Readonly<Record<string, ResultChartConfig>>>({});
+  readonly chartChange = output<{ key: string; config: ResultChartConfig }>();
+  protected readonly chartKey = chartKey;
   protected readonly settings = signal({ seconds: 10, max: 15 });
   protected readonly settingsFields = form(this.settings, (path) => {
     min(path.seconds, 1);
@@ -156,6 +186,12 @@ export class DbResults {
   /** The plan of the statement that gave a result, in a tab of its own. */
   protected explain(tab: ResultTab) {
     void new SqlPlans(this.runner()).again(tab);
+  }
+  /** The code of a result's statement (DB-33), with the values last typed. */
+  protected async showCode(tab: ResultTab) {
+    const runner = this.runner();
+    const values = (await runner.section.cases()).assist.parameters();
+    runner.code.set({ query: { engine: runner.driver(), sql: tab.sql, values } });
   }
   protected closeOthers(tab: ResultTab) {
     this.results().close((other) => other.id !== tab.id && !other.pinned);

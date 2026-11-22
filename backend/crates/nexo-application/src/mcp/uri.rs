@@ -53,6 +53,10 @@ pub(super) enum Resource {
     MongoConnection(WorkspaceId, String),
     /// The schema of a collection of an exposed MongoDB connection.
     MongoCollection(WorkspaceId, String, String, String),
+    /// The tables and views of an exposed SQL connection, by its name (DB-32).
+    SqlConnection(WorkspaceId, String),
+    /// A table of an exposed SQL connection, by its schema and name.
+    SqlTable(WorkspaceId, String, String, String),
 }
 pub(super) fn parse_uri(uri: &str) -> Option<Resource> {
     let rest = uri.strip_prefix(SCHEME)?;
@@ -73,6 +77,13 @@ pub(super) fn parse_uri(uri: &str) -> Option<Resource> {
             (*connection).into(),
             (*database).into(),
             (*collection).into(),
+        ),
+        ["sql", connection] => Resource::SqlConnection(workspace, (*connection).into()),
+        ["sql", connection, schema, table] => Resource::SqlTable(
+            workspace,
+            (*connection).into(),
+            (*schema).into(),
+            (*table).into(),
         ),
         _ => return None,
     })

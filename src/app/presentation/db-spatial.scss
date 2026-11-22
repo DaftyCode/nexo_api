@@ -1,0 +1,93 @@
+.sp {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  padding: var(--nexo-space-2);
+}
+.sp-tools {
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2) var(--nexo-space-3);
+  align-items: end;
+}
+.sp-note {
+  margin: 0;
+}
+.sp-canvas {
+  width: 100%;
+  height: calc(var(--nexo-size-unit) * 200);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-sm);
+  background-color: var(--nexo-color-sunken);
+  background-image:
+    linear-gradient(var(--nexo-color-border-subtle) var(--nexo-border-width), transparent 0),
+    linear-gradient(90deg, var(--nexo-color-border-subtle) var(--nexo-border-width), transparent 0);
+  background-size: calc(var(--nexo-size-unit) * 20) calc(var(--nexo-size-unit) * 20);
+  cursor: grab;
+  touch-action: none;
+}
+.sp-compact .sp-canvas {
+  height: calc(var(--nexo-size-unit) * 100);
+}
+.sp-figure {
+  fill: none;
+  stroke: var(--sp-color);
+  stroke-width: var(--nexo-border-width-strong);
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+}
+.sp-area,
+.sp-point {
+  fill: var(--sp-color);
+  fill-opacity: 0.35;
+}
+.sp-chosen {
+  stroke: var(--nexo-color-focus-ring);
+  fill-opacity: 0.7;
+}
+.sp-color-none {
+  --sp-color: var(--nexo-color-accent);
+}
+.sp-color-0 {
+  --sp-color: var(--nexo-color-info);
+}
+.sp-color-1 {
+  --sp-color: var(--nexo-color-success);
+}
+.sp-color-2 {
+  --sp-color: var(--nexo-color-warning);
+}
+.sp-color-3 {
+  --sp-color: var(--nexo-color-danger);
+}
+.sp-color-4 {
+  --sp-color: var(--nexo-color-accent);
+}
+.sp-color-5 {
+  --sp-color: var(--nexo-color-data-number);
+}
+.sp-color-6 {
+  --sp-color: var(--nexo-color-data-string);
+}
+.sp-color-7 {
+  --sp-color: var(--nexo-color-data-date);
+}
+.sp-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2);
+  align-items: center;
+  font-size: var(--nexo-font-size-sm);
+}
+.sp-list {
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.sp-list th,
+.sp-list td {
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: left;
+}
+.sp-list tr.sp-chosen {
+  background: var(--nexo-color-accent-soft);
+}

@@ -53,6 +53,9 @@
       <button type="button" class="button small subtle" (click)="explain(tab)">
         {{ 'Explain' | transloco }}
       </button>
+      <button type="button" class="button small subtle" (click)="showCode(tab)">
+        {{ 'Code' | transloco }}
+      </button>
       <button type="button" class="button small subtle" (click)="exportTab(tab)">
         {{ 'Export…' | transloco }}
       </button>
@@ -92,14 +95,16 @@
     </div>
     <nav class="editor-tabs db-result-parts" [attr.aria-label]="'Result views' | transloco">
       @for (p of parts; track p) {
-        <button
-          type="button"
-          [class.active]="part() === p"
-          [attr.aria-current]="part() === p ? 'page' : null"
-          (click)="part.set(p)"
-        >
-          {{ partLabel(p) | transloco }}
-        </button>
+        @if (p !== 'spatial' || spatial(tab)) {
+          <button
+            type="button"
+            [class.active]="part() === p"
+            [attr.aria-current]="part() === p ? 'page' : null"
+            (click)="part.set(p)"
+          >
+            {{ partLabel(p) | transloco }}
+          </button>
+        }
       }
     </nav>
     <div
@@ -148,37 +153,21 @@
           }
         }
         @case ('meta') {
-          <table class="db-plain">
-            <thead>
-              <tr>
-                <th scope="col">{{ 'Column' | transloco }}</th>
-                <th scope="col">{{ 'Type' | transloco }}</th>
-                <th scope="col">{{ 'Nullable' | transloco }}</th>
-                <th scope="col">{{ 'Key' | transloco }}</th>
-                <th scope="col">{{ 'Origin' | transloco }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (column of tab.columns; track $index) {
-                <tr>
-                  <td>{{ column.name }}</td>
-                  <td>{{ column.typeName }}</td>
-                  <td>
-                    {{
-                      column.nullable === undefined
-                        ? '—'
-                        : ((column.nullable ? 'Yes' : 'No') | transloco)
-                    }}
-                  </td>
-                  <td>{{ (column.key ? 'Yes' : 'No') | transloco }}</td>
-                  <td>
-                    {{ column.origin?.table ?? '' }}{{ column.origin?.column ? '.' : ''
-                    }}{{ column.origin?.column ?? '' }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <app-db-result-meta [columns]="tab.columns" />
+        }
+        @case ('spatial') {
+          <app-db-spatial [columns]="tab.columns" [rows]="tab.rows" [name]="title(tab)" />
+        }
+        @case ('chart') {
+          <app-result-chart
+            [columns]="tab.columns"
+            [rows]="tab.rows"
+            [more]="!!tab.cursor"
+            [saved]="charts()[chartKey(tab.sql)]"
+            [name]="title(tab)"
+            (changed)="chartChange.emit({ key: chartKey(tab.sql), config: $event })"
+            (readAll)="readAll(tab)"
+          />
         }
         @case ('info') {
           <dl class="db-result-info">

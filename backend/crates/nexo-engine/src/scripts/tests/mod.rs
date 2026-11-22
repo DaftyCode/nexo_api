@@ -1,6 +1,7 @@
 mod api;
 mod mongo;
 mod sandbox;
+mod sql;
 
 use super::*;
 use serde_json::json;

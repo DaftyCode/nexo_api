@@ -29,6 +29,21 @@ describe('script API suggestions', () => {
     expect(pathBefore(' .x')).toBeUndefined();
   });
 
+  it('suggest what nx.sql gives and its helpers for parameters', () => {
+    expect(
+      names([
+        { name: 'nx', call: false },
+        { name: 'sql', call: true },
+      ]),
+    ).toEqual(['query', 'queryOne', 'execute', 'transaction']);
+    expect(
+      names([
+        { name: 'pm', call: false },
+        { name: 'sql', call: false },
+      ]),
+    ).toEqual(['numeric', 'bytes', 'typed']);
+  });
+
   it('find what can follow a path', () => {
     expect(names([])).toEqual(['pm', 'nx']);
     const api = names([{ name: 'pm', call: false }]);

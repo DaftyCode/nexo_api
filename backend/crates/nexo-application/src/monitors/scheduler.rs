@@ -31,9 +31,23 @@ impl Application {
         }
     }
 
-    /// Starts the monitors due at `time`, in every workspace.
+    /// Starts the monitors and the database tasks due at `time`, in every workspace.
     async fn run_due(&self, time: nexo_domain::monitor::LocalTime) -> Result<()> {
         for workspace in self.workspaces.workspaces().await? {
+            for document in self
+                .workspaces
+                .documents(&workspace.id, Some(DocumentKind::DbTask))
+                .await?
+            {
+                let due = document.value["paused"] != true
+                    && !document.value["schedule"].is_null()
+                    && Schedule::read(&document.value["schedule"])
+                        .is_ok_and(|schedule| schedule.due(&time));
+                let id = document.id.clone();
+                if due && let Err(error) = self.start_task(document).await {
+                    tracing::warn!(%error, task = %id, "A database task could not start");
+                }
+            }
             for document in self
                 .workspaces
                 .documents(&workspace.id, Some(DocumentKind::Monitor))
@@ -48,6 +62,27 @@ impl Application {
                 }
             }
         }
+        Ok(())
+    }
+
+    /// Starts a scheduled run of a database task, unless the last one has not finished: that
+    /// one is noted as skipped.
+    async fn start_task(&self, document: Document) -> Result<()> {
+        let (application, clock) = self.monitors.scheduler()?;
+        let now = clock.now();
+        let id = document.id.to_string();
+        if !self.monitors.begin(&id, now) {
+            let entry = json!({"startedAt": now, "duration": 0, "trigger": "schedule",
+                "state": "skipped", "error": "The previous run had not finished"});
+            return self.record_run(&document, entry).await;
+        }
+        tokio::spawn(async move {
+            let entry = application.task_run(&document, "schedule", now).await;
+            if let Err(error) = application.record_run(&document, entry).await {
+                tracing::warn!(%error, task = %document.id, "The run of a task was not kept");
+            }
+            application.monitors.end(document.id.as_str());
+        });
         Ok(())
     }
 

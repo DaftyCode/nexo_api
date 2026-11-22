@@ -9,6 +9,11 @@ export function sessionSettings(source: Record<string, unknown>): Partial<DbConn
       : {};
   };
   const schema = source['defaultSchema'];
+  const hidden = Array.isArray(source['mcpHidden'])
+    ? source['mcpHidden'].filter(
+        (name): name is string => typeof name === 'string' && !!name.trim(),
+      )
+    : [];
   const queries = Array.isArray(source['startupQueries'])
     ? source['startupQueries'].filter(
         (query): query is string => typeof query === 'string' && !!query.trim(),
@@ -23,5 +28,7 @@ export function sessionSettings(source: Record<string, unknown>): Partial<DbConn
     ...whole('connectTimeoutSeconds'),
     ...(source['askPassword'] === true ? { askPassword: true } : {}),
     ...(source['pgpass'] === true && source['askPassword'] !== true ? { pgpass: true } : {}),
+    ...(source['mcp'] === true ? { mcp: true } : {}),
+    ...(source['mcp'] === true && hidden.length ? { mcpHidden: hidden } : {}),
   };
 }

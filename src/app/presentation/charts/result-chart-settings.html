@@ -1,0 +1,78 @@
+@let c = config();
+<div class="rc-settings" role="group" [attr.aria-label]="'Chart settings' | transloco">
+  <label class="field"
+    >{{ 'Chart' | transloco
+    }}<select [value]="c.type" (change)="set({ type: $any(value($event)) })">
+      @for (type of types; track type) {
+        <option [value]="type">{{ 'db.chart.type.' + type | transloco }}</option>
+      }
+    </select></label
+  >
+  <label class="field"
+    >{{ 'X axis' | transloco
+    }}<select [value]="c.x" (change)="set({ x: value($event) })">
+      @for (column of columns(); track column.name) {
+        <option [value]="column.name">{{ column.name }}</option>
+      }
+    </select></label
+  >
+  <label class="field"
+    >{{ 'One series per value of' | transloco
+    }}<select [value]="c.group" (change)="set({ group: value($event) })">
+      <option value="">{{ 'No column' | transloco }}</option>
+      @for (column of columns(); track column.name) {
+        <option [value]="column.name">{{ column.name }}</option>
+      }
+    </select></label
+  >
+  <label class="field"
+    >{{ 'Repeated values' | transloco
+    }}<select [value]="c.aggregate" (change)="set({ aggregate: $any(value($event)) })">
+      @for (each of aggregates; track each) {
+        <option [value]="each">{{ 'db.chart.aggregate.' + each | transloco }}</option>
+      }
+    </select></label
+  >
+  <label class="field"
+    >{{ 'Order' | transloco
+    }}<select [value]="c.order" (change)="set({ order: $any(value($event)) })">
+      <option value="x">{{ 'As the X axis' | transloco }}</option>
+      <option value="desc">{{ 'Largest first' | transloco }}</option>
+      <option value="asc">{{ 'Smallest first' | transloco }}</option>
+    </select></label
+  >
+  <label class="field"
+    >{{ 'Categories at most' | transloco
+    }}<input type="number" min="0" [value]="c.limit" (change)="set({ limit: +value($event) || 0 })"
+  /></label>
+  <label class="check-field"
+    ><input type="checkbox" [checked]="c.log" (change)="set({ log: !c.log })" />{{
+      'Logarithmic scale' | transloco
+    }}</label
+  >
+  <fieldset class="rc-series-choice">
+    <legend>{{ 'Series' | transloco }}</legend>
+    @for (column of columns(); track column.name) {
+      @if (column.name !== c.x) {
+        <label class="check-field"
+          ><input
+            type="checkbox"
+            [checked]="c.y.includes(column.name)"
+            (change)="toggleY(column.name)"
+          />{{ column.name }}</label
+        >
+      }
+    }
+  </fieldset>
+  <label class="field"
+    >{{ 'Title' | transloco }}<input [value]="c.title" (change)="set({ title: value($event) })"
+  /></label>
+  <label class="field"
+    >{{ 'Name of the X axis' | transloco
+    }}<input [value]="c.xLabel" (change)="set({ xLabel: value($event) })"
+  /></label>
+  <label class="field"
+    >{{ 'Name of the value axis' | transloco
+    }}<input [value]="c.yLabel" (change)="set({ yLabel: value($event) })"
+  /></label>
+</div>

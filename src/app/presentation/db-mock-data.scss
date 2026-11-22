@@ -1,0 +1,52 @@
+.db-mock-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-mock-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 480), 96vw);
+  max-height: 92vh;
+  overflow: auto;
+}
+.db-mock-head {
+  justify-content: space-between;
+}
+.db-mock-head h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-mock-columns,
+.db-mock-preview {
+  overflow: auto;
+  max-height: calc(var(--nexo-size-unit) * 160);
+}
+.db-mock-columns table,
+.db-mock-preview table {
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-mock-columns th,
+.db-mock-columns td,
+.db-mock-preview th,
+.db-mock-preview td {
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.db-mock-columns td span {
+  margin-left: var(--nexo-space-2);
+}
+.db-mock-options {
+  flex-wrap: wrap;
+  gap: var(--nexo-space-3) var(--nexo-space-5);
+  align-items: end;
+}

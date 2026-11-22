@@ -66,9 +66,9 @@ fn valid_port(port: Option<&Value>) -> bool {
     }
 }
 
-/// How the connection reaches its server (DB-25): directly, through a SOCKS5 proxy (its
-/// password in the vault) or an SSH tunnel of a profile. Database protocols do not go through
-/// HTTP proxies.
+/// How the connection reaches its server (DB-25): directly, through a SOCKS5 proxy (written
+/// here with its password in the vault, or a proxy profile) or an SSH tunnel of a profile.
+/// Database protocols do not go through HTTP proxies.
 fn validate_route(route: Option<&Value>) -> Result<()> {
     let Some(route) = route.filter(|route| !route.is_null()) else {
         return Ok(());
@@ -80,6 +80,7 @@ fn validate_route(route: Option<&Value>) -> Result<()> {
         "direct" => Ok(()),
         "ssh" if text(route, "profile")?.is_some() => Ok(()),
         "ssh" => Err(invalid("Choose the SSH profile to connect through")),
+        "socks5" if text(route, "profile")?.is_some() => Ok(()),
         "socks5" => {
             if text(route, "host")?.is_none() {
                 return Err(invalid("Write the server of the SOCKS5 proxy"));

@@ -205,6 +205,7 @@ export class DbSection {
         cursor,
         script: id,
         ...(value.database ? { database: value.database } : {}),
+        ...(value.charts ? { charts: value.charts } : {}),
       },
     );
   }

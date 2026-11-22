@@ -1,0 +1,141 @@
+<div class="db-tasks-backdrop">
+  <section
+    class="feature-card db-tasks-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-tasks-title"
+    (keydown.escape)="closed.emit()"
+  >
+    <header class="row db-tasks-head">
+      <h2 id="db-tasks-title">{{ 'Database tasks' | transloco }}</h2>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Close' | transloco"
+        (click)="closed.emit()"
+      >
+        ×
+      </button>
+    </header>
+    <p class="muted">{{ 'db.task.intro' | transloco }}</p>
+    @if (task.error(); as error) {
+      <p class="global-alert" role="alert">{{ error | transloco }}</p>
+    }
+    @if (editing()) {
+      <app-db-task-form
+        [start]="start()"
+        [connections]="connections()"
+        [scripts]="scripts()"
+        [tasks]="others()"
+        (saved)="save($event)"
+        (cancelled)="editing.set(undefined)"
+      />
+    } @else {
+      <button type="button" class="button primary" (click)="create()">
+        {{ 'New task' | transloco }}
+      </button>
+    }
+    <table class="db-tasks-list">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Task' | transloco }}</th>
+          <th scope="col">{{ 'Folder' | transloco }}</th>
+          <th scope="col">{{ 'Runs' | transloco }}</th>
+          <th scope="col">{{ 'Last run' | transloco }}</th>
+          <th scope="col">{{ 'Actions' | transloco }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (document of tasks(); track document.id) {
+          @let latest = lastRun(document.id);
+          @let when = schedule(document);
+          <tr>
+            <th scope="row">
+              {{ document.name }}
+              <span class="muted">{{
+                'db.task.type.' + $any(document.value).type | transloco
+              }}</span>
+              @if (authorizes(document)) {
+                <span class="db-tasks-warning" [attr.title]="'db.task.warning' | transloco">
+                  {{ 'Authorized without asking' | transloco }}
+                </span>
+              }
+            </th>
+            <td>{{ folderOf(document) }}</td>
+            <td>
+              {{ when.key | transloco: { v0: when.minutes } }}
+              @if (states()[document.id]?.next; as next) {
+                <span class="muted">· {{ next | date: 'short' }}</span>
+              }
+            </td>
+            <td>
+              @if (latest) {
+                <span [class]="'db-tasks-state db-tasks-' + latest.state">{{
+                  'db.task.state.' + latest.state | transloco
+                }}</span>
+                <span class="muted"
+                  >{{ latest.startedAt | date: 'short' }} · {{ latest.duration }} ms</span
+                >
+              } @else {
+                <span class="muted">{{ 'Never' | transloco }}</span>
+              }
+            </td>
+            <td class="db-tasks-actions">
+              <button type="button" class="button small" (click)="run(document)">
+                ▶ {{ 'Run' | transloco }}
+              </button>
+              <button
+                type="button"
+                class="button small subtle"
+                (click)="shown.set(shown() === document.id ? undefined : document.id)"
+              >
+                {{ 'History' | transloco }}
+              </button>
+              <button type="button" class="button small subtle" (click)="edit(document)">
+                {{ 'Edit' | transloco }}
+              </button>
+              <button type="button" class="button small subtle" (click)="duplicate(document)">
+                {{ 'Duplicate' | transloco }}
+              </button>
+              <button type="button" class="text-button danger" (click)="remove(document)">
+                {{ 'Delete' | transloco }}
+              </button>
+            </td>
+          </tr>
+          @if (shown() === document.id) {
+            <tr>
+              <td colspan="5">
+                <ul class="db-tasks-runs" [attr.aria-label]="'History' | transloco">
+                  @for (run of runs(document.id); track run.startedAt) {
+                    <li>
+                      <span [class]="'db-tasks-state db-tasks-' + run.state">{{
+                        'db.task.state.' + run.state | transloco
+                      }}</span>
+                      {{ run.startedAt | date: 'medium' }} · {{ run.duration }} ms ·
+                      {{ 'db.task.counts' | transloco: { v0: run.statements, v1: run.rows } }}
+                      @if (run.differences) {
+                        · {{ 'db.task.differences' | transloco: { v0: run.differences } }}
+                      }
+                      @if (run.error) {
+                        <span class="db-tasks-error">{{ run.error | transloco }}</span>
+                      }
+                      @if (run.statement) {
+                        <code>{{ run.statement }}</code>
+                      }
+                    </li>
+                  } @empty {
+                    <li class="muted">{{ 'It has not run yet.' | transloco }}</li>
+                  }
+                </ul>
+              </td>
+            </tr>
+          }
+        } @empty {
+          <tr>
+            <td colspan="5" class="muted">{{ 'No tasks yet.' | transloco }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </section>
+</div>

@@ -276,7 +276,10 @@
                 @let diagram = report.diagram;
                 <p class="report-meta">
                   {{
-                    'report.diagram' | transloco: { v0: diagram.entities, v1: diagram.relations }
+                    diagram.caption
+                      ? (diagram.caption.key | transloco: diagram.caption.params)
+                      : ('report.diagram'
+                        | transloco: { v0: diagram.entities, v1: diagram.relations })
                   }}
                 </p>
                 <img class="report-diagram" [src]="diagram.image" [alt]="report.title" />

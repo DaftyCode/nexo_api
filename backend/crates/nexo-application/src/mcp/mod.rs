@@ -1,14 +1,16 @@
 //! Model Context Protocol server: JSON-RPC messages answered with the application's use
 //! cases. Transports (Streamable HTTP in `nexo-http`) only move messages.
 //!
-//! Resources (`nexo://` collections, requests, environments, globals and the last
-//! execution) and prompts built on them share nothing secret: credentials in
+//! Resources (`nexo://` collections, requests, environments, globals, the last execution
+//! and the exposed MongoDB and SQL connections) and prompts built on them share nothing
+//! secret: credentials in
 //! authorizations, credential headers and sensitive variables are masked as in a Git export,
 //! and every vault value that still appears is replaced before the text is sent.
 mod mongo;
 mod prompts;
 mod resources;
 mod share;
+mod sql;
 #[cfg(test)]
 mod tests;
 mod uri;
@@ -156,6 +158,7 @@ impl Application {
                      "inputSchema": {"type": "object", "properties": {}}}),
                 ];
                 tools.extend(mongo::tools());
+                tools.extend(sql::tools());
                 json!({ "tools": tools })
             }
             "tools/call" => {
@@ -176,7 +179,10 @@ impl Application {
                     }),
                     name => match self.mongo_tool(name, &params["arguments"]).await {
                         Some(outcome) => outcome,
-                        None => return rpc_error(id, -32602, "Unknown tool"),
+                        None => match self.sql_tool(name, &params["arguments"]).await {
+                            Some(outcome) => outcome,
+                            None => return rpc_error(id, -32602, "Unknown tool"),
+                        },
                     },
                 };
                 match outcome {

@@ -9,14 +9,17 @@ mod dashboard;
 mod explain;
 mod history;
 mod journal;
+mod mock;
 mod opening;
 mod passwords;
 mod route;
 mod rows;
 mod rules;
+mod scripts;
 mod search;
 mod sessions;
 mod structure;
+mod tasks;
 #[cfg(test)]
 mod tests;
 mod transactions;
@@ -44,6 +47,11 @@ use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 use sessions::{Session, session_name};
 use std::time::Instant;
+
+/// What a statement (all of a script) does, in the dialect of a driver.
+pub(crate) fn classify_sql(sql: &str, driver: &str) -> StatementKind {
+    rules::classify_all(sql, Dialect::parse(driver)).kind
+}
 
 /// Reads a payload already checked against its type.
 fn read<T: DeserializeOwned>(payload: Value) -> Result<T> {
@@ -148,6 +156,7 @@ impl Application {
             Operation::DbRowsWrite => self.write_rows(sources, read(payload)?).await,
             Operation::DbExplain => self.explain_statement(sources, read(payload)?).await,
             Operation::DbImport => self.import_rows(sources, read(payload)?).await,
+            Operation::DbMockRows => self.mock_rows(sources, read(payload)?).await,
             Operation::DbCompareSchema => self.compare_schema(sources, read(payload)?).await,
             Operation::DbCompareScript => self.compare_script(sources, read(payload)?).await,
             Operation::DbCompareData => self.compare_data(sources, read(payload)?).await,

@@ -51,7 +51,28 @@ export function bindParameters(
   named: Readonly<Record<string, unknown>>,
   positional: readonly unknown[] = [],
 ): { sql: string; params: unknown[] } {
-  const all = places(sql, style === 'question');
+  const marker = (number: number) =>
+    style === 'question' ? '?' : style === 'numbered' ? `$${number}` : `@P${number}`;
+  return markParameters(sql, style === 'question', named, positional, {
+    marker,
+    reuse: style !== 'question',
+  });
+}
+
+/**
+ * The statement with each parameter written by `marker` (given its position from 1), and
+ * the values in the order they bind. `reuse`: a name used twice binds once (`$1`, `:1`,
+ * `@p1`); otherwise each place binds its own value (`?`, `%s`). `question`: a `?` of the
+ * statement is a parameter too.
+ */
+export function markParameters(
+  sql: string,
+  question: boolean,
+  named: Readonly<Record<string, unknown>>,
+  positional: readonly unknown[],
+  how: { marker: (position: number) => string; reuse: boolean },
+): { sql: string; params: unknown[] } {
+  const all = places(sql, question);
   const params: unknown[] = [];
   const numbers = new Map<string, number>();
   let next = 0;
@@ -61,19 +82,14 @@ export function bindParameters(
     text += sql.slice(at, place.start);
     at = place.end;
     const value = place.name ? named[place.name] : positional[next++];
-    if (style === 'question') {
-      params.push(value ?? null);
-      text += '?';
-      continue;
-    }
     const key = place.name || `?${next}`;
-    let number = numbers.get(key);
+    let number = how.reuse ? numbers.get(key) : undefined;
     if (number === undefined) {
       params.push(value ?? null);
       number = params.length;
       numbers.set(key, number);
     }
-    text += style === 'numbered' ? `$${number}` : `@P${number}`;
+    text += how.marker(number);
   }
   return { sql: text + sql.slice(at), params };
 }

@@ -1,0 +1,118 @@
+<div class="db-import-backdrop">
+  <section
+    class="feature-card db-import-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-import-title"
+    (keydown.escape)="closed.emit()"
+  >
+    <header class="row db-import-head">
+      <h2 id="db-import-title">{{ 'Import connections' | transloco }}</h2>
+      <button
+        type="button"
+        class="icon-button"
+        [attr.aria-label]="'Close' | transloco"
+        (click)="closed.emit()"
+      >
+        ×
+      </button>
+    </header>
+    <p class="muted">
+      {{
+        'From DBeaver (data-sources.json), pgAdmin (servers.json), MySQL Workbench (connections.xml), a file exported from Nexo, or a list of URLs, one per line. Passwords never come: Nexo asks for them when you connect.'
+          | transloco
+      }}
+    </p>
+    <label class="file-label">
+      {{ 'Choose a file' | transloco }}
+      <input type="file" accept=".json,.xml,.txt,.conf" (change)="file($event)" />
+    </label>
+    <label class="field"
+      >{{ 'Or paste URLs or the content of a file' | transloco
+      }}<textarea
+        [formField]="fields.text"
+        rows="4"
+        spellcheck="false"
+        placeholder="postgresql://ana@db.example.com:5432/shop"
+      ></textarea>
+    </label>
+    <div class="button-grid">
+      <button
+        type="button"
+        class="button"
+        [disabled]="!model().text.trim() || section.state.busy()"
+        (click)="paste()"
+      >
+        {{ 'Read' | transloco }}
+      </button>
+    </div>
+    @if (problem(); as problem) {
+      <p class="global-alert" role="alert">{{ problem | transloco }}</p>
+    }
+    @if (task.error(); as error) {
+      <p class="global-alert" role="alert">{{ error | transloco }}</p>
+    }
+    @if (read(); as read) {
+      <section class="db-import-report" role="status" [attr.aria-label]="'What comes' | transloco">
+        <h3>
+          {{
+            'db.import.from'
+              | transloco
+                : {
+                    v0: read.source === 'urls' ? ('db.import.urls' | transloco) : source(),
+                    v1: connections().length,
+                  }
+          }}
+        </h3>
+        <ul>
+          @for (connection of connections(); track connection.id) {
+            <li>
+              <strong>{{ connection.name }}</strong>
+              <span class="muted">{{ connection.value['driver'] }}</span>
+            </li>
+          }
+        </ul>
+        @if (read.skipped.length) {
+          <h4>{{ 'Not imported' | transloco }}</h4>
+          <ul>
+            @for (skipped of read.skipped; track $index) {
+              <li>
+                <strong>{{ skipped.name }}</strong>
+                <span class="muted">{{ 'db.import.skip.' + skipped.reason | transloco }}</span>
+              </li>
+            }
+          </ul>
+        }
+        @for (note of read.notes; track note.code) {
+          <p class="editor-hint">
+            {{ 'db.import.note.' + note.code | transloco }}
+            <span class="muted">{{ note.items.join(', ') }}</span>
+          </p>
+        }
+      </section>
+      <div class="button-grid">
+        <button
+          type="button"
+          class="button primary"
+          [disabled]="!connections().length || section.state.busy()"
+          (click)="save()"
+        >
+          {{ 'db.import.save' | transloco: { v0: connections().length } }}
+        </button>
+      </div>
+    }
+    @if (outcome(); as outcome) {
+      <section class="db-import-report" role="alert">
+        <h4>{{ 'Not imported' | transloco }}</h4>
+        <ul>
+          @for (refused of outcome.refused; track $index) {
+            <li>
+              <strong>{{ refused.name }}</strong>
+              <span class="muted">{{ refused.error | transloco }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+  </section>
+</div>

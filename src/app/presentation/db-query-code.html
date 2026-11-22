@@ -1,0 +1,69 @@
+<div class="mongo-backdrop">
+  <section
+    class="feature-card mongo-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="db-query-code-title"
+  >
+    <h2 id="db-query-code-title">{{ 'Code' | transloco }}</h2>
+    <div class="row mongo-inline">
+      <label class="field"
+        >{{ 'Language' | transloco }}
+        <select [value]="language()" (change)="choose($event)">
+          @for (option of languages; track option.id) {
+            <option [value]="option.id">
+              {{ option.id === 'cli' ? ('db.code.cli' | transloco) : option.label }}
+            </option>
+          }
+        </select>
+      </label>
+    </div>
+    <p class="muted">{{ 'db.code.intro' | transloco }}</p>
+    @if (generated().error; as error) {
+      <p class="mongo-problem" role="alert">{{ error.key | transloco: error.params }}</p>
+    } @else {
+      <app-code-editor
+        size="large"
+        [language]="editorLanguage()"
+        [value]="generated().code"
+        [readonly]="true"
+        [label]="'Code' | transloco"
+      />
+    }
+    <div class="row mongo-actions">
+      <button
+        type="button"
+        class="button primary"
+        [disabled]="!!generated().error"
+        (click)="copy('program')"
+      >
+        {{ (copied() === 'program' ? 'Copied' : 'Copy') | transloco }}
+      </button>
+      <button type="button" class="button" (click)="copy('string')">
+        {{ (copied() === 'string' ? 'Copied' : 'Copy as string') | transloco }}
+      </button>
+      <button type="button" class="button" [disabled]="!!generated().error" (click)="download()">
+        {{ 'Download' | transloco }}
+      </button>
+      <span class="grow"></span>
+      <button type="button" class="button" (click)="closed.emit()">
+        {{ 'Close' | transloco }}
+      </button>
+    </div>
+    @if (paste()) {
+      <details>
+        <summary>{{ 'Paste from code' | transloco }}</summary>
+        <label class="field"
+          >{{ 'db.code.pasteHelp' | transloco }}
+          <textarea rows="4" spellcheck="false" (input)="typed($event)"></textarea>
+        </label>
+        @if (statement(); as statement) {
+          <pre class="muted">{{ statement }}</pre>
+        }
+        <button type="button" class="button" [disabled]="!statement()" (click)="put()">
+          {{ 'Put it in the editor' | transloco }}
+        </button>
+      </details>
+    }
+  </section>
+</div>

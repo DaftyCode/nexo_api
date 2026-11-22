@@ -41,6 +41,9 @@ export interface DbForm {
   color: string;
   description: string;
   readOnly: boolean;
+  /** MCP agents may read it (DB-32); the columns hidden from them, with commas. */
+  mcp: boolean;
+  mcpHidden: string;
   autoCommit: boolean;
   smartCommit: boolean;
   sharedSession: boolean;
@@ -89,6 +92,8 @@ export function emptyDbForm(driver: string, name = ''): DbForm {
     color: '',
     description: '',
     readOnly: false,
+    mcp: false,
+    mcpHidden: '',
     autoCommit: true,
     smartCommit: false,
     sharedSession: false,
@@ -126,6 +131,8 @@ export function formOf(name: string, stored: unknown): DbForm {
     color: value.color ?? '',
     description: value.description ?? '',
     readOnly: !!value.readOnly,
+    mcp: !!value.mcp,
+    mcpHidden: (value.mcpHidden ?? []).join(', '),
     autoCommit: autoCommits(value),
     smartCommit: !!value.smartCommit,
     sharedSession: !!value.sharedSession,
@@ -249,8 +256,8 @@ export function typedSecrets(form: DbForm): {
   keyPem?: string;
   proxyPassword?: string;
 } {
-  const proxy =
-    form.route.via === 'socks5' && form.route.username.trim() ? form.route.password : '';
+  const written = form.route.via === 'socks5' && !form.route.profile.trim();
+  const proxy = written && form.route.username.trim() ? form.route.password : '';
   return {
     ...(form.password ? { password: form.password } : {}),
     ...(form.keyPem.trim() && form.certPem.trim() ? { keyPem: form.keyPem.trim() } : {}),

@@ -5,8 +5,8 @@
 //! which reads two texts and returns one and touches nothing else. Scripts exchange JSON
 //! strings with the engine through the `__nexo` object installed by the `bootstrap/` script,
 //! requests made with
-//! `pm.sendRequest` are queued for the engine to send, and `nx.mongo` calls for the
-//! application to answer. Code generation from strings is
+//! `pm.sendRequest` are queued for the engine to send, and `nx.mongo` and `nx.sql` calls for
+//! the application to answer. Code generation from strings is
 //! disabled. Vault secrets and OAuth 2.0 tokens never enter the context: the host fills them
 //! into the request.
 use nexo_domain::{Error, Result};
@@ -27,7 +27,8 @@ const BOOTSTRAP: &str = concat!(
     include_str!("bootstrap/03-variables.js"),
     include_str!("bootstrap/04-api.js"),
     include_str!("bootstrap/05-mongo.js"),
-    include_str!("bootstrap/06-host.js"),
+    include_str!("bootstrap/06-sql.js"),
+    include_str!("bootstrap/07-host.js"),
 );
 mod queue;
 mod schema;

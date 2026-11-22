@@ -53,6 +53,10 @@ export interface DbConnectionValue {
   color?: string;
   description?: string;
   readOnly?: boolean;
+  /** MCP agents may read it (DB-32), never write; without the columns of `mcpHidden`
+   * (`table.column`, `column` or patterns with `*`). */
+  mcp?: boolean;
+  mcpHidden?: string[];
   /** Off: statements wait for a commit. Production connections start with it off. */
   autoCommit?: boolean;
   /** In auto-commit, a statement that writes switches to manual commit first (DBeaver's

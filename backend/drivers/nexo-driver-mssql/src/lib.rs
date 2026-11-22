@@ -14,6 +14,7 @@ mod messages;
 mod plan;
 mod search;
 mod session;
+mod spatial;
 mod values;
 
 use async_trait::async_trait;

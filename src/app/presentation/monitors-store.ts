@@ -24,8 +24,12 @@ export class MonitorsStore {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private workspace = '';
 
-  /** Asked about only while the workspace has monitors. */
-  private readonly watched = computed(() => this.monitors().length > 0);
+  /** Asked about only while the workspace has monitors or scheduled database tasks. */
+  private readonly watched = computed(
+    () =>
+      this.monitors().length > 0 ||
+      this.state.documents().some((document) => document.kind === 'db-task'),
+  );
 
   constructor() {
     effect(() => {
@@ -66,6 +70,20 @@ export class MonitorsStore {
   }
 
   private text(event: MonitorEvent): { title: string; body: string } {
+    if (event.kind === 'db-task') {
+      const differences = event.state === 'differences';
+      return {
+        title: this.i18n.translate<string>(
+          differences ? 'db.task.differencesTitle' : 'db.task.failedTitle',
+          { v0: event.name },
+        ),
+        body: differences
+          ? this.i18n.translate<string>('db.task.differences', {
+              v0: String(event.differences ?? 0),
+            })
+          : (event.error ?? ''),
+      };
+    }
     const title = this.i18n.translate<string>('monitor.failedTitle', { v0: event.name });
     const body =
       event.error ??

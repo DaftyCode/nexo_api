@@ -26,6 +26,7 @@ export type MenuAction =
   | 'exportData'
   | 'importData'
   | 'copyData'
+  | 'mockData'
   | 'editStructure'
   | 'dropTable'
   | 'emptyTable'

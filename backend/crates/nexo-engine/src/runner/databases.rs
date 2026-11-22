@@ -1,10 +1,13 @@
-//! `nx.mongo` calls of scripts: the engine queues them like `nx.sendRequest` and hands them
-//! to the application, which the composition root connects once both exist. The connection
-//! is named by the script; its URI and secrets never enter the script's context.
-use nexo_application::ports::{ScriptCall, ScriptDatabase};
+//! `nx.mongo` and `nx.sql` calls of scripts: the engine queues them like `nx.sendRequest` and
+//! hands them to the application, which the composition root connects once both exist. The
+//! connection is named by the script; its URI and secrets never enter the script's context.
+use nexo_application::ports::{ScriptCall, ScriptDatabase, SqlCall};
 use nexo_domain::{Error, Result};
 use serde_json::{Map, Value};
-use std::sync::{Arc, OnceLock, Weak};
+use std::sync::{
+    Arc, OnceLock, Weak,
+    atomic::{AtomicBool, AtomicU64, Ordering},
+};
 use tokio::runtime::Handle;
 
 /// The application's answer to `nx.mongo`, set by the composition root, with the runtime it
@@ -68,6 +71,71 @@ pub(crate) async fn call(
         .spawn(async move { databases.script_call(call).await })
         .await
         .map_err(|error| Error::Infrastructure(error.to_string()))?
+}
+
+/// Names the executions of scripts, never the same twice in a process.
+static RUNS: AtomicU64 = AtomicU64::new(0);
+
+/// The `nx.sql` sessions of one execution of a request's scripts (DB-32): one per connection
+/// it names, closed when it ends, however it ends (a transaction left open is undone).
+pub(crate) struct SqlRun {
+    databases: ScriptDatabases,
+    id: String,
+    used: AtomicBool,
+}
+
+impl SqlRun {
+    pub(crate) fn new(databases: &ScriptDatabases) -> Self {
+        Self {
+            databases: databases.clone(),
+            id: format!("r{}", RUNS.fetch_add(1, Ordering::Relaxed) + 1),
+            used: AtomicBool::new(false),
+        }
+    }
+
+    /// A queued `nx.sql` call, answered by the application on the sessions of this run.
+    pub(crate) async fn call(
+        &self,
+        workspace: &str,
+        variables: Map<String, Value>,
+        call: &Value,
+    ) -> Result<Value> {
+        let (databases, runtime) = self.databases.get().ok_or_else(|| {
+            Error::Validation("nx.sql is not available here: run the request in Nexo".into())
+        })?;
+        self.used.store(true, Ordering::Relaxed);
+        let text = |key: &str| call[key].as_str().unwrap_or_default().to_string();
+        let call = SqlCall {
+            workspace: if workspace.is_empty() {
+                "local".into()
+            } else {
+                workspace.into()
+            },
+            run: self.id.clone(),
+            connection: text("connection"),
+            variables,
+            method: text("method"),
+            sql: text("sql"),
+            params: call["params"].as_array().cloned().unwrap_or_default(),
+            confirm: call["confirm"].clone(),
+        };
+        runtime
+            .spawn(async move { databases.sql_call(call).await })
+            .await
+            .map_err(|error| Error::Infrastructure(error.to_string()))?
+    }
+}
+
+impl Drop for SqlRun {
+    fn drop(&mut self) {
+        if !self.used.load(Ordering::Relaxed) {
+            return;
+        }
+        if let Some((databases, runtime)) = self.databases.get() {
+            let id = std::mem::take(&mut self.id);
+            runtime.spawn(async move { databases.sql_end(&id).await });
+        }
+    }
 }
 
 #[cfg(test)]

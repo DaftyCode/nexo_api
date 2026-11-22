@@ -47,6 +47,7 @@
       {{ 'Use' | transloco }}
     </button>
     <span class="grow"></span>
+    <app-db-sql-views [(view)]="view" />
     <button
       type="button"
       class="button small primary"
@@ -82,6 +83,9 @@
       (click)="command('explain')"
     >
       {{ 'Explain' | transloco }}
+    </button>
+    <button type="button" class="button small" (click)="showCode()">
+      {{ 'Code' | transloco }}
     </button>
     <button
       type="button"
@@ -188,8 +192,18 @@
   }
   <div class="db-sql-body">
     <div class="db-sql-main">
+      @if (view() === 'visual') {
+        <app-db-query-builder
+          [connection]="tab().connection"
+          [script]="draft().text"
+          [cursor]="draft().cursor"
+          (edited)="built($event)"
+          (run)="command('run')"
+        />
+      }
       <div
         class="db-sql-code"
+        [hidden]="view() === 'visual'"
         [style.height.px]="codeHeight() || null"
         [class.db-sql-code-sized]="codeHeight() > 0"
       >
@@ -214,7 +228,12 @@
         (resized)="codeHeight.set($event)"
         (restore)="codeHeight.set(0)"
       />
-      <app-db-results [runner]="runner()" (goTo)="goTo($event)" />
+      <app-db-results
+        [runner]="runner()"
+        [charts]="draft().charts ?? {}"
+        (goTo)="goTo($event)"
+        (chartChange)="chart($event)"
+      />
     </div>
     @switch (side()) {
       @case ('variables') {

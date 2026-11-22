@@ -27,6 +27,12 @@ export async function connectionTables(section: DbSection, connection: string) {
   return at.cases.tables(at.workspace, at.session, []);
 }
 
+/** The columns and foreign keys of some tables of a connection (the query builder's too). */
+export async function readTables(section: DbSection, connection: string, tables: DiagramTable[]) {
+  const at = await reader(section, connection);
+  return at.cases.read(at.workspace, at.session, tables, at.structured);
+}
+
 /** Where each table of a saved diagram was, its color, and whether it is hidden. */
 function restoreEntities(draft: DiagramDraft, entities: DiagramEntity[], tables: ErdTable[]) {
   const kept = new Map(entities.map((entity) => [pathKey(entity.path), entity]));

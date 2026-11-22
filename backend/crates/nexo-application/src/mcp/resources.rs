@@ -89,6 +89,15 @@ impl Application {
                     "mimeType": JSON,
                 }));
             }
+            for connection in self.mcp_sql_connections(id).await? {
+                resources.push(json!({
+                    "uri": uri(id, &["sql", encode(&connection.name).as_str()]),
+                    "name": format!("{} / SQL {}", workspace.name, connection.name),
+                    "title": connection.name,
+                    "description": "Schemas, tables and views of an exposed SQL connection",
+                    "mimeType": JSON,
+                }));
+            }
             if latest.is_some() {
                 resources.push(json!({
                     "uri": uri(id, &["history", "latest"]),
@@ -114,6 +123,12 @@ impl Application {
             "name": "MongoDB collection schema",
             "title": "The schema of a collection",
             "description": "Fields, types, presence and anomalies of a sample of a collection of an exposed connection",
+            "mimeType": JSON,
+        }, {
+            "uriTemplate": format!("{SCHEME}{{workspace}}/sql/{{connection}}/{{schema}}/{{table}}"),
+            "name": "SQL table",
+            "title": "A table of an SQL connection",
+            "description": "Columns, keys and indexes of a table of an exposed SQL connection",
             "mimeType": JSON,
         }]})
     }
@@ -158,10 +173,20 @@ impl Application {
                     None => return Err(Missing::Resource),
                 }
             }
+            Resource::SqlConnection(workspace, connection) => {
+                self.mcp_sql_overview(workspace, connection).await?
+            }
+            Resource::SqlTable(workspace, connection, schema, table) => {
+                self.mcp_sql_table(workspace, connection, schema, table)
+                    .await?
+            }
         };
         if matches!(
             resource,
-            Resource::MongoConnection(..) | Resource::MongoCollection(..)
+            Resource::MongoConnection(..)
+                | Resource::MongoCollection(..)
+                | Resource::SqlConnection(..)
+                | Resource::SqlTable(..)
         ) {
             let text = self.redacted(&value).await?;
             return Ok(json!({"contents": [{"uri": uri, "mimeType": JSON, "text": text}]}));

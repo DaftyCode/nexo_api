@@ -73,6 +73,37 @@ fn routes_are_read_from_settings_and_from_the_older_proxy() {
     }
 }
 
+#[test]
+fn a_route_may_name_a_proxy_profile_of_its_own_kind() {
+    let profiles = json!({
+        "p1": {"proxy": "socks5", "host": "proxy.lan", "port": 1081, "username": "ada",
+            "password": "secret", "remoteDns": true},
+        "p2": {"proxy": "http", "host": "web.lan"},
+    });
+    let route = |via: &str, profile: &str| {
+        Route::with_profiles(
+            &json!({"route": {"via": via, "profile": profile, "host": "ignored"}}),
+            &profiles,
+        )
+    };
+    let socks = route("socks5", "p1").unwrap();
+    assert_eq!(
+        socks.proxy_url().as_deref(),
+        Some("socks5h://proxy.lan:1081")
+    );
+    assert_eq!(socks.credentials().unwrap().password, "secret");
+    assert_eq!(
+        route("http", "p2").unwrap().proxy_url().as_deref(),
+        Some("http://web.lan:8080")
+    );
+    for (via, profile) in [("socks5", "p2"), ("http", "gone")] {
+        assert_eq!(
+            route(via, profile).unwrap_err().to_string(),
+            "The proxy profile of this connection no longer exists"
+        );
+    }
+}
+
 #[tokio::test]
 async fn an_http_proxy_opens_a_tunnel_with_connect_and_its_credentials() {
     let upstream = echo().await;

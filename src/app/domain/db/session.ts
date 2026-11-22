@@ -2,6 +2,7 @@
  * What the database section keeps in the workspace session: the navigator as it was, and
  * its editor tabs with the unsaved text of each script. Results are never kept.
  */
+import { ResultChartConfig, readCharts } from './result-chart/config';
 import { DashboardLayout, readDashboardLayouts } from './dashboard';
 import { DiagramLayout, readLayouts } from './erd-document';
 import { QuickFilter, TableQuery } from './table-query';
@@ -51,6 +52,8 @@ export interface SqlDraft {
   dirty?: boolean;
   /** Another database of the server than the connection's. */
   database?: string;
+  /** The charts of its results, by statement (DB-28). */
+  charts?: Record<string, ResultChartConfig>;
 }
 
 export interface DatabaseSession {
@@ -146,6 +149,7 @@ function readDraft(item: unknown): SqlDraft {
     ...(text(draft, 'script') ? { script: text(draft, 'script') } : {}),
     ...(draft['dirty'] === true ? { dirty: true } : {}),
     ...(text(draft, 'database') ? { database: text(draft, 'database') } : {}),
+    ...readCharts(draft['charts']),
   };
 }
 

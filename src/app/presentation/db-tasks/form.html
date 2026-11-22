@@ -1,0 +1,227 @@
+@let f = form();
+<form class="card task-form" (submit)="$event.preventDefault(); save()">
+  <div class="row">
+    <label class="field grow"
+      >{{ 'Name' | transloco }}<input [value]="f.name" (input)="set({ name: value($event) })"
+    /></label>
+    <label class="field"
+      >{{ 'Folder' | transloco }}<input [value]="f.folder" (input)="set({ folder: value($event) })"
+    /></label>
+    <label class="field"
+      >{{ 'Task' | transloco
+      }}<select [value]="f.type" (change)="set({ type: $any(value($event)) })">
+        @for (type of types; track type) {
+          <option [value]="type">{{ 'db.task.type.' + type | transloco }}</option>
+        }
+      </select></label
+    >
+  </div>
+  @switch (f.type) {
+    @case ('script') {
+      <fieldset class="task-choices">
+        <legend>{{ 'Scripts' | transloco }}</legend>
+        @for (script of scripts(); track script.id) {
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="f.scripts.includes(script.id)"
+              (change)="toggle('scripts', script.id)"
+            />{{ script.name }}</label
+          >
+        } @empty {
+          <span class="muted">{{ 'Save a script first.' | transloco }}</span>
+        }
+      </fieldset>
+      <fieldset class="task-choices">
+        <legend>{{ 'Connections' | transloco }}</legend>
+        @for (connection of connections(); track connection.id) {
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="f.connections.includes(connection.id)"
+              (change)="toggle('connections', connection.id)"
+            />{{ connection.name }}</label
+          >
+        }
+      </fieldset>
+      <label class="check-field"
+        ><input
+          type="checkbox"
+          [checked]="f.transaction"
+          (change)="set({ transaction: !f.transaction })"
+        />{{ 'Each script in a transaction of its own' | transloco }}</label
+      >
+    }
+    @case ('copy') {
+      <div class="row">
+        <label class="field"
+          >{{ 'Read from' | transloco
+          }}<select [value]="f.source" (change)="set({ source: value($event) })">
+            <option value="">{{ 'Choose a connection' | transloco }}</option>
+            @for (connection of connections(); track connection.id) {
+              <option [value]="connection.id">{{ connection.name }}</option>
+            }
+          </select></label
+        >
+        <label class="field"
+          >{{ 'Write into' | transloco
+          }}<select [value]="f.target" (change)="set({ target: value($event) })">
+            <option value="">{{ 'Choose a connection' | transloco }}</option>
+            @for (connection of connections(); track connection.id) {
+              <option [value]="connection.id">{{ connection.name }}</option>
+            }
+          </select></label
+        >
+      </div>
+      <label class="field"
+        >{{ 'Query that reads' | transloco
+        }}<textarea
+          rows="3"
+          spellcheck="false"
+          [value]="f.sql"
+          (input)="set({ sql: value($event) })"
+        ></textarea>
+      </label>
+      <div class="row">
+        <label class="field"
+          >{{ 'Schema' | transloco
+          }}<input [value]="f.schema" spellcheck="false" (input)="set({ schema: value($event) })"
+        /></label>
+        <label class="field grow"
+          >{{ 'Table' | transloco
+          }}<input [value]="f.table" spellcheck="false" (input)="set({ table: value($event) })"
+        /></label>
+      </div>
+    }
+    @case ('compare') {
+      <label class="field"
+        >{{ 'Compare' | transloco
+        }}<select [value]="f.mode" (change)="set({ mode: $any(value($event)) })">
+          <option value="schema">{{ 'Structure' | transloco }}</option>
+          <option value="data">{{ 'Data' | transloco }}</option>
+        </select></label
+      >
+      @for (side of ['source', 'target']; track side) {
+        <div class="row">
+          <label class="field"
+            >{{ (side === 'source' ? 'Source' : 'Target') | transloco
+            }}<select
+              [value]="side === 'source' ? f.source : f.target"
+              (change)="
+                side === 'source' ? set({ source: value($event) }) : set({ target: value($event) })
+              "
+            >
+              <option value="">{{ 'Choose a connection' | transloco }}</option>
+              @for (connection of connections(); track connection.id) {
+                <option [value]="connection.id">{{ connection.name }}</option>
+              }
+            </select></label
+          >
+          <label class="field grow"
+            >{{ 'db.task.path' | transloco: { v0: side === 'source' ? 1 : 2 }
+            }}<input
+              spellcheck="false"
+              placeholder="shop/schemas/public"
+              [value]="side === 'source' ? f.sourcePath : f.targetPath"
+              (input)="
+                side === 'source'
+                  ? set({ sourcePath: value($event) })
+                  : set({ targetPath: value($event) })
+              "
+          /></label>
+        </div>
+      }
+    }
+    @case ('backup') {
+      <div class="row">
+        <label class="field"
+          >{{ 'Connection' | transloco
+          }}<select [value]="f.connection" (change)="set({ connection: value($event) })">
+            <option value="">{{ 'Choose a connection' | transloco }}</option>
+            @for (connection of connections(); track connection.id) {
+              <option [value]="connection.id">{{ connection.name }}</option>
+            }
+          </select></label
+        >
+        <label class="field grow"
+          >{{ 'File of the backup' | transloco
+          }}<input [value]="f.file" spellcheck="false" (input)="set({ file: value($event) })"
+        /></label>
+      </div>
+      <p class="muted">
+        {{ 'Backups run with the local client tools of the desktop app.' | transloco }}
+      </p>
+    }
+    @case ('composite') {
+      <fieldset class="task-choices">
+        <legend>{{ 'Tasks, in this order' | transloco }}</legend>
+        @for (task of tasks(); track task.id) {
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="f.tasks.includes(task.id)"
+              (change)="toggle('tasks', task.id)"
+            />{{ task.name }}</label
+          >
+        } @empty {
+          <span class="muted">{{ 'Save other tasks first.' | transloco }}</span>
+        }
+      </fieldset>
+    }
+  }
+  @if (f.type === 'script' || f.type === 'composite') {
+    <label class="field"
+      >{{ 'After a failure' | transloco
+      }}<select [value]="f.onError" (change)="set({ onError: $any(value($event)) })">
+        <option value="stop">{{ 'Stop' | transloco }}</option>
+        <option value="continue">{{ 'Go on' | transloco }}</option>
+      </select></label
+    >
+  }
+  <fieldset class="task-choices">
+    <legend>{{ 'Authorized without asking' | transloco }}</legend>
+    @for (key of authorizations; track key) {
+      <label class="check-field"
+        ><input type="checkbox" [checked]="f.authorize[key]" (change)="allow(key)" />{{
+          'db.task.authorize.' + key | transloco
+        }}</label
+      >
+    }
+  </fieldset>
+  @if (authorizes()) {
+    <p class="task-warning" role="note">
+      {{ 'db.task.warning' | transloco }}
+    </p>
+  }
+  <div class="row">
+    <label class="field"
+      >{{ 'Runs' | transloco
+      }}<select [value]="f.every" (change)="set({ every: +value($event) })">
+        @for (minutes of every; track minutes) {
+          <option [value]="minutes">
+            {{ everyLabel(minutes) | transloco: { v0: minutes >= 60 ? minutes / 60 : minutes } }}
+          </option>
+        }
+      </select></label
+    >
+    <label class="check-field"
+      ><input type="checkbox" [checked]="f.paused" (change)="set({ paused: !f.paused })" />{{
+        'Paused' | transloco
+      }}</label
+    >
+  </div>
+  @if (f.every) {
+    <p class="muted">{{ 'db.task.whileOpen' | transloco }}</p>
+  }
+  @if (problem(); as problem) {
+    <p class="editor-hint" role="status">{{ problem | transloco }}</p>
+  }
+  <div class="button-grid">
+    <button type="submit" class="button primary" [disabled]="!!problem()">
+      {{ 'Save' | transloco }}
+    </button>
+    <button type="button" class="button" (click)="cancelled.emit()">
+      {{ 'Cancel' | transloco }}
+    </button>
+  </div>
+</form>

@@ -1,0 +1,284 @@
+@let m = model();
+<nav class="editor-tabs" [attr.aria-label]="'Parts of the query' | transloco">
+  @for (each of panels; track each[0]) {
+    <button
+      type="button"
+      [class.active]="panel() === each[0]"
+      [attr.aria-current]="panel() === each[0] ? 'page' : null"
+      (click)="panel.set(each[0])"
+    >
+      {{ each[1] | transloco }}
+    </button>
+  }
+</nav>
+<div class="qb-panel">
+  @switch (panel()) {
+    @case ('columns') {
+      @for (column of m.columns; track $index; let at = $index) {
+        <div class="qb-row">
+          <input
+            [value]="column.expression"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Column or expression' | transloco"
+            spellcheck="false"
+            (change)="list('columns', at, { ...column, expression: $any($event.target).value })"
+          />
+          <select
+            [value]="column.aggregate"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Aggregate' | transloco"
+            (change)="list('columns', at, { ...column, aggregate: $any($event.target).value })"
+          >
+            @for (each of aggregates; track each[0]) {
+              <option [value]="each[0]">{{ each[1] | transloco }}</option>
+            }
+          </select>
+          <input
+            [value]="column.alias"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Alias' | transloco"
+            [placeholder]="'Alias' | transloco"
+            spellcheck="false"
+            (change)="list('columns', at, { ...column, alias: $any($event.target).value })"
+          />
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Move up' | transloco"
+            (click)="set({ columns: moved(m.columns, at, -1) })"
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Move down' | transloco"
+            (click)="set({ columns: moved(m.columns, at, 1) })"
+          >
+            ↓
+          </button>
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Remove the column' | transloco"
+            (click)="without('columns', at)"
+          >
+            ×
+          </button>
+        </div>
+      } @empty {
+        <p class="muted">{{ 'No columns chosen: every column comes (*).' | transloco }}</p>
+      }
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="readOnly()"
+        (click)="set({ columns: [...m.columns, { expression: '', alias: '', aggregate: '' }] })"
+      >
+        {{ '＋ Column' | transloco }}
+      </button>
+    }
+    @case ('conditions') {
+      <h4>{{ 'Rows that come (WHERE)' | transloco }}</h4>
+      <app-db-query-group
+        [group]="m.where ?? empty"
+        [readOnly]="readOnly()"
+        (changed)="where($event)"
+      />
+      <h4>{{ 'Groups that come (HAVING)' | transloco }}</h4>
+      <app-db-query-group
+        [group]="m.having ?? empty"
+        [readOnly]="readOnly()"
+        (changed)="having($event)"
+      />
+    }
+    @case ('grouping') {
+      @for (each of m.groupBy; track $index; let at = $index) {
+        <div class="qb-row">
+          <input
+            [value]="each"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Column or expression' | transloco"
+            spellcheck="false"
+            (change)="list('groupBy', at, $any($event.target).value)"
+          />
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Remove' | transloco"
+            (click)="without('groupBy', at)"
+          >
+            ×
+          </button>
+        </div>
+      }
+      <div class="button-grid">
+        <button
+          type="button"
+          class="text-button"
+          [disabled]="readOnly()"
+          (click)="set({ groupBy: [...m.groupBy, ''] })"
+        >
+          {{ '＋ Group by' | transloco }}
+        </button>
+        <button type="button" class="text-button" [disabled]="readOnly()" (click)="groupByChosen()">
+          {{ 'Group by the columns without an aggregate' | transloco }}
+        </button>
+      </div>
+    }
+    @case ('order') {
+      @for (each of m.orderBy; track $index; let at = $index) {
+        <div class="qb-row">
+          <input
+            [value]="each.expression"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Column or expression' | transloco"
+            spellcheck="false"
+            (change)="list('orderBy', at, { ...each, expression: $any($event.target).value })"
+          />
+          <label class="check-field"
+            ><input
+              type="checkbox"
+              [checked]="each.descending"
+              [disabled]="readOnly()"
+              (change)="list('orderBy', at, { ...each, descending: !each.descending })"
+            />{{ 'Descending' | transloco }}</label
+          >
+          <button
+            type="button"
+            class="icon-button"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Remove' | transloco"
+            (click)="without('orderBy', at)"
+          >
+            ×
+          </button>
+        </div>
+      }
+      <button
+        type="button"
+        class="text-button"
+        [disabled]="readOnly()"
+        (click)="set({ orderBy: [...m.orderBy, { expression: '', descending: false }] })"
+      >
+        {{ '＋ Order by' | transloco }}
+      </button>
+    }
+    @case ('joins') {
+      @for (join of m.joins; track $index; let at = $index) {
+        <fieldset class="qb-join-row">
+          <legend>{{ aliasOf(join.table) }}</legend>
+          <select
+            [value]="join.kind"
+            [disabled]="readOnly()"
+            [attr.aria-label]="'Kind of join' | transloco"
+            (change)="list('joins', at, { ...join, kind: $any($event.target).value })"
+          >
+            @for (kind of kinds; track kind) {
+              <option [value]="kind">{{ kind.toUpperCase() }}</option>
+            }
+          </select>
+          @for (each of join.on; track $index; let c = $index) {
+            <div class="qb-row">
+              <input
+                [value]="each.left"
+                [disabled]="readOnly()"
+                [attr.aria-label]="'Column or expression' | transloco"
+                spellcheck="false"
+                (change)="
+                  list('joins', at, {
+                    ...join,
+                    on: replaceAt(join.on, c, { ...each, left: $any($event.target).value }),
+                  })
+                "
+              />
+              <select
+                [value]="each.operator"
+                [disabled]="readOnly()"
+                [attr.aria-label]="'Operator' | transloco"
+                (change)="
+                  list('joins', at, {
+                    ...join,
+                    on: replaceAt(join.on, c, { ...each, operator: $any($event.target).value }),
+                  })
+                "
+              >
+                @for (comparison of comparisons; track comparison) {
+                  <option [value]="comparison">{{ comparison }}</option>
+                }
+              </select>
+              <input
+                [value]="each.right"
+                [disabled]="readOnly()"
+                [attr.aria-label]="'Column or expression' | transloco"
+                spellcheck="false"
+                (change)="
+                  list('joins', at, {
+                    ...join,
+                    on: replaceAt(join.on, c, { ...each, right: $any($event.target).value }),
+                  })
+                "
+              />
+              <button
+                type="button"
+                class="icon-button"
+                [disabled]="readOnly()"
+                [attr.aria-label]="'Remove' | transloco"
+                (click)="list('joins', at, { ...join, on: join.on.filter((_, i) => i !== c) })"
+              >
+                ×
+              </button>
+            </div>
+          }
+          <button
+            type="button"
+            class="text-button"
+            [disabled]="readOnly()"
+            (click)="
+              list('joins', at, {
+                ...join,
+                on: [...join.on, { left: '', operator: '=', right: '' }],
+              })
+            "
+          >
+            {{ '＋ Comparison' | transloco }}
+          </button>
+        </fieldset>
+      } @empty {
+        <p class="muted">{{ 'Add a second table to join it.' | transloco }}</p>
+      }
+    }
+    @case ('page') {
+      <label class="check-field"
+        ><input
+          type="checkbox"
+          [checked]="m.distinct"
+          [disabled]="readOnly()"
+          (change)="set({ distinct: !m.distinct })"
+        />{{ 'Only different rows (DISTINCT)' | transloco }}</label
+      >
+      <div class="row">
+        <label class="field"
+          >{{ 'Rows at most' | transloco
+          }}<input
+            inputmode="numeric"
+            [value]="m.limit ?? ''"
+            [disabled]="readOnly()"
+            (change)="set({ limit: count($any($event.target).value) })"
+        /></label>
+        <label class="field"
+          >{{ 'Rows skipped' | transloco
+          }}<input
+            inputmode="numeric"
+            [value]="m.offset ?? ''"
+            [disabled]="readOnly()"
+            (change)="set({ offset: count($any($event.target).value) })"
+        /></label>
+      </div>
+    }
+  }
+</div>

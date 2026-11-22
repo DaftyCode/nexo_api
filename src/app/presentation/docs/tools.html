@@ -73,6 +73,12 @@
         | transloco
     }}
   </p>
+  <p>
+    {{
+      'Settings → Proxies keeps HTTP and SOCKS5 proxies as profiles: choose one in Connect through instead of writing the proxy again; its password stays in the vault.'
+        | transloco
+    }}
+  </p>
 </section>
 <section id="mcp">
   <h2>{{ 'MCP' | transloco }}</h2>
@@ -87,6 +93,12 @@
       {{ 'As a server, Nexo answers MCP at' | transloco }} <code>/mcp</code>
       {{
         'of its local service: an agent can read your collections, your environments with their secrets hidden, and the last request. A database connection is shared only when you let MCP agents read it, and never for writing.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'With Let MCP agents read it in the General tab of a SQL connection, agents get sql_list_tables, sql_describe_table, sql_query (only statements that read, 100 rows at most) and sql_explain, each call on a session that only reads. The columns you list there (users.password, *_token) come as [hidden], also under another name.'
           | transloco
       }}
     </li>

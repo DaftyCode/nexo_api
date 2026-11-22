@@ -43,14 +43,14 @@ struct Events {
 }
 
 impl Board {
-    fn scheduler(&self) -> Result<(Arc<Application>, Arc<dyn Clock>)> {
+    pub(crate) fn scheduler(&self) -> Result<(Arc<Application>, Arc<dyn Clock>)> {
         self.scheduler
             .get()
             .and_then(|(application, clock)| Some((application.upgrade()?, clock.clone())))
             .ok_or_else(|| Error::Unavailable("Monitors run only while Nexo is open".into()))
     }
     /// Marks a monitor as running; `false` when it already was.
-    fn begin(&self, id: &str, now: i64) -> bool {
+    pub(crate) fn begin(&self, id: &str, now: i64) -> bool {
         let mut running = self.running.lock().unwrap_or_else(|e| e.into_inner());
         if running.contains_key(id) {
             return false;
@@ -58,7 +58,7 @@ impl Board {
         running.insert(id.to_string(), now);
         true
     }
-    fn end(&self, id: &str) {
+    pub(crate) fn end(&self, id: &str) {
         self.running
             .lock()
             .unwrap_or_else(|e| e.into_inner())
@@ -108,6 +108,7 @@ impl Application {
                 let after = payload.get("after").and_then(Value::as_u64).unwrap_or(0);
                 self.monitor_status(&workspace, after).await
             }
+            Operation::DbTaskRun => self.run_task(&Value::Object(payload.clone())).await,
             Operation::MonitorRun => {
                 let document = self
                     .workspaces
@@ -155,9 +156,30 @@ impl Application {
             }
             monitors.push(state);
         }
+        // The tasks of databases (DB-31) run on the same schedules.
+        let mut tasks = Vec::new();
+        for document in self
+            .workspaces
+            .documents(workspace, Some(DocumentKind::DbTask))
+            .await?
+        {
+            let id = document.id.as_str();
+            let mut state =
+                json!({"id": id, "running": self.monitors.started(id).is_some(), "next": null});
+            let schedule = Schedule::read(&document.value["schedule"]);
+            if let (Some((_, clock)), Ok(schedule), false) =
+                (&scheduler, schedule, document.value["paused"] == true)
+            {
+                let minute = clock.now().div_euclid(60_000);
+                let next = schedule.next(minute, |minute| clock.local(minute * 60_000));
+                state["next"] = json!(next.map(|minute| minute * 60_000));
+            }
+            tasks.push(state);
+        }
         let (finished, sequence) = self.monitors.since(after);
         Ok(json!({
             "monitors": monitors,
+            "tasks": tasks,
             "finished": finished,
             "sequence": sequence,
             "scheduler": scheduler.is_some(),

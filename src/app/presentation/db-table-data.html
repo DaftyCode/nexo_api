@@ -70,6 +70,17 @@
 @if (rows.error()) {
   <p class="db-data-error" role="alert">{{ rows.error() }}</p>
 }
+@if (chart(); as config) {
+  <app-result-chart
+    [columns]="rows.editor.grid().columns"
+    [rows]="rows.editor.grid().rows"
+    [more]="!!rows.cursor()"
+    [saved]="config"
+    [name]="tab().title"
+    (changed)="chart.set($event)"
+    (readAll)="rows.more()"
+  />
+}
 <div class="db-data-body">
   <div class="db-data-grid">
     <app-data-grid
@@ -114,6 +125,16 @@
           (click)="showStatement.set(!showStatement())"
         >
           <app-studio-icon name="code" />
+        </button>
+        <button
+          type="button"
+          class="icon-button"
+          [attr.aria-pressed]="!!chart()"
+          [attr.aria-label]="'Chart' | transloco"
+          [attr.title]="'Chart' | transloco"
+          (click)="chart.set(chart() ? undefined : chartOf())"
+        >
+          <app-studio-icon name="bars" />
         </button>
         @if (parents().length || children().length) {
           <button

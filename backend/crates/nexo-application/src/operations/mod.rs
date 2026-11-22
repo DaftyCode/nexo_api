@@ -155,6 +155,9 @@ operations!(
         DbCompareData => "db.compare.data",
         DbSyncData => "db.sync.data",
         DbRouteTest => "db.route.test",
+        DbQueryParse => "db.query.parse",
+        DbMockRows => "db.mock.rows",
+        DbTaskRun => "db.task.run",
     }
 );
 

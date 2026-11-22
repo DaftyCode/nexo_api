@@ -78,6 +78,32 @@ fn bytes(bytes: &[u8]) -> Value {
     }
 }
 
+/// A geometry as MySQL keeps it (its SRID, four bytes, then WKB) as EWKB, the SRID inside the
+/// WKB as PostGIS sends it (DB-29); anything else as it came.
+fn ewkb(raw: Vec<u8>) -> Vec<u8> {
+    let (Some(srid), Some(&order), Some(kind)) = (raw.get(..4), raw.get(4), raw.get(5..9)) else {
+        return raw;
+    };
+    let kind: [u8; 4] = [kind[0], kind[1], kind[2], kind[3]];
+    let (kind, srid) = match order {
+        1 => (
+            (u32::from_le_bytes(kind) | 0x2000_0000).to_le_bytes(),
+            [srid[0], srid[1], srid[2], srid[3]],
+        ),
+        0 => (
+            (u32::from_be_bytes(kind) | 0x2000_0000).to_be_bytes(),
+            u32::from_le_bytes([srid[0], srid[1], srid[2], srid[3]]).to_be_bytes(),
+        ),
+        _ => return raw,
+    };
+    let mut out = Vec::with_capacity(raw.len() + 1);
+    out.push(order);
+    out.extend(kind);
+    out.extend(srid);
+    out.extend(&raw[9..]);
+    out
+}
+
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02X}")).collect()
 }
@@ -174,7 +200,7 @@ pub(crate) fn value(value: MyValue, column: &MyColumn) -> Value {
 fn from_bytes(raw: Vec<u8>, kind: ValueKind, bit: bool) -> Value {
     match kind {
         ValueKind::Binary => bytes(&raw),
-        ValueKind::Spatial => text(ValueKind::Spatial, hex(&raw)),
+        ValueKind::Spatial => text(ValueKind::Spatial, hex(&ewkb(raw))),
         ValueKind::Boolean if bit => Value::Bool(bits(&raw) != 0),
         ValueKind::Integer if bit => {
             let number = bits(&raw);

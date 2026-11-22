@@ -17,6 +17,15 @@
   >
     <app-studio-icon name="search" />
   </button>
+  <button
+    type="button"
+    class="button small subtle"
+    [attr.aria-label]="'Database tasks' | transloco"
+    [attr.title]="'Database tasks' | transloco"
+    (click)="taskList.set(true)"
+  >
+    <app-studio-icon name="play" />
+  </button>
 </div>
 <div class="db-nav-search">
   <label class="db-search">
@@ -201,6 +210,17 @@
     <button type="button" role="menuitem" (click)="collapseAll()">
       {{ 'Collapse all' | transloco }}
     </button>
+    <button type="button" role="menuitem" (click)="importConnections()">
+      {{ 'Import connections…' | transloco }}
+    </button>
+    <button
+      type="button"
+      role="menuitem"
+      [disabled]="!section.connections().length"
+      (click)="exportConnections()"
+    >
+      {{ 'Export connections' | transloco }}
+    </button>
     <button
       type="button"
       role="menuitem"
@@ -210,6 +230,18 @@
       {{ 'Actions' | transloco }} <kbd>Shift+F10</kbd>
     </button>
   </div>
+}
+
+@if (actions.mock(); as request) {
+  <app-db-mock-data [request]="request" (closed)="actions.mock.set(undefined)" />
+}
+
+@if (taskList()) {
+  <app-db-tasks (closed)="taskList.set(false)" />
+}
+
+@if (importing()) {
+  <app-db-connection-import (closed)="importing.set(false)" />
 }
 
 @if (menu(); as open) {

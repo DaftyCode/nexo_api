@@ -4,7 +4,7 @@
 use crate::{
     Application,
     operations::Operation,
-    ports::{ScriptCall, ScriptDatabase},
+    ports::{ScriptCall, ScriptDatabase, SqlCall},
 };
 use async_trait::async_trait;
 use nexo_domain::{DocumentKind, Error, Result, WorkspaceId};
@@ -86,6 +86,12 @@ fn count(options: &Map<String, Value>, key: &str) -> Result<Option<u64>> {
 
 #[async_trait]
 impl ScriptDatabase for Application {
+    async fn sql_call(&self, call: SqlCall) -> Result<Value> {
+        self.script_sql(call).await
+    }
+    async fn sql_end(&self, run: &str) {
+        self.script_sql_end(run).await;
+    }
     async fn script_call(&self, call: ScriptCall) -> Result<Value> {
         let workspace = WorkspaceId::parse(&call.workspace)?;
         let saved = self

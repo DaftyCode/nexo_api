@@ -14,10 +14,11 @@ import {
 import { FormField, form } from '@angular/forms/signals';
 import { failureCode } from '../application/ports';
 import { readDbConnection } from '../domain/db/connection';
+import type { ResultChartConfig } from '../domain/db/result-chart';
 import { engineProfile } from '../domain/db/engines';
 import { SqlTemplate } from '../domain/db/sql-templates';
 import { formatSql } from '../domain/db/sql-format';
-import { nodeKey, quoteName } from '../domain/db/tree';
+import { quoteName } from '../domain/db/tree';
 import { assistFor } from './db-panel/assist-source';
 import { SqlPlans } from './db-panel/sql-plans';
 import type { DialogAnswer, DialogRequest } from './mongo-dialog';
@@ -25,11 +26,15 @@ import { MongoDialog } from './mongo-dialog';
 import { DbHistory } from './db-history';
 import { DbResults } from './db-results';
 import { DbSqlCode, SqlCommand } from './db-sql-code';
+import { showCode, statementRange } from './db-sql-tab/code';
 import { DbRunnerDialogs } from './db-runner-dialogs';
 import { DbSqlOutline } from './db-sql-outline';
 import { DbSqlTemplates } from './db-sql-templates';
 import { DbSqlVariables } from './db-sql-variables';
 import { DbSection } from './db-panel/section';
+import { BuilderEdit, DbQueryBuilder } from './db-query-builder';
+import { treeDatabases, treeWords } from './db-sql-tab/names';
+import { DbSqlViews } from './db-sql-tab/views';
 import type { DbTab } from './db-panel/tabs-store';
 import { PanelTask } from './panel-task';
 import { Splitter } from './splitter';
@@ -53,6 +58,8 @@ import { named } from './workspace-state';
     DbSqlTemplates,
     MongoDialog,
     Splitter,
+    DbQueryBuilder,
+    DbSqlViews,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-sql-tab',
@@ -103,24 +110,10 @@ export class DbSqlTab {
   protected readonly whereFields = form(this.where);
   /** Where the history keys (Ctrl+Alt+↑ and ↓) are among this connection's statements. */
   private historyIndex = -1;
-  /** Names of the loaded tree of the connection, suggested while typing. */
-  protected readonly words = computed(() => {
-    const prefix = nodeKey(this.tab().connection, []);
-    const names = new Set<string>();
-    for (const [key, nodes] of this.section.tree.children())
-      if (key === prefix || key.startsWith(`${prefix}/`))
-        for (const node of nodes) if (node.kind !== 'folder') names.add(node.label.split('(')[0]);
-    return [...names];
-  });
-  /** Databases of the server the tree loaded, to choose one: at its top, or in a folder. */
-  protected readonly databases = computed(() => {
-    const children = this.section.tree.children();
-    const connection = this.tab().connection;
-    return [[], ['databases']]
-      .flatMap((path) => children.get(nodeKey(connection, path)) ?? [])
-      .filter((node) => node.kind === 'database')
-      .map((node) => node.label);
-  });
+  protected readonly words = computed(() => treeWords(this.section, this.tab().connection));
+  protected readonly databases = computed(() => treeDatabases(this.section, this.tab().connection));
+  /** The script as text, or its statement at the cursor in the visual builder (DB-26). */
+  protected readonly view = signal<'text' | 'visual'>('text');
 
   constructor() {
     void this.section.cases().then((cases) => this.templates.set(cases.assist.templates()));
@@ -187,16 +180,13 @@ export class DbSqlTab {
 
   /** Formats the selection, or the statement at the cursor (Ctrl+Shift+F). */
   private format(code: DbSqlCode, text: string, selection: { from: number; to: number }) {
-    let [from, to] = [selection.from, selection.to];
-    if (from === to) {
-      from = text.lastIndexOf(';', from - 1) + 1;
-      const next = text.indexOf(';', to);
-      to = next < 0 ? text.length : next;
-    }
-    const part = text.slice(from, to);
-    const start = from + (part.length - part.trimStart().length);
-    const end = to - (part.length - part.trimEnd().length);
+    const { start, end } = statementRange(text, selection);
     if (end > start) code.replaceRange(start, end, formatSql(text.slice(start, end)));
+  }
+  /** The code of the selection or of the statement at the cursor (DB-33). */
+  protected showCode() {
+    const code = this.code();
+    if (code) void showCode(code, this.runner());
   }
 
   /** Puts an older or newer statement of this connection's history in the editor. */
@@ -251,6 +241,7 @@ export class DbSqlTab {
         sql: this.code()?.content() ?? draft.text,
         ...(folder.trim() ? { folder: folder.trim() } : {}),
         ...(draft.database ? { database: draft.database } : {}),
+        ...(draft.charts ? { charts: draft.charts } : {}),
       };
       const id = current?.id ?? this.section.state.cases.files.id();
       const save = (base = current) =>
@@ -275,6 +266,17 @@ export class DbSqlTab {
   /** The editor goes to where an error is. */
   protected goTo(offset: number) {
     this.code()?.goToOffset(offset);
+  }
+
+  /** A chart of a result changed: it is kept with the script (DB-28). */
+  protected chart(change: { key: string; config: ResultChartConfig }) {
+    const charts = { ...this.draft().charts, [change.key]: change.config };
+    this.section.tabs.setDraft(this.tab().id, { charts, dirty: true });
+  }
+
+  /** The builder wrote its statement again; the cursor stays at its start. */
+  protected built(edit: BuilderEdit) {
+    this.code()?.replaceRange(edit.from, edit.to, edit.text, edit.from);
   }
 
   /** An entry of the history goes into the editor. */

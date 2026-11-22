@@ -130,9 +130,10 @@ pub(super) async fn run_steps(
             }
             let transport = &transports[&cache_key];
             let session = ScriptSession::new(&seed, job.cancelled.clone())?;
+            let sql = super::databases::SqlRun::new(&context.databases);
             let groups: Vec<&Value> = step.parents.iter().chain(std::iter::once(item)).collect();
             session.run(&scripts(&groups, "prerequest"), None)?;
-            send_queued(&session, transport, context, workspace).await?;
+            send_queued(&session, transport, context, workspace, &sql).await?;
             let state = session.snapshot()?;
             if state["skip"] != true {
                 // Script variables first; where restricted secrets go is read from the
@@ -162,7 +163,7 @@ pub(super) async fn run_steps(
                     .results
                     .push(result.clone());
                 session.run(&scripts(&groups, "test"), Some(&result))?;
-                send_queued(&session, transport, context, workspace).await?;
+                send_queued(&session, transport, context, workspace, &sql).await?;
             }
             let state = session.snapshot()?;
             // `nx.oauth2.reset(name)`: the next send gets a new token (Bruno's
@@ -227,19 +228,29 @@ pub(super) async fn run_steps(
     Ok(())
 }
 
-/// Sends requests queued by `pm.sendRequest` and `nx.mongo` calls, and delivers their
-/// answers, until a round queues nothing more.
+/// Sends requests queued by `pm.sendRequest`, `nx.mongo` and `nx.sql` calls, and delivers
+/// their answers, until a round queues nothing more.
 pub(super) async fn send_queued(
     session: &ScriptSession,
     transport: &Transport,
     context: &Context,
     workspace: &str,
+    sql: &super::databases::SqlRun,
 ) -> Result<()> {
     for _round in 0..100 {
         let queue = session.take_queue()?;
         let calls = session.take_mongo()?;
-        if queue.is_empty() && calls.is_empty() {
+        let statements = session.take_sql()?;
+        if queue.is_empty() && calls.is_empty() && statements.is_empty() {
             return Ok(());
+        }
+        // One at a time and in order: a transaction's statements follow its beginning.
+        for (id, call) in statements {
+            let variables = super::databases::variables(&session.snapshot()?);
+            match sql.call(workspace, variables, &call).await {
+                Ok(result) => session.deliver_sql(&id, Some(&result), None)?,
+                Err(error) => session.deliver_sql(&id, None, Some(&error.to_string()))?,
+            }
         }
         if !calls.is_empty() {
             let state = session.snapshot()?;

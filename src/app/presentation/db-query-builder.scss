@@ -1,0 +1,61 @@
+.db-builder {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  min-height: 0;
+  overflow: auto;
+  padding: var(--nexo-space-2);
+}
+.db-builder-reason {
+  margin: 0;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-warning-soft);
+  color: var(--nexo-color-text);
+}
+.db-builder-top {
+  display: flex;
+  gap: var(--nexo-space-3);
+  min-height: calc(var(--nexo-size-unit) * 100);
+}
+.db-builder-tables {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+  width: calc(var(--nexo-size-unit) * 100);
+  flex: none;
+}
+.db-builder-tables ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: calc(var(--nexo-size-unit) * 150);
+  overflow: auto;
+}
+.db-builder-canvas {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border: var(--nexo-border-width) dashed var(--nexo-color-border);
+  border-radius: var(--nexo-radius-md);
+  padding: var(--nexo-space-3);
+}
+.db-builder-empty {
+  margin: 0;
+}
+.db-builder-sql {
+  display: flex;
+  gap: var(--nexo-space-3);
+  align-items: flex-start;
+}
+.db-builder-sql pre {
+  flex: 1;
+  margin: 0;
+  padding: var(--nexo-space-2) var(--nexo-space-3);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-sunken);
+  font-family: var(--nexo-font-mono);
+  font-size: var(--nexo-font-size-sm);
+  white-space: pre-wrap;
+  min-height: calc(var(--nexo-size-unit) * 16);
+}

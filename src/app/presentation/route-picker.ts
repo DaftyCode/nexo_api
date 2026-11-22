@@ -37,5 +37,16 @@ export class RoutePicker {
   protected readonly profiles = computed(() =>
     this.state.cases.ssh.profiles(this.state.documents()),
   );
+  /** The proxy profiles of the way chosen, HTTP or SOCKS5. */
+  protected readonly proxies = computed(() =>
+    this.state.cases.proxies
+      .profiles(this.state.documents())
+      .filter((profile) => profile.protocol === this.route().via),
+  );
   protected readonly problem = computed(() => routeProblem(this.route()));
+
+  /** A profile belongs to one way: choosing another way forgets it. */
+  protected changedWay() {
+    if (this.route().profile) this.route.update((route) => ({ ...route, profile: '' }));
+  }
 }

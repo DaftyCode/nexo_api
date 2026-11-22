@@ -1,6 +1,7 @@
-//! SSH profiles reach the engine filled in. A route that names a profile (`{via: "ssh",
-//! profile}`) gets its host, user and vault secrets in `sshProfiles` just before the operation
-//! runs; clients cannot send them, and only profiles of the payload's workspace are read.
+//! SSH and proxy profiles reach the engine filled in. A route that names a profile (`{via:
+//! "ssh", profile}`, or `{via: "socks5" | "http", profile}` for a proxy profile) gets its host,
+//! user and vault secrets in `sshProfiles` just before the operation runs; clients cannot send
+//! them, and only profiles of the payload's workspace are read.
 use crate::Application;
 use nexo_domain::{DocumentId, DocumentKind, Error, Result, WorkspaceId};
 use serde_json::{Map, Value, json};
@@ -17,7 +18,8 @@ pub(crate) fn profile_ids(value: &Value) -> BTreeSet<String> {
 fn collect(value: &Value, ids: &mut BTreeSet<String>) {
     match value {
         Value::Object(map) => {
-            if map.get("via").and_then(Value::as_str) == Some("ssh")
+            let via = map.get("via").and_then(Value::as_str);
+            if matches!(via, Some("ssh" | "socks5" | "http"))
                 && let Some(id) = map.get("profile").and_then(Value::as_str)
                 && !id.trim().is_empty()
             {
@@ -26,7 +28,7 @@ fn collect(value: &Value, ids: &mut BTreeSet<String>) {
             map.values().for_each(|child| collect(child, ids));
         }
         Value::Array(items) => items.iter().for_each(|child| collect(child, ids)),
-        Value::String(text) if text.contains("\"ssh\"") => {
+        Value::String(text) if text.contains("\"profile\"") => {
             if let Ok(parsed) = serde_json::from_str::<Value>(text) {
                 collect(&parsed, ids);
             }
@@ -67,10 +69,17 @@ impl Application {
             let Ok(document) = self.workspaces.document(&document_id).await else {
                 continue;
             };
-            if document.kind != DocumentKind::SshProfile || document.workspace_id != workspace {
+            if document.workspace_id != workspace {
                 continue;
             }
             let value = &document.value;
+            if document.kind == DocumentKind::ProxyProfile {
+                profiles.insert(id, self.proxy_profile(value).await?);
+                continue;
+            }
+            if document.kind != DocumentKind::SshProfile {
+                continue;
+            }
             let auth = text(value, "auth");
             let mut profile = json!({
                 "host": value["host"],
@@ -91,6 +100,23 @@ impl Application {
             profiles.insert(id, profile);
         }
         Ok(Some(Value::Object(profiles)))
+    }
+
+    /// A proxy profile as the engine reads it: `proxy` is its kind, and its password comes
+    /// from the vault.
+    async fn proxy_profile(&self, value: &Value) -> Result<Value> {
+        let mut profile = json!({
+            "proxy": text(value, "protocol"),
+            "host": value["host"],
+            "port": value["port"],
+            "username": value["username"],
+            "remoteDns": value["remoteDns"] == true,
+        });
+        let secret = text(value, "secret");
+        if !secret.is_empty() {
+            profile["password"] = Value::String(self.secrets.resolve(secret).await?);
+        }
+        Ok(profile)
     }
 }
 
@@ -117,11 +143,12 @@ mod tests {
             "route": {"via": "ssh", "profile": " p1 "},
             "request": {"transport": transport},
             "collection": {"item": [{"nexoTransport": "{\"route\":{\"via\":\"ssh\",\"profile\":\"p3\"}}"}]},
-            "other": {"via": "socks5", "profile": "not-ssh"},
-            "text": "\"ssh\" but not JSON",
+            "proxy": {"via": "socks5", "profile": "p4"},
+            "other": {"via": "direct", "profile": "not-a-proxy"},
+            "text": "\"profile\" but not JSON",
         });
         let ids: Vec<String> = super::profile_ids(&payload).into_iter().collect();
-        assert_eq!(ids, ["p1", "p2", "p3"]);
+        assert_eq!(ids, ["p1", "p2", "p3", "p4"]);
     }
 
     #[tokio::test]
@@ -146,8 +173,22 @@ mod tests {
                 json!({"host": "elsewhere", "username": "x",
                 "auth": "password", "secret": "s"}),
             ),
+            Document {
+                kind: DocumentKind::ProxyProfile,
+                ..profile(
+                    "p4",
+                    "local",
+                    json!({"protocol": "socks5", "host": "proxy", "port": 1080,
+                    "username": "ana", "secret": "proxy-p4", "remoteDns": true}),
+                )
+            },
+            Document {
+                kind: DocumentKind::ProxyProfile,
+                ..profile("p5", "local", json!({"protocol": "http", "host": "web"}))
+            },
         ]);
         let payload = json!({"routes": [
+            {"via": "socks5", "profile": "p4"}, {"via": "http", "profile": "p5"},
             {"via": "ssh", "profile": "p1"}, {"via": "ssh", "profile": "p2"},
             {"via": "ssh", "profile": "p3"}, {"via": "ssh", "profile": "gone"},
             {"via": "ssh", "profile": "not an id!"},
@@ -164,6 +205,10 @@ mod tests {
                     "password": "secret-of-ssh-p1"},
                 "p2": {"host": "jump", "port": null, "username": "ana", "auth": "key",
                     "privateKey": "secret-of-ssh-p2", "passphrase": "secret-of-ssh-p2-passphrase"},
+                "p4": {"proxy": "socks5", "host": "proxy", "port": 1080, "username": "ana",
+                    "remoteDns": true, "password": "secret-of-proxy-p4"},
+                "p5": {"proxy": "http", "host": "web", "port": null, "username": null,
+                    "remoteDns": false},
             })
         );
         assert_eq!(

@@ -71,6 +71,11 @@ export class DbConnectionFields {
       };
     });
   }
+  /** A folder of files, read as tables (DB-30). */
+  protected async chooseFolder() {
+    const folder = await this.native.choose('folder');
+    if (folder) this.fields()().value.update((form) => ({ ...form, database: folder }));
+  }
   /** The folder of the client tools, chosen in the dialog. */
   protected async chooseClient() {
     const folder = await this.native.choose('folder');

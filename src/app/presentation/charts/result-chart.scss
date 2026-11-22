@@ -1,0 +1,161 @@
+.rc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  padding: var(--nexo-space-2);
+}
+.rc-status {
+  gap: var(--nexo-space-2);
+  align-items: center;
+}
+.rc-figure {
+  position: relative;
+  margin: 0;
+}
+.rc-title {
+  font-weight: var(--nexo-font-weight-semibold);
+  text-align: center;
+}
+.rc-svg {
+  display: block;
+  width: 100%;
+  max-height: calc(var(--nexo-size-unit) * 220);
+}
+.rc-series-0 {
+  --rc-color: var(--nexo-color-info);
+}
+.rc-series-1 {
+  --rc-color: var(--nexo-color-success);
+}
+.rc-series-2 {
+  --rc-color: var(--nexo-color-warning);
+}
+.rc-series-3 {
+  --rc-color: var(--nexo-color-danger);
+}
+.rc-series-4 {
+  --rc-color: var(--nexo-color-accent);
+}
+.rc-series-5 {
+  --rc-color: var(--nexo-color-data-number);
+}
+.rc-series-6 {
+  --rc-color: var(--nexo-color-data-string);
+}
+.rc-series-7 {
+  --rc-color: var(--nexo-color-data-date);
+}
+.rc-fill {
+  fill: var(--rc-color);
+}
+.rc-hatch {
+  stroke: var(--nexo-color-surface);
+  stroke-width: var(--nexo-border-width-strong);
+  stroke-opacity: 0.6;
+}
+.rc-grid {
+  stroke: var(--nexo-color-border-subtle);
+}
+.rc-axis,
+.rc-axis-name {
+  fill: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-2xs);
+}
+.rc-line {
+  fill: none;
+  stroke: var(--rc-color);
+  stroke-width: var(--nexo-border-width-strong);
+}
+/* Each series has its own dash, to tell them apart without color. */
+.rc-line.rc-series-1 {
+  stroke-dasharray: 8 3;
+}
+.rc-line.rc-series-2 {
+  stroke-dasharray: 2 3;
+}
+.rc-line.rc-series-3 {
+  stroke-dasharray: 8 3 2 3;
+}
+.rc-line.rc-series-4 {
+  stroke-dasharray: 12 4;
+}
+.rc-line.rc-series-5 {
+  stroke-dasharray: 4 4;
+}
+.rc-line.rc-series-6 {
+  stroke-dasharray: 1 2;
+}
+.rc-line.rc-series-7 {
+  stroke-dasharray: 12 3 2 3 2 3;
+}
+.rc-area {
+  fill: var(--rc-color);
+  fill-opacity: 0.18;
+  stroke: none;
+}
+.rc-shape,
+.rc-dot {
+  stroke: var(--rc-color);
+  cursor: pointer;
+}
+.rc-dot {
+  fill: var(--rc-color);
+}
+.rc-shape:focus,
+.rc-dot:focus {
+  outline: none;
+  stroke: var(--nexo-color-focus-ring);
+  stroke-width: var(--nexo-border-width-strong);
+}
+.rc-tip {
+  position: absolute;
+  top: var(--nexo-space-2);
+  right: var(--nexo-space-2);
+  margin: 0;
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface-2);
+  font-size: var(--nexo-font-size-sm);
+}
+.rc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-2);
+}
+.rc-key {
+  display: inline-flex;
+  gap: var(--nexo-space-2);
+  align-items: center;
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-sm);
+  padding: 0 var(--nexo-space-2);
+  background: none;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
+}
+.rc-key[aria-pressed='false'] {
+  opacity: var(--nexo-opacity-disabled);
+  text-decoration: line-through;
+}
+.rc-swatch {
+  width: calc(var(--nexo-size-unit) * 6);
+  height: calc(var(--nexo-size-unit) * 6);
+  border-radius: var(--nexo-radius-xs);
+  background: var(--rc-color);
+}
+.rc-table {
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.rc-table th,
+.rc-table td {
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: left;
+}
+.rc-hidden {
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

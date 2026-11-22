@@ -1,7 +1,7 @@
 <div class="route-fields">
   <label class="field"
     >{{ 'Connect through' | transloco
-    }}<select [formField]="fields.via">
+    }}<select [formField]="fields.via" (change)="changedWay()">
       @if (inheritable() || route().via === 'inherit') {
         <option value="inherit">{{ 'Inherit from parent' | transloco }}</option>
       }
@@ -28,30 +28,43 @@
       >
     }
     @default {
-      <label class="field"
-        >{{ 'Proxy host' | transloco }}<input [formField]="fields.host" spellcheck="false"
-      /></label>
-      <label class="field"
-        >{{ 'Proxy port' | transloco
-        }}<input
-          [formField]="fields.port"
-          inputmode="numeric"
-          [placeholder]="route().via === 'socks5' ? '1080' : '8080'"
-      /></label>
-      <label class="field"
-        >{{ 'Proxy user' | transloco
-        }}<input [formField]="fields.username" spellcheck="false" autocomplete="off"
-      /></label>
-      <label class="field"
-        >{{ 'Proxy password' | transloco
-        }}<input type="password" [formField]="fields.password" autocomplete="off"
-      /></label>
-      @if (route().via === 'socks5') {
-        <label class="check-field"
-          ><input type="checkbox" [formField]="fields.remoteDns" />
-          {{ 'The proxy resolves names (socks5h)' | transloco }}</label
+      @if (proxies().length || route().profile) {
+        <label class="field"
+          >{{ 'Proxy profile' | transloco
+          }}<select [formField]="fields.profile">
+            <option value="">{{ 'Written here' | transloco }}</option>
+            @for (profile of proxies(); track profile.id) {
+              <option [value]="profile.id">{{ profile.name }}</option>
+            }
+          </select></label
         >
       }
+    }
+  }
+  @if ((route().via === 'http' || route().via === 'socks5') && !route().profile) {
+    <label class="field"
+      >{{ 'Proxy host' | transloco }}<input [formField]="fields.host" spellcheck="false"
+    /></label>
+    <label class="field"
+      >{{ 'Proxy port' | transloco
+      }}<input
+        [formField]="fields.port"
+        inputmode="numeric"
+        [placeholder]="route().via === 'socks5' ? '1080' : '8080'"
+    /></label>
+    <label class="field"
+      >{{ 'Proxy user' | transloco
+      }}<input [formField]="fields.username" spellcheck="false" autocomplete="off"
+    /></label>
+    <label class="field"
+      >{{ 'Proxy password' | transloco
+      }}<input type="password" [formField]="fields.password" autocomplete="off"
+    /></label>
+    @if (route().via === 'socks5') {
+      <label class="check-field"
+        ><input type="checkbox" [formField]="fields.remoteDns" />
+        {{ 'The proxy resolves names (socks5h)' | transloco }}</label
+      >
     }
   }
 </div>

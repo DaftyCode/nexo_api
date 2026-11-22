@@ -86,6 +86,50 @@ test('a request reaches a name only the SOCKS5 proxy knows, with and without a p
   }
 });
 
+test('a saved proxy profile takes the request, its password from the vault', async () => {
+  const signed = await socksProxy('profile-pw');
+  try {
+    await server.api('PUT', '/secrets/proxy-office', { value: 'profile-pw' });
+    const saved = await server.api('PUT', '/documents', {
+      id: 'office',
+      workspace_id: 'local',
+      kind: 'proxy-profile',
+      name: 'Office',
+      revision: 0,
+      updated_at: 0,
+      value: {
+        protocol: 'socks5',
+        host: '127.0.0.1',
+        port: signed.port,
+        username: 'ada',
+        secret: 'proxy-office',
+        remoteDns: true,
+      },
+    });
+    assert.equal(saved.status, 200, JSON.stringify(saved.body));
+    const clear = await server.api('PUT', '/documents', {
+      ...saved.body,
+      value: { ...saved.body.value, password: 'x' },
+    });
+    assert.equal(clear.status, 400);
+    const route = { via: 'socks5', profile: 'office' };
+    const answer = await send('http://api.internal/profiled', route);
+    assert.equal(answer.status, 200);
+    assert.deepEqual(signed.asked, ['user ada', 'api.internal:80']);
+    // A profile of another kind, or one that no longer exists, is said.
+    await assert.rejects(
+      send('http://api.internal/', { via: 'http', profile: 'office' }),
+      /proxy profile of this connection no longer exists/,
+    );
+    await assert.rejects(
+      send('http://api.internal/', { via: 'socks5', profile: 'gone' }),
+      /proxy profile of this connection no longer exists/,
+    );
+  } finally {
+    signed.close();
+  }
+});
+
 test('a WebSocket opens through an HTTP proxy with CONNECT and through SOCKS5', async () => {
   const http = await connectProxy();
   const socks = await socksProxy();

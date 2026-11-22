@@ -1,0 +1,57 @@
+.qb-canvas {
+  position: relative;
+}
+.qb-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.qb-lines line {
+  stroke: var(--nexo-color-accent);
+  stroke-width: var(--nexo-border-width-strong);
+}
+.qb-lines line.qb-outer {
+  stroke-dasharray: 6 4;
+}
+.qb-join {
+  position: absolute;
+  z-index: var(--nexo-z-raised);
+  transform: translate(-50%, -50%);
+  padding: 0 var(--nexo-space-2);
+  border: var(--nexo-border-width) solid var(--nexo-color-accent-border);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface);
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-xs);
+  cursor: pointer;
+}
+.qb-table {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border: var(--nexo-border-width) solid var(--nexo-color-border-strong);
+  border-radius: var(--nexo-radius-sm);
+  background: var(--nexo-color-surface);
+  overflow: hidden;
+}
+.qb-head {
+  display: flex;
+  gap: var(--nexo-space-2);
+  align-items: center;
+  height: calc(var(--nexo-size-unit) * 14);
+  padding: 0 var(--nexo-space-2);
+  background: var(--nexo-color-surface-2);
+  font-size: var(--nexo-font-size-sm);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.qb-column {
+  display: flex;
+  gap: var(--nexo-space-2);
+  align-items: center;
+  height: calc(var(--nexo-size-unit) * 11);
+  padding: 0 var(--nexo-space-2);
+  font-size: var(--nexo-font-size-sm);
+  cursor: grab;
+  white-space: nowrap;
+}

@@ -102,6 +102,32 @@ describe('MonitorsStore', () => {
     expect(statuses().length).toBe(asked);
   });
 
+  it('also asks while the workspace has database tasks, and tells their failures and differences', async () => {
+    state.workspaceId.set('local');
+    state.documents.set([{ ...monitor, id: 't1', kind: 'db-task', value: { type: 'compare' } }]);
+    TestBed.tick();
+    await vi.waitFor(() => expect(store.status()?.sequence).toBe(4));
+    const task = { ...event(5, 'failed'), monitor: 't1', kind: 'db-task', error: 'Gone' };
+    answer = {
+      ...answer,
+      finished: [
+        task,
+        { ...task, sequence: 6, state: 'differences', differences: 3 },
+        { ...task, sequence: 7, state: 'differences', error: undefined },
+      ],
+      sequence: 7,
+    };
+    await store.refresh();
+    expect(shown).toEqual([
+      ['Task «Nightly» failed', 'Gone'],
+      ['Task «Nightly» found differences', '3 differences'],
+      ['Task «Nightly» found differences', '0 differences'],
+    ]);
+    answer = { ...answer, finished: [{ ...task, sequence: 8, error: undefined }], sequence: 8 };
+    await store.refresh();
+    expect(shown.at(-1)).toEqual(['Task «Nightly» failed', '']);
+  });
+
   it('asks every two seconds while a monitor runs and every fifteen while none does', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     state.workspaceId.set('local');

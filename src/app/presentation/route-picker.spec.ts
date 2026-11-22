@@ -82,4 +82,26 @@ describe('RoutePicker', () => {
     expect(fixture.componentInstance.route()).toMatchObject({ via: 'ssh', profile: 'p1' });
     expect(text()).not.toContain('Choose the SSH profile');
   });
+
+  it('chooses a proxy profile of its kind, and forgets it on another way', async () => {
+    await api.save({
+      id: 'office',
+      workspace_id: 'local',
+      kind: 'proxy-profile',
+      name: 'Office',
+      revision: 0,
+      updated_at: 0,
+      value: { protocol: 'socks5', host: 'proxy.lan' },
+    });
+    await state.refresh();
+    await fill(fixture, 'Connect through', 'http');
+    expect(text()).not.toContain('Proxy profile');
+    await fill(fixture, 'Connect through', 'socks5');
+    await fill(fixture, 'Proxy profile', 'office');
+    expect(text()).not.toContain('Proxy host');
+    expect(text()).not.toContain('Enter the host of the proxy');
+    expect(fixture.componentInstance.route()).toMatchObject({ via: 'socks5', profile: 'office' });
+    await fill(fixture, 'Connect through', 'ssh');
+    expect(fixture.componentInstance.route().profile).toBe('');
+  });
 });

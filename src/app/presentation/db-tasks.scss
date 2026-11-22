@@ -1,0 +1,64 @@
+.db-tasks-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-tasks-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 500), 96vw);
+  max-height: 92vh;
+  overflow: auto;
+}
+.db-tasks-head {
+  justify-content: space-between;
+}
+.db-tasks-head h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-tasks-list {
+  border-collapse: collapse;
+  font-size: var(--nexo-font-size-sm);
+}
+.db-tasks-list th,
+.db-tasks-list td {
+  padding: var(--nexo-space-1) var(--nexo-space-2);
+  border-bottom: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+.db-tasks-list th span,
+.db-tasks-list td span {
+  margin-left: var(--nexo-space-2);
+}
+.db-tasks-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nexo-space-1);
+}
+.db-tasks-warning,
+.db-tasks-failed {
+  color: var(--nexo-color-warning);
+}
+.db-tasks-passed {
+  color: var(--nexo-color-success);
+}
+.db-tasks-differences {
+  color: var(--nexo-color-info);
+}
+.db-tasks-error {
+  color: var(--nexo-color-danger-text);
+}
+.db-tasks-runs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  margin: 0;
+  padding-left: var(--nexo-space-5);
+}

@@ -4,6 +4,7 @@
  * viewers of the «Value» panel: JSON and XML laid out, binaries in hexadecimal, images,
  * dates in several forms.
  */
+import { geometryOf, shortWkt } from '../geometry';
 import { isDefault } from '../edits';
 import { ResultColumn, cellText, isNull } from '../results';
 
@@ -122,6 +123,9 @@ export function formatCell(
       return { text: formats.dates === 'local' && timed ? localDate(text) : text, kind };
     }
     default: {
+      // A geometry shows its WKT, shortened (DB-29).
+      const spatial = (value as { $t?: unknown }).$t === 'spatial' ? geometryOf(value) : undefined;
+      if (spatial) return { text: shortWkt(spatial), kind };
       const text = cellText(value);
       // One line in a cell; the whole text is in the «Value» panel.
       return {

@@ -44,6 +44,8 @@ fn the_suggested_script_api_matches_the_sandbox() {
                     be: keys(pm.response.to.be),
                     execution: keys(pm.execution),
                     oauth2: keys(pm.oauth2),
+                    sql: keys(pm.sql),
+                    sqlClient: keys(pm.sql('Shop')),
                     same: pm === nx,
                 }));
             "#
@@ -55,7 +57,12 @@ fn the_suggested_script_api_matches_the_sandbox() {
     let live: Value = serde_json::from_str(state["environment"]["api"].as_str().unwrap()).unwrap();
     assert_eq!(live["same"], true);
     // The names the editor knows: the first argument of each entry in the TypeScript file.
-    let described = include_str!("../../../../../../src/app/domain/script-api.ts");
+    let described = [
+        include_str!("../../../../../../src/app/domain/script-api.ts"),
+        include_str!("../../../../../../src/app/domain/script-api/members.ts"),
+        include_str!("../../../../../../src/app/domain/script-api/databases.ts"),
+    ]
+    .concat();
     let mut known = std::collections::BTreeSet::new();
     // The formatter may break the call before its first argument.
     for kind in ["method(", "property(", "object("] {

@@ -1,5 +1,9 @@
 import { DatabaseAssistCases } from './database-use-cases/assist';
 import { DatabaseConnectionCases, DatabasePorts } from './database-use-cases/connections';
+import { DatabaseConnectionImportCases } from './database-use-cases/connection-import';
+import { DatabaseBuilderCases } from './database-use-cases/builder';
+import { DatabaseMockCases } from './database-use-cases/mock';
+import { DatabaseTaskCases } from './database-use-cases/tasks';
 import { DatabaseDiagramCases } from './database-use-cases/diagrams';
 import { DatabaseAdminCases } from './database-use-cases/admin';
 import { DatabaseDashboardCases } from './database-use-cases/dashboards';
@@ -46,6 +50,9 @@ export {
   type DbTestReport,
   type TypedDbSecrets,
 } from './database-use-cases/connections';
+export { type ImportOutcome } from './database-use-cases/connection-import';
+export { type MockBatch } from './database-use-cases/mock';
+export { type TaskState } from './database-use-cases/tasks';
 export { treeSession, type DbServerInfo, type DriverHello } from './database-use-cases/navigator';
 export {
   editorSession,
@@ -72,8 +79,16 @@ function memory(): PreferencePort {
 export class DatabaseUseCases {
   readonly sessions: DbOpenSessions;
   readonly connections: DatabaseConnectionCases;
+  /** Connections from other tools' files and Nexo's own (DB-25). */
+  readonly imports: DatabaseConnectionImportCases;
   readonly navigator: DatabaseNavigatorCases;
   readonly statements: DatabaseStatementCases;
+  /** The visual query builder (DB-26). */
+  readonly builder: DatabaseBuilderCases;
+  /** Test data for tables (DB-27). */
+  readonly mock: DatabaseMockCases;
+  /** Saved, chained and scheduled tasks (DB-31). */
+  readonly tasks: DatabaseTaskCases;
   readonly assist: DatabaseAssistCases;
   readonly plans: DatabasePlanCases;
   readonly transfer: DatabaseTransferCases;
@@ -104,8 +119,12 @@ export class DatabaseUseCases {
     };
     exit?.onExit(() => sessions.leave(exit) > 0);
     this.connections = new DatabaseConnectionCases(api);
+    this.imports = new DatabaseConnectionImportCases(api);
     this.navigator = new DatabaseNavigatorCases(api);
     this.statements = new DatabaseStatementCases(api, preferences);
+    this.builder = new DatabaseBuilderCases(api);
+    this.mock = new DatabaseMockCases(api);
+    this.tasks = new DatabaseTaskCases(api);
     this.assist = new DatabaseAssistCases(preferences);
     this.plans = new DatabasePlanCases(api);
     this.transfer = new DatabaseTransferCases(api);

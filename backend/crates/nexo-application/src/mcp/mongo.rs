@@ -92,6 +92,13 @@ fn text(arguments: &Value, key: &str) -> Result<String> {
 pub(super) fn exposed(document: &Document) -> bool {
     document.kind == DocumentKind::Connection && document.value["mcp"] == true
 }
+/// Whether an exposed connection is a MongoDB one: the database modules' name their driver.
+fn exposed_mongo(document: &Document) -> bool {
+    exposed(document)
+        && document.value["driver"]
+            .as_str()
+            .is_none_or(|driver| driver == "mongodb")
+}
 
 impl Application {
     /// The exposed connections of a workspace.
@@ -101,7 +108,7 @@ impl Application {
             .documents(workspace, Some(DocumentKind::Connection))
             .await?
             .into_iter()
-            .filter(exposed)
+            .filter(exposed_mongo)
             .collect())
     }
     /// An exposed connection by its name; one that is not exposed is not found either.

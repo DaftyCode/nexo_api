@@ -11,7 +11,7 @@ fn history_id(monitor: &DocumentId) -> Result<DocumentId> {
 impl Application {
     /// Adds a run to the history of a monitor, keeps the last ones and remembers it for the
     /// interface to notify. A monitor deleted while it ran keeps nothing.
-    pub(super) async fn record_run(&self, monitor: &Document, entry: Value) -> Result<()> {
+    pub(crate) async fn record_run(&self, monitor: &Document, entry: Value) -> Result<()> {
         let _writing = self.monitors.writing.lock().await;
         if self.workspaces.document(&monitor.id).await.is_err() {
             return Ok(());
@@ -44,13 +44,16 @@ impl Application {
             "workspace": monitor.workspace_id.as_str(),
             "monitor": monitor.id.as_str(),
             "name": monitor.name,
-            "notify": monitor.value["notify"] == true,
+            "kind": monitor.kind.as_str(),
+            // A database task (DB-31) always tells its failures and its differences.
+            "notify": monitor.value["notify"] == true || monitor.kind == DocumentKind::DbTask,
         });
         for field in [
             "state",
             "startedAt",
             "failedAssertions",
             "failedRequests",
+            "differences",
             "error",
         ] {
             if let Some(value) = entry.get(field) {

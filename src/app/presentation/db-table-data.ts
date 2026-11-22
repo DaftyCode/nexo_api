@@ -1,3 +1,5 @@
+import { ResultChartConfig, autoChart } from '../domain/db/result-chart';
+import { ResultChart } from './charts/result-chart';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -45,7 +47,7 @@ const ACTIONS: readonly CellAction[] = [
  * related by its foreign keys.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid, DbRowEdits, StudioIcon],
+  imports: [TranslocoPipe, FormField, CodeEditor, DataGrid, DbRowEdits, StudioIcon, ResultChart],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-table-data',
   templateUrl: './db-table-data.html',
@@ -75,6 +77,9 @@ export class DbTableData {
     max(path.every, 3600);
   });
   protected readonly showStatement = signal(false);
+  /** The chart of the rows loaded, while it is shown (DB-28). */
+  protected readonly chart = signal<ResultChartConfig | undefined>(undefined);
+  protected readonly chartOf = () => autoChart(this.data().editor.grid().columns);
   protected readonly showRelated = signal(false);
   protected readonly words = computed(() =>
     this.data()

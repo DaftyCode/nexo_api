@@ -161,7 +161,8 @@ describe('monitors', () => {
         { ...event, state: 'failed', notify: false },
         { ...event, state: 'passed', notify: true },
         { ...event, state: 'skipped', notify: true },
+        { ...event, state: 'differences', notify: true },
       ]).map((e) => e.state),
-    ).toEqual(['failed', 'error']);
+    ).toEqual(['failed', 'error', 'differences']);
   });
 });

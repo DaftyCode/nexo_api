@@ -68,8 +68,11 @@ export interface MonitorEvent {
   workspace: string;
   monitor: string;
   name: string;
-  state: MonitorRun['state'];
+  state: MonitorRun['state'] | 'differences';
   notify: boolean;
+  /** `db-task` for a database task (DB-31), which also tells the differences it finds. */
+  kind?: string;
+  differences?: number;
   failedAssertions?: number;
   failedRequests?: number;
   error?: string;
@@ -244,6 +247,8 @@ export function readMonitorHistory(value: unknown): MonitorRun[] {
 /** Runs that finished badly and whose monitor asks to be told. */
 export function failuresToNotify(events: readonly MonitorEvent[]): MonitorEvent[] {
   return events.filter(
-    (event) => event.notify && (event.state === 'failed' || event.state === 'error'),
+    (event) =>
+      event.notify &&
+      (event.state === 'failed' || event.state === 'error' || event.state === 'differences'),
   );
 }

@@ -88,6 +88,24 @@ impl Route {
                 }
                 return Ok(Self::Ssh(SshTarget::from_profile(&id, profile)?));
             }
+            let id = text(&route["profile"]);
+            if matches!(via.as_str(), "http" | "socks5") && !id.is_empty() {
+                // A proxy profile: the application filled in its proxy and password.
+                let profile = &profiles[&id];
+                if text(&profile["proxy"]) != via {
+                    return Err(Error::Validation(
+                        "The proxy profile of this connection no longer exists".into(),
+                    ));
+                }
+                return Self::build(
+                    &via,
+                    &profile["host"],
+                    &profile["port"],
+                    &profile["username"],
+                    &profile["password"],
+                    profile["remoteDns"] == true,
+                );
+            }
             return Self::build(
                 &via,
                 &route["host"],

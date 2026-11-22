@@ -3,72 +3,10 @@
  * QuickJS sandbox (`backend/crates/nexo-engine/src/scripts/bootstrap/`). The editor
  * suggests these members as one types `pm.` or `nx.`.
  */
-export interface ScriptMember {
-  name: string;
-  kind: 'property' | 'method' | 'object';
-  /** How it is called or what it holds, shown next to the name. */
-  signature: string;
-  doc: string;
-  /** Members of the object, for `name.`. */
-  members?: ScriptMember[];
-  /** Members of what a call returns, for `name(…).`. */
-  returns?: ScriptMember[];
-}
+import { MONGO_DATABASE, SQL_CLIENT, SQL_HELPERS } from './script-api/databases';
+import { method, object, property, type ScriptMember } from './script-api/members';
 
-const method = (
-  name: string,
-  signature: string,
-  doc: string,
-  returns?: ScriptMember[],
-): ScriptMember => ({ name, kind: 'method', signature, doc, ...(returns ? { returns } : {}) });
-const property = (name: string, signature: string, doc: string): ScriptMember => ({
-  name,
-  kind: 'property',
-  signature,
-  doc,
-});
-const object = (name: string, doc: string, members: ScriptMember[]): ScriptMember => ({
-  name,
-  kind: 'object',
-  signature: '',
-  doc,
-  members,
-});
-
-/** What a collection of `nx.mongo(name).db(database).collection(name)` can do. */
-const MONGO_COLLECTION: ScriptMember[] = [
-  method('findOne', '(filter?, options?) → Promise', 'The first document that matches, or null.'),
-  method(
-    'find',
-    '(filter?, options?) → cursor',
-    'Documents that match: sort, limit, skip, project, then toArray() (1 000 at most).',
-  ),
-  method('countDocuments', '(filter?) → Promise', 'How many documents match.'),
-  method(
-    'aggregate',
-    '(pipeline, options?) → cursor',
-    'An aggregation that reads; toArray() gives its documents.',
-  ),
-  method(
-    'insertOne',
-    '(document) → Promise',
-    'Inserts a document; refused on a read-only connection.',
-  ),
-  method('insertMany', '(documents) → Promise', 'Inserts several documents.'),
-  method('updateOne', '(filter, update) → Promise', 'Updates the first document that matches.'),
-  method('updateMany', '(filter, update) → Promise', 'Updates every document that matches.'),
-  method('replaceOne', '(filter, document) → Promise', 'Replaces the first document that matches.'),
-  method('deleteOne', '(filter) → Promise', 'Deletes the first document that matches.'),
-  method(
-    'deleteMany',
-    '(filter, options?) → Promise',
-    'Deletes every match; an empty filter needs { confirm: collection }.',
-  ),
-];
-const MONGO_DATABASE = method('db', '(name) → database', 'A database of the connection.', [
-  method('collection', '(name) → collection', 'A collection of the database.', MONGO_COLLECTION),
-  method('getCollection', '(name) → collection', 'The same as collection.', MONGO_COLLECTION),
-]);
+export type { ScriptMember } from './script-api/members';
 
 /** A variable scope: environment, globals, collection variables… */
 function scope(readOnly: boolean): ScriptMember[] {
@@ -232,6 +170,15 @@ export const SCRIPT_API: ScriptMember[] = [
     'A saved MongoDB connection, by its name; the script never sees its URI or password.',
     [MONGO_DATABASE],
   ),
+  {
+    ...method(
+      'sql',
+      '(connection) → client',
+      'A saved SQL connection, by its name; the script never sees its address or password.',
+      SQL_CLIENT,
+    ),
+    members: SQL_HELPERS,
+  },
 ];
 
 /** The script globals: `pm`, as in Postman, and `nx`. */

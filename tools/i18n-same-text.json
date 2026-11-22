@@ -112,6 +112,11 @@
     "WHERE",
     "WORKSTATION",
     "XML",
-    "card.number"
+    "card.number",
+    "postgresql://ana@db.example.com:5432/shop",
+    "shop/schemas/public",
+    "users.password, *_token",
+    "proxy.example.com",
+    "GeoJSON"
   ]
 }

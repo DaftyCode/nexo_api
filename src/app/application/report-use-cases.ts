@@ -29,6 +29,8 @@ export interface DiagramReport {
   image: string;
   entities: number;
   relations: number;
+  /** What the report says of it, when it is not a diagram (a chart of a result). */
+  caption?: { key: string; params: Record<string, string | number> };
 }
 
 /**

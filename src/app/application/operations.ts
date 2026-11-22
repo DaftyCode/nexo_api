@@ -121,6 +121,9 @@ export const EXECUTION_OPERATIONS = [
   'db.compare.data',
   'db.sync.data',
   'db.route.test',
+  'db.query.parse',
+  'db.mock.rows',
+  'db.task.run',
 ] as const;
 export type ExecutionOperation = (typeof EXECUTION_OPERATIONS)[number];
 export const GIT_OPERATIONS = [

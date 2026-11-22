@@ -20,7 +20,8 @@ payload! {
 payload! {
     /// `db.connect`: opens a session named `session` on a saved connection; `database`
     /// opens it on another database of the same server; `password` is the one typed for a
-    /// connection that asks for it.
+    /// connection that asks for it; `readOnly` opens it only to read, whatever the connection
+    /// says.
     closed DbConnectPayload {
         required {
             connection_id "connectionId": String => "string",
@@ -31,6 +32,7 @@ payload! {
             workspace "workspace": String => "string",
             variables "variables": BTreeMap<String, String> => "Readonly<Record<string, string>>",
             password "password": String => "string",
+            read_only "readOnly": bool => "boolean",
         }
     }
 }

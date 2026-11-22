@@ -23,6 +23,12 @@ export interface EngineProfile {
   badge?: EngineBadge;
   /** Its database is a file of this computer: the form asks for the file, not a server. */
   file?: boolean;
+  /** It also opens a folder (the files module, DB-30), and it never makes a new file. */
+  folder?: boolean;
+  /** What its file field is called and says, as message keys, when not SQLite's. */
+  fileLabel?: string;
+  fileHelp?: string;
+  filePlaceholder?: string;
   defaultPort?: number;
   defaultHost: string;
   defaultDatabase: string;
@@ -126,6 +132,32 @@ const ENGINES: Record<string, EngineProfile> = {
       { name: 'busy_timeout', description: 'db.property.busy_timeout' },
     ],
     limits: 'db.limits.sqlite',
+  },
+  // Files as tables and DuckDB databases (DB-30): a folder, files or a `.duckdb` file.
+  files: {
+    id: 'files',
+    name: 'Files and DuckDB',
+    summary: 'db.engine.files',
+    file: true,
+    folder: true,
+    fileLabel: 'Folder, files or DuckDB database',
+    fileHelp: 'db.files.help',
+    filePlaceholder: 'db.files.placeholder',
+    defaultHost: '',
+    defaultDatabase: '',
+    defaultUser: '',
+    schemes: ['duckdb'],
+    tlsModes: [],
+    properties: [
+      { name: 'delimiter', description: 'db.property.delimiter' },
+      { name: 'header', description: 'db.property.header' },
+      { name: 'quote', description: 'db.property.quote' },
+      { name: 'encoding', description: 'db.property.encoding' },
+      { name: 'sheet', description: 'db.property.sheet' },
+      { name: 'json_format', description: 'db.property.json_format' },
+      { name: 'all_varchar', description: 'db.property.all_varchar' },
+    ],
+    limits: 'db.limits.files',
   },
 };
 

@@ -54,6 +54,11 @@ describe('route', () => {
       password: 'pw',
       remoteDns: false,
     });
+    // A proxy profile replaces the proxy written here.
+    expect(storedRoute({ ...emptyRoute(), via: 'socks5', host: 'x', profile: 'office' })).toEqual({
+      via: 'socks5',
+      profile: 'office',
+    });
     // A request or a folder keeps going directly, over the way of its parent.
     expect(ownRoute(emptyRoute())).toEqual({ via: 'direct' });
     expect(ownRoute(emptyRoute('inherit'))).toBeUndefined();
@@ -98,6 +103,7 @@ describe('route', () => {
     );
     expect(routeProblem({ ...emptyRoute(), via: 'ssh', profile: 'p1' })).toBeUndefined();
     expect(routeProblem({ ...emptyRoute(), via: 'http' })).toBe('Enter the host of the proxy');
+    expect(routeProblem({ ...emptyRoute(), via: 'http', profile: 'office' })).toBeUndefined();
     for (const port of ['0', '65536', 'x'])
       expect(routeProblem({ ...emptyRoute(), via: 'socks5', host: 'p', port })).toBe(
         'Invalid proxy port',

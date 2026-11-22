@@ -112,10 +112,11 @@ fn a_sql_connection_keeps_its_secrets_in_the_vault() {
             .to_string()
             .contains("Only PostgreSQL")
     );
-    // It reaches its server directly, through an SSH profile or a SOCKS5 proxy.
+    // It reaches its server directly, through an SSH profile, a SOCKS5 proxy or a profile.
     for route in [
         json!({"via": "direct"}),
         json!({"via": "ssh", "profile": "bastion"}),
+        json!({"via": "socks5", "profile": "office-proxy"}),
         json!({"via": "socks5", "host": "proxy", "port": "{{proxyPort}}", "username": "ana",
                "password": "{{vault:db-proxy:c1}}", "remoteDns": true}),
     ] {

@@ -1,0 +1,139 @@
+@let s = scene();
+<div class="sp" [class.sp-compact]="compact()">
+  @if (!compact()) {
+    <div class="row sp-tools" role="group" [attr.aria-label]="'Spatial view' | transloco">
+      @if (spatialColumns().length > 1) {
+        <label class="field"
+          >{{ 'Geometry column' | transloco
+          }}<select [value]="column()" (change)="chosen.set(+$any($event.target).value)">
+            @for (at of spatialColumns(); track at) {
+              <option [value]="at">{{ columns()[at].name }}</option>
+            }
+          </select></label
+        >
+      }
+      <label class="field"
+        >{{ 'Color by' | transloco
+        }}<select [value]="colorBy()" (change)="colorBy.set(+$any($event.target).value)">
+          <option [value]="-1">{{ 'No column' | transloco }}</option>
+          @for (each of columns(); track $index; let at = $index) {
+            @if (at !== column()) {
+              <option [value]="at">{{ each.name }}</option>
+            }
+          }
+        </select></label
+      >
+      <span class="grow"></span>
+      <button type="button" class="button small subtle" (click)="scale(0.8)">
+        {{ 'Zoom in' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="scale(1.25)">
+        {{ 'Zoom out' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="zoom.set(undefined)">
+        {{ 'Fit to the data' | transloco }}
+      </button>
+      <button
+        type="button"
+        class="button small subtle"
+        [attr.aria-pressed]="listed()"
+        (click)="listed.set(!listed())"
+      >
+        {{ 'Show as a list' | transloco }}
+      </button>
+      <button type="button" class="button small subtle" (click)="exportGeoJson()">GeoJSON</button>
+    </div>
+    <p class="muted sp-note">
+      {{ 'db.spatial.units.' + s.units | transloco }}
+      @if (s.srids.length) {
+        {{ 'db.spatial.srids' | transloco: { v0: s.srids.join(', ') } }}
+      }
+      @if (s.figures.length >= maxFigures) {
+        {{ 'db.spatial.cut' | transloco: { v0: maxFigures } }}
+      }
+    </p>
+  }
+  @if (listed() && !compact()) {
+    <table class="sp-list">
+      <thead>
+        <tr>
+          <th scope="col">{{ 'Row' | transloco }}</th>
+          <th scope="col">{{ 'Type' | transloco }}</th>
+          <th scope="col">{{ 'Points' | transloco }}</th>
+          <th scope="col">{{ 'Bounding box' | transloco }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of list(); track item.row) {
+          <tr [class.sp-chosen]="selected() === item.row">
+            <th scope="row">
+              <button type="button" class="text-button" (click)="selected.set(item.row)">
+                {{ item.row + 1 }}
+              </button>
+            </th>
+            <td>{{ item.type }}</td>
+            <td>{{ item.points }}</td>
+            <td>{{ box(item.box) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <svg
+      class="sp-canvas"
+      role="img"
+      [attr.aria-label]="'db.spatial.summary' | transloco: { v0: list().length }"
+      [attr.viewBox]="viewBox()"
+      preserveAspectRatio="xMidYMid meet"
+      (wheel)="wheel($event)"
+      (pointerdown)="down($event)"
+      (pointermove)="move($event)"
+      (pointerup)="up()"
+      (pointerleave)="up()"
+    >
+      @for (figure of s.figures; track $index) {
+        @if (figure.shape === 'point') {
+          <circle
+            class="sp-figure sp-point"
+            [class]="figureClass(figure.row)"
+            [class.sp-chosen]="selected() === figure.row"
+            [attr.cx]="figure.point![0]"
+            [attr.cy]="figure.point![1]"
+            [attr.r]="radius()"
+            (click)="selected.set(figure.row)"
+            (pointerenter)="hovered.set(figure.row)"
+            (pointerleave)="hovered.set(undefined)"
+          />
+        } @else {
+          <path
+            class="sp-figure"
+            [class]="figureClass(figure.row)"
+            [class.sp-area]="figure.shape === 'area'"
+            [class.sp-chosen]="selected() === figure.row"
+            [attr.d]="figure.d"
+            (click)="selected.set(figure.row)"
+            (pointerenter)="hovered.set(figure.row)"
+            (pointerleave)="hovered.set(undefined)"
+          />
+        }
+      }
+    </svg>
+  }
+  @if (!compact()) {
+    @let shown = hovered() ?? selected();
+    @if (shown !== undefined) {
+      <div class="sp-row" role="status">
+        <strong>{{ 'db.spatial.row' | transloco: { v0: shown + 1 } }}</strong>
+        <span class="muted">{{ details(shown) }}</span>
+        @if (selected() !== undefined) {
+          <button type="button" class="button small subtle" (click)="copy('wkt')">
+            {{ 'Copy as WKT' | transloco }}
+          </button>
+          <button type="button" class="button small subtle" (click)="copy('geojson')">
+            {{ 'Copy as GeoJSON' | transloco }}
+          </button>
+        }
+      </div>
+    }
+  }
+</div>

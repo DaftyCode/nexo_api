@@ -71,9 +71,17 @@ pub enum DocumentKind {
     /// only read, a time limit).
     #[serde(rename = "connection-type")]
     ConnectionType,
+    /// A reusable HTTP or SOCKS5 proxy: host, port, user and whether it resolves names; its
+    /// password stays in the vault.
+    #[serde(rename = "proxy-profile")]
+    ProxyProfile,
+    /// A saved database task (DB-31): scripts, a copy, a comparison, a backup or other tasks,
+    /// with what it authorizes and when it runs. Its runs go in a `monitor-history`.
+    #[serde(rename = "db-task")]
+    DbTask,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 26] = [
+    pub const ALL: [DocumentKind; 28] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -100,6 +108,8 @@ impl DocumentKind {
         Self::MonitorHistory,
         Self::Masking,
         Self::ConnectionType,
+        Self::ProxyProfile,
+        Self::DbTask,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -129,6 +139,8 @@ impl DocumentKind {
             Self::MonitorHistory => "monitor-history",
             Self::Masking => "masking",
             Self::ConnectionType => "connection-type",
+            Self::ProxyProfile => "proxy-profile",
+            Self::DbTask => "db-task",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {

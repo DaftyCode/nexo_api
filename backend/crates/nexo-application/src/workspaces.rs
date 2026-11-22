@@ -123,11 +123,9 @@ impl Application {
         Ok(saved)
     }
     pub async fn delete_document(&self, id: &DocumentId, revision: i64) -> Result<()> {
-        let monitor = self
-            .workspaces
-            .document(id)
-            .await
-            .is_ok_and(|document| document.kind == DocumentKind::Monitor);
+        let monitor = self.workspaces.document(id).await.is_ok_and(|document| {
+            matches!(document.kind, DocumentKind::Monitor | DocumentKind::DbTask)
+        });
         self.workspaces.delete(id, revision).await?;
         // A monitor's history goes with it.
         if monitor {

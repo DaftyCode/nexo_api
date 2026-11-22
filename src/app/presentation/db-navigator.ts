@@ -26,6 +26,9 @@ import { menuKeys } from './menu-keys';
 import { PopupPlace, placeAt, placeBy } from './popup-place';
 import { BUILTIN_TYPES, typeOf } from '../domain/db/connection-types';
 import { DbSection } from './db-panel/section';
+import { DbConnectionImport } from './db-connection-import';
+import { DbMockData } from './db-mock-data';
+import { DbTasks } from './db-tasks';
 
 /** Where the actions menu of a row is open. */
 interface OpenMenu extends PopupPlace {
@@ -39,7 +42,16 @@ interface OpenMenu extends PopupPlace {
  * Enter, F2, F5, Delete, the menu key), with a text filter, bookmarks and two views.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, MongoDialog, StudioIcon, DbRowMenu],
+  imports: [
+    TranslocoPipe,
+    FormField,
+    MongoDialog,
+    StudioIcon,
+    DbRowMenu,
+    DbConnectionImport,
+    DbMockData,
+    DbTasks,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-navigator',
   styleUrls: ['./db-navigator.scss', './db-navigator/rows.scss'],
@@ -235,6 +247,22 @@ export class DbNavigator {
     if (!open) return;
     this.closeMenu();
     void this.actions[action](open.row);
+  }
+
+  /** «Import connections» is open (DB-25), and the saved tasks (DB-31). */
+  protected readonly importing = signal(false);
+  protected readonly taskList = signal(false);
+  protected importConnections() {
+    this.options.set(undefined);
+    this.importing.set(true);
+  }
+  /** Downloads every connection, without its secrets, as Nexo imports them back. */
+  protected async exportConnections() {
+    this.options.set(undefined);
+    const state = this.section.state;
+    const ids = this.section.connections().map((connection) => connection.id);
+    const text = (await this.section.cases()).imports.export(state.documents(), ids);
+    state.download('nexo-connections.json', text, 'application/json');
   }
 
   /** Opens or closes the navigator's options under their button. */

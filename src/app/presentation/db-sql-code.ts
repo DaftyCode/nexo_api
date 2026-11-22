@@ -231,12 +231,9 @@ export class DbSqlCode {
     view.dispatch({ selection: { anchor: at }, scrollIntoView: true });
     view.focus();
   }
-  /** Replaces a part of the text, as formatting a statement does. */
-  replaceRange(from: number, to: number, text: string) {
-    this.view?.dispatch({
-      changes: { from, to, insert: text },
-      selection: { anchor: from + text.length },
-    });
+  /** Replaces a part of the text, as formatting a statement does; the cursor goes after it. */
+  replaceRange(from: number, to: number, text: string, cursor = from + text.length) {
+    this.view?.dispatch({ changes: { from, to, insert: text }, selection: { anchor: cursor } });
   }
   /** Replaces the whole text, as opening an entry of the history does. */
   replace(text: string) {

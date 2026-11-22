@@ -34,6 +34,12 @@ nx.test('Successful response', () => {{ '{' }}
           | transloco
       }}
     </li>
+    <li>
+      {{
+        "nx.sql('Shop') reads and changes a saved SQL connection from a script: query(sql, params) gives up to 1,000 rows as objects by column, queryOne the first one, execute a change (add { confirm: true } where the SQL editor would ask), and transaction(fn) commits it or undoes it if it throws. Parameters are always bound, with the markers of the engine ($1, ?, @p1). Each run of the script has its own session, closed when it ends; the script never sees the address or the password."
+          | transloco
+      }}
+    </li>
   </ul>
 </section>
 <section id="runner">

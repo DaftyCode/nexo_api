@@ -1,0 +1,246 @@
+@let c = config();
+@let g = geometry();
+<div class="rc">
+  <app-result-chart-settings [config]="c" [columns]="columns()" (changed)="set($event)" />
+  <div class="row rc-status">
+    @if (more()) {
+      <span class="muted">{{ 'db.chart.partial' | transloco: { v0: rows().length } }}</span>
+      <button type="button" class="button small subtle" (click)="readAll.emit()">
+        {{ 'Read every row' | transloco }}
+      </button>
+    } @else {
+      <span class="muted">{{ 'db.chart.rows' | transloco: { v0: rows().length } }}</span>
+    }
+    <span class="grow"></span>
+    <button
+      type="button"
+      class="button small subtle"
+      [attr.aria-pressed]="table()"
+      (click)="table.set(!table())"
+    >
+      {{ 'Show as a table' | transloco }}
+    </button>
+    <button type="button" class="button small subtle" (click)="exportSvg()">SVG</button>
+    <button type="button" class="button small subtle" (click)="exportPng()">PNG</button>
+    <button type="button" class="button small subtle" (click)="print()">
+      {{ 'Print' | transloco }}
+    </button>
+  </div>
+  @if (task.error(); as error) {
+    <p class="global-alert" role="alert">{{ error | transloco }}</p>
+  }
+  <figure class="rc-figure">
+    @if (c.title) {
+      <figcaption class="rc-title">{{ c.title }}</figcaption>
+    }
+    @if (table()) {
+      <table class="rc-table">
+        <caption class="rc-hidden">
+          {{
+            summary()
+          }}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{{ c.xLabel || c.x }}</th>
+            @for (series of data().series; track $index) {
+              <th scope="col">{{ series.name }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (category of data().categories; track $index; let at = $index) {
+            <tr>
+              <th scope="row">{{ label(at) }}</th>
+              @for (series of data().series; track $index) {
+                <td>{{ format(series.values[at]) }}</td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <svg
+        #chart
+        class="rc-svg"
+        role="img"
+        [attr.aria-label]="summary()"
+        [attr.viewBox]="'0 0 ' + frame.width + ' ' + frame.height"
+      >
+        <defs>
+          @for (each of styles; track each) {
+            <pattern
+              [attr.id]="id + '-' + each"
+              patternUnits="userSpaceOnUse"
+              width="6"
+              height="6"
+              [attr.patternTransform]="'rotate(' + each * 45 + ')'"
+            >
+              <rect width="6" height="6" class="rc-fill" [class]="style(each)" />
+              @if (each > 0) {
+                <line x1="0" y1="0" x2="0" y2="6" class="rc-hatch" />
+              }
+            </pattern>
+          }
+        </defs>
+        <g aria-hidden="true">
+          @for (mark of g.marks; track $index) {
+            @if (g.vertical) {
+              <line
+                class="rc-grid"
+                [attr.x1]="frame.left"
+                [attr.x2]="frame.width - frame.right"
+                [attr.y1]="mark.at"
+                [attr.y2]="mark.at"
+              />
+              <text
+                class="rc-axis"
+                [attr.x]="frame.left - 6"
+                [attr.y]="mark.at + 4"
+                text-anchor="end"
+              >
+                {{ format(mark.value) }}
+              </text>
+            } @else {
+              <line
+                class="rc-grid"
+                [attr.y1]="frame.top"
+                [attr.y2]="frame.height - frame.bottom"
+                [attr.x1]="mark.at"
+                [attr.x2]="mark.at"
+              />
+              <text
+                class="rc-axis"
+                [attr.x]="mark.at"
+                [attr.y]="frame.height - frame.bottom + 14"
+                text-anchor="middle"
+              >
+                {{ format(mark.value) }}
+              </text>
+            }
+          }
+          @for (each of g.labels; track $index) {
+            @if (g.labels.length <= 40 || each.category % 5 === 0) {
+              @if (g.vertical) {
+                <text
+                  class="rc-axis"
+                  [attr.x]="each.at"
+                  [attr.y]="frame.height - frame.bottom + 16"
+                  text-anchor="middle"
+                >
+                  {{ label(each.category).slice(0, 14) }}
+                </text>
+              } @else {
+                <text
+                  class="rc-axis"
+                  [attr.x]="frame.left - 6"
+                  [attr.y]="each.at + 4"
+                  text-anchor="end"
+                >
+                  {{ label(each.category).slice(0, 10) }}
+                </text>
+              }
+            }
+          }
+          @if (c.xLabel) {
+            <text
+              class="rc-axis-name"
+              [attr.x]="frame.width / 2"
+              [attr.y]="frame.height - 6"
+              text-anchor="middle"
+            >
+              {{ c.xLabel }}
+            </text>
+          }
+          @if (c.yLabel) {
+            <text
+              class="rc-axis-name"
+              x="12"
+              [attr.y]="frame.height / 2"
+              text-anchor="middle"
+              [attr.transform]="'rotate(-90 12 ' + frame.height / 2 + ')'"
+            >
+              {{ c.yLabel }}
+            </text>
+          }
+          @for (line of g.lines; track line.series) {
+            @if (c.type === 'area') {
+              <path class="rc-area" [class]="style(line.series)" [attr.d]="line.area" />
+            }
+            <path class="rc-line" [class]="style(line.series)" [attr.d]="line.d" />
+          }
+        </g>
+        @for (shape of g.shapes; track $index; let at = $index) {
+          @switch (shape.kind) {
+            @case ('rect') {
+              <rect
+                class="rc-shape"
+                [class]="style(shape.series)"
+                [attr.x]="shape.x"
+                [attr.y]="shape.y"
+                [attr.width]="shape.width"
+                [attr.height]="shape.height"
+                [attr.fill]="'url(#' + id + '-' + (shape.series % styles.length) + ')'"
+                [attr.tabindex]="at < focusable ? 0 : null"
+                (pointerenter)="active.set(shape)"
+                (focus)="active.set(shape)"
+                (pointerleave)="active.set(undefined)"
+                (blur)="active.set(undefined)"
+              />
+            }
+            @case ('path') {
+              <path
+                class="rc-shape"
+                [class]="style(shape.series)"
+                [attr.d]="shape.d"
+                [attr.fill]="'url(#' + id + '-' + (shape.series % styles.length) + ')'"
+                [attr.tabindex]="at < focusable ? 0 : null"
+                (pointerenter)="active.set(shape)"
+                (focus)="active.set(shape)"
+                (pointerleave)="active.set(undefined)"
+                (blur)="active.set(undefined)"
+              />
+            }
+            @default {
+              <circle
+                class="rc-dot"
+                [class]="style(shape.series)"
+                [attr.cx]="shape.x"
+                [attr.cy]="shape.y"
+                [attr.r]="shape.r"
+                [attr.tabindex]="at < focusable ? 0 : null"
+                (pointerenter)="active.set(shape)"
+                (focus)="active.set(shape)"
+                (pointerleave)="active.set(undefined)"
+                (blur)="active.set(undefined)"
+              />
+            }
+          }
+        }
+      </svg>
+      @if (active(); as shape) {
+        <p class="rc-tip" role="status">{{ describe(shape) }}</p>
+      }
+    }
+  </figure>
+  <div class="rc-legend" role="group" [attr.aria-label]="'Legend' | transloco">
+    @if (c.type === 'pie') {
+      @for (category of data().categories; track $index; let at = $index) {
+        <span class="rc-key"
+          ><span class="rc-swatch" [class]="style(at)"></span>{{ label(at) }}</span
+        >
+      }
+    } @else {
+      @for (series of data().series; track $index; let at = $index) {
+        <button
+          type="button"
+          class="rc-key"
+          [attr.aria-pressed]="!hidden().has(at)"
+          (click)="toggleSeries(at)"
+        >
+          <span class="rc-swatch" [class]="style(at)"></span>{{ series.name }}
+        </button>
+      }
+    }
+  </div>
+</div>

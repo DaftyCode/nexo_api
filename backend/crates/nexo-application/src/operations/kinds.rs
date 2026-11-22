@@ -49,11 +49,15 @@ impl Operation {
                 | Self::DbCompareData
                 | Self::DbSyncData
                 | Self::DbRouteTest
+                | Self::DbMockRows
         )
     }
     /// Operations on the monitors, which the application schedules, not the engine.
     pub fn is_monitor(self) -> bool {
-        matches!(self, Self::MonitorStatus | Self::MonitorRun)
+        matches!(
+            self,
+            Self::MonitorStatus | Self::MonitorRun | Self::DbTaskRun
+        )
     }
     /// Operations with the local client tools of the databases (desktop only), not of the
     /// engine.

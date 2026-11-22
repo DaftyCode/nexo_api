@@ -1,0 +1,35 @@
+.db-import-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--nexo-z-dropdown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nexo-color-backdrop);
+}
+.db-import-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-3);
+  width: min(calc(var(--nexo-size-unit) * 280), 94vw);
+  max-height: 90vh;
+  overflow: auto;
+}
+.db-import-head {
+  justify-content: space-between;
+}
+.db-import-head h2 {
+  margin: 0;
+  font-size: var(--nexo-font-size-2xl);
+}
+.db-import-report ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-1);
+  margin: 0;
+  padding-left: var(--nexo-space-5);
+}
+.db-import-report li {
+  display: flex;
+  gap: var(--nexo-space-3);
+}
