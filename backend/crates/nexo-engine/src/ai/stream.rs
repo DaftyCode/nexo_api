@@ -49,6 +49,12 @@ fn apply(
                 }
                 state.text.push_str(&text);
             }
+            // Reasoning past the limit of an answer is left out; the answer goes on.
+            Delta::Thinking(text) => {
+                if state.thinking.len() + text.len() <= MAX_ANSWER {
+                    state.thinking.push_str(&text);
+                }
+            }
             Delta::Stop(stop) => state.stop = Some(stop),
             Delta::Usage { input, output } => {
                 state.input = state.input.max(input);

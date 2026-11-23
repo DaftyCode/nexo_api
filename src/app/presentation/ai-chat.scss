@@ -44,6 +44,28 @@
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.ai-thinking {
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-sm);
+}
+.ai-thinking summary {
+  cursor: pointer;
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.ai-thinking-text {
+  max-height: calc(var(--nexo-size-unit) * 60);
+  overflow: auto;
+  margin-block-start: var(--nexo-space-1);
+  padding-inline-start: var(--nexo-space-2);
+  border-inline-start: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+/* While it streams, the newest reasoning stays in sight. */
+.ai-thinking-live {
+  display: flex;
+  flex-direction: column-reverse;
+}
 .ai-message-failed {
   margin: 0;
   color: var(--nexo-color-danger-text);

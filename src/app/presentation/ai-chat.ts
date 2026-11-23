@@ -11,7 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { AiAnswer } from '../application/ai-use-cases';
+import { AiAnswer, AiWritten } from '../application/ai-use-cases';
 import { AI } from '../composition/providers';
 import { AiMessage, AiPlace, aiMissing, stopNote } from '../domain/ai';
 import { AiSettingsPanel } from './ai-settings';
@@ -56,8 +56,8 @@ export class AiChat {
   protected readonly current = signal<Current>(fresh());
   protected readonly question = signal({ text: '' });
   protected readonly fields = form(this.question);
-  /** The answer being written, as far as it has come; `undefined` when none is. */
-  protected readonly writing = signal<string | undefined>(undefined);
+  /** The answer being written and its reasoning, as far as they came; `undefined` when none is. */
+  protected readonly writing = signal<AiWritten | undefined>(undefined);
   protected readonly error = signal('');
   protected readonly note = stopNote;
   private answer?: AiAnswer;
@@ -111,7 +111,7 @@ export class AiChat {
     const messages: AiMessage[] = [...this.current().messages, { role: 'user', text }];
     this.current.update((current) => ({ ...current, messages }));
     this.question.set({ text: '' });
-    this.writing.set('');
+    this.writing.set({ text: '', thinking: '' });
     this.error.set('');
     let message: AiMessage;
     try {

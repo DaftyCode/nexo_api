@@ -37,7 +37,12 @@ describe('AiChat', () => {
   };
   const create = async (ready = true) => {
     if (ready) {
-      TestBed.inject(AI).saveSettings({ ...DEFAULT_AI_SETTINGS, enabled: true });
+      TestBed.inject(AI).saveSettings({
+        ...DEFAULT_AI_SETTINGS,
+        enabled: true,
+        provider: 'anthropic',
+        model: 'claude-opus-5-5',
+      });
       api.secretNames.push('ai:anthropic');
     }
     fixture = TestBed.createComponent(AiChat);
@@ -65,7 +70,10 @@ describe('AiChat', () => {
     expect(text()).toContain('The assistant is off');
     expect(text()).toContain('Use the AI assistant');
     expect(root().querySelector('textarea')).toBeNull();
+    expect(text()).toContain('Model inside Nexo');
     (control(root(), 'Use the AI assistant') as HTMLInputElement).click();
+    await fill(fixture, 'Provider', 'anthropic');
+    await settle();
     await fill(fixture, 'API key', 'sk-test');
     await click(/^Save$/);
     await until(() => text().includes('Ask the assistant'));
@@ -108,6 +116,35 @@ describe('AiChat', () => {
     state.confirm = () => true;
     await click(/^Delete$/);
     expect(api.documentsStore).toEqual([]);
+  });
+
+  it('shows what the model reasons while it thinks, folded once it answers', async () => {
+    await create();
+    let release!: () => void;
+    const answered = new Promise<void>((done) => (release = done));
+    polls.push({ text: '', next: 0, thinking: 'The person wants', thinkingNext: 16, done: false });
+    api.responses['ai.poll'] = async () => {
+      const next = polls.shift();
+      if (next) return next;
+      await answered;
+      return { text: 'SELECT 1', next: 8, thinking: '', thinkingNext: 16, done: true };
+    };
+    await ask('Count');
+    await until(() => text().includes('The person wants'));
+    const live = root().querySelector('details.ai-thinking') as HTMLDetailsElement;
+    expect(live.open).toBe(true);
+    expect(live.querySelector('summary')?.textContent).toContain('Thinking…');
+    release();
+    await until(() => text().includes('SELECT 1') && !root().querySelector('[aria-busy]'));
+    const kept = root().querySelector('details.ai-thinking') as HTMLDetailsElement;
+    expect(kept.open).toBe(false);
+    expect(kept.querySelector('summary')?.textContent).toMatch(/Thought for \d+ s/);
+    expect(kept.textContent).toContain('The person wants');
+    const [document] = api.documentsStore;
+    expect((document.value as { messages: unknown[] }).messages[1]).toMatchObject({
+      text: 'SELECT 1',
+      thinking: 'The person wants',
+    });
   });
 
   it('stops an answer and says why another one failed', async () => {

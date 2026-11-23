@@ -36,6 +36,11 @@ describe('AiSettingsPanel', () => {
   it('is off until it is turned on, and keeps the key in the vault', async () => {
     expect(text()).toContain('What leaves your computer');
     expect(text()).toContain('The assistant is off');
+    // The model inside Nexo first: nothing leaves the computer.
+    expect(text()).toContain('Model inside Nexo');
+    expect(text()).not.toContain('API key');
+    await fill(fixture, 'Provider', 'anthropic');
+    await settle();
     expect(text()).toContain('Effort');
     (control(root(), 'Use the AI assistant') as HTMLInputElement).click();
     await settle();

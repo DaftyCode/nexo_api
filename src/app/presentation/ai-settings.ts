@@ -19,6 +19,7 @@ import {
   aiMissing,
   withProvider,
 } from '../domain/ai';
+import { AiLocal } from './ai-local';
 import { PanelTask } from './panel-task';
 import { WorkspaceState, success } from './workspace-state';
 
@@ -33,7 +34,7 @@ interface AiForm extends AiSettings {
  * proxy the calls go through. It says what leaves the computer before the first use.
  */
 @Component({
-  imports: [TranslocoPipe, FormField],
+  imports: [TranslocoPipe, FormField, AiLocal],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-ai-settings',
   templateUrl: './ai-settings.html',

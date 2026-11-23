@@ -379,7 +379,7 @@ export interface PerformancePayload {
 }
 
 export interface AiModelsPayload {
-  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible';
+  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible' | 'local';
   workspace?: string;
   baseUrl?: string;
   route?: {
@@ -390,7 +390,7 @@ export interface AiModelsPayload {
 }
 
 export interface AiChatPayload {
-  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible';
+  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible' | 'local';
   model: string;
   messages: readonly AiMessage[];
   workspace?: string;
@@ -408,6 +408,17 @@ export interface AiPollPayload {
   id: string;
   workspace?: string;
   after?: number;
+  thinkingAfter?: number;
+}
+
+export interface AiLocalInstallPayload {
+  workspace?: string;
+  model?: 'qwen3.5-9b' | 'qwen3.5-4b';
+}
+
+export interface AiLocalFilePayload {
+  path: string;
+  workspace?: string;
 }
 
 export interface MongoConnectionPayload {
@@ -1167,6 +1178,10 @@ export interface OperationPayloads {
   'ai.chat': AiChatPayload;
   'ai.poll': AiPollPayload;
   'ai.stop': IdPayload;
+  'ai.local.status': WorkspacePayload;
+  'ai.local.install': AiLocalInstallPayload;
+  'ai.local.file': AiLocalFilePayload;
+  'ai.local.remove': WorkspacePayload;
   'mongo.test': MongoConnectionPayload;
   'mongo.databases': MongoConnectionPayload;
   'mongo.collections': MongoDatabasePayload;

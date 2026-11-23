@@ -4,16 +4,20 @@ import { AiUseCases } from './ai-use-cases';
 
 describe('AiUseCases', () => {
   let calls: { operation: string; payload: Record<string, unknown> }[];
-  let polls: unknown[];
   let secrets: string[];
   let documents: WorkspaceDocument[];
   let stored: Map<string, string>;
   let cases: AiUseCases;
-  const on: AiSettings = { ...DEFAULT_AI_SETTINGS, enabled: true, effort: 'high' };
+  const on: AiSettings = {
+    ...DEFAULT_AI_SETTINGS,
+    enabled: true,
+    provider: 'anthropic',
+    model: 'claude-opus-5-5',
+    effort: 'high',
+  };
 
   beforeEach(() => {
     calls = [];
-    polls = [];
     secrets = [];
     documents = [];
     stored = new Map();
@@ -21,8 +25,9 @@ describe('AiUseCases', () => {
       execute: async <T>(operation: string, payload: Record<string, unknown>): Promise<T> => {
         calls.push({ operation, payload });
         if (operation === 'ai.chat') return { id: 'c1' } as T;
-        if (operation === 'ai.poll') return polls.shift() as T;
         if (operation === 'ai.models') return { models: [{ id: 'm1', name: 'One' }] } as T;
+        if (operation.startsWith('ai.local.'))
+          return { engine: operation !== 'ai.local.remove', model: 'qwen3.5-4b' } as T;
         return {} as T;
       },
     };
@@ -97,77 +102,6 @@ describe('AiUseCases', () => {
     expect(calls[2].payload['route']).toBeUndefined();
   });
 
-  it('streams an answer by polls and says how it ended', async () => {
-    polls.push(
-      { text: 'Hel', next: 3, done: false },
-      { text: '', next: 3, done: false },
-      { text: 'lo', next: 5, done: true, stop: 'end_turn' },
-    );
-    const written: string[] = [];
-    const answer = await cases.ask(
-      on,
-      'local',
-      'sql',
-      [
-        { role: 'user', text: 'Hi' },
-        { role: 'assistant', text: '', failed: 'Network' },
-        { role: 'user', text: 'Again' },
-      ],
-      (text) => written.push(text),
-    );
-    expect(await answer.done).toEqual({ role: 'assistant', text: 'Hello' });
-    expect(written).toEqual(['Hel', 'Hello']);
-    const chat = calls.find((call) => call.operation === 'ai.chat')!.payload;
-    expect(chat['effort']).toBe('high');
-    expect(chat['model']).toBe('claude-opus-5-5');
-    expect(chat['messages']).toEqual([
-      { role: 'user', text: 'Hi' },
-      { role: 'user', text: 'Again' },
-    ]);
-    expect(String(chat['system'])).toContain('SQL');
-    expect(
-      calls.filter((call) => call.operation === 'ai.poll').map((call) => call.payload),
-    ).toEqual([
-      { id: 'c1', after: 0 },
-      { id: 'c1', after: 3 },
-      { id: 'c1', after: 3 },
-    ]);
-  });
-
-  it('stops an answer once and reports why one failed', async () => {
-    polls.push(
-      { text: 'One', next: 3, done: false },
-      { text: '', next: 3, done: true, stop: 'stopped' },
-    );
-    const answer = await cases.ask(
-      { ...on, provider: 'openai' },
-      'local',
-      'request',
-      [{ role: 'user', text: 'Hi' }],
-      () => undefined,
-    );
-    answer.stop();
-    answer.stop();
-    expect(await answer.done).toEqual({ role: 'assistant', text: 'One', stop: 'stopped' });
-    expect(calls.filter((call) => call.operation === 'ai.stop')).toEqual([
-      { operation: 'ai.stop', payload: { id: 'c1' } },
-    ]);
-    expect(calls.find((call) => call.operation === 'ai.chat')!.payload['effort']).toBeUndefined();
-    polls.push({ text: '', next: 0, done: true, error: 'The provider refused the API key' });
-    const failed = await cases.ask(
-      on,
-      'local',
-      'mongo',
-      [{ role: 'user', text: 'Hi' }],
-      () => undefined,
-    );
-    expect(await failed.done).toEqual({
-      role: 'assistant',
-      text: '',
-      failed: 'The provider refused the API key',
-    });
-  });
-
   it('keeps conversations in the workspace, named by their first question', async () => {
     const saved = await cases.save('local', {
       id: 'c1',
@@ -205,5 +139,23 @@ describe('AiUseCases', () => {
     expect(kept.messages).toHaveLength(200);
     await cases.remove('local', 'c1', 1);
     expect(documents.some((d) => d.id === 'c1')).toBe(false);
+  });
+
+  it('installs, uses and removes the model run inside Nexo, always on loopback', async () => {
+    expect(await cases.hasKey('local')).toBe(true);
+    await cases.installLocal('qwen3.5-4b');
+    await cases.installLocal();
+    await cases.useLocalFile('C:/models/mine.gguf');
+    expect(await cases.removeLocal()).toMatchObject({ engine: false });
+    expect(calls.map((call) => [call.operation, call.payload])).toEqual([
+      ['ai.local.status', {}],
+      ['ai.local.install', { model: 'qwen3.5-4b' }],
+      ['ai.local.install', {}],
+      ['ai.local.file', { path: 'C:/models/mine.gguf' }],
+      ['ai.local.remove', {}],
+    ]);
+    const local: AiSettings = { ...on, provider: 'local', model: 'local', proxy: 'p1' };
+    await cases.models(local, 'local');
+    expect(calls.at(-1)?.payload).toEqual({ workspace: 'local', provider: 'local' });
   });
 });

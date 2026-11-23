@@ -1,7 +1,7 @@
 // Contract tests of the AI assistant (IA-01) through Nexo, against a provider played on
 // loopback: the key comes from the vault, a value of the vault never reaches the provider,
-// the answer streams and is read by polls, it can be stopped, and the models are listed.
-// Without a key nothing is called.
+// the answer streams and is read by polls, its reasoning apart, it can be stopped, and the
+// models are listed. Without a key nothing is called.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -66,16 +66,20 @@ const chat = (question) =>
   });
 async function answer(id) {
   let written = '';
+  let thinking = '';
   let after = 0;
+  let thinkingAfter = 0;
   let last;
   await until(async () => {
-    const polled = await server.execute('ai.poll', { id, after });
+    const polled = await server.execute('ai.poll', { id, after, thinkingAfter });
     written += polled.text;
+    thinking += polled.thinking;
     after = polled.next;
+    thinkingAfter = polled.thinkingNext;
     last = polled;
     return polled.done;
   });
-  return { written, last };
+  return { written, thinking, last };
 }
 
 test('without a key nothing is called', async () => {
@@ -115,6 +119,44 @@ test('the key comes from the vault and a value of the vault never leaves', async
   assert.match(sent.body, /\[redacted\]/);
   // The key is not in the answer either.
   assert.ok(!JSON.stringify(last).includes('sk-contract-key'));
+});
+
+test('the reasoning streams apart from the answer', async () => {
+  const thought = (value) =>
+    sse('content_block_delta', {
+      type: 'content_block_delta',
+      delta: { type: 'thinking_delta', thinking: value },
+    });
+  script = { events: [thought('Count rows '), thought('by client.'), text('GROUP BY')], pause: 5 };
+  const started = await chat('Count');
+  assert.equal(started.status, 200, JSON.stringify(started.body));
+  const { written, thinking } = await answer(started.body.id);
+  assert.equal(written, 'GROUP BY');
+  assert.equal(thinking, 'Count rows by client.');
+  // Claude is asked for a summary of its thinking, which it omits otherwise.
+  assert.deepEqual(JSON.parse(received.at(-1).body).thinking, {
+    type: 'adaptive',
+    display: 'summarized',
+  });
+
+  // llama.cpp and the servers compatible with OpenAI send it without being asked.
+  const chunk = (delta) => `data: ${JSON.stringify({ choices: [{ delta }] })}\n\n`;
+  script = {
+    events: [chunk({ reasoning_content: 'Plan.' }), chunk({ content: 'Done' }), 'data: [DONE]\n\n'],
+    pause: 5,
+  };
+  const compatible = await server.api('POST', '/execute/ai.chat', {
+    workspace: 'local',
+    provider: 'compatible',
+    baseUrl: address,
+    model: 'qwen',
+    messages: [{ role: 'user', text: 'Plan' }],
+  });
+  assert.equal(compatible.status, 200, JSON.stringify(compatible.body));
+  const local = await answer(compatible.body.id);
+  assert.equal(local.written, 'Done');
+  assert.equal(local.thinking, 'Plan.');
+  assert.equal(received.at(-1).url, '/v1/chat/completions');
 });
 
 test('an answer is stopped where it is', async () => {

@@ -33,7 +33,15 @@ fn anthropic_events_become_text_stop_and_usage() {
         "content_block_delta",
         json!({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": "…"}}),
     );
-    assert!(deltas(Provider::Anthropic, &thinking).is_empty());
+    assert_eq!(
+        deltas(Provider::Anthropic, &thinking),
+        [Delta::Thinking("…".into())]
+    );
+    let hidden = event(
+        "content_block_delta",
+        json!({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": ""}}),
+    );
+    assert!(deltas(Provider::Anthropic, &hidden).is_empty());
     let stop = event(
         "message_delta",
         json!({"type": "message_delta", "delta": {"stop_reason": "refusal"}, "usage": {"output_tokens": 30}}),
@@ -75,6 +83,23 @@ fn openai_and_gemini_chunks_become_text_stop_and_usage() {
         json!({"choices": [{"delta": {"content": "Hi"}, "finish_reason": null}]}),
     );
     assert_eq!(deltas(Provider::Openai, &chunk), [Delta::Text("Hi".into())]);
+    // llama.cpp's reasoning, and the name other servers give it.
+    let reasoning = event(
+        "message",
+        json!({"choices": [{"delta": {"reasoning_content": "Thinking", "content": null}}]}),
+    );
+    assert_eq!(
+        deltas(Provider::Local, &reasoning),
+        [Delta::Thinking("Thinking".into())]
+    );
+    let other = event(
+        "message",
+        json!({"choices": [{"delta": {"reasoning": " Process"}}]}),
+    );
+    assert_eq!(
+        deltas(Provider::Compatible, &other),
+        [Delta::Thinking(" Process".into())]
+    );
     let last = event(
         "message",
         json!({"choices": [{"delta": {}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 5, "completion_tokens": 7}}),
@@ -114,6 +139,7 @@ fn openai_and_gemini_chunks_become_text_stop_and_usage() {
     assert_eq!(
         deltas(Provider::Gemini, &gemini),
         [
+            Delta::Thinking("plan".into()),
             Delta::Text("Hello".into()),
             Delta::Stop("stop".into()),
             Delta::Usage {

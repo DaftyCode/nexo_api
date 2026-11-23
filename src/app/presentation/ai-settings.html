@@ -17,65 +17,69 @@
       }
     </select></label
   >
-  @if (model().provider === 'compatible') {
-    <label class="field"
-      >{{ 'Address of the server' | transloco
-      }}<input
-        [formField]="fields.baseUrl"
-        placeholder="https://api.mistral.ai/v1"
-        autocomplete="off"
-        spellcheck="false"
-    /></label>
-  }
-  <div class="row">
-    <label class="field grow"
-      >{{ 'API key' | transloco
-      }}<input
-        type="password"
-        [formField]="fields.key"
-        autocomplete="off"
-        [placeholder]="(hasKey() ? 'Kept in the vault' : 'Paste your key') | transloco"
-    /></label>
-    @if (hasKey()) {
-      <button type="button" class="text-button danger" (click)="removeKey()">
-        {{ 'Delete key' | transloco }}
-      </button>
+  @if (model().provider === 'local') {
+    <app-ai-local (changed)="hasKey.set($event)" />
+  } @else {
+    @if (model().provider === 'compatible') {
+      <label class="field"
+        >{{ 'Address of the server' | transloco
+        }}<input
+          [formField]="fields.baseUrl"
+          placeholder="https://api.mistral.ai/v1"
+          autocomplete="off"
+          spellcheck="false"
+      /></label>
     }
-  </div>
-  <div class="row">
-    <label class="field grow"
-      >{{ 'Model' | transloco
-      }}<input [formField]="fields.model" list="ai-models" autocomplete="off" spellcheck="false"
-    /></label>
-    <datalist id="ai-models">
-      @for (choice of models(); track choice.id) {
-        <option [value]="choice.id">{{ choice.name || choice.id }}</option>
+    <div class="row">
+      <label class="field grow"
+        >{{ 'API key' | transloco
+        }}<input
+          type="password"
+          [formField]="fields.key"
+          autocomplete="off"
+          [placeholder]="(hasKey() ? 'Kept in the vault' : 'Paste your key') | transloco"
+      /></label>
+      @if (hasKey()) {
+        <button type="button" class="text-button danger" (click)="removeKey()">
+          {{ 'Delete key' | transloco }}
+        </button>
       }
-    </datalist>
-    <button type="button" class="button" [disabled]="state.busy()" (click)="loadModels()">
-      {{ 'List the models' | transloco }}
-    </button>
-  </div>
-  @if (model().provider === 'anthropic') {
+    </div>
+    <div class="row">
+      <label class="field grow"
+        >{{ 'Model' | transloco
+        }}<input [formField]="fields.model" list="ai-models" autocomplete="off" spellcheck="false"
+      /></label>
+      <datalist id="ai-models">
+        @for (choice of models(); track choice.id) {
+          <option [value]="choice.id">{{ choice.name || choice.id }}</option>
+        }
+      </datalist>
+      <button type="button" class="button" [disabled]="state.busy()" (click)="loadModels()">
+        {{ 'List the models' | transloco }}
+      </button>
+    </div>
+    @if (model().provider === 'anthropic') {
+      <label class="field"
+        >{{ 'Effort' | transloco
+        }}<select [formField]="fields.effort">
+          <option value="">{{ 'The model’s own' | transloco }}</option>
+          @for (effort of efforts; track effort) {
+            <option [value]="effort">{{ 'ai.effort.' + effort | transloco }}</option>
+          }
+        </select></label
+      >
+    }
     <label class="field"
-      >{{ 'Effort' | transloco
-      }}<select [formField]="fields.effort">
-        <option value="">{{ 'The model’s own' | transloco }}</option>
-        @for (effort of efforts; track effort) {
-          <option [value]="effort">{{ 'ai.effort.' + effort | transloco }}</option>
+      >{{ 'Connect through' | transloco
+      }}<select [formField]="fields.proxy">
+        <option value="">{{ 'Directly' | transloco }}</option>
+        @for (proxy of proxies(); track proxy.id) {
+          <option [value]="proxy.id">{{ proxy.name }}</option>
         }
       </select></label
     >
   }
-  <label class="field"
-    >{{ 'Connect through' | transloco
-    }}<select [formField]="fields.proxy">
-      <option value="">{{ 'Directly' | transloco }}</option>
-      @for (proxy of proxies(); track proxy.id) {
-        <option [value]="proxy.id">{{ proxy.name }}</option>
-      }
-    </select></label
-  >
   @if (missing(); as missing) {
     <p class="muted" role="status">{{ missing | transloco }}</p>
   }

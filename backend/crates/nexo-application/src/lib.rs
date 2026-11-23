@@ -21,8 +21,8 @@ mod vault;
 mod workspaces;
 
 use ports::{
-    DataSources, DocumentDatabase, ExecutionGateway, ModuleCatalog, NativeTools, SecretVault,
-    TaskFiles, UserFiles, VersionControl, WorkspaceRepository,
+    DataSources, DocumentDatabase, ExecutionGateway, LocalModel, ModuleCatalog, NativeTools,
+    SecretVault, TaskFiles, UserFiles, VersionControl, WorkspaceRepository,
 };
 use std::sync::Arc;
 
@@ -61,6 +61,8 @@ pub struct Application {
     task_files: Option<Arc<dyn TaskFiles>>,
     /// What the monitors are doing now.
     monitors: monitors::Board,
+    /// The model run inside Nexo (IA-01); `None` where the composition root has none.
+    local_model: Option<Arc<dyn LocalModel>>,
 }
 impl Application {
     pub fn new(
@@ -83,6 +85,7 @@ impl Application {
             user_files: None,
             task_files: None,
             monitors: monitors::Board::default(),
+            local_model: None,
         }
     }
     /// Adds the databases of the modules.
@@ -103,6 +106,11 @@ impl Application {
     /// Adds the files saved tasks write and read (the desktop app).
     pub fn with_task_files(mut self, files: Arc<dyn TaskFiles>) -> Self {
         self.task_files = Some(files);
+        self
+    }
+    /// Adds the model run inside Nexo.
+    pub fn with_local_model(mut self, local: Arc<dyn LocalModel>) -> Self {
+        self.local_model = Some(local);
         self
     }
     /// Adds the database modules.

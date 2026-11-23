@@ -7,7 +7,7 @@ use crate::{
     vault::{redact_error, redact_secrets},
 };
 use nexo_domain::{Error, Result, ai::Provider};
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 
 impl Application {
     /// The values of the vault, to take out of what leaves: every secret, the key included.
@@ -21,12 +21,40 @@ impl Application {
         Ok(values)
     }
 
-    /// `ai.models`, `ai.chat`, `ai.poll` and `ai.stop`.
+    fn local_model(&self) -> Result<&std::sync::Arc<dyn crate::ports::LocalModel>> {
+        self.local_model
+            .as_ref()
+            .ok_or_else(|| Error::Unavailable("This Nexo cannot run a local model".into()))
+    }
+
+    /// `ai.local.*`: the model run inside Nexo.
+    async fn local(&self, operation: Operation, payload: &Map<String, Value>) -> Result<Value> {
+        let local = self.local_model()?;
+        let text = |name: &str| payload.get(name).and_then(Value::as_str).map(String::from);
+        let status = match operation {
+            Operation::AiLocalInstall => local.install(text("model")).await?,
+            Operation::AiLocalFile => local.use_file(text("path").unwrap_or_default()).await?,
+            Operation::AiLocalRemove => local.remove().await?,
+            _ => local.status().await?,
+        };
+        Ok(json!(status))
+    }
+
+    /// `ai.models`, `ai.chat`, `ai.poll`, `ai.stop` and `ai.local.*`.
     pub(crate) async fn ai(
         &self,
         operation: Operation,
         mut payload: Map<String, Value>,
     ) -> Result<Value> {
+        if matches!(
+            operation,
+            Operation::AiLocalStatus
+                | Operation::AiLocalInstall
+                | Operation::AiLocalFile
+                | Operation::AiLocalRemove
+        ) {
+            return self.local(operation, &payload).await;
+        }
         if matches!(operation, Operation::AiPoll | Operation::AiStop) {
             return self
                 .executor
@@ -39,6 +67,27 @@ impl Application {
                 .and_then(Value::as_str)
                 .unwrap_or_default(),
         )?;
+        if provider == Provider::Local {
+            // The server of the model, started now if it is not running: its address on
+            // loopback, the key of this start and its port, which the egress policy allows.
+            let endpoint = self.local_model()?.endpoint().await?;
+            payload.insert("baseUrl".into(), Value::String(endpoint.url));
+            payload.insert("egressLoopbackPorts".into(), json!([endpoint.port]));
+            payload.remove("route");
+            payload.remove("caPem");
+            let values = self.vault_values().await?;
+            for field in ["messages", "system"] {
+                if let Some(value) = payload.remove(field) {
+                    payload.insert(field.into(), redact_secrets(value, &values));
+                }
+            }
+            payload.insert("resolvedKey".into(), Value::String(endpoint.token));
+            return self
+                .executor
+                .execute(operation, Value::Object(payload))
+                .await
+                .map_err(|error| redact_error(error, &values));
+        }
         let key = match self.secrets.resolve(&provider.key_name()).await {
             Ok(key) => Some(key),
             Err(_) if !provider.needs_key() => None,

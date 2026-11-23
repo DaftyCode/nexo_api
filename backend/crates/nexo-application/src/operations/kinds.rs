@@ -146,7 +146,14 @@ impl Operation {
     pub fn is_ai(self) -> bool {
         matches!(
             self,
-            Self::AiModels | Self::AiChat | Self::AiPoll | Self::AiStop
+            Self::AiModels
+                | Self::AiChat
+                | Self::AiPoll
+                | Self::AiStop
+                | Self::AiLocalStatus
+                | Self::AiLocalInstall
+                | Self::AiLocalFile
+                | Self::AiLocalRemove
         )
     }
     /// Operations whose data belongs to a workspace and need one.

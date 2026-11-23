@@ -36,7 +36,7 @@ The project is at an early stage. Contributions, ideas, testing and code reviews
 | Import              | Portable JSON collections, environments, OpenAPI/Swagger JSON or YAML, HAR and cURL; and what Insomnia (v4 and the v5 YAML of Insomnia 11), Bruno (its JSON export or the collection folder), Hoppscotch and Thunder Client export, with folders, authorization, variables and environments. Their scripts arrive commented out, and a report says what did not come as it was.                                                    |
 | Code                | Original generators for cURL, JavaScript/Node, Python, Java, Go, Rust, C# and PowerShell.                                                                                                                                                                                                                                                                                                                                          |
 | Tools               | Local HTTP mocks, JSON/CSV datasets with read-only SQL queries, cookie manager, API definitions with a linter, Git with remotes and MCP client/server support.                                                                                                                                                                                                                                                                     |
-| AI assistant        | Off until you turn it on in Settings: Anthropic (Claude), OpenAI (ChatGPT), Google (Gemini) or any server compatible with OpenAI's API (Mistral, DeepSeek, Groq, OpenRouter, your own), with your own key kept in the vault and its models listed by the provider. A chat beside SQL scripts, MongoDB collections and requests: the answer streams and can be stopped, conversations are kept in the workspace, values of the vault are redacted before anything leaves, and the call goes straight to the provider, also through a proxy profile. |
+| AI assistant        | Off until you turn it on in Settings. First, a model run inside Nexo: one button downloads llama.cpp for your GPU (CUDA, Vulkan or Metal) and the Qwen3.5 model that fits your free memory (9B or 4B), checked against the SHA-256 Nexo carries, with nothing to install or configure and nothing leaving the computer; it starts when you ask, stops when unused and closes with Nexo even when Nexo ends suddenly, takes the GPU memory free when it loads, and a GGUF file of your own can replace it. Or your own key for Anthropic (Claude), OpenAI (ChatGPT), Google (Gemini) or any server compatible with OpenAI's API (Mistral, DeepSeek, Groq, OpenRouter, your own), with your own key kept in the vault and its models listed by the provider. A chat beside SQL scripts, MongoDB collections and requests: while the model reasons you see Thinking… and its reasoning as it is written (the local model, compatible servers, Claude from 4.6 and Gemini from 2.5; OpenAI does not give it), folded into “Thought for N s” once it answers; the answer streams and can be stopped, conversations are kept in the workspace, values of the vault are redacted before anything leaves, and the call goes straight to the provider, also through a proxy profile. |
 | Secrets             | AES-GCM encrypted vault, `{{vault:name}}` references, allowed domains per secret and secret redaction in results.                                                                                                                                                                                                                                                                                                                  |
 | Workspaces          | Several local workspaces, document history and revisions that prevent lost updates.                                                                                                                                                                                                                                                                                                                                                |
 | Desktop and web     | Tauri desktop app, or the same interface in your browser through a local launcher when you cannot install the app.                                                                                                                                                                                                                                                                                                                 |
@@ -165,12 +165,13 @@ What Nexo keeps by itself is capped, so it never fills the disk: the request his
 In the planned order:
 
 1. **More databases:** Oracle, which waits for a stable release of its Rust driver.
-2. **The AI assistant, local and with tools** (next): the model run inside Nexo, off until you press a button that downloads it (Qwen3.5-9B, or Qwen3.5-4B on computers short of resources, from unsloth's GGUF on Hugging Face, or a GGUF file of your own) with the llama.cpp engine for your GPU (CUDA or Vulkan), all run and fitted to the free RAM and VRAM by Nexo, with nothing to install or configure, until you delete it. Then the assistant's read-only tools (the request and its response, the collection, the schema of a connection you share with it) and its actions: explain an error or a plan, write a query, generate tests.
-3. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
-4. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
-5. **Custom themes** from the app, built on the design tokens.
-6. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
-7. **Reproducible benchmarks** of startup, memory and latency.
+2. **The AI assistant's tools** (next): read-only tools for the assistant (the request and its response, the collection, the schema of a connection you share with it, through the masking sets marked for agents) and its actions: explain an error or a plan, write a query and run it, generate tests and insert them.
+3. **Collections shared by the team:** a collection kept in Google Drive, OneDrive or any file server, so a request saved by one person is there for everyone. A synced folder is watched on the disk, without calls to the cloud; a server URL is read again when the collection opens or on Reload, and a save never overwrites someone else's change. Optionally encrypted so that only Nexo opens it; secrets never leave each person's vault.
+4. **Engine messages translated:** the errors and notices of the backend and the drivers, in every language, with codes and parameters; the interface is already fully translated.
+5. **Development tooling without Node outside Angular:** contract tests and build scripts in Rust.
+6. **Custom themes** from the app, built on the design tokens.
+7. **Distribution:** WinGet, Homebrew, signed APT/YUM repositories and Flatpak. Signing the installers and drivers outside the Store on Windows, macOS notarization and validating the installers on clean machines.
+8. **Reproducible benchmarks** of startup, memory and latency.
 
 This section is updated with every change, always in both READMEs (`README.md` and `README.es.md`) at once:
 
@@ -182,12 +183,12 @@ This section is updated with every change, always in both READMEs (`README.md` a
 
 You can open an [issue](https://github.com/DaftyCode/nexo_api/issues), propose an improvement, fix a bug, expand tests or submit a pull request. You do not need permission to get started. For larger changes, an issue describing the problem and proposal helps coordinate the work.
 
-1. Fork the repository and create a focused branch, such as `feat/http-history` or `fix/runner-cancel`.
-2. Keep each change focused on one problem and respect layer boundaries and responsibilities.
-3. Add behavior tests when changing rules or adapters. Include a reproduction test when fixing a bug.
-4. Run the relevant checks and explain the problem, resulting behavior and validation in your PR.
-5. If your change finishes or adds something, update [Current status and next steps](#current-status-and-next-steps) in both READMEs.
-6. Preserve dependency notices and licenses. Keep local data, credentials and generated artifacts out of Git.
+2. Fork the repository and create a focused branch, such as `feat/http-history` or `fix/runner-cancel`.
+3. Keep each change focused on one problem and respect layer boundaries and responsibilities.
+4. Add behavior tests when changing rules or adapters. Include a reproduction test when fixing a bug.
+5. Run the relevant checks and explain the problem, resulting behavior and validation in your PR.
+6. If your change finishes or adds something, update [Current status and next steps](#current-status-and-next-steps) in both READMEs.
+7. Preserve dependency notices and licenses. Keep local data, credentials and generated artifacts out of Git.
 
 ### Commits
 

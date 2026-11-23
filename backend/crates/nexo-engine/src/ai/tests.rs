@@ -78,14 +78,20 @@ fn chat(base: &str, provider: &str) -> Value {
     })
 }
 
+/// The answer read by polls to its end, its reasoning in `last["thinking"]`.
 async fn finished(assistant: &Assistant, id: &str) -> (String, Value) {
-    let mut text = String::new();
-    let mut after = 0;
+    let (mut text, mut thinking) = (String::new(), String::new());
+    let (mut after, mut thought) = (0, 0);
     for _ in 0..200 {
-        let polled = assistant.poll(&json!({"id": id, "after": after})).unwrap();
+        let mut polled = assistant
+            .poll(&json!({"id": id, "after": after, "thinkingAfter": thought}))
+            .unwrap();
         text.push_str(polled["text"].as_str().unwrap());
+        thinking.push_str(polled["thinking"].as_str().unwrap());
         after = polled["next"].as_u64().unwrap();
+        thought = polled["thinkingNext"].as_u64().unwrap();
         if polled["done"] == true {
+            polled["thinking"] = json!(thinking);
             return (text, polled);
         }
         tokio::time::sleep(Duration::from_millis(20)).await;
@@ -103,6 +109,14 @@ async fn an_answer_streams_and_is_read_by_polls() {
         sse(
             "message_start",
             json!({"type": "message_start", "message": {"usage": {"input_tokens": 9, "output_tokens": 1}}}),
+        ),
+        sse(
+            "content_block_delta",
+            json!({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": "Saluda "}}),
+        ),
+        sse(
+            "content_block_delta",
+            json!({"type": "content_block_delta", "delta": {"type": "thinking_delta", "thinking": "en español."}}),
         ),
         sse(
             "content_block_delta",
@@ -124,6 +138,8 @@ async fn an_answer_streams_and_is_read_by_polls() {
     let id = started["id"].as_str().unwrap();
     let (text, last) = finished(&assistant, id).await;
     assert_eq!(text, "Hola, ¿qué tal?");
+    // The reasoning is read apart from the answer.
+    assert_eq!(last["thinking"], "Saluda en español.");
     assert_eq!(last["stop"], "end_turn");
     assert_eq!(last["usage"], json!({"input": 9, "output": 6}));
     assert!(last["error"].is_null());
@@ -135,6 +151,7 @@ async fn an_answer_streams_and_is_read_by_polls() {
             .contains("x-api-key: sk-test-key")
     );
     assert!(request.contains("\"system\":\"Be brief\""));
+    assert!(request.contains("\"display\":\"summarized\""));
     // An ended answer is read once.
     assert!(assistant.poll(&json!({"id": id})).is_err());
 }

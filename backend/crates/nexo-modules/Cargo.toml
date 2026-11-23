@@ -25,3 +25,22 @@ reqwest.workspace = true
 aws-lc-rs = "1.19.0"
 # The release assets are compressed with gzip; already in the tree through Kafka.
 flate2 = "1.1.11"
+# The archives of llama.cpp for the local model (IA-01): zip on Windows, tar.gz elsewhere;
+# both already in the tree (the files module and DuckDB).
+zip = { version = "9.8.1", default-features = false, features = ["deflate"] }
+tar = "0.4.46"
+
+# The free RAM for the local model (IA-01), and the job that ends its engine with Nexo;
+# already in the tree.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_System_JobObjects",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+] }
+
+# The signal that ends the engine of the local model with Nexo; already in the tree.
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2.191"

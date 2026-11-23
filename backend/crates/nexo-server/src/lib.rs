@@ -112,9 +112,17 @@ pub async fn application(config: &Config) -> Result<(Arc<Application>, Arc<Engin
         Arc::new(modules.documents()),
     );
     // A connection may read the user's pgpass file, only when it says so (DB-25).
+    // The model run inside Nexo (IA-01): downloaded into `<data>/ai` through the egress
+    // policy, started on loopback when the assistant needs it.
+    let local_model = Arc::new(nexo_modules::LocalModels::new(
+        config.data.join("ai"),
+        engine.clone(),
+        Arc::new(nexo_modules::SystemProbe),
+    )?);
     let mut application = application
         .with_modules(modules.clone())
         .with_datasources(modules)
+        .with_local_model(local_model)
         .with_user_files(Arc::new(HomeFiles));
     // The local client tools (`pg_dump`, `mysql`…) run programs of the computer with files
     // chosen in native dialogs: only the desktop app has them.

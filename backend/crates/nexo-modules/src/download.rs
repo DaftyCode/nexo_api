@@ -17,7 +17,7 @@ pub(crate) fn allowed(url: &Url, hosts: &AllowedHosts, scheme: &str) -> bool {
 
 /// Resolves every host through the egress policy, so a download goes only where the policy
 /// allows, whatever the DNS answers after a check.
-struct PolicyResolver(Arc<dyn NetworkPolicy>);
+pub(crate) struct PolicyResolver(pub(crate) Arc<dyn NetworkPolicy>);
 impl reqwest::dns::Resolve for PolicyResolver {
     fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
         let network = self.0.clone();

@@ -1,7 +1,7 @@
 //! What each provider's API asks and answers, without the network: the request of a chat
 //! (Anthropic's Messages, OpenAI's Chat Completions, which compatible servers speak too, and
-//! Gemini's `streamGenerateContent`), the meaning of each event of its stream, its list of
-//! models and its errors.
+//! Gemini's `streamGenerateContent`) with the reasoning shown where the model gives it, the
+//! meaning of each event of its stream, its list of models and its errors.
 use nexo_domain::{
     Error, Result,
     ai::{Message, Provider, Role},
@@ -47,8 +47,8 @@ fn key_headers(settings: &Settings) -> Vec<(String, String)> {
             ("anthropic-version".into(), ANTHROPIC_VERSION.into()),
         ],
         Provider::Gemini => vec![("x-goog-api-key".into(), key)],
-        Provider::Openai | Provider::Compatible if key.is_empty() => Vec::new(),
-        Provider::Openai | Provider::Compatible => {
+        Provider::Openai | Provider::Compatible | Provider::Local if key.is_empty() => Vec::new(),
+        Provider::Openai | Provider::Compatible | Provider::Local => {
             vec![("authorization".into(), format!("Bearer {key}"))]
         }
     }
@@ -84,6 +84,10 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             if let Some(effort) = settings.effort {
                 body["output_config"] = json!({"effort": effort});
             }
+            if thinking::anthropic_adaptive(&settings.model) {
+                // A summary of its thinking streams before the answer, shown apart.
+                body["thinking"] = json!({"type": "adaptive", "display": "summarized"});
+            }
             if FALLBACK_MODELS.contains(&settings.model.as_str()) {
                 // A model that declines answers through the one the API picks for the case.
                 headers.push((
@@ -94,7 +98,7 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             }
             (format!("{}/messages", settings.base), body)
         }
-        Provider::Openai | Provider::Compatible => {
+        Provider::Openai | Provider::Compatible | Provider::Local => {
             let mut sent = Vec::new();
             if !system.is_empty() {
                 sent.push(json!({"role": "system", "content": system}));
@@ -119,6 +123,9 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             });
             if !system.is_empty() {
                 body["systemInstruction"] = json!({"parts": [{"text": system}]});
+            }
+            if thinking::gemini_thinks(&settings.model) {
+                body["generationConfig"] = json!({"thinkingConfig": {"includeThoughts": true}});
             }
             let model = settings.model.trim_start_matches("models/");
             (
@@ -186,6 +193,7 @@ pub fn failure(status: u16, body: &str, retry_after: Option<&str>) -> String {
 
 mod events;
 mod models;
+mod thinking;
 pub use events::{Delta, deltas};
 pub use models::{Model, model_page, models};
 

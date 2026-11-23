@@ -43,6 +43,18 @@
             <span class="ai-message-who">{{
               (message.role === 'user' ? 'You' : 'Assistant') | transloco
             }}</span>
+            @if (message.thinking) {
+              <details class="ai-thinking">
+                <summary>
+                  {{
+                    message.thought
+                      ? ('ai.thought' | transloco: { v0: message.thought })
+                      : ('Reasoning' | transloco)
+                  }}
+                </summary>
+                <div class="ai-thinking-text">{{ message.thinking }}</div>
+              </details>
+            }
             @if (message.text) {
               <div class="ai-message-text">{{ message.text }}</div>
             }
@@ -61,10 +73,23 @@
         } @empty {
           <li class="muted">{{ 'ai.chat.empty' | transloco }}</li>
         }
-        @if (writing() !== undefined) {
+        @if (writing(); as writing) {
           <li class="ai-message" aria-busy="true">
             <span class="ai-message-who">{{ 'Assistant' | transloco }}</span>
-            <div class="ai-message-text">{{ writing() || ('Thinking…' | transloco) }}</div>
+            @if (writing.thinking) {
+              <!-- Open while it reasons; folded when the answer begins, and opened at will. -->
+              <details class="ai-thinking" [open]="!writing.text">
+                <summary>{{ (writing.text ? 'Reasoning' : 'Thinking…') | transloco }}</summary>
+                <div class="ai-thinking-text ai-thinking-live">
+                  <div>{{ writing.thinking }}</div>
+                </div>
+              </details>
+            }
+            @if (writing.text) {
+              <div class="ai-message-text">{{ writing.text }}</div>
+            } @else if (!writing.thinking) {
+              <div class="ai-message-text">{{ 'Thinking…' | transloco }}</div>
+            }
           </li>
         }
       </ol>

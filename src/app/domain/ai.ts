@@ -3,12 +3,13 @@
  * their own (kept in the vault, never here) or a server compatible with OpenAI's API. Its
  * settings are of this device; its conversations, documents of the workspace.
  */
-export type AiProvider = 'anthropic' | 'openai' | 'gemini' | 'compatible';
+export type AiProvider = 'local' | 'anthropic' | 'openai' | 'gemini' | 'compatible';
 export type AiEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 /** Where a conversation is held: beside a SQL script, a MongoDB collection or a request. */
 export type AiPlace = 'sql' | 'mongo' | 'request';
 
 export const AI_PROVIDERS: readonly { id: AiProvider; name: string }[] = [
+  { id: 'local', name: 'ai.provider.local' },
   { id: 'anthropic', name: 'Anthropic (Claude)' },
   { id: 'openai', name: 'OpenAI (ChatGPT)' },
   { id: 'gemini', name: 'Google (Gemini)' },
@@ -30,16 +31,18 @@ export interface AiSettings {
 
 /** The model each provider starts with; the others are chosen from its list. */
 const FIRST_MODEL: Record<AiProvider, string> = {
+  local: 'local',
   anthropic: 'claude-opus-5-5',
   openai: '',
   gemini: '',
   compatible: '',
 };
 
+/** The model inside Nexo first: nothing leaves the computer. */
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   enabled: false,
-  provider: 'anthropic',
-  model: FIRST_MODEL.anthropic,
+  provider: 'local',
+  model: FIRST_MODEL.local,
   baseUrl: '',
   effort: '',
   proxy: '',
@@ -59,7 +62,7 @@ export function readAiSettings(saved: string | undefined): AiSettings {
   } catch {
     // Kept as the defaults.
   }
-  const provider = isProvider(value['provider']) ? value['provider'] : 'anthropic';
+  const provider = isProvider(value['provider']) ? value['provider'] : 'local';
   return {
     enabled: value['enabled'] === true,
     provider,
@@ -83,11 +86,15 @@ export function withProvider(settings: AiSettings, provider: AiProvider): AiSett
 /** The vault secret with the key of a provider. */
 export const aiKeyName = (provider: AiProvider) => `ai:${provider}`;
 
-/** What is missing before the assistant can answer; `undefined` when nothing is. */
-export function aiMissing(settings: AiSettings, hasKey: boolean): string | undefined {
+/**
+ * What is missing before the assistant can answer; `undefined` when nothing is. `ready` says
+ * the provider's key is in the vault, or, for the local model, that it is downloaded.
+ */
+export function aiMissing(settings: AiSettings, ready: boolean): string | undefined {
   if (!settings.enabled) return 'ai.missing.off';
+  if (settings.provider === 'local') return ready ? undefined : 'ai.missing.local';
   if (settings.provider === 'compatible' && !settings.baseUrl) return 'ai.missing.address';
-  if (settings.provider !== 'compatible' && !hasKey) return 'ai.missing.key';
+  if (settings.provider !== 'compatible' && !ready) return 'ai.missing.key';
   if (!settings.model) return 'ai.missing.model';
   return undefined;
 }
@@ -95,6 +102,10 @@ export function aiMissing(settings: AiSettings, hasKey: boolean): string | undef
 export interface AiMessage {
   role: 'user' | 'assistant';
   text: string;
+  /** What the model reasoned before its answer, where the provider shows it. */
+  thinking?: string;
+  /** Seconds it reasoned. */
+  thought?: number;
   /** Why an answer failed, in the provider's or Nexo's words. */
   failed?: string;
   /** Why an answer ended early: `refusal`, `max_tokens`, `length`, `stopped`… */
@@ -106,6 +117,11 @@ export interface AiConversation {
   title: string;
   place: AiPlace;
   messages: AiMessage[];
+}
+
+/** Seconds of reasoning between two instants in milliseconds, at least one. */
+export function thoughtSeconds(from: number, to: number): number {
+  return Math.max(1, Math.round((to - from) / 1000));
 }
 
 /** Messages a conversation keeps; past them a new one is started. */
@@ -171,6 +187,50 @@ export function readConversation(document: {
           ['user', 'assistant'].includes((message as AiMessage).role) &&
           typeof (message as AiMessage).text === 'string',
       )
-      .map((message) => ({ ...message })),
+      .map(({ role, text, thinking, thought, failed, stop }) => ({
+        role,
+        text,
+        ...(typeof thinking === 'string' && thinking ? { thinking } : {}),
+        ...(typeof thought === 'number' ? { thought } : {}),
+        ...(typeof failed === 'string' ? { failed } : {}),
+        ...(typeof stop === 'string' ? { stop } : {}),
+      })),
   };
+}
+
+/** Bytes of the two models Nexo downloads (Qwen3.5-9B and 4B, Q4_K_M), said before. */
+export const MODEL_SIZES = { large: 5_680_522_464, small: 2_740_937_888 };
+
+/** The model run inside Nexo, as the backend reports it. */
+export interface LocalAiStatus {
+  /** `cuda`, `vulkan`, `metal` or `cpu`. */
+  backend: string;
+  engine: boolean;
+  /** An id of the catalog, `file` for one of the person's own, or none. */
+  model?: string | null;
+  modelName?: string | null;
+  engineSize: number;
+  modelSize: number;
+  recommended?: string | null;
+  /** `ai.local.why.*`, or the reason it does not fit. */
+  reason?: string | null;
+  devices: { id: string; name: string; totalMib: number; freeMib: number }[];
+  device?: string | null;
+  ramFreeMib: number;
+  running: boolean;
+  gpuLayers?: string | null;
+  context?: number | null;
+  installing: boolean;
+  received: number;
+  total: number;
+  error?: string | null;
+}
+
+/** The local model can answer: an engine and a model are there. */
+export const localReady = (status: LocalAiStatus | undefined) => !!status?.engine && !!status.model;
+
+/** Bytes as people read them: `5.3 GB`, `39 MB`. */
+export function byteSize(bytes: number): string {
+  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+  return `${Math.max(1, Math.round(bytes / 1e6))} MB`;
 }

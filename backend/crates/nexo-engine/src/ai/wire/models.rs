@@ -8,7 +8,9 @@ pub fn models(settings: &Settings, after: Option<&str>) -> Call {
     let mut url = match settings.provider {
         Provider::Anthropic => format!("{}/models?limit=1000", settings.base),
         Provider::Gemini => format!("{}/models?pageSize=1000", settings.base),
-        Provider::Openai | Provider::Compatible => format!("{}/models", settings.base),
+        Provider::Openai | Provider::Compatible | Provider::Local => {
+            format!("{}/models", settings.base)
+        }
     };
     if let Some(after) = after {
         let name = match settings.provider {

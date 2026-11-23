@@ -191,7 +191,11 @@ impl ExecutionGateway for Engine {
             | Operation::MongoWatch
             | Operation::MongoCompare
             | Operation::MongoSync
-            // The application sends these to the database modules.
+            // The application sends these to the database modules and the local model.
+            | Operation::AiLocalStatus
+            | Operation::AiLocalInstall
+            | Operation::AiLocalFile
+            | Operation::AiLocalRemove
             | Operation::ModulesList
             | Operation::ModulesInstall
             | Operation::ModulesInstallFile

@@ -1,0 +1,91 @@
+<section class="card ai-local" [attr.aria-label]="'Model inside Nexo' | transloco">
+  <h3>{{ 'Model inside Nexo' | transloco }}</h3>
+  <p class="muted">{{ 'ai.local.intro' | transloco }}</p>
+  @if (error(); as error) {
+    <p class="global-alert" role="alert">{{ error | transloco }}</p>
+  }
+  @if (status(); as status) {
+    @if (status.error) {
+      <p class="global-alert" role="alert">{{ status.error | transloco }}</p>
+    }
+    @if (status.installing) {
+      <label class="field"
+        >{{ 'Downloading the local model' | transloco
+        }}<progress [value]="status.received" [max]="status.total || 1"></progress>
+      </label>
+      <p class="muted" role="status">
+        {{ 'ai.local.progress' | transloco: { v0: size(status.received), v1: size(status.total) } }}
+      </p>
+    } @else if (ready()) {
+      <dl class="ai-local-facts">
+        <dt>{{ 'Model' | transloco }}</dt>
+        <dd>{{ status.modelName }}</dd>
+        <dt>{{ 'Engine' | transloco }}</dt>
+        <dd>llama.cpp · {{ 'ai.backend.' + status.backend | transloco }}</dd>
+        @if (device(); as device) {
+          <dt>{{ 'GPU' | transloco }}</dt>
+          <dd>
+            {{ device.name }} ·
+            {{ 'ai.local.free' | transloco: { v0: device.freeMib, v1: device.totalMib } }}
+          </dd>
+        }
+        @if (status.running) {
+          <dt>{{ 'Layers on the GPU' | transloco }}</dt>
+          <dd>{{ status.gpuLayers ?? '—' }}</dd>
+          <dt>{{ 'Context' | transloco }}</dt>
+          <dd>{{ status.context ?? '—' }}</dd>
+        }
+      </dl>
+      <p class="muted">{{ 'ai.local.fit' | transloco }}</p>
+      <div class="button-grid">
+        <button type="button" class="button" (click)="load()">
+          {{ 'Measure again' | transloco }}
+        </button>
+        <button type="button" class="text-button danger" (click)="remove()">
+          {{ 'Delete the local model' | transloco }}
+        </button>
+      </div>
+    } @else {
+      <p>
+        {{
+          'ai.local.sizes'
+            | transloco
+              : {
+                  v0: size(status.engineSize),
+                  v1: ('ai.backend.' + status.backend | transloco),
+                  v2: size(sizes.large),
+                  v3: size(sizes.small),
+                }
+        }}
+      </p>
+      @if (status.engine && status.reason) {
+        <p class="muted" role="status">{{ status.reason | transloco }}</p>
+      }
+      <button type="button" class="button primary" (click)="install()">
+        {{ 'Download the local model' | transloco }}
+      </button>
+    }
+    @if (!status.installing) {
+      <details class="ai-local-own">
+        <summary>{{ 'Use a GGUF file of your own' | transloco }}</summary>
+        @if (dialog) {
+          <button type="button" class="button" (click)="chooseFile()">
+            {{ 'Choose a GGUF file' | transloco }}
+          </button>
+        } @else {
+          <div class="row">
+            <label class="field grow"
+              >{{ 'Path of the GGUF file' | transloco
+              }}<input [formField]="ownFields.path" spellcheck="false" autocomplete="off"
+            /></label>
+            <button type="button" class="button" (click)="chooseFile()">
+              {{ 'Use this file' | transloco }}
+            </button>
+          </div>
+        }
+      </details>
+    }
+  } @else {
+    <p class="muted" role="status">{{ 'Measuring this computer…' | transloco }}</p>
+  }
+</section>

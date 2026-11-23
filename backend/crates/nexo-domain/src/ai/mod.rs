@@ -1,6 +1,8 @@
 //! The AI assistant (IA-01): the providers a person reaches with a key of their own, the
 //! messages of a conversation and the limits of what is sent. Nothing passes through a server
 //! of Nexo: the call goes from the person's computer to the provider they chose.
+pub mod local;
+
 use crate::{Error, Result};
 use serde::{Deserialize, Serialize};
 
@@ -18,14 +20,17 @@ pub enum Provider {
     Openai,
     Gemini,
     Compatible,
+    /// The model run inside Nexo (`local`), which speaks OpenAI's API on loopback.
+    Local,
 }
 
 impl Provider {
-    pub const ALL: [Provider; 4] = [
+    pub const ALL: [Provider; 5] = [
         Self::Anthropic,
         Self::Openai,
         Self::Gemini,
         Self::Compatible,
+        Self::Local,
     ];
     pub fn parse(text: &str) -> Result<Self> {
         Self::ALL
@@ -39,15 +44,17 @@ impl Provider {
             Self::Openai => "openai",
             Self::Gemini => "gemini",
             Self::Compatible => "compatible",
+            Self::Local => "local",
         }
     }
     /// The vault secret that keeps the provider's key: `ai:anthropic`.
     pub fn key_name(self) -> String {
         format!("ai:{}", self.as_str())
     }
-    /// A server compatible with OpenAI may take no key (a server of one's own).
+    /// A server compatible with OpenAI may take no key (a server of one's own), and the local
+    /// model has the key of each start.
     pub fn needs_key(self) -> bool {
-        self != Self::Compatible
+        matches!(self, Self::Anthropic | Self::Openai | Self::Gemini)
     }
     /// Where its API is: the provider's own, or the address written for a compatible server
     /// (`https://api.mistral.ai/v1`), without a trailing slash.
@@ -61,6 +68,9 @@ impl Provider {
                 return Err(Error::Validation(
                     "Write the address of the server, such as https://api.mistral.ai/v1".into(),
                 ));
+            }
+            (Self::Local, None) => {
+                return Err(Error::Validation("The local model is not running".into()));
             }
             (_, Some(url)) => url,
         };
@@ -160,6 +170,9 @@ mod tests {
         assert!(Provider::parse("other").is_err());
         assert_eq!(Provider::Anthropic.key_name(), "ai:anthropic");
         assert!(!Provider::Compatible.needs_key());
+        assert!(!Provider::Local.needs_key());
+        assert_eq!(Provider::parse("local").unwrap(), Provider::Local);
+        assert!(Provider::Local.base_url(None).is_err());
         assert_eq!(
             Provider::Openai.base_url(None).unwrap(),
             "https://api.openai.com/v1"

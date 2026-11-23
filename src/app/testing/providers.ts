@@ -69,6 +69,18 @@ const defaults: Record<string, FakeResponse> = {
   'mock.list': [],
   'cookies.list': { cookies: [] },
   'git.remote.list': { remotes: [] },
+  'ai.local.status': {
+    backend: 'vulkan',
+    engine: false,
+    engineSize: 38_935_891,
+    modelSize: 2_740_937_888,
+    devices: [],
+    ramFreeMib: 8192,
+    running: false,
+    installing: false,
+    received: 0,
+    total: 0,
+  },
 };
 
 export function testProviders(responses: Record<string, FakeResponse> = {}) {

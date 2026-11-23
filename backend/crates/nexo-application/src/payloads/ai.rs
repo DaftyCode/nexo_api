@@ -16,7 +16,7 @@ payload! {
 payload! {
     /// `ai.models`: the models a provider lists.
     closed AiModelsPayload {
-        required { provider "provider": String => "'anthropic' | 'openai' | 'gemini' | 'compatible'" }
+        required { provider "provider": String => "'anthropic' | 'openai' | 'gemini' | 'compatible' | 'local'" }
         optional {
             workspace "workspace": String => "string",
             base_url "baseUrl": String => "string",
@@ -30,7 +30,7 @@ payload! {
     /// `ai.chat`: the answer to a conversation, streamed and read with `ai.poll`.
     closed AiChatPayload {
         required {
-            provider "provider": String => "'anthropic' | 'openai' | 'gemini' | 'compatible'",
+            provider "provider": String => "'anthropic' | 'openai' | 'gemini' | 'compatible' | 'local'",
             model "model": String => "string",
             messages "messages": Vec<AiMessage> => "readonly AiMessage[]",
         }
@@ -46,12 +46,34 @@ payload! {
 }
 
 payload! {
-    /// `ai.poll`: what an answer gained after the length `after` already read.
+    /// `ai.poll`: what an answer gained after the length `after` already read, and its
+    /// reasoning after `thinkingAfter`.
     closed AiPollPayload {
         required { id "id": String => "string" }
         optional {
             workspace "workspace": String => "string",
             after "after": u64 => "number",
+            thinking_after "thinkingAfter": u64 => "number",
         }
+    }
+}
+
+payload! {
+    /// `ai.local.install`: downloads the engine and a model of the catalog, or the one this
+    /// computer runs best.
+    closed AiLocalInstallPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            model "model": String => "'qwen3.5-9b' | 'qwen3.5-4b'",
+        }
+    }
+}
+
+payload! {
+    /// `ai.local.file`: a GGUF of the person's own, by its path on this computer.
+    closed AiLocalFilePayload {
+        required { path "path": String => "string" }
+        optional { workspace "workspace": String => "string" }
     }
 }

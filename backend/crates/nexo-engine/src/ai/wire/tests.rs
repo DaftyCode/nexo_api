@@ -53,6 +53,10 @@ fn anthropic_gets_its_messages_with_effort_cache_and_fallbacks() {
     assert_eq!(sent["stream"], true);
     assert_eq!(sent["output_config"]["effort"], "high");
     assert_eq!(sent["fallbacks"], "default");
+    assert_eq!(
+        sent["thinking"],
+        json!({"type": "adaptive", "display": "summarized"})
+    );
     assert_eq!(sent["messages"][1]["role"], "assistant");
     assert!(sent.get("temperature").is_none());
     // An older model has no fallbacks.
@@ -63,6 +67,7 @@ fn anthropic_gets_its_messages_with_effort_cache_and_fallbacks() {
     )
     .unwrap();
     assert!(body(&older).get("fallbacks").is_none());
+    assert!(body(&older).get("thinking").is_none());
     assert!(body(&older).get("system").is_none());
     assert!(
         !older
@@ -85,6 +90,8 @@ fn openai_and_compatible_servers_get_chat_completions() {
     assert_eq!(sent["messages"][0]["role"], "system");
     assert_eq!(sent["messages"][1]["content"], "Hi");
     assert_eq!(sent["stream_options"]["include_usage"], true);
+    // Their reasoning comes without being asked.
+    assert!(sent.get("thinking").is_none() && sent.get("reasoning_effort").is_none());
     let mut keyless = settings(Provider::Compatible, "local");
     keyless.key = None;
     assert!(chat(&keyless, &messages, "").unwrap().headers.is_empty());
@@ -115,6 +122,12 @@ fn gemini_gets_its_contents_and_streams_by_sse() {
     let sent = body(&call);
     assert_eq!(sent["contents"][1]["role"], "model");
     assert_eq!(sent["systemInstruction"]["parts"][0]["text"], "Rules");
+    assert!(sent.get("generationConfig").is_none());
+    let thinks = chat(&settings(Provider::Gemini, "gemini-2.5-pro"), &messages, "").unwrap();
+    assert_eq!(
+        body(&thinks)["generationConfig"]["thinkingConfig"]["includeThoughts"],
+        true
+    );
     let odd = chat(&settings(Provider::Gemini, "a/b c"), &messages, "").unwrap();
     assert!(odd.url.contains("models/a%2Fb%20c:"), "{}", odd.url);
 }

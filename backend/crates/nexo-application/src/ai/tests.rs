@@ -102,3 +102,89 @@ async fn polls_and_stops_go_straight_to_the_engine() {
             .is_err()
     );
 }
+
+/// A local model that always answers the same server.
+struct Local;
+#[async_trait::async_trait]
+impl crate::ports::LocalModel for Local {
+    async fn status(&self) -> Result<crate::ports::LocalStatus> {
+        Ok(crate::ports::LocalStatus {
+            backend: "vulkan".into(),
+            ..Default::default()
+        })
+    }
+    async fn install(&self, model: Option<String>) -> Result<crate::ports::LocalStatus> {
+        Ok(crate::ports::LocalStatus {
+            installing: true,
+            model,
+            ..Default::default()
+        })
+    }
+    async fn use_file(&self, path: String) -> Result<crate::ports::LocalStatus> {
+        Ok(crate::ports::LocalStatus {
+            model_name: Some(path),
+            ..Default::default()
+        })
+    }
+    async fn remove(&self) -> Result<crate::ports::LocalStatus> {
+        Ok(crate::ports::LocalStatus::default())
+    }
+    async fn endpoint(&self) -> Result<crate::ports::LocalEndpoint> {
+        Ok(crate::ports::LocalEndpoint {
+            url: "http://127.0.0.1:4321/v1".into(),
+            port: 4321,
+            token: "start-token".into(),
+        })
+    }
+}
+
+#[tokio::test]
+async fn the_local_model_answers_on_loopback_with_the_key_of_its_start() {
+    let (application, fake) = application();
+    let refused = application
+        .execute(Operation::AiLocalStatus, json!({}))
+        .await
+        .unwrap_err();
+    assert!(refused.to_string().contains("cannot run a local model"));
+    let application = application.with_local_model(Arc::new(Local));
+    let status = application
+        .execute(Operation::AiLocalStatus, json!({}))
+        .await
+        .unwrap();
+    assert_eq!(status["backend"], "vulkan");
+    let installing = application
+        .execute(Operation::AiLocalInstall, json!({"model": "qwen3.5-4b"}))
+        .await
+        .unwrap();
+    assert_eq!(
+        (
+            installing["installing"].clone(),
+            installing["model"].clone()
+        ),
+        (json!(true), json!("qwen3.5-4b"))
+    );
+    let file = application
+        .execute(
+            Operation::AiLocalFile,
+            json!({"path": "C:/models/mine.gguf"}),
+        )
+        .await
+        .unwrap();
+    assert_eq!(file["modelName"], "C:/models/mine.gguf");
+    application
+        .execute(Operation::AiLocalRemove, json!({}))
+        .await
+        .unwrap();
+    let mut chat = json!({"provider": "local", "model": "local", "messages": [{"role": "user", "text": "Hi"}]});
+    chat["route"] = json!({"via": "http", "profile": "p1"});
+    application.execute(Operation::AiChat, chat).await.unwrap();
+    let (operation, sent) = fake.executed.lock().unwrap().remove(0);
+    assert_eq!(operation, "ai.chat");
+    assert_eq!(sent["baseUrl"], "http://127.0.0.1:4321/v1");
+    assert_eq!(sent["resolvedKey"], "start-token");
+    assert_eq!(sent["egressLoopbackPorts"], json!([4321]));
+    assert!(
+        sent.get("route").is_none(),
+        "the local model is never reached through a proxy"
+    );
+}
