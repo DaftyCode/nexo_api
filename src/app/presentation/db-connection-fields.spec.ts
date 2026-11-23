@@ -141,16 +141,15 @@ describe('DbConnectionFields of a server connection', () => {
     expect(fixture.componentInstance.model().color).toBe('');
   });
 
-  it('lets MCP agents read it, with the columns hidden from them', async () => {
+  it('lets MCP agents read it, with the columns hidden from them and the assistant', async () => {
     const general = page('general');
-    expect(general.textContent).not.toContain('Columns hidden from MCP agents');
     const box = [...general.querySelectorAll('label')]
       .find((label) => label.textContent?.includes('Let MCP agents read it'))!
       .querySelector('input')!;
     box.click();
     await settle();
     const hidden = [...general.querySelectorAll('label')]
-      .find((label) => label.textContent?.includes('Columns hidden from MCP agents'))!
+      .find((label) => label.textContent?.includes('Columns hidden from agents and the assistant'))!
       .querySelector('input')!;
     hidden.value = 'users.password';
     hidden.dispatchEvent(new Event('input'));

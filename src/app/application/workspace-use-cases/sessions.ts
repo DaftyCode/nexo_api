@@ -9,6 +9,7 @@ import {
 } from '../../domain/workspace-session';
 
 const restorePreference = 'session.restoreTabs';
+const workspacePreference = 'session.workspace';
 
 /**
  * What a workspace shows when it opens again: its tabs, with their unsaved changes, and the
@@ -27,6 +28,13 @@ export class SessionCases {
   }
   setRestoresTabs(restore: boolean) {
     this.preferences.write(restorePreference, restore ? '' : 'off');
+  }
+  /** The workspace used last on this device, which opens again; empty before any. */
+  lastWorkspace() {
+    return this.preferences.read(workspacePreference) ?? '';
+  }
+  rememberWorkspace(id: string) {
+    this.preferences.write(workspacePreference, id);
   }
   /** The session stored among the documents of a workspace, if any. */
   stored(documents: readonly WorkspaceDocument[]) {

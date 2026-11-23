@@ -55,6 +55,7 @@ describe('the places of the assistant', () => {
         draft: () => ({ text: 'SELEC 1', cursor: 0, database: 'shop' }),
       },
       runner: () => ({
+        server: () => ({ database: 'lpc-db' }),
         results: {
           messages: () => [
             { kind: 'error', text: 'db.failure.message', params: { v0: 'syntax' } },
@@ -62,7 +63,7 @@ describe('the places of the assistant', () => {
           ],
         },
       }),
-      connection: () => ({ name: 'Prod' }),
+      connection: () => ({ id: 'k1', name: 'Prod' }),
       driverOf: () => 'postgres',
       newScript: (connection: string, options: unknown) => opened.push([connection, options]),
     } as unknown as DbSection;
@@ -71,10 +72,13 @@ describe('the places of the assistant', () => {
     host.use({ action: 'run', code: 'SELECT 1', language: 'sql' });
     expect(opened).toEqual([]);
     open.tab = { id: 't1', kind: 'sql', connection: 'k1' };
+    // The connection it works with, by its id, and the database the session is in.
     expect(host.context()).toEqual({
       place: 'sql',
       connection: 'Prod',
+      connectionId: 'k1',
       engine: 'postgres',
+      database: 'lpc-db',
       script: 'SELEC 1',
       error: 'db.failure.message:syntax',
     });
@@ -93,7 +97,7 @@ describe('the places of the assistant', () => {
       model: signal({ filter: '{ a: 1 }', projection: '', sort: '{ b: -1 }' }),
       tab: signal('documents'),
       error: signal('bad filter'),
-      connection: () => ({ name: 'Mongo' }),
+      connection: () => ({ id: 'm1', name: 'Mongo' }),
       pager: { find: async () => void calls.push('find') },
       aggregations: {
         model: signal({ stages: [{ operator: '$match', body: '{}', enabled: true }], text: '' }),
@@ -105,6 +109,7 @@ describe('the places of the assistant', () => {
     expect(host.context()).toEqual({
       place: 'mongo',
       connection: 'Mongo',
+      connectionId: 'm1',
       database: 'shop',
       collection: 'orders',
       query: 'filter: { a: 1 }\nsort: { b: -1 }',
@@ -116,6 +121,7 @@ describe('the places of the assistant', () => {
     expect(host.context()).toEqual({
       place: 'mongo',
       connection: 'Mongo',
+      connectionId: 'm1',
       query: expect.stringContaining('$match'),
     });
     host.use({ action: 'run', code: 'db.orders.find({ c: 2 })', language: 'js' });

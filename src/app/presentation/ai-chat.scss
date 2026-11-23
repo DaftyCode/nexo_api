@@ -7,12 +7,25 @@
   background: var(--nexo-color-surface);
   box-shadow: var(--nexo-shadow-lg);
 }
+/* Its divider and the panel side by side, beside the script or over the screen. */
+:host {
+  display: flex;
+}
 .ai-chat {
   width: calc(var(--nexo-size-unit) * 170);
 }
-.ai-chat-conversations {
-  align-items: end;
-  gap: var(--nexo-space-2);
+.ai-chat-conversations .row {
+  gap: var(--nexo-space-3);
+}
+.ai-chat-conversations select {
+  flex: 1;
+  min-width: 0;
+  color: var(--nexo-color-text);
+  font-size: var(--nexo-font-size-sm);
+}
+/* As tall as the list beside it. */
+.ai-chat-conversations .button {
+  align-self: stretch;
 }
 .ai-chat-log {
   flex: 1;
@@ -72,6 +85,17 @@
 }
 .ai-message .text-button {
   align-self: flex-start;
+}
+/* One line: the whole of it in its title. */
+.ai-chat-model {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ai-chat-reads {
+  margin: 0;
+  font-size: var(--nexo-font-size-xs);
 }
 .ai-chat-actions {
   flex-wrap: wrap;

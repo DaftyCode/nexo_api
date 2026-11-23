@@ -1,6 +1,6 @@
 //! The tables and views of an exposed SQL connection, walked through its tree, and the
 //! resources built on them.
-use crate::{Application, operations::Operation};
+use crate::{Application, mcp::Reader, operations::Operation};
 use nexo_domain::{Error, Result, WorkspaceId};
 use serde_json::{Value, json};
 
@@ -52,7 +52,8 @@ impl Application {
         connection: &str,
     ) -> Result<Value> {
         let arguments = json!({"workspace": workspace.as_str(), "connection": connection});
-        self.sql_tool_run("sql_list_tables", &arguments).await
+        self.sql_tool_run("sql_list_tables", &arguments, Reader::Agent)
+            .await
     }
 
     /// The description of a table of an exposed SQL connection by its schema and name; any
@@ -91,6 +92,7 @@ impl Application {
         };
         let arguments =
             json!({"workspace": workspace.as_str(), "connection": connection, "path": path});
-        self.sql_tool_run("sql_describe_table", &arguments).await
+        self.sql_tool_run("sql_describe_table", &arguments, Reader::Agent)
+            .await
     }
 }

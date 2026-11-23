@@ -80,6 +80,7 @@ export class SessionStore {
       return;
     await this.session?.leave();
     workspaceId.set(id);
+    this.context.cases.sessions.rememberWorkspace(id);
     tabs.tabs.set([]);
     tabs.clearResponses();
     this.variables.environmentId.set('');
@@ -90,8 +91,11 @@ export class SessionStore {
   private async load() {
     const { cases, workspaceId } = this.context;
     this.workspaces.set(await cases.workspaces());
-    if (!this.workspaces().some((w) => w.id === workspaceId()))
-      workspaceId.set(this.workspaces()[0]?.id ?? '');
+    // The one used last on this device opens again; the first one when it is gone.
+    const exists = (id: string) => this.workspaces().some((w) => w.id === id);
+    const last = cases.sessions.lastWorkspace();
+    if (!exists(workspaceId()))
+      workspaceId.set(exists(last) ? last : (this.workspaces()[0]?.id ?? ''));
     await this.documents.refresh();
     this.variables.validate();
     this.variables.restore();

@@ -80,7 +80,7 @@ impl Application {
                     "mimeType": JSON,
                 }));
             }
-            for connection in self.mcp_connections(id).await? {
+            for connection in self.mcp_connections(id, Reader::Agent).await? {
                 resources.push(json!({
                     "uri": uri(id, &["mongo", encode(&connection.name).as_str()]),
                     "name": format!("{} / MongoDB {}", workspace.name, connection.name),
@@ -89,7 +89,7 @@ impl Application {
                     "mimeType": JSON,
                 }));
             }
-            for connection in self.mcp_sql_connections(id).await? {
+            for connection in self.mcp_sql_connections(id, Reader::Agent).await? {
                 resources.push(json!({
                     "uri": uri(id, &["sql", encode(&connection.name).as_str()]),
                     "name": format!("{} / SQL {}", workspace.name, connection.name),
@@ -168,7 +168,10 @@ impl Application {
             Resource::MongoCollection(workspace, connection, database, collection) => {
                 let arguments = json!({"workspace": workspace.as_str(), "connection": connection,
                                        "database": database, "collection": collection});
-                match self.mongo_tool("mongo_schema", &arguments).await {
+                match self
+                    .mongo_tool("mongo_schema", &arguments, Reader::Agent)
+                    .await
+                {
                     Some(schema) => schema?,
                     None => return Err(Missing::Resource),
                 }

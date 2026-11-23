@@ -63,7 +63,7 @@ export function storedValue(
     ...(model.color ? { color: model.color } : {}),
     ...(model.readOnly ? { readOnly: true } : {}),
     ...(model.mcp ? { mcp: true } : {}),
-    ...(model.mcp && hidden.length ? { mcpHidden: hidden } : {}),
+    ...(hidden.length ? { mcpHidden: hidden } : {}),
     ...(route ? { nexoRoute: route } : {}),
   };
 }

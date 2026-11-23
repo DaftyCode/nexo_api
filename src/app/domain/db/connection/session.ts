@@ -29,6 +29,6 @@ export function sessionSettings(source: Record<string, unknown>): Partial<DbConn
     ...(source['askPassword'] === true ? { askPassword: true } : {}),
     ...(source['pgpass'] === true && source['askPassword'] !== true ? { pgpass: true } : {}),
     ...(source['mcp'] === true ? { mcp: true } : {}),
-    ...(source['mcp'] === true && hidden.length ? { mcpHidden: hidden } : {}),
+    ...(hidden.length ? { mcpHidden: hidden } : {}),
   };
 }

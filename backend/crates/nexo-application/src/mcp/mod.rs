@@ -24,6 +24,27 @@ pub(crate) use mongo::bounded as mongo_bounded;
 pub(crate) use resources::find_request;
 pub(crate) use share::{LOCAL_SETTINGS, MASKED, is_reference, sensitive_name, shareable};
 
+/// Who reads a connection through the tools: an MCP agent reads those exposed to MCP
+/// (`mcp: true`); the AI assistant reads those too and the connection the person is working
+/// with, open beside the chat (its id). Both only read, with the same limits and hidden columns.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Reader<'a> {
+    Agent,
+    Assistant(&'a str),
+}
+
+impl Reader<'_> {
+    /// Why the connection `name` of an `engine` cannot be read.
+    pub(crate) fn refused(self, engine: &str, name: &str) -> Error {
+        Error::Validation(match self {
+            Reader::Agent => format!("No {engine} connection named {name} is exposed to MCP"),
+            Reader::Assistant(_) => format!(
+                "{name} is neither the {engine} connection open beside the assistant nor one exposed to MCP"
+            ),
+        })
+    }
+}
+
 /// The MongoDB tools, which the AI assistant offers too.
 pub(crate) fn mongo_tools() -> Vec<Value> {
     mongo::tools()
@@ -188,9 +209,15 @@ impl Application {
                         serde_json::to_value(workspaces)
                             .map_err(|error| Error::Infrastructure(error.to_string()))
                     }),
-                    name => match self.mongo_tool(name, &params["arguments"]).await {
+                    name => match self
+                        .mongo_tool(name, &params["arguments"], Reader::Agent)
+                        .await
+                    {
                         Some(outcome) => outcome,
-                        None => match self.sql_tool(name, &params["arguments"]).await {
+                        None => match self
+                            .sql_tool(name, &params["arguments"], Reader::Agent)
+                            .await
+                        {
                             Some(outcome) => outcome,
                             None => return rpc_error(id, -32602, "Unknown tool"),
                         },

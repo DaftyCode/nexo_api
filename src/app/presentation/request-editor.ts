@@ -1,4 +1,5 @@
 import { AiChat } from './ai-chat';
+import { AiToggle } from './ai-toggle';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   afterRenderEffect,
@@ -44,6 +45,7 @@ import { insertAt } from '../domain/graphql-schema';
     FormField,
     KeyValueEditor,
     AiChat,
+    AiToggle,
     StudioIcon,
     AuthEditor,
     GraphqlExplorer,

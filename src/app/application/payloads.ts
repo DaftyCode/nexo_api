@@ -102,6 +102,7 @@ export interface AiContext {
   response?: Record<string, unknown>;
   collectionId?: string;
   connection?: string;
+  connectionId?: string;
   engine?: string;
   database?: string;
   collection?: string;

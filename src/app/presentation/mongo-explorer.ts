@@ -1,4 +1,5 @@
 import { AiChat } from './ai-chat';
+import { AiToggle } from './ai-toggle';
 import { mongoHost } from './ai-hosts';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
@@ -100,6 +101,7 @@ const SUGGESTED = 50;
   imports: [
     TranslocoPipe,
     AiChat,
+    AiToggle,
     MongoDialog,
     MongoIndexes,
     MongoExplain,

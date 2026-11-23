@@ -82,6 +82,27 @@ describe('AiChat', () => {
     expect(api.secretNames).toEqual(['ai:anthropic']);
   });
 
+  it('shows again the conversation and the question it had, in another tab', async () => {
+    await create();
+    polls.push({ text: 'Use an index.', next: 13, done: true, stop: 'end_turn' });
+    await ask('Why is it slow?');
+    await until(() => text().includes('Use an index.'));
+    await fill(fixture, 'Ask the assistant', 'And the plan?');
+    fixture.destroy();
+    fixture = TestBed.createComponent(AiChat);
+    fixture.componentRef.setInput('place', 'sql');
+    await settle();
+    expect(text()).toContain('Why is it slow?');
+    expect(text()).toContain('Use an index.');
+    expect((control(root(), 'Ask the assistant') as HTMLTextAreaElement).value).toBe(
+      'And the plan?',
+    );
+    // In another workspace, a new conversation.
+    state.workspaceId.set('other');
+    await settle();
+    expect(root().querySelector('.ai-chat-messages')?.textContent).not.toContain('Why is it slow?');
+  });
+
   it('streams an answer, keeps the conversation and opens it again', async () => {
     await create();
     expect(text()).toContain('Ask anything about your query');

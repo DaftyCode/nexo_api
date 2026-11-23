@@ -215,9 +215,18 @@ describe('DbSqlTab', () => {
   it('opens the AI assistant beside the script', async () => {
     await start();
     await openScript('select 1');
+    // Its own button, beside Text and Visual, pressed while the chat is open.
+    const toggle = root().querySelector('app-ai-toggle');
+    expect(toggle?.nextElementSibling?.tagName).toBe('APP-DB-SQL-VIEWS');
     await clickButton(fixture, /^AI assistant$/);
     await settle();
     expect(root().querySelector('app-ai-chat')?.classList).not.toContain('ai-floating');
     expect(root().textContent).toContain('The assistant is off');
+    expect(toggle?.querySelector('button')?.getAttribute('aria-pressed')).toBe('true');
+    // A new script, as the one an answer runs its query in, keeps the chat beside it.
+    await openScript('select 2');
+    expect(root().querySelector('app-ai-chat')).not.toBeNull();
+    await clickButton(fixture, /^AI assistant$/, root().querySelector('app-ai-toggle')!);
+    expect(root().querySelector('app-ai-chat')).toBeNull();
   }, 20_000);
 });

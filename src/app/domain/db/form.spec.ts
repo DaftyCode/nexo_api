@@ -201,7 +201,7 @@ describe('the connection form', () => {
     });
   });
 
-  it('keeps whether MCP agents may read it and the columns hidden from them', () => {
+  it('keeps whether MCP agents may read it, and the columns hidden from them and the assistant', () => {
     const form = formOf('Shop', {
       driver: 'postgres',
       mcp: true,
@@ -210,12 +210,13 @@ describe('the connection form', () => {
     expect(form).toMatchObject({ mcp: true, mcpHidden: 'users.password, *_token' });
     expect(valueOf(form)).toMatchObject({ mcp: true, mcpHidden: ['users.password', '*_token'] });
     expect(valueOf({ ...form, mcpHidden: ' , ' })).not.toHaveProperty('mcpHidden');
+    // The assistant reads the connection it is beside: its hidden columns stay without MCP.
     const closed = valueOf({ ...form, mcp: false });
     expect(closed).not.toHaveProperty('mcp');
-    expect(closed).not.toHaveProperty('mcpHidden');
+    expect(closed).toMatchObject({ mcpHidden: ['users.password', '*_token'] });
     expect(formOf('Old', { driver: 'postgres', mcpHidden: ['a'] })).toMatchObject({
       mcp: false,
-      mcpHidden: '',
+      mcpHidden: 'a',
     });
   });
 

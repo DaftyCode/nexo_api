@@ -175,6 +175,12 @@ export function aiInstructions(place: AiPlace): string {
     mongo: 'The person is querying a MongoDB collection (filters, aggregation pipelines, shell).',
     request: 'The person is building and sending HTTP requests and reading their responses.',
   }[place];
+  const reads = {
+    sql: 'A question is about the connection open beside you, which read_open names: look for the tables it means there first (sql_list_tables, sql_describe_table). Only when the person says it is another database, or a table they name is not there, list the connections you can read with sql_list_connections and ask which one they mean; besides the open one, those are the ones the person let MCP agents read.',
+    mongo:
+      'A question is about the connection and collection open beside you, which read_open names: read them first. Only when the person says it is another database, or a collection they name is not there, list the connections you can read with mongo_list_connections and ask which one they mean; besides the open one, those are the ones the person let MCP agents read.',
+    request: '',
+  }[place];
   const code = {
     sql: 'Write each statement the person may run in its own ```sql block, for the engine of the connection: Nexo offers to open or run it.',
     mongo:
@@ -185,11 +191,14 @@ export function aiInstructions(place: AiPlace): string {
   return [
     'You are the assistant of Nexo, an API client and database tool that runs on the person’s computer.',
     where,
-    'When the question is about what the person has open, read it first with the read_open tool, and read what else you need with the other tools; they only read, and they cannot reach what the person did not let agents read.',
+    'When the question is about what the person has open, read it first with the read_open tool, and read what else you need with the other tools; they only read.',
+    reads,
     code,
     'Answer in the language the person writes in. Be concise; put code in fenced blocks with its language.',
     'Never invent results: say what you would check when you are not sure.',
-  ].join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 }
 
 /** A conversation kept in the workspace: what its document holds. */

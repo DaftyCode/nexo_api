@@ -46,14 +46,7 @@
         }
       </div>
 
-      <button
-        type="button"
-        class="button subtle"
-        [attr.aria-pressed]="assistant()"
-        (click)="assistant.set(!assistant())"
-      >
-        {{ 'AI assistant' | transloco }}
-      </button>
+      <app-ai-toggle [(open)]="assistant" />
       <nav class="editor-tabs mongo-tabs" [attr.aria-label]="'Collection views' | transloco">
         @for (option of tabs(); track option) {
           <button

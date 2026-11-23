@@ -9,6 +9,7 @@ mod walk;
 
 pub(super) use tools::tools;
 
+use super::Reader;
 use crate::{Application, datasource::classify_sql, operations::Operation};
 use hidden::Hidden;
 use nexo_domain::{Document, DocumentKind, Error, Result, WorkspaceId, sql::StatementKind};
@@ -36,9 +37,9 @@ fn path(arguments: &Value) -> Vec<String> {
         .collect()
 }
 
-/// Whether a saved connection of a database module is exposed to MCP.
-pub(super) fn exposed_sql(document: &Document) -> bool {
-    super::mongo::exposed(document)
+/// Whether a saved connection of a database module may be read by `reader`.
+pub(super) fn exposed_sql(document: &Document, reader: Reader<'_>) -> bool {
+    super::mongo::exposed(document, reader)
         && document.value["driver"]
             .as_str()
             .is_some_and(|driver| driver != "mongodb")
@@ -59,33 +60,44 @@ fn bounded(rows: Vec<Value>, total: usize, cut: bool) -> Value {
 }
 
 impl Application {
-    /// The exposed SQL connections of a workspace.
+    /// The SQL connections of a workspace `reader` may read.
     pub(crate) async fn mcp_sql_connections(
         &self,
         workspace: &WorkspaceId,
+        reader: Reader<'_>,
     ) -> Result<Vec<Document>> {
         Ok(self
             .workspaces
             .documents(workspace, Some(DocumentKind::Connection))
             .await?
             .into_iter()
-            .filter(exposed_sql)
+            .filter(|document| exposed_sql(document, reader))
             .collect())
     }
 
     /// Runs an SQL tool; `None` when the name is not one of them.
-    pub(crate) async fn sql_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
+    pub(crate) async fn sql_tool(
+        &self,
+        name: &str,
+        arguments: &Value,
+        reader: Reader<'_>,
+    ) -> Option<Result<Value>> {
         if !name.starts_with("sql_") {
             return None;
         }
-        Some(self.sql_tool_run(name, arguments).await)
+        Some(self.sql_tool_run(name, arguments, reader).await)
     }
 
-    pub(super) async fn sql_tool_run(&self, name: &str, arguments: &Value) -> Result<Value> {
+    pub(super) async fn sql_tool_run(
+        &self,
+        name: &str,
+        arguments: &Value,
+        reader: Reader<'_>,
+    ) -> Result<Value> {
         let workspace = WorkspaceId::parse(arguments["workspace"].as_str().unwrap_or("local"))?;
         if name == "sql_list_connections" {
             let connections: Vec<Value> = self
-                .mcp_sql_connections(&workspace)
+                .mcp_sql_connections(&workspace, reader)
                 .await?
                 .into_iter()
                 .map(|document| json!({"name": document.name, "driver": document.value["driver"]}))
@@ -94,15 +106,11 @@ impl Application {
         }
         let wanted = text(arguments, "connection")?;
         let saved = self
-            .mcp_sql_connections(&workspace)
+            .mcp_sql_connections(&workspace, reader)
             .await?
             .into_iter()
             .find(|document| document.name == wanted || document.id.as_str() == wanted)
-            .ok_or_else(|| {
-                Error::Validation(format!(
-                    "No SQL connection named {wanted} is exposed to MCP"
-                ))
-            })?;
+            .ok_or_else(|| reader.refused("SQL", &wanted))?;
         if !matches!(
             name,
             "sql_list_tables" | "sql_describe_table" | "sql_query" | "sql_explain"

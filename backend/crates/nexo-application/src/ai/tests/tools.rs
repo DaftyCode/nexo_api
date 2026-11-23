@@ -2,7 +2,7 @@
 //! masks it as for MCP agents, and what goes back to the model has no value of the vault.
 use crate::testing::*;
 
-fn document(id: &str, kind: DocumentKind, name: &str, value: Value) -> Document {
+pub(super) fn document(id: &str, kind: DocumentKind, name: &str, value: Value) -> Document {
     Document {
         id: DocumentId::parse(id).unwrap(),
         workspace_id: WorkspaceId::parse("local").unwrap(),
@@ -14,7 +14,12 @@ fn document(id: &str, kind: DocumentKind, name: &str, value: Value) -> Document 
     }
 }
 
-async fn tool(application: &Application, name: &str, context: Value, more: Value) -> Value {
+pub(super) async fn tool(
+    application: &Application,
+    name: &str,
+    context: Value,
+    more: Value,
+) -> Value {
     let mut payload = json!({"workspace": "local", "name": name, "context": context});
     if let (Some(payload), Some(more)) = (payload.as_object_mut(), more.as_object()) {
         payload.extend(more.clone());
@@ -98,7 +103,7 @@ async fn what_is_open_is_read_as_agents_may_read_it() {
         sql["text"]
             .as_str()
             .unwrap()
-            .contains("Let MCP agents read it")
+            .contains("only a saved connection open beside the chat")
     );
     let nothing = tool(&application, "read_open", json!({}), json!({})).await;
     assert_eq!(nothing["error"], true);
@@ -194,7 +199,12 @@ async fn a_tool_never_reaches_what_agents_may_not_read() {
     )
     .await;
     assert_eq!(query["error"], true);
-    assert!(query["text"].as_str().unwrap().contains("exposed"));
+    assert!(
+        query["text"]
+            .as_str()
+            .unwrap()
+            .contains("nor one exposed to MCP")
+    );
     let unknown = tool(&application, "send_request", json!({}), json!({})).await;
     assert_eq!(unknown["error"], true);
     assert!(

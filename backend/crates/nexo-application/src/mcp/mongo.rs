@@ -2,6 +2,7 @@
 //! exposed (`mcp: true` in the saved connection; none by default). Only reading operations
 //! run, aggregations with `$out` or `$merge` are refused like any read, answers are bounded
 //! in documents and size, and the fields the connection hides are masked.
+use super::Reader;
 use crate::{Application, database::saved_connection, operations::Operation};
 use nexo_domain::{Document, DocumentKind, Error, Result, WorkspaceId, masking::Rules};
 use serde_json::{Map, Value, json};
@@ -88,27 +89,37 @@ fn text(arguments: &Value, key: &str) -> Result<String> {
         .ok_or_else(|| Error::Validation(format!("arguments.{key} is required")))
 }
 
-/// Whether a saved connection is exposed to MCP.
-pub(super) fn exposed(document: &Document) -> bool {
-    document.kind == DocumentKind::Connection && document.value["mcp"] == true
+/// Whether a saved connection may be read by `reader`.
+pub(super) fn exposed(document: &Document, reader: Reader<'_>) -> bool {
+    document.kind == DocumentKind::Connection
+        && match reader {
+            Reader::Agent => document.value["mcp"] == true,
+            Reader::Assistant(open) => {
+                document.value["mcp"] == true || (!open.is_empty() && document.id.as_str() == open)
+            }
+        }
 }
 /// Whether an exposed connection is a MongoDB one: the database modules' name their driver.
-fn exposed_mongo(document: &Document) -> bool {
-    exposed(document)
+fn exposed_mongo(document: &Document, reader: Reader<'_>) -> bool {
+    exposed(document, reader)
         && document.value["driver"]
             .as_str()
             .is_none_or(|driver| driver == "mongodb")
 }
 
 impl Application {
-    /// The exposed connections of a workspace.
-    pub(crate) async fn mcp_connections(&self, workspace: &WorkspaceId) -> Result<Vec<Document>> {
+    /// The connections of a workspace `reader` may read.
+    pub(crate) async fn mcp_connections(
+        &self,
+        workspace: &WorkspaceId,
+        reader: Reader<'_>,
+    ) -> Result<Vec<Document>> {
         Ok(self
             .workspaces
             .documents(workspace, Some(DocumentKind::Connection))
             .await?
             .into_iter()
-            .filter(exposed_mongo)
+            .filter(|document| exposed_mongo(document, reader))
             .collect())
     }
     /// An exposed connection by its name; one that is not exposed is not found either.
@@ -116,16 +127,13 @@ impl Application {
         &self,
         workspace: &WorkspaceId,
         name: &str,
+        reader: Reader<'_>,
     ) -> Result<Document> {
-        self.mcp_connections(workspace)
+        self.mcp_connections(workspace, reader)
             .await?
             .into_iter()
             .find(|document| document.name == name || document.id.as_str() == name)
-            .ok_or_else(|| {
-                Error::Validation(format!(
-                    "No MongoDB connection named {name} is exposed to MCP"
-                ))
-            })
+            .ok_or_else(|| reader.refused("MongoDB", name))
     }
 
     /// The databases of an exposed connection, each with its collections.
@@ -136,7 +144,7 @@ impl Application {
     ) -> Result<Value> {
         let arguments = json!({"workspace": workspace.as_str(), "connection": connection});
         let databases = self
-            .mongo_tool_run("mongo_list_databases", &arguments)
+            .mongo_tool_run("mongo_list_databases", &arguments, Reader::Agent)
             .await?;
         let mut overview = Vec::new();
         for database in databases["databases"]
@@ -149,7 +157,7 @@ impl Application {
             let mut arguments = arguments.clone();
             arguments["database"] = json!(name);
             let collections = self
-                .mongo_tool_run("mongo_list_collections", &arguments)
+                .mongo_tool_run("mongo_list_collections", &arguments, Reader::Agent)
                 .await?;
             let names: Vec<Value> = collections["collections"]
                 .as_array()
@@ -162,18 +170,28 @@ impl Application {
         Ok(json!({"connection": connection, "databases": overview}))
     }
     /// Runs a MongoDB tool; `None` when the name is not one of them.
-    pub(crate) async fn mongo_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
+    pub(crate) async fn mongo_tool(
+        &self,
+        name: &str,
+        arguments: &Value,
+        reader: Reader<'_>,
+    ) -> Option<Result<Value>> {
         if !name.starts_with("mongo_") {
             return None;
         }
-        Some(self.mongo_tool_run(name, arguments).await)
+        Some(self.mongo_tool_run(name, arguments, reader).await)
     }
 
-    async fn mongo_tool_run(&self, name: &str, arguments: &Value) -> Result<Value> {
+    async fn mongo_tool_run(
+        &self,
+        name: &str,
+        arguments: &Value,
+        reader: Reader<'_>,
+    ) -> Result<Value> {
         let workspace = WorkspaceId::parse(arguments["workspace"].as_str().unwrap_or("local"))?;
         if name == "mongo_list_connections" {
             let names: Vec<String> = self
-                .mcp_connections(&workspace)
+                .mcp_connections(&workspace, reader)
                 .await?
                 .into_iter()
                 .map(|document| document.name)
@@ -181,7 +199,7 @@ impl Application {
             return Ok(json!({ "connections": names }));
         }
         let saved = self
-            .mcp_connection(&workspace, &text(arguments, "connection")?)
+            .mcp_connection(&workspace, &text(arguments, "connection")?, reader)
             .await?;
         let hidden: Vec<String> = saved.value["mcpHidden"]
             .as_array()

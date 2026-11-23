@@ -31,6 +31,22 @@ class Host {
   restored = 0;
 }
 
+@Component({
+  imports: [Splitter],
+  template: `
+    <div class="studio">
+      <div class="panel"></div>
+      <section class="own">
+        <app-splitter scope=".own" target=".panel" (resized)="sizes.push($event)" />
+        <div class="panel"></div>
+      </section>
+    </div>
+  `,
+})
+class Scoped {
+  sizes: number[] = [];
+}
+
 describe('Splitter', () => {
   const pointer = (type: string, init: MouseEventInit) =>
     Object.assign(new MouseEvent(type, { bubbles: true, ...init }), { pointerId: 1 });
@@ -82,6 +98,19 @@ describe('Splitter', () => {
     expect(host.settled).toBe(3);
     splitter.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     expect(host.restored).toBe(1);
+  });
+
+  it('finds its panel inside its own scope', async () => {
+    const fixture = TestBed.createComponent(Scoped);
+    const root = fixture.nativeElement as HTMLElement;
+    await fixture.whenStable();
+    const [first, second] = root.querySelectorAll('.panel');
+    first.getBoundingClientRect = () => ({ width: 100, height: 0 }) as DOMRect;
+    second.getBoundingClientRect = () => ({ width: 500, height: 0 }) as DOMRect;
+    root
+      .querySelector('app-splitter')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    expect(fixture.componentInstance.sizes).toEqual([516]);
   });
 
   it('does nothing without its panel', async () => {

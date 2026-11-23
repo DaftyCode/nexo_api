@@ -5,7 +5,7 @@
 //! export, the masking sets marked for agents) and carries no value of the vault.
 use crate::{
     Application,
-    mcp::{self, find_request, shareable},
+    mcp::{self, Reader, find_request, shareable},
     vault::redact_secrets,
 };
 use nexo_domain::{DocumentKind, Error, Result, WorkspaceId};
@@ -122,6 +122,8 @@ impl Application {
         input.insert("workspace".into(), json!(workspace.as_str()));
         let input = Value::Object(input);
         let context = payload.get("context").cloned().unwrap_or(Value::Null);
+        // The connection the person works with beside the chat, besides those exposed to MCP.
+        let reader = Reader::Assistant(context["connectionId"].as_str().unwrap_or_default());
         let bodies = payload
             .get("bodies")
             .and_then(Value::as_bool)
@@ -135,9 +137,9 @@ impl Application {
                 let wanted = input["name"].as_str().unwrap_or_default().to_owned();
                 self.ai_requests(&workspace, &context, Some(&wanted)).await
             }
-            _ => match self.mongo_tool(name, &input).await {
+            _ => match self.mongo_tool(name, &input, reader).await {
                 Some(outcome) => outcome,
-                None => match self.sql_tool(name, &input).await {
+                None => match self.sql_tool(name, &input, reader).await {
                     Some(outcome) => outcome,
                     None => Err(Error::Validation(format!("{name} is not a tool of Nexo"))),
                 },
@@ -186,16 +188,18 @@ impl Application {
                 open.insert(name.into(), cut(text));
             }
         }
-        if let Some(connection) = context["connection"].as_str() {
+        if context["connection"].is_string() {
+            let open_id = context["connectionId"].as_str().unwrap_or_default();
+            let reader = Reader::Assistant(open_id);
             let readable = match context["place"].as_str() {
-                Some("mongo") => self.mcp_connections(workspace).await?,
-                _ => self.mcp_sql_connections(workspace).await?,
+                Some("mongo") => self.mcp_connections(workspace, reader).await?,
+                _ => self.mcp_sql_connections(workspace, reader).await?,
             }
             .iter()
-            .any(|document| document.name == connection || document.id.as_str() == connection);
+            .any(|document| document.id.as_str() == open_id);
             open.insert("readableByTools".into(), json!(readable));
             if !readable {
-                open.insert("note".into(), json!("The tools cannot read this connection: the person can turn on «Let MCP agents read it (never write)» in its General tab."));
+                open.insert("note".into(), json!("The tools read only a saved connection open beside the chat: this one is not saved yet."));
             }
         }
         if open.is_empty() {

@@ -26,8 +26,10 @@ export function moduleEntry({
   file,
   licenses = [],
   protocol = PROTOCOL_VERSION,
+  // The releases are packed as small as gzip goes; the tests, as fast.
+  level = 9,
 }) {
-  const asset = gzipSync(driver, { level: 9 });
+  const asset = gzipSync(driver, { level });
   return {
     asset,
     entry: {

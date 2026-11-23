@@ -28,7 +28,7 @@ export interface MongoConnectionValue {
   readOnly?: boolean;
   /** MCP agents may read it (never write); no connection is exposed unless set. */
   mcp?: boolean;
-  /** Fields masked in what MCP agents read, at any depth. */
+  /** Fields masked in what MCP agents and the AI assistant read, at any depth. */
   mcpHidden?: string[];
   /** How it reaches its servers: a SOCKS5 proxy or an SSH tunnel; directly without it. */
   nexoRoute?: StoredRoute;

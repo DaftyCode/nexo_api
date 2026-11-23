@@ -22,7 +22,8 @@ export function sessionProblem(form: DbForm): string {
 
 /**
  * The startup queries and times kept from the form, none when it keeps the usual ones; and
- * whether MCP agents may read it (DB-32), with the columns hidden from them.
+ * whether MCP agents may read it (DB-32), with the columns hidden from them and from the AI
+ * assistant.
  */
 export function sessionValue(form: DbForm): Partial<DbConnectionValue> {
   const queries = form.startupQueries.map((row) => row.sql.trim()).filter(Boolean);
@@ -32,7 +33,7 @@ export function sessionValue(form: DbForm): Partial<DbConnectionValue> {
     .filter(Boolean);
   return {
     ...(form.mcp ? { mcp: true } : {}),
-    ...(form.mcp && hidden.length ? { mcpHidden: hidden } : {}),
+    ...(hidden.length ? { mcpHidden: hidden } : {}),
     ...(queries.length ? { startupQueries: queries } : {}),
     ...(queries.length && form.ignoreStartupErrors ? { ignoreStartupErrors: true } : {}),
     ...(form.keepAliveSeconds > 0 ? { keepAliveSeconds: form.keepAliveSeconds } : {}),

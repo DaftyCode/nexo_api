@@ -70,6 +70,7 @@ payload! {
             response "response": Map<String, Value> => "Record<string, unknown>",
             collection_id "collectionId": String => "string",
             connection "connection": String => "string",
+            connection_id "connectionId": String => "string",
             engine "engine": String => "string",
             database "database": String => "string",
             collection "collection": String => "string",

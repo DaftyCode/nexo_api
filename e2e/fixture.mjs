@@ -258,7 +258,8 @@ export const test = base.extend({
       // until then.
       await rm(directory, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     },
-    { scope: 'worker' },
+    // Packing the drivers after a build takes a while on a slow runner (modules-fixture.mjs).
+    { scope: 'worker', timeout: 180_000 },
   ],
 });
 export { expect } from '@playwright/test';

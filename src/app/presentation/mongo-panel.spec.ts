@@ -257,9 +257,8 @@ describe('MongoPanel', () => {
     await fill(fixture, 'Paste a connection string', 'mongodb://db.test:27017/app');
     await click('Use URI');
     await fill(fixture, 'Connection name', 'Shop');
-    expect(text()).not.toContain('Fields hidden from MCP agents');
+    await fill(fixture, 'Fields hidden from agents and the assistant', 'email, address.phone, ');
     await tick('Let MCP agents read it');
-    await fill(fixture, 'Fields hidden from MCP agents', 'email, address.phone, ');
     await click('Save connection');
     expect(api.documentsStore[0].value).toMatchObject({
       mcp: true,

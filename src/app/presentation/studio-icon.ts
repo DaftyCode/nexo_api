@@ -69,6 +69,8 @@ const paths: Record<string, string> = {
   play: 'm7 4 13 8-13 8V4Z',
   copy: 'M9 9h11v11H9V9Zm-4 6H4V4h11v1',
   tag: 'M3 12V4h8l10 10-8 8L3 12Zm5-4.5v.5',
+  sparkles:
+    'M10 4l1.9 5.1L17 11l-5.1 1.9L10 18l-1.9-5.1L3 11l5.1-1.9L10 4ZM18 2l.8 2.2L21 5l-2.2.8L18 8l-.8-2.2L15 5l2.2-.8L18 2ZM18 16v4m-2-2h4',
 };
 
 @Component({

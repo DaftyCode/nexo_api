@@ -1,4 +1,6 @@
 import { AiChat } from './ai-chat';
+import { AiChatSession } from './ai-chat/session';
+import { AiToggle } from './ai-toggle';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -35,6 +37,7 @@ import { DbSqlVariables } from './db-sql-variables';
 import { DbSection } from './db-panel/section';
 import { BuilderEdit, DbQueryBuilder } from './db-query-builder';
 import { treeDatabases, treeWords } from './db-sql-tab/names';
+import { DbSqlSide, DbSqlSides } from './db-sql-tab/sides';
 import { DbSqlViews } from './db-sql-tab/views';
 import type { DbTab } from './db-panel/tabs-store';
 import { PanelTask } from './panel-task';
@@ -61,7 +64,9 @@ import { named } from './workspace-state';
     Splitter,
     DbQueryBuilder,
     DbSqlViews,
+    DbSqlSides,
     AiChat,
+    AiToggle,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-sql-tab',
@@ -97,17 +102,10 @@ export class DbSqlTab {
   /** The text this editor opened with; typing is kept in the draft. */
   protected readonly opened = signal({ text: '', cursor: 0 });
   protected readonly codeHeight = signal(0);
-  /** The panel beside the editor, one at a time. */
-  protected readonly side = signal<'' | 'history' | 'variables' | 'outline' | 'templates' | 'ai'>(
-    '',
-  );
-  protected readonly sides = [
-    ['history', 'History'],
-    ['variables', 'Variables'],
-    ['outline', 'Outline'],
-    ['templates', 'Templates'],
-    ['ai', 'AI assistant'],
-  ] as const;
+  private readonly assistant = inject(AiChatSession);
+  /** The panel beside the editor, one at a time; the assistant stays open from tab to tab. */
+  protected readonly side = signal<DbSqlSide>(this.assistant.sql() ? 'ai' : '');
+  private readonly keepAssistant = effect(() => this.assistant.sql.set(this.side() === 'ai'));
   protected readonly dialog = signal<
     { request: DialogRequest; run: (a: DialogAnswer) => void } | undefined
   >(undefined);

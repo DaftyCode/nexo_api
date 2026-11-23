@@ -1,4 +1,16 @@
-<aside class="db-side ai-chat" [attr.aria-label]="'AI assistant' | transloco">
+<app-splitter
+  scope="app-ai-chat"
+  target=".ai-chat"
+  [invert]="true"
+  [label]="'Resize the AI assistant' | transloco"
+  (resized)="resize($event)"
+  (restore)="width.set(0)"
+/>
+<aside
+  class="db-side ai-chat"
+  [style.width.px]="width() || null"
+  [attr.aria-label]="'AI assistant' | transloco"
+>
   <header class="row db-side-head">
     <h3>{{ 'AI assistant' | transloco }}</h3>
     <button
@@ -13,11 +25,18 @@
   @if (missing(); as missing) {
     <p class="muted" role="status">{{ missing | transloco }}</p>
     <app-ai-settings (saved)="refresh()" />
+  } @else if (changing()) {
+    <app-ai-settings (saved)="changed()" />
+    <button type="button" class="button" (click)="changing.set(false)">
+      {{ 'Back to the conversation' | transloco }}
+    </button>
   } @else if (hasKey() !== undefined) {
-    <div class="row ai-chat-conversations">
-      <label class="field grow"
-        >{{ 'Conversation' | transloco
-        }}<select
+    <!-- Its name above, and the list with its buttons on one line. -->
+    <div class="field ai-chat-conversations">
+      <span>{{ 'Conversation' | transloco }}</span>
+      <div class="row">
+        <select
+          [attr.aria-label]="'Conversation' | transloco"
           [value]="current().revision === undefined ? '' : current().id"
           (change)="open($any($event.target).value)"
         >
@@ -25,17 +44,20 @@
           @for (conversation of list(); track conversation.id) {
             <option [value]="conversation.id">{{ conversation.title }}</option>
           }
-        </select></label
-      >
-      <button type="button" class="button small" (click)="start()">
-        {{ 'New' | transloco }}
-      </button>
-      @if (current().revision !== undefined) {
-        <button type="button" class="text-button danger" (click)="remove()">
-          {{ 'Delete' | transloco }}
+        </select>
+        <button type="button" class="button" (click)="start()">
+          {{ 'New' | transloco }}
         </button>
-      }
+        @if (current().revision !== undefined) {
+          <button type="button" class="text-button danger" (click)="remove()">
+            {{ 'Delete' | transloco }}
+          </button>
+        }
+      </div>
     </div>
+    @if (reads(); as connection) {
+      <p class="muted ai-chat-reads">{{ 'ai.reads' | transloco: { v0: connection } }}</p>
+    }
     <div class="ai-chat-log" role="log" [attr.aria-label]="'Conversation' | transloco">
       <ol class="ai-chat-messages">
         @for (message of current().messages; track $index) {
@@ -132,7 +154,14 @@
         ></textarea>
       </label>
       <div class="row">
-        <span class="muted grow">{{ settings().model }}</span>
+        <span
+          class="muted grow ai-chat-model"
+          [attr.title]="(provider() | transloco) + ' · ' + settings().model"
+          >{{ provider() | transloco }} · {{ settings().model }}</span
+        >
+        <button type="button" class="text-button" (click)="changing.set(true)">
+          {{ 'ai.change' | transloco }}
+        </button>
         @if (writing() !== undefined) {
           <button type="button" class="button" (click)="stop()">
             {{ 'Stop' | transloco }}

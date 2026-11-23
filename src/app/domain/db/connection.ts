@@ -53,8 +53,8 @@ export interface DbConnectionValue {
   color?: string;
   description?: string;
   readOnly?: boolean;
-  /** MCP agents may read it (DB-32), never write; without the columns of `mcpHidden`
-   * (`table.column`, `column` or patterns with `*`). */
+  /** MCP agents may read it (DB-32), never write. The columns of `mcpHidden` (`table.column`,
+   * `column` or patterns with `*`) are hidden from them and from the AI assistant. */
   mcp?: boolean;
   mcpHidden?: string[];
   /** Off: statements wait for a commit. Production connections start with it off. */

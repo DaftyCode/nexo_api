@@ -98,6 +98,11 @@ describe('the AI assistant', () => {
     expect(aiInstructions('mongo')).toContain('MongoDB');
     expect(aiInstructions('request')).toContain('HTTP requests');
     expect(aiInstructions('sql')).toContain('language the person writes in');
+    // The open connection first; the others, listed and asked about, only when it is not that.
+    expect(aiInstructions('sql')).toContain('connection open beside you');
+    expect(aiInstructions('sql')).toContain('sql_list_connections and ask which one');
+    expect(aiInstructions('mongo')).toContain('mongo_list_connections and ask which one');
+    expect(aiInstructions('request')).not.toContain('list_connections');
   });
 
   it('reads a kept conversation, leaving out what is not a message', () => {

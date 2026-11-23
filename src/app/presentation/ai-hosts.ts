@@ -54,10 +54,13 @@ export function sqlHost(section: DbSection, translate: Translate): AiHost {
         .reverse()
         .find((message) => message.kind === 'error');
       const connection = section.connection(tab.connection);
+      const database = section.runner(tab.id).server()?.database ?? draft.database;
       return {
         place: 'sql',
-        ...(connection ? { connection: connection.name } : {}),
+        // The tools read this connection, the one the person works with, and no other.
+        ...(connection ? { connection: connection.name, connectionId: connection.id } : {}),
         engine: section.driverOf(tab.connection),
+        ...(database ? { database } : {}),
         script: draft.text,
         ...(error ? { error: translate(error.text, error.params) } : {}),
       };
@@ -92,6 +95,7 @@ export function mongoHost(explorer: MongoExplorer): AiHost {
       return {
         place: 'mongo',
         connection: explorer.connection().name,
+        connectionId: explorer.connection().id,
         ...(target ? { database: target.database, collection: target.collection } : {}),
         ...(query ? { query } : {}),
         ...(explorer.error() ? { error: explorer.error() } : {}),

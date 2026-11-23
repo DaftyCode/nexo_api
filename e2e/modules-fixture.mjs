@@ -1,9 +1,47 @@
 // The database drivers built for the tests, as downloadable modules for the end-to-end tests.
 import { existsSync } from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import http from 'node:http';
+import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { executableName, hostTarget, moduleEntry } from '../tools/modules/manifest.mjs';
+
+/** Where the packed drivers are kept between workers and runs. */
+const CACHE = join(tmpdir(), 'nexo-e2e-modules');
+
+/**
+ * A built driver packed as a module. A debug build on Linux carries its debug information
+ * (hundreds of megabytes for all of them), so it is packed at gzip's fastest level and kept by
+ * its size and time: only the first worker after a build packs it, and an older packing of the
+ * same driver is removed.
+ */
+async function packed(driver, version, path) {
+  const { size, mtimeMs } = await stat(path);
+  const name = `${driver.id}-${version}-${size}-${Math.trunc(mtimeMs)}`;
+  const key = join(CACHE, name);
+  try {
+    // The entry is written after its asset: with the entry there, the asset is whole.
+    const entry = JSON.parse(await readFile(`${key}.json`, 'utf8'));
+    return { entry, asset: await readFile(`${key}.gz`) };
+  } catch {
+    const made = moduleEntry({
+      ...driver,
+      version,
+      driver: await readFile(path),
+      file: `${driver.id}.gz`,
+      level: 1,
+    });
+    await mkdir(CACHE, { recursive: true });
+    for (const old of await readdir(CACHE)) {
+      if (old.startsWith(`${driver.id}-`) && !old.startsWith(name)) {
+        await rm(join(CACHE, old), { force: true });
+      }
+    }
+    await writeFile(`${key}.gz`, made.asset);
+    await writeFile(`${key}.json`, JSON.stringify(made.entry));
+    return made;
+  }
+}
 
 /** The drivers the tests can download, when they are built next to the server. */
 const DRIVERS = [
@@ -88,12 +126,8 @@ export async function moduleReleases(serverBinary, directory) {
   const assets = new Map();
   const entries = [];
   for (const driver of built) {
-    const { entry, asset } = moduleEntry({
-      ...driver,
-      version,
-      driver: await readFile(join(dirname(serverBinary), executableName(driver.id))),
-      file: `${driver.id}.gz`,
-    });
+    const path = join(dirname(serverBinary), executableName(driver.id));
+    const { entry, asset } = await packed(driver, version, path);
     assets.set(`/${driver.id}.gz`, asset);
     entries.push(entry);
   }

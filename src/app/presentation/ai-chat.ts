@@ -2,6 +2,7 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
@@ -13,20 +14,25 @@ import {
 import { FormField, form } from '@angular/forms/signals';
 import { AiAnswer as Answering, AiWritten } from '../application/ai-use-cases';
 import { AI } from '../composition/providers';
-import { AI_ACTIONS, AiMessage, AiPlace, AiUse, aiMissing, stopNote } from '../domain/ai';
+import {
+  AI_ACTIONS,
+  AI_PROVIDERS,
+  AiMessage,
+  AiPlace,
+  AiUse,
+  aiMissing,
+  stopNote,
+} from '../domain/ai';
 import { AiAnswer } from './ai-answer';
+import { AiChatSession, ShownConversation, freshConversation as fresh } from './ai-chat/session';
 import { AiHost, requestHost, sqlHost } from './ai-hosts';
 import { AiSettingsPanel } from './ai-settings';
 import { DbSection } from './db-panel/section';
+import { Splitter } from './splitter';
 import { WorkspaceState, success } from './workspace-state';
 
-/** The conversation on screen; one without `revision` is not saved yet. */
-interface Current {
-  id: string;
-  revision?: number;
-  messages: AiMessage[];
-}
-const fresh = (): Current => ({ id: crypto.randomUUID(), messages: [] });
+/** The narrowest the chat gets, and the room it always leaves to what it sits beside. */
+const WIDTH = { min: 280, room: 320 };
 
 /**
  * The AI assistant beside the SQL editor, a MongoDB collection or a request (IA-01): the
@@ -36,7 +42,7 @@ const fresh = (): Current => ({ id: crypto.randomUUID(), messages: [] });
  * panel shows its settings.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, AiSettingsPanel, AiAnswer],
+  imports: [TranslocoPipe, FormField, AiSettingsPanel, AiAnswer, Splitter],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-ai-chat',
   host: { '[class.ai-floating]': 'floating()' },
@@ -48,6 +54,9 @@ export class AiChat {
   private readonly transloco = inject(TranslocoService);
   private readonly section = inject(DbSection, { optional: true });
   protected readonly state = inject(WorkspaceState);
+  private readonly session = inject(AiChatSession);
+  protected readonly width = this.session.width;
+  private readonly element = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly place = input.required<AiPlace>();
   /** Over the screen, at its right, where there is no room beside it. */
   readonly floating = input(false);
@@ -63,6 +72,8 @@ export class AiChat {
   });
   /** The questions offered in this place. */
   protected readonly actions = computed(() => AI_ACTIONS[this.place()]);
+  /** The connection the tools read: the one the person works with here. */
+  protected readonly reads = computed(() => this.where()?.context()?.connection);
   readonly closed = output<void>();
   protected readonly settings = signal(this.ai.settings());
   /** Whether the vault keeps the provider's key; unknown until it is asked. */
@@ -72,24 +83,57 @@ export class AiChat {
     return kept === undefined ? undefined : aiMissing(this.settings(), kept);
   });
   protected readonly list = signal<{ id: string; title: string }[]>([]);
-  protected readonly current = signal<Current>(fresh());
+  protected readonly current = signal<ShownConversation>(fresh());
   protected readonly question = signal({ text: '' });
   protected readonly fields = form(this.question);
   /** The answer being written and its reasoning, as far as they came; `undefined` when none is. */
   protected readonly writing = signal<AiWritten | undefined>(undefined);
   protected readonly error = signal('');
+  /** Its settings are shown in its place, to choose another provider or model. */
+  protected readonly changing = signal(false);
+  protected readonly provider = computed(
+    () => AI_PROVIDERS.find((provider) => provider.id === this.settings().provider)?.name ?? '',
+  );
   protected readonly note = stopNote;
   private answer?: Answering;
+  /** Whether what the place showed last is on screen again, so it may be kept. */
+  private restored = false;
 
   constructor() {
     void this.refresh();
+    // The conversation and question the place showed last in this workspace, or a new one.
     effect(() => {
       const workspace = this.state.workspaceId();
       untracked(() => {
-        this.current.set(fresh());
+        const shown = this.session.shown()[this.place()];
+        const same = shown?.workspace === workspace;
+        this.current.set(same ? shown.conversation : fresh());
+        this.question.set({ text: same ? shown.question : '' });
+        this.restored = true;
         void this.loadList(workspace);
       });
     });
+    effect(() => {
+      const shown = {
+        workspace: this.state.workspaceId(),
+        conversation: this.current(),
+        question: this.question().text,
+      };
+      if (this.restored)
+        untracked(() => this.session.shown.update((all) => ({ ...all, [this.place()]: shown })));
+    });
+  }
+
+  /** A width dragged to, kept between the narrowest and the room of what it sits beside. */
+  protected resize(width: number) {
+    const room = (this.element.parentElement?.clientWidth || innerWidth) - WIDTH.room;
+    this.width.set(Math.max(WIDTH.min, Math.min(width, room)));
+  }
+
+  /** Back from its settings, with what was chosen there. */
+  protected changed() {
+    this.changing.set(false);
+    void this.refresh();
   }
 
   /** The settings and the key, read again after they change. */

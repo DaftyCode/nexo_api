@@ -47,6 +47,7 @@
       {{ 'Use' | transloco }}
     </button>
     <span class="grow"></span>
+    <app-ai-toggle small [open]="side() === 'ai'" (openChange)="side.set($event ? 'ai' : '')" />
     <app-db-sql-views [(view)]="view" />
     <button
       type="button"
@@ -174,16 +175,7 @@
         <span class="db-sql-dirty" [attr.aria-label]="'Unsaved changes' | transloco">●</span>
       }
     </button>
-    @for (each of sides; track each[0]) {
-      <button
-        type="button"
-        class="button small subtle"
-        [attr.aria-pressed]="side() === each[0]"
-        (click)="side.set(side() === each[0] ? '' : each[0])"
-      >
-        {{ each[1] | transloco }}
-      </button>
-    }
+    <app-db-sql-sides [(side)]="side" />
   </div>
   @if (section.transactions.isLong(runner())) {
     <p class="db-sql-long" role="alert">

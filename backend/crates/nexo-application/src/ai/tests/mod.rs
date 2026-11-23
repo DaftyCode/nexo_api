@@ -189,4 +189,5 @@ async fn the_local_model_answers_on_loopback_with_the_key_of_its_start() {
     );
 }
 
+mod connections;
 mod tools;

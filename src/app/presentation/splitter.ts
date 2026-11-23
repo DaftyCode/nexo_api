@@ -44,6 +44,8 @@ export class Splitter {
   readonly axis = input<'x' | 'y'>('x');
   /** Selector of the panel resized. */
   readonly target = input.required<string>();
+  /** Selector of the element around the divider where its panels are found. */
+  readonly scope = input('.studio');
   /** Selector of the panel that gives or takes the space, kept at `neighborMin`. */
   readonly neighbor = input('');
   readonly neighborMin = input(160);
@@ -106,7 +108,7 @@ export class Splitter {
   }
   /** Current size of the panel and how far it may grow without squeezing its neighbor. */
   private bounds() {
-    const scope = this.host.closest('.studio') ?? this.host.ownerDocument;
+    const scope = this.host.closest(this.scope()) ?? this.host.ownerDocument;
     const target = scope.querySelector(this.target());
     if (!target) return undefined;
     const measure = (element: Element) => {
