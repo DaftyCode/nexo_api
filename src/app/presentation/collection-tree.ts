@@ -1,5 +1,6 @@
 import { TranslocoPipe } from '@jsverse/transloco';
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { SharedState } from './shared-state';
 import { StudioIcon } from './studio-icon';
 import type { Workspace } from './workspace';
 
@@ -13,4 +14,6 @@ import type { Workspace } from './workspace';
 })
 export class CollectionTree {
   readonly workspace = input.required<Workspace>();
+  /** The collections shared by the team, with what waits for the person (C-01). */
+  protected readonly shared = inject(SharedState);
 }

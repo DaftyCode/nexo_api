@@ -27,6 +27,22 @@
           collection.name
         }}</span>
       </button>
+      @if (shared.byCollection().get(collection.id); as link) {
+        <button
+          type="button"
+          class="shared-mark"
+          [class.attention]="link.conflicts.length || link.error"
+          [attr.aria-label]="
+            (link.conflicts.length || link.error ? 'Shared, needs you' : 'Shared with the team')
+              | transloco
+          "
+          [title]="
+            (link.conflicts.length || link.error ? 'Shared, needs you' : 'Shared with the team')
+              | transloco
+          "
+          (click)="shared.dialog.set({ mode: 'manage', collection: collection.id })"
+        ></button>
+      }
       <details class="collection-menu" (toggle)="workspace().menus.toggled($event)">
         <summary [attr.aria-label]="'Collection actions' | transloco">···</summary>
         <div>
@@ -37,6 +53,18 @@
             {{ 'Add request' | transloco }}</button
           ><button (click)="workspace().folder(collection)">
             {{ 'Add folder' | transloco }}</button
+          ><button
+            (click)="
+              shared.dialog.set({
+                mode: shared.byCollection().has(collection.id) ? 'manage' : 'share',
+                collection: collection.id,
+              })
+            "
+          >
+            {{
+              (shared.byCollection().has(collection.id) ? 'Sharing…' : 'Share with the team…')
+                | transloco
+            }}</button
           ><button (click)="workspace().state.export(collection)">
             {{ 'Export collection' | transloco }}</button
           ><button (click)="workspace().state.reportCollection(collection.id)">

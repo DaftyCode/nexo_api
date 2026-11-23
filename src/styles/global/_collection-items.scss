@@ -100,3 +100,22 @@
   font-size: var(--nexo-font-size-2xs);
   color: var(--nexo-color-text-muted);
 }
+
+/* A collection shared by the team (C-01): its mark opens how it is shared. */
+.shared-mark {
+  flex-shrink: 0;
+  padding: 0 var(--nexo-space-1);
+  border: 0;
+  background: transparent;
+  color: var(--nexo-color-text-muted);
+  cursor: pointer;
+}
+.shared-mark::before {
+  content: '⇄';
+}
+.shared-mark.attention {
+  color: var(--nexo-color-warning);
+}
+.shared-mark.attention::before {
+  content: '⇄ !';
+}

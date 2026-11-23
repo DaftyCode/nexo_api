@@ -12,6 +12,7 @@ mod native;
 pub mod operations;
 pub mod payloads;
 pub mod ports;
+mod shared;
 mod ssh;
 #[cfg(test)]
 mod testing;
@@ -63,6 +64,8 @@ pub struct Application {
     monitors: monitors::Board,
     /// The model run inside Nexo (IA-01); `None` where the composition root has none.
     local_model: Option<Arc<dyn LocalModel>>,
+    /// One shared collection is brought in step at a time (C-01).
+    shared_sync: tokio::sync::Mutex<()>,
 }
 impl Application {
     pub fn new(
@@ -86,6 +89,7 @@ impl Application {
             task_files: None,
             monitors: monitors::Board::default(),
             local_model: None,
+            shared_sync: tokio::sync::Mutex::new(()),
         }
     }
     /// Adds the databases of the modules.

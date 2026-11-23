@@ -130,6 +130,10 @@ impl ExecutionGateway for Engine {
             Operation::AiPoll => self.assistant.poll(&payload),
             Operation::AiStop => self.assistant.stop(&payload),
             Operation::AiContinue => self.assistant.resume(&payload),
+            Operation::SharedRead => crate::shared::read(&payload),
+            Operation::SharedWrite => crate::shared::write(&payload),
+            Operation::SharedStat => crate::shared::stat(&payload),
+            Operation::SharedKeyNew => Ok(crate::shared::new_key()),
             Operation::OauthToken => self.oauth_token(&payload).await,
             Operation::Oauth2Token => self.oauth2_token(&payload).await,
             Operation::Oauth2Authorize => self.oauth2_authorize(&payload).await,
@@ -195,6 +199,14 @@ impl ExecutionGateway for Engine {
             // The application sends these to the database modules and the local model, and
             // runs the assistant's tools itself.
             | Operation::AiTool
+            | Operation::SharedShare
+            | Operation::SharedLink
+            | Operation::SharedSync
+            | Operation::SharedPoll
+            | Operation::SharedStatus
+            | Operation::SharedResolve
+            | Operation::SharedUnlink
+            | Operation::SharedKey
             | Operation::AiLocalStatus
             | Operation::AiLocalInstall
             | Operation::AiLocalFile

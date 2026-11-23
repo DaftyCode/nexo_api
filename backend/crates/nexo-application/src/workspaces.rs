@@ -120,13 +120,19 @@ impl Application {
         if let Some(retention) = retention(kind) {
             self.workspaces.prune(&workspace, kind, retention).await?;
         }
+        // A collection shared by the team gets to its file (C-01).
+        Box::pin(self.shared_saved(&saved)).await;
         Ok(saved)
     }
     pub async fn delete_document(&self, id: &DocumentId, revision: i64) -> Result<()> {
-        let monitor = self.workspaces.document(id).await.is_ok_and(|document| {
+        let deleted = self.workspaces.document(id).await.ok();
+        let monitor = deleted.as_ref().is_some_and(|document| {
             matches!(document.kind, DocumentKind::Monitor | DocumentKind::DbTask)
         });
         self.workspaces.delete(id, revision).await?;
+        if let Some(document) = &deleted {
+            self.shared_deleted(document).await?;
+        }
         // A monitor's history goes with it.
         if monitor {
             self.forget_monitor(id).await?;

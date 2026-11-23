@@ -58,6 +58,28 @@ impl Operation {
                 | Self::DbRestRequest
         )
     }
+    /// The collections shared by the team (C-01), which the application keeps in sync.
+    pub fn is_shared(self) -> bool {
+        self.is_shared_file()
+            || matches!(
+                self,
+                Self::SharedShare
+                    | Self::SharedLink
+                    | Self::SharedSync
+                    | Self::SharedPoll
+                    | Self::SharedStatus
+                    | Self::SharedResolve
+                    | Self::SharedUnlink
+                    | Self::SharedKey
+            )
+    }
+    /// The engine's work on a shared file, which only the application asks for.
+    pub fn is_shared_file(self) -> bool {
+        matches!(
+            self,
+            Self::SharedRead | Self::SharedWrite | Self::SharedStat | Self::SharedKeyNew
+        )
+    }
     /// Operations on the monitors, which the application schedules, not the engine.
     pub fn is_monitor(self) -> bool {
         matches!(
@@ -194,6 +216,14 @@ impl Operation {
                 | Self::NativeScript
                 | Self::MonitorStatus
                 | Self::MonitorRun
+                | Self::SharedShare
+                | Self::SharedLink
+                | Self::SharedSync
+                | Self::SharedPoll
+                | Self::SharedStatus
+                | Self::SharedResolve
+                | Self::SharedUnlink
+                | Self::SharedKey
         )
     }
 }

@@ -17,7 +17,7 @@ describe('DocsPage', () => {
 
   it('lists every section in its index, and every entry leads to its section', () => {
     const links = [...root().querySelectorAll<HTMLAnchorElement>('.docs-index a')];
-    expect(links.length).toBe(27);
+    expect(links.length).toBe(28);
     for (const link of links)
       expect(root().querySelector(`main ${link.getAttribute('href')}`)?.tagName).toBe('SECTION');
     expect(root().querySelectorAll('main.docs section').length).toBe(links.length);

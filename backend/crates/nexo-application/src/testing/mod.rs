@@ -1,6 +1,7 @@
 //! A fake of every port, recording what the use cases ask of it.
 mod database;
 pub(crate) mod datasources;
+mod shared;
 
 pub(crate) use crate::{
     Application, HISTORY_LIMIT,
@@ -39,6 +40,10 @@ pub(crate) struct Fake {
     /// The names the vault lists, and those it has no value for.
     pub(crate) listed: Mutex<Vec<String>>,
     pub(crate) missing: Mutex<Vec<String>>,
+    /// The values put in the vault, read back before any other.
+    pub(crate) stored: Mutex<std::collections::HashMap<String, String>>,
+    /// The engine's shared files (C-01).
+    pub(crate) shared: Mutex<shared::SharedFiles>,
 }
 pub(crate) fn workspace(id: &str) -> Workspace {
     Workspace {
@@ -141,18 +146,30 @@ impl ExecutionGateway for Fake {
             .lock()
             .unwrap()
             .push((operation.as_str().into(), payload.clone()));
+        if operation.is_shared_file() {
+            return self.shared_answer(operation, &payload);
+        }
         Ok(engine_answer(operation, &payload))
     }
 }
 #[async_trait]
 impl SecretVault for Fake {
-    async fn put(&self, _: &str, _: Option<&str>, _: Option<&AllowedHosts>) -> Result<()> {
+    async fn put(&self, name: &str, value: Option<&str>, _: Option<&AllowedHosts>) -> Result<()> {
+        if let Some(value) = value {
+            self.stored
+                .lock()
+                .unwrap()
+                .insert(name.into(), value.into());
+        }
         Ok(())
     }
     async fn remove(&self, _: &str) -> Result<()> {
         Ok(())
     }
     async fn resolve(&self, name: &str) -> Result<String> {
+        if let Some(value) = self.stored.lock().unwrap().get(name) {
+            return Ok(value.clone());
+        }
         if name.contains("deleted") || self.missing.lock().unwrap().iter().any(|n| n == name) {
             return Err(nexo_domain::Error::Validation(format!(
                 "Secret not found: {name}"

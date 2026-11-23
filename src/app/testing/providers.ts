@@ -12,6 +12,7 @@ import {
   INTEGRATION,
   MODULES,
   AI,
+  SHARED,
   MONGO,
   DATABASES,
   TRANSFER_FILES,
@@ -24,6 +25,7 @@ import {
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
 import { AiUseCases } from '../application/ai-use-cases';
+import { SharedUseCases } from '../application/shared-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import { MongoUseCases } from '../application/mongo-use-cases';
@@ -81,6 +83,8 @@ const defaults: Record<string, FakeResponse> = {
     received: 0,
     total: 0,
   },
+  'shared.status': { links: [] },
+  'shared.poll': { changed: [], links: [] },
 };
 
 export function testProviders(responses: Record<string, FakeResponse> = {}) {
@@ -187,6 +191,7 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
       provide: AI,
       useValue: new AiUseCases(api, api, memoryPreferences(), api, () => Promise.resolve()),
     },
+    { provide: SHARED, useValue: new SharedUseCases(api) },
     { provide: TRANSFER_FILES, useValue: new TestTransferFiles() },
     // The web version: the file of a SQLite connection is typed.
     { provide: DATABASE_FILES, useValue: new BrowserDatabaseFiles() },

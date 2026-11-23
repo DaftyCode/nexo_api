@@ -51,6 +51,9 @@ impl Application {
         if operation.is_native() {
             return self.native(operation, payload).await;
         }
+        if operation.is_shared() {
+            return self.shared(operation, payload).await;
+        }
         if operation == Operation::MaskApply {
             return self.mask(payload).await;
         }

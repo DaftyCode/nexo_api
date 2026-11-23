@@ -3,7 +3,9 @@
 //! Nexo runs for the single person who opens it, on their own computer. There are no
 //! accounts: access is protected by the local session, see `nexo-http`.
 
+mod error;
 mod kind;
+pub use error::{Error, Result};
 pub use kind::DocumentKind;
 pub mod ai;
 pub mod db_task;
@@ -17,37 +19,13 @@ pub mod native;
 pub mod proxy;
 pub mod rest_api;
 pub mod schema;
+pub mod shared;
 pub mod sql;
 pub mod ssh;
 pub mod transfer_file;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt;
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("{0}")]
-    Validation(String),
-    #[error("Open Nexo from its launcher to start a session")]
-    Unauthorized,
-    #[error("Resource not found")]
-    NotFound,
-    #[error("Resource changed since it was opened; reload before saving")]
-    Conflict,
-    #[error("{0}")]
-    Unavailable(String),
-    #[error("{0}")]
-    Infrastructure(String),
-    /// A database refused or failed a statement. `code` is stable (`syntax`, `auth`,
-    /// `cancelled`…) and `detail` says more, such as the position of a syntax error.
-    #[error("{message}")]
-    Database {
-        code: String,
-        message: String,
-        detail: Option<Value>,
-    },
-}
-pub type Result<T> = std::result::Result<T, Error>;
 
 macro_rules! identifier {
     ($(#[$meta:meta])* $name:ident) => {

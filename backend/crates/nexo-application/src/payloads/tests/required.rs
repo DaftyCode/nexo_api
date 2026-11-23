@@ -57,6 +57,13 @@ fn every_operation_has_a_payload_type() {
                     operation,
                     Operation::AiLocalStatus | Operation::AiLocalInstall | Operation::AiLocalRemove
                 ))
+            // A shared collection is named by its collection or its file; polling and the
+            // status are of the whole workspace, and a new team key needs nothing.
+            || (operation.is_shared()
+                && !matches!(
+                    operation,
+                    Operation::SharedPoll | Operation::SharedStatus | Operation::SharedKeyNew
+                ))
             // Every database operation names its session, script or driver; only a test (of
             // the connection or of its tunnel) may name nothing yet (and is refused
             // afterwards), and the list of open transactions is of the whole workspace.

@@ -83,9 +83,15 @@ pub enum DocumentKind {
     /// answered, never the key nor a value of the vault. It only grows: its last state matters.
     #[serde(rename = "ai-conversation")]
     AiConversation,
+    /// A collection shared by the team (C-01): where its file is (a synced folder), whether
+    /// it is encrypted and with which team key of the vault, the environments shared with
+    /// it, and the collection as last synced, to join two people's changes. Only its last
+    /// state matters.
+    #[serde(rename = "shared-link")]
+    SharedLink,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 29] = [
+    pub const ALL: [DocumentKind; 30] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -115,6 +121,7 @@ impl DocumentKind {
         Self::ProxyProfile,
         Self::DbTask,
         Self::AiConversation,
+        Self::SharedLink,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -147,6 +154,7 @@ impl DocumentKind {
             Self::ProxyProfile => "proxy-profile",
             Self::DbTask => "db-task",
             Self::AiConversation => "ai-conversation",
+            Self::SharedLink => "shared-link",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -169,6 +177,7 @@ impl DocumentKind {
                 | Self::Session
                 | Self::MonitorHistory
                 | Self::AiConversation
+                | Self::SharedLink
         )
     }
     /// Request history and run reports grow with use, so a workspace lists them without
@@ -185,6 +194,7 @@ impl DocumentKind {
                 | Self::SqlHistory
                 | Self::MonitorHistory
                 | Self::AiConversation
+                | Self::SharedLink
         )
     }
 }

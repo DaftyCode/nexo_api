@@ -129,6 +129,14 @@
             }}</a>
           </li>
           <li>
+            <a
+              href="#shared"
+              [class.active]="active() === 'shared'"
+              (click)="go($event, 'shared')"
+              >{{ 'Shared collections' | transloco }}</a
+            >
+          </li>
+          <li>
             <a href="#mcp" [class.active]="active() === 'mcp'" (click)="go($event, 'mcp')">{{
               'MCP' | transloco
             }}</a>

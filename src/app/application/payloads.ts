@@ -117,6 +117,11 @@ export interface AiToolResult {
   error?: boolean;
 }
 
+export interface SharedLocation {
+  kind: 'folder';
+  path: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -455,6 +460,49 @@ export interface AiLocalInstallPayload {
 export interface AiLocalFilePayload {
   path: string;
   workspace?: string;
+}
+
+export interface SharedReadPayload {
+  location: SharedLocation;
+  workspace?: string;
+}
+
+export interface SharedWritePayload {
+  location: SharedLocation;
+  content: Record<string, unknown>;
+  workspace?: string;
+  expected?: string;
+}
+
+export interface SharedStatPayload {
+  paths: readonly string[];
+  workspace?: string;
+}
+
+export interface SharedSharePayload {
+  workspace: string;
+  collection: string;
+  path: string;
+  encrypt?: boolean;
+  environments?: readonly string[];
+}
+
+export interface SharedLinkPayload {
+  workspace: string;
+  path: string;
+  key?: string;
+}
+
+export interface SharedCollectionPayload {
+  workspace: string;
+  collection: string;
+}
+
+export interface SharedResolvePayload {
+  workspace: string;
+  collection: string;
+  id: string;
+  keep: 'mine' | 'theirs';
 }
 
 export interface MongoConnectionPayload {
@@ -1220,6 +1268,18 @@ export interface OperationPayloads {
   'ai.local.install': AiLocalInstallPayload;
   'ai.local.file': AiLocalFilePayload;
   'ai.local.remove': WorkspacePayload;
+  'shared.read': SharedReadPayload;
+  'shared.write': SharedWritePayload;
+  'shared.stat': SharedStatPayload;
+  'shared.key.new': WorkspacePayload;
+  'shared.share': SharedSharePayload;
+  'shared.link': SharedLinkPayload;
+  'shared.sync': SharedCollectionPayload;
+  'shared.poll': WorkspacePayload;
+  'shared.status': WorkspacePayload;
+  'shared.resolve': SharedResolvePayload;
+  'shared.unlink': SharedCollectionPayload;
+  'shared.key': SharedCollectionPayload;
   'mongo.test': MongoConnectionPayload;
   'mongo.databases': MongoConnectionPayload;
   'mongo.collections': MongoDatabasePayload;

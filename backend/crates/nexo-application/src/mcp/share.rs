@@ -6,7 +6,7 @@ pub const MASKED: &str = "••••••";
 pub const REDACTED: &str = "[REDACTED]";
 /// Settings that belong to this computer: transport settings and routes (proxy passwords,
 /// SSH profiles) never leave it with a shared document.
-const LOCAL_SETTINGS: [&str; 2] = ["nexoTransport", "nexoRoute"];
+pub(crate) const LOCAL_SETTINGS: [&str; 2] = ["nexoTransport", "nexoRoute"];
 /// Authorization types whose rows may hold credentials.
 pub(super) const AUTH_TYPES: [&str; 13] = [
     "basic", "bearer", "apikey", "oauth2", "digest", "oauth1", "awsv4", "hawk", "ntlm", "jwt",
@@ -53,12 +53,12 @@ pub(super) fn hide(value: &Value) -> Value {
         _ => json!(MASKED),
     }
 }
-pub(super) fn is_reference(text: &str) -> bool {
+pub(crate) fn is_reference(text: &str) -> bool {
     let text = text.trim();
     text.starts_with("{{") && text.ends_with("}}") && !text[2..text.len() - 2].contains(['{', '}'])
 }
 /// Variable names that hold credentials, as the interface marks them.
-pub(super) fn sensitive_name(name: &str) -> bool {
+pub(crate) fn sensitive_name(name: &str) -> bool {
     let name = name.to_ascii_lowercase();
     ["password", "secret", "token", "authorization", "credential"]
         .iter()

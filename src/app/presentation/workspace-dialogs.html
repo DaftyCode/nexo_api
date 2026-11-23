@@ -55,6 +55,14 @@
         ><label class="file-drop"
           >{{ '↑ Choose a Bruno collection folder' | transloco
           }}<input type="file" webkitdirectory (change)="workspace().importFolder($event)" /></label
+        ><button
+          type="button"
+          class="file-drop"
+          (click)="workspace().dialogs.set(''); shared.dialog.set({ mode: 'link' })"
+        >
+          {{
+            '⇄ From a shared location (Google Drive, OneDrive, a network drive…)' | transloco
+          }}</button
         ><span class="divider-label">{{ 'or paste content' | transloco }}</span>
         @defer (on immediate) {
           <app-code-editor
@@ -101,3 +109,4 @@
     </section>
   </div>
 }
+<app-shared-dialog />

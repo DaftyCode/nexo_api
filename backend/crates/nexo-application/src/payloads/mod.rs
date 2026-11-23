@@ -34,6 +34,7 @@ mod mongo_write;
 mod monitors;
 mod native;
 mod protocols;
+mod shared;
 mod ssh;
 #[cfg(test)]
 mod tests;
@@ -59,6 +60,7 @@ pub use mongo_write::*;
 pub use monitors::*;
 pub use native::*;
 pub use protocols::*;
+pub use shared::*;
 pub use ssh::*;
 pub use typescript::typescript_contract;
 
@@ -173,6 +175,18 @@ operation_payloads! {
     AiLocalInstall => AiLocalInstallPayload,
     AiLocalFile => AiLocalFilePayload,
     AiLocalRemove => WorkspacePayload,
+    SharedRead => SharedReadPayload,
+    SharedWrite => SharedWritePayload,
+    SharedStat => SharedStatPayload,
+    SharedKeyNew => WorkspacePayload,
+    SharedShare => SharedSharePayload,
+    SharedLink => SharedLinkPayload,
+    SharedSync => SharedCollectionPayload,
+    SharedPoll => WorkspacePayload,
+    SharedStatus => WorkspacePayload,
+    SharedResolve => SharedResolvePayload,
+    SharedUnlink => SharedCollectionPayload,
+    SharedKey => SharedCollectionPayload,
     MongoTest => MongoConnectionPayload,
     MongoDatabases => MongoConnectionPayload,
     MongoCollections => MongoDatabasePayload,

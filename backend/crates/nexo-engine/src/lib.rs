@@ -43,6 +43,7 @@ pub mod route;
 pub mod runner;
 pub mod scripts;
 pub mod secret_hosts;
+pub mod shared;
 mod shell;
 pub mod socketio;
 pub mod sql;

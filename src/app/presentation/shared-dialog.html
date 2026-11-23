@@ -1,0 +1,149 @@
+@if (shared.dialog(); as dialog) {
+  <div class="modal-backdrop">
+    <section
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="'shared.title.' + dialog.mode | transloco"
+    >
+      <div class="modal-heading">
+        <h2>{{ 'shared.title.' + dialog.mode | transloco }}</h2>
+        <button
+          class="icon-button"
+          (click)="close()"
+          [attr.aria-label]="'Close dialog' | transloco"
+        >
+          ×
+        </button>
+      </div>
+      <p class="muted">{{ 'shared.intro.' + dialog.mode | transloco }}</p>
+      <details class="shared-guide">
+        <summary>{{ 'How sharing works' | transloco }}</summary>
+        <ul>
+          <li>{{ 'shared.guide.where' | transloco }}</li>
+          <li>{{ 'shared.guide.what' | transloco }}</li>
+          <li>{{ 'shared.guide.changes' | transloco }}</li>
+          <li>{{ 'shared.guide.key' | transloco }}</li>
+        </ul>
+      </details>
+      @if (error(); as error) {
+        <p class="global-alert" role="alert">{{ error | transloco }}</p>
+      }
+      @if (dialog.mode === 'manage') {
+        @if (link(); as link) {
+          <dl class="shared-facts">
+            <dt>{{ 'File' | transloco }}</dt>
+            <dd>{{ link.path }}</dd>
+            <dt>{{ 'Encrypted' | transloco }}</dt>
+            <dd>{{ (link.encrypted ? 'Yes' : 'No') | transloco }}</dd>
+          </dl>
+          @if (link.error) {
+            <p class="global-alert" role="alert">{{ link.error | transloco }}</p>
+          }
+          @for (conflict of link.conflicts; track conflict.id) {
+            <div class="row shared-conflict">
+              <span class="grow">{{
+                'shared.conflict'
+                  | transloco: { v0: conflict.name || ('the collection' | transloco) }
+              }}</span>
+              <button type="button" class="button small" (click)="resolve(conflict.id, 'mine')">
+                {{ 'Keep mine' | transloco }}
+              </button>
+              <button type="button" class="button small" (click)="resolve(conflict.id, 'theirs')">
+                {{ 'Keep theirs' | transloco }}
+              </button>
+            </div>
+          }
+        }
+      } @else {
+        <div class="row">
+          <label class="field grow"
+            >{{ (dialog.mode === 'share' ? 'Where its file goes' : 'Its file') | transloco
+            }}<input [formField]="fields.path" spellcheck="false" autocomplete="off" />
+          </label>
+          @if (chooses) {
+            <button type="button" class="button" (click)="choose()">
+              {{ 'Choose…' | transloco }}
+            </button>
+          }
+        </div>
+      }
+      @if (dialog.mode === 'link') {
+        <label class="field"
+          >{{ 'Team key (only for an encrypted collection)' | transloco
+          }}<input type="password" [formField]="fields.key" spellcheck="false" autocomplete="off" />
+        </label>
+      }
+      @if (dialog.mode === 'share' && !key()) {
+        <label class="check">
+          <input type="checkbox" [formField]="fields.encrypt" />
+          {{ 'Encrypt it with a team key' | transloco }}
+        </label>
+        @if (state.environments().length) {
+          <fieldset class="shared-environments">
+            <legend>
+              {{ 'Environments shared with it, without their secret values' | transloco }}
+            </legend>
+            @for (environment of state.environments(); track environment.id) {
+              <label class="check">
+                <input
+                  type="checkbox"
+                  [checked]="model().environments.includes(environment.id)"
+                  (change)="toggleEnvironment(environment.id, $any($event.target).checked)"
+                />
+                {{ environment.name }}
+              </label>
+            }
+          </fieldset>
+        }
+      }
+      @if (key(); as key) {
+        <label class="field"
+          >{{ 'Team key' | transloco }}<input [value]="key" readonly spellcheck="false" />
+        </label>
+        <p class="muted">{{ 'shared.key.give' | transloco }}</p>
+      }
+      <div class="modal-actions">
+        @if (dialog.mode === 'manage' && link()) {
+          <button type="button" class="button" (click)="reload()">
+            {{ 'Reload' | transloco }}
+          </button>
+          @if (link()?.encrypted && !key()) {
+            <button type="button" class="button" (click)="showKey()">
+              {{ 'Show the team key' | transloco }}
+            </button>
+          }
+          <button type="button" class="text-button danger" (click)="unlink()">
+            {{ 'Stop sharing' | transloco }}
+          </button>
+        }
+        @if (key()) {
+          <button type="button" class="button" (click)="copyKey()">{{ 'Copy' | transloco }}</button>
+        }
+        <button type="button" class="button" (click)="close()">
+          {{ (key() || dialog.mode === 'manage' ? 'Close' : 'Cancel') | transloco }}
+        </button>
+        @if (dialog.mode === 'link') {
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="!model().path.trim()"
+            (click)="bringIn()"
+          >
+            {{ 'Bring it in' | transloco }}
+          </button>
+        }
+        @if (dialog.mode === 'share' && !key()) {
+          <button
+            type="button"
+            class="button primary"
+            [disabled]="!model().path.trim()"
+            (click)="share()"
+          >
+            {{ 'Share the collection' | transloco }}
+          </button>
+        }
+      </div>
+    </section>
+  </div>
+}

@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 #[cfg(test)]
 pub(crate) use mongo::bounded as mongo_bounded;
 pub(crate) use resources::find_request;
-pub(crate) use share::shareable;
+pub(crate) use share::{LOCAL_SETTINGS, MASKED, is_reference, sensitive_name, shareable};
 
 /// The MongoDB tools, which the AI assistant offers too.
 pub(crate) fn mongo_tools() -> Vec<Value> {

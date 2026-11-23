@@ -14,6 +14,7 @@ import type { DatabaseUseCases } from '../application/database-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
 import { AiUseCases } from '../application/ai-use-cases';
+import { SharedUseCases } from '../application/shared-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
 import { BrowserPageExit } from '../infrastructure/browser-page-exit';
 import { BrowserNotifications } from '../infrastructure/browser-notifications';
@@ -30,6 +31,8 @@ export const REPORTS = new InjectionToken<ReportUseCases>('Nexo printable report
 /** The database modules, downloaded when they are needed. */
 export const MODULES = new InjectionToken<ModulesUseCases>('Nexo database modules');
 export const AI = new InjectionToken<AiUseCases>('Nexo AI assistant');
+/** The collections shared by the team (C-01). */
+export const SHARED = new InjectionToken<SharedUseCases>('Nexo shared collections');
 /** Loads the MongoDB use cases with the panel, so the first screen does not carry them. */
 export type MongoLoader = () => Promise<MongoUseCases>;
 export const MONGO = new InjectionToken<MongoLoader>('Nexo MongoDB connections');
@@ -74,6 +77,7 @@ export const workspaceProviders = [
       return new AiUseCases(api, api, inject(BrowserPreferences), api);
     },
   },
+  { provide: SHARED, useFactory: () => new SharedUseCases(inject(HttpApi)) },
   { provide: TRANSFER_FILES, useFactory: transferFiles },
   { provide: DATABASE_FILES, useFactory: databaseFiles },
   { provide: NATIVE_FILES, useFactory: nativeFiles },
