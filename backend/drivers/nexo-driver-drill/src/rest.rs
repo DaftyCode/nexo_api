@@ -48,6 +48,19 @@ pub(crate) fn failure(status: u16, body: &[u8]) -> DriverError {
     classify(status, &message)
 }
 
+/// How often, and how far apart, the profile of a failed query is asked for its error.
+const PROFILE_TRIES: u32 = 10;
+const PROFILE_WAIT: std::time::Duration = std::time::Duration::from_millis(200);
+
+/// The error a query profile keeps, if it has one yet.
+fn profile_message(profile: &Json) -> Option<String> {
+    [&profile["error"], &profile["verboseError"]]
+        .into_iter()
+        .filter_map(Json::as_str)
+        .find(|error| !error.trim().is_empty())
+        .map(str::to_owned)
+}
+
 /// An error by its HTTP status and the first line of Drill's message.
 fn classify(status: u16, message: &str) -> DriverError {
     let first = message.lines().next().unwrap_or_default().to_owned();
@@ -184,17 +197,37 @@ impl Drill {
             .filter(|id| id.chars().all(|c| c.is_ascii_hexdigit() || c == '-'));
         let message = match (written, id) {
             (Some(message), _) => Some(message),
-            (None, Some(id)) => self
-                .send("GET", &format!("/profiles/{id}.json"), None)
-                .await
-                .ok()
-                .and_then(|profile| profile["error"].as_str().map(str::to_owned)),
+            // Only a failed query has an error to wait for; a cancelled one is looked at once.
+            (None, Some(id)) => {
+                let tries = if state == "FAILED" { PROFILE_TRIES } else { 1 };
+                self.profile_error(id, tries).await
+            }
             (None, None) => None,
         };
         match message.filter(|message| !message.trim().is_empty()) {
             Some(message) => classify(200, &message),
             None => DriverError::invalid(format!("Drill says the query is {state}")),
         }
+    }
+
+    /// The error the profile of a query keeps. Drill writes the profile after it answers
+    /// the query, so a profile not there yet, or without its error yet, is asked again.
+    async fn profile_error(&self, id: &str, tries: u32) -> Option<String> {
+        for attempt in 0..tries {
+            if attempt > 0 {
+                tokio::time::sleep(PROFILE_WAIT).await;
+            }
+            let Ok(profile) = self
+                .send("GET", &format!("/profiles/{id}.json"), None)
+                .await
+            else {
+                continue;
+            };
+            if let Some(error) = profile_message(&profile) {
+                return Some(error);
+            }
+        }
+        None
     }
 }
 
@@ -215,5 +248,19 @@ mod tests {
         assert_eq!(error.message, "PARSE ERROR: Encountered \"FORM\"");
         assert_eq!(error.code, nexo_driver_sdk::ErrorCode::Syntax);
         assert_eq!(failure(401, b"no").code, nexo_driver_sdk::ErrorCode::Auth);
+    }
+
+    #[test]
+    fn a_profile_gives_its_error_only_once_it_has_one() {
+        assert_eq!(profile_message(&json!({"query": "SELEC"})), None);
+        assert_eq!(profile_message(&json!({"error": "  "})), None);
+        assert_eq!(
+            profile_message(&json!({"error": "PARSE ERROR: x", "verboseError": "long"})),
+            Some("PARSE ERROR: x".to_owned())
+        );
+        assert_eq!(
+            profile_message(&json!({"error": "", "verboseError": "VALIDATION ERROR: y"})),
+            Some("VALIDATION ERROR: y".to_owned())
+        );
     }
 }
