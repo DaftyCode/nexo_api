@@ -109,9 +109,7 @@ pub(super) async fn describe(
                     .map_err(errors::driver)
                     .and_then(|parsed| address(&parsed));
                 let reason = match parsed {
-                    Ok((host, port)) => {
-                        MongoDriver::refusal(link, connection, &host, port).await
-                    }
+                    Ok((host, port)) => MongoDriver::refusal(link, connection, &host, port).await,
                     Err(error) => Some(error.to_string()),
                 };
                 refusals.insert(member.clone(), reason.clone());

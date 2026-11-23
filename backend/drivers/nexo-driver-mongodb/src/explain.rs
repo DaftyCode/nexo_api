@@ -1,6 +1,7 @@
 //! Explains: how the server runs a `find` or an aggregation, with `queryPlanner` (planned
 //! only) or `executionStats` (run and measured, as the query would run; nothing is written).
 //! The answer goes back in relaxed Extended JSON, so its counts and times are plain numbers.
+use crate::error::{Error, Result};
 use crate::{
     MongoDriver,
     browse::check_name,
@@ -10,7 +11,6 @@ use crate::{
 use bson::{Bson, Document, doc};
 use mongodb::Client;
 use nexo_driver_sdk::document::{ExplainRequest, Explained, WRITING_STAGES};
-use crate::error::{Error, Result};
 use serde_json::Value;
 
 pub async fn explain(

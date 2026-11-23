@@ -40,7 +40,8 @@ impl Dialect {
     pub fn parse(name: &str) -> Self {
         match name.to_ascii_lowercase().as_str() {
             "postgresql" | "postgres" | "cockroachdb" | "redshift" => Self::PostgreSql,
-            "mysql" | "mariadb" => Self::MySql,
+            // HiveQL quotes and escapes as MySQL does: backticks, and strings with `\`.
+            "mysql" | "mariadb" | "hive" | "hiveql" => Self::MySql,
             "tsql" | "mssql" | "sqlserver" => Self::TSql,
             "plsql" | "oracle" => Self::PlSql,
             "sqlite" => Self::Sqlite,

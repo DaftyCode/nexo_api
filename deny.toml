@@ -23,6 +23,10 @@ ignore = [
   { id = "RUSTSEC-2026-0370", reason = "zvariant via keyring; merged into zbus 6" },
   { id = "RUSTSEC-2026-0371", reason = "zbus_names via keyring; merged into zbus 6" },
   { id = "RUSTSEC-2026-0372", reason = "zvariant_derive via keyring; merged into zbus 6" },
+  # chrono, unmaintained (not a vulnerability; no release replaces it). Reached only by two
+  # drivers, each a separate process: duckdb's arrow (files module) and scylla (Cassandra
+  # module). Remove when arrow and scylla move to jiff or time.
+  { id = "RUSTSEC-2026-0543", reason = "chrono via duckdb's arrow and scylla, drivers only" },
 ]
 
 [licenses]

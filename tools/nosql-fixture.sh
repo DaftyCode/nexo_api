@@ -6,8 +6,11 @@
 #   29200 Elasticsearch 8 (user elastic) and 29201 OpenSearch 2 (user admin, TLS with its demo
 #         certificate), each one with the index shop
 #   28047 Apache Drill 1.21 embedded, with its sample files and a plugin that has a password
+#   21001 Apache Hive 4 (HiveServer2 in HTTP mode, path /cliservice, user hive)
+#   20800 Apache Ignite 3.1, open, with the schema SHOP (a table of every type, 100 000 rows),
+#         and 20801 another node with TLS (its own certificate) and the user ignite
 # Prints the NEXO_* variables the tests read, and adds them to $GITHUB_ENV in CI.
-# Usage: tools/nosql-fixture.sh start [cassandra redis elastic drill …] | stop
+# Usage: tools/nosql-fixture.sh start [cassandra redis elastic drill hive ignite …] | stop
 set -euo pipefail
 export MSYS_NO_PATHCONV=1
 
@@ -17,9 +20,12 @@ valkey=valkey/valkey:8.1-alpine
 elastic=elasticsearch:8.17.4
 opensearch=opensearchproject/opensearch:2.19.1
 drill=apache/drill:1.21.2
-names=(nexo-nosql-cassandra nexo-nosql-redis nexo-nosql-valkey nexo-nosql-elastic nexo-nosql-opensearch nexo-nosql-drill)
+hive=apache/hive:4.0.1
+ignite=apacheignite/ignite:3.1.0
+names=(nexo-nosql-cassandra nexo-nosql-redis nexo-nosql-valkey nexo-nosql-elastic nexo-nosql-opensearch nexo-nosql-drill nexo-nosql-hive nexo-nosql-ignite nexo-nosql-ignite-secure)
 password=nexo-redis-Secret1
 search_password=Nexo-Search-Secret1
+ignite_password=Nexo-Ignite-Secret1
 
 if [[ "${1:-start}" == "stop" ]]; then
   docker rm -f "${names[@]}" >/dev/null 2>&1 || true
@@ -27,7 +33,7 @@ if [[ "${1:-start}" == "stop" ]]; then
 fi
 shift || true
 wanted=("$@")
-[[ ${#wanted[@]} -eq 0 ]] && wanted=(cassandra redis elastic drill)
+[[ ${#wanted[@]} -eq 0 ]] && wanted=(cassandra redis elastic drill hive ignite)
 has() { [[ " ${wanted[*]} " == *" $1 "* ]]; }
 
 variables=""
@@ -171,6 +177,117 @@ if has drill; then
     -d '{"name":"secretmongo","config":{"type":"mongo","connection":"mongodb://ana:s3cret-pass@db:27017/","enabled":false}}' >/dev/null
   variables="${variables}NEXO_DRILL_HOST=127.0.0.1
 NEXO_DRILL_PORT=28047
+"
+fi
+if has hive; then
+  docker rm -f nexo-nosql-hive >/dev/null 2>&1 || true
+  docker pull -q "$hive" >/dev/null
+  # HiveServer2 in HTTP mode, without authentication: it takes the user of Basic
+  # authentication and any password, as the driver sends them.
+  docker run -d --name nexo-nosql-hive -p 21001:10001 -e SERVICE_NAME=hiveserver2     -e SERVICE_OPTS="-Dhive.server2.transport.mode=http -Dhive.server2.thrift.http.port=10001"     "$hive" >/dev/null
+  started=false
+  for _ in $(seq 1 120); do
+    # 401 without credentials: the Thrift servlet answers.
+    if [[ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:21001/cliservice)" == "401" ]]; then
+      started=true
+      break
+    fi
+    sleep 2
+  done
+  if [[ "$started" != true ]]; then
+    docker logs --tail 40 nexo-nosql-hive >&2 || true
+    echo "Hive did not start" >&2
+    exit 1
+  fi
+  variables="${variables}NEXO_HIVE_HOST=127.0.0.1
+NEXO_HIVE_PORT=21001
+NEXO_HIVE_USER=hive
+NEXO_HIVE_PASSWORD=hive-secret
+"
+fi
+# Ignite 3: a node answers its REST API (port 10300) first, then waits for the cluster to be
+# initialized. Its client port is 10800.
+ignite_state() {
+  local port=$1 wanted=$2 credentials=${3:-}
+  for _ in $(seq 1 120); do
+    local state
+    state="$(curl -s ${credentials:+-u "$credentials"} "http://127.0.0.1:$port/management/v1/node/state" || true)"
+    [[ "$state" == *"$wanted"* ]] && return 0
+    sleep 2
+  done
+  return 1
+}
+ignite_sql() {
+  docker exec nexo-nosql-ignite /opt/ignite3cli/bin/ignite3 sql --plain \
+    --jdbc-url=jdbc:ignite:thin://127.0.0.1:10800 "$1" 2>&1 | grep -v '^WARNING' >&2
+}
+if has ignite; then
+  docker rm -f nexo-nosql-ignite nexo-nosql-ignite-secure >/dev/null 2>&1 || true
+  docker pull -q "$ignite" >/dev/null
+  for node in "nexo-nosql-ignite 20800 20300" "nexo-nosql-ignite-secure 20801 20301"; do
+    read -r name client rest <<< "$node"
+    docker run -d --name "$name" -p "$client:10800" -p "$rest:10300" \
+      -e JVM_MAX_MEM=1g -e JVM_MIN_MEM=512m "$ignite" >/dev/null
+  done
+  for port in 20300 20301; do
+    if ! ignite_state "$port" STARTING; then
+      docker logs --tail 40 nexo-nosql-ignite >&2 || true
+      echo "Ignite did not start" >&2
+      exit 1
+    fi
+  done
+  # The secure node: a certificate of its own and TLS on its client port, before the cluster
+  # is initialized with basic authentication.
+  docker exec nexo-nosql-ignite-secure keytool -genkeypair -alias ignite -keyalg RSA \
+    -keysize 2048 -validity 3650 -dname CN=localhost -ext SAN=dns:localhost,ip:127.0.0.1 \
+    -storetype PKCS12 -keystore /opt/ignite/etc/keystore.p12 -storepass nexo-keystore >/dev/null 2>&1
+  docker exec -i nexo-nosql-ignite-secure sh -c 'cat > /opt/ignite/etc/ignite-config.conf' <<'CONF'
+ignite {
+  network {
+    nodeFinder { netClusterNodes = ["localhost:3344"], type = STATIC }
+    port = 3344
+  }
+  clientConnector.ssl {
+    enabled = true
+    keyStore { type = PKCS12, path = "/opt/ignite/etc/keystore.p12", password = "nexo-keystore" }
+  }
+}
+CONF
+  docker restart nexo-nosql-ignite-secure >/dev/null
+  ignite_state 20301 STARTING
+  curl -sf -X POST -H 'Content-Type: application/json' \
+    http://127.0.0.1:20300/management/v1/cluster/init \
+    -d '{"metaStorageNodes":["defaultNode"],"clusterName":"nexo"}' >/dev/null
+  security="ignite.security { enabled = true, authentication.providers.default = { type = basic, users = [{ username = ignite, password = \\\"$ignite_password\\\" }] } }"
+  curl -sf -X POST -H 'Content-Type: application/json' \
+    http://127.0.0.1:20301/management/v1/cluster/init \
+    -d "{\"metaStorageNodes\":[\"defaultNode\"],\"clusterName\":\"nexo-secure\",\"clusterConfiguration\":\"$security\"}" >/dev/null
+  if ! ignite_state 20300 STARTED || ! ignite_state 20301 STARTED "ignite:$ignite_password"; then
+    docker logs --tail 40 nexo-nosql-ignite-secure >&2 || true
+    echo "The Ignite cluster did not start" >&2
+    exit 1
+  fi
+  ignite_sql "CREATE ZONE IF NOT EXISTS SHOP_ZONE (PARTITIONS 4, REPLICAS 1) STORAGE PROFILES ['default']"
+  ignite_sql "CREATE SCHEMA IF NOT EXISTS SHOP"
+  ignite_sql "CREATE TABLE SHOP.ITEMS (ID INT, REGION VARCHAR(20), NAME VARCHAR(100) NOT NULL, \
+PRICE DECIMAL(10,2), STOCK BIGINT DEFAULT 0, ACTIVE BOOLEAN, ADDED DATE, OPENS TIME(3), \
+UPDATED TIMESTAMP(6), SEEN TIMESTAMP WITH LOCAL TIME ZONE, CODE UUID, PHOTO VARBINARY(64), \
+RATING REAL, SCORE DOUBLE, SMALL SMALLINT, TINY TINYINT, PRIMARY KEY (ID, REGION)) \
+COLOCATE BY (REGION) ZONE SHOP_ZONE"
+  ignite_sql "CREATE INDEX ITEMS_NAME ON SHOP.ITEMS (NAME DESC, PRICE)"
+  ignite_sql "CREATE INDEX ITEMS_CODE ON SHOP.ITEMS USING HASH (CODE)"
+  ignite_sql "INSERT INTO SHOP.ITEMS (ID, REGION, NAME, PRICE, STOCK, ACTIVE, ADDED, OPENS, \
+UPDATED, SEEN, CODE, PHOTO, RATING, SCORE, SMALL, TINY) SELECT x, CASE WHEN MOD(x, 2) = 0 \
+THEN 'north' ELSE 'south' END, 'Item ' || CAST(x AS VARCHAR), CAST(x AS DECIMAL(10,2)) / 100, \
+x * 3, MOD(x, 3) = 0, DATE '2024-01-01' + CAST(MOD(x, 365) AS INTEGER) * INTERVAL '1' DAY, \
+TIME '08:30:00.125', TIMESTAMP '2024-01-02 03:04:05.123', \
+TIMESTAMP WITH LOCAL TIME ZONE '2024-01-02 03:04:05', RAND_UUID(), X'CAFE', 0.5, 0.25, 7, -3 \
+FROM TABLE(SYSTEM_RANGE(1, 100000))"
+  variables="${variables}NEXO_IGNITE_HOST=127.0.0.1
+NEXO_IGNITE_PORT=20800
+NEXO_IGNITE_SECURE_PORT=20801
+NEXO_IGNITE_USER=ignite
+NEXO_IGNITE_PASSWORD=$ignite_password
 "
 fi
 printf '%s' "$variables"

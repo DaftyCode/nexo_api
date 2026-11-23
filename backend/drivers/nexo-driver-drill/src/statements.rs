@@ -24,9 +24,10 @@ pub(crate) fn pageable(sql: &str) -> bool {
     matches!(first.as_str(), "SELECT" | "WITH" | "VALUES")
 }
 
-/// Cancels the queries running that are `sql`.
+/// Cancels the queries running that are `sql`. Only the running ones are listed: reading the
+/// finished ones too (`/profiles.json`) fails now and then while Drill writes one.
 pub(crate) async fn cancel(drill: &Drill, sql: &str) -> Result<()> {
-    let profiles = drill.send("GET", "/profiles.json", None).await?;
+    let profiles = drill.send("GET", "/profiles/running.json", None).await?;
     let running = profiles["runningQueries"]
         .as_array()
         .cloned()

@@ -1,15 +1,17 @@
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
+  inject,
   input,
   output,
   signal,
   untracked,
 } from '@angular/core';
 import { CodeEditor } from './code-editor';
+import { DataGrid } from './data-grid/data-grid';
 import {
   BsonType,
   TableColumn,
@@ -22,6 +24,7 @@ import {
   treeRows,
   valueAt,
 } from '../domain/bson';
+import { gridColumns, gridRows } from '../domain/mongo/grid';
 
 export type ResultsView = 'table' | 'tree' | 'json';
 export type JsonFormat = 'shell' | 'relaxed' | 'canonical';
@@ -44,7 +47,7 @@ interface Step {
   label: string;
 }
 
-/** Rows painted at once in the table and the tree; more on request. */
+/** Rows painted at once in the tree; more on request (the table is the virtualized grid). */
 const PAINTED = 100;
 
 /** A value as the chosen format writes it. */
@@ -54,12 +57,13 @@ export function formatValue(value: unknown, format: JsonFormat): string {
 }
 
 /**
- * The documents of a page as a table (embedded documents opened as columns, arrays entered
- * as tables of their own), a tree, or JSON in the shell's syntax or Extended JSON. Every
- * value shows its BSON type and can be copied.
+ * The documents of a page as a table (the data grid of the databases, DB-41: embedded
+ * documents opened as columns and arrays entered as tables of their own, with a double click
+ * or Enter), a tree, or JSON in the shell's syntax or Extended JSON. Every value shows its BSON
+ * type and can be copied.
  */
 @Component({
-  imports: [TranslocoPipe, CodeEditor],
+  imports: [TranslocoPipe, CodeEditor, DataGrid],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-mongo-results',
   styleUrl: './mongo-results.scss',
@@ -76,6 +80,7 @@ export class MongoResults {
   /** What the last copy did, as a message key. */
   readonly copied = output<string>();
   readonly edit = output<ResultsEdit>();
+  private readonly i18n = inject(TranslocoService);
 
   protected readonly expanded = signal<ReadonlySet<string>>(new Set());
   protected readonly steps = signal<readonly Step[]>([]);
@@ -114,7 +119,11 @@ export class MongoResults {
       columns.unshift({ path: [], label: '', expandable: false });
     return columns;
   });
-  protected readonly shownRows = computed(() => this.rows().slice(0, this.painted()));
+  /** The table as the grid takes it: a column per field, each value by its BSON type. */
+  protected readonly gridColumns = computed(() =>
+    gridColumns(this.rows(), this.columns(), this.i18n.translate('Value')),
+  );
+  protected readonly gridRows = computed(() => gridRows(this.rows(), this.columns()));
   protected readonly tree = computed(() => treeRows(this.documents(), this.treeOpen()));
   protected readonly shownTree = computed(() => this.tree().slice(0, this.painted()));
   protected readonly json = computed(() => {
@@ -144,21 +153,42 @@ export class MongoResults {
     };
   });
 
-  protected cell(row: unknown, column: TableColumn) {
-    const value = valueAt(row, column.path);
-    return {
-      missing: value === undefined,
-      value,
-      type: value === undefined ? undefined : bsonType(value),
-      text: value === undefined ? '' : summary(value),
-    };
-  }
-  /** A row's number: its place in the results, or in the array entered (from 1). */
-  protected rowNumber(index: number) {
-    return this.steps().length ? index + 1 : this.offset() + index + 1;
-  }
   protected typeClass(type: BsonType | undefined) {
     return type ? `bson-${type.toLowerCase()}` : 'bson-missing';
+  }
+  /** The BSON type of a cell of the table. */
+  private typeAt(row: number, column: number): BsonType | undefined {
+    const value = valueAt(this.rows()[row], this.columns()[column]?.path ?? []);
+    return value === undefined ? undefined : bsonType(value);
+  }
+  /** A document opens into columns and an array is entered, with a double click or Enter. */
+  protected readonly opens = (row: number, column: number) => {
+    const type = this.typeAt(row, column);
+    return type === 'Document' || type === 'Array';
+  };
+  protected opened(cell: { row: number; column: number }) {
+    this.open(cell.row, this.columns()[cell.column], this.typeAt(cell.row, cell.column));
+  }
+  /** The cell the person is on, or the whole document when its row was chosen. */
+  protected chosen(cell: { row: number; column: number; whole: boolean }) {
+    const path = cell.whole ? [] : (this.columns()[cell.column]?.path ?? []);
+    this.selected.set({ row: cell.row, path });
+  }
+  /** What the chosen value opens: its fields as columns, or its elements as a table. */
+  protected readonly opening = computed(() => {
+    const choice = this.choice();
+    if (!choice?.path.length) return undefined;
+    return choice.type === 'Document' ? 'open' : choice.type === 'Array' ? 'enter' : undefined;
+  });
+  /** The embedded document opened into columns that the chosen value belongs to. */
+  protected readonly closing = computed(() => {
+    const parent = this.choice()?.path.slice(0, -1).join('.');
+    return parent && this.expanded().has(parent) ? parent : undefined;
+  });
+  protected openChosen() {
+    const choice = this.choice();
+    const column = this.columns().find((each) => each.path.join('.') === choice?.path.join('.'));
+    if (choice && column) this.open(choice.row, column, choice.type);
   }
 
   /** Opens an embedded document into columns, or closes it with the ones opened inside. */
@@ -172,15 +202,9 @@ export class MongoResults {
       return next;
     });
   }
-  /** The document opened into columns that starts at this column, to close it from there. */
-  protected openedAt(index: number): string | undefined {
-    const columns = this.columns();
-    const parent = (column: TableColumn | undefined) => column?.path.slice(0, -1).join('.') ?? '';
-    const opened = parent(columns[index]);
-    return opened && parent(columns[index - 1]) !== opened ? opened : undefined;
-  }
-  /** A cell with a document opens its column; one with an array is entered. */
-  protected open(row: number, column: TableColumn, type: BsonType | undefined) {
+  /** A document opens its column; an array is entered. */
+  private open(row: number, column: TableColumn | undefined, type: BsonType | undefined) {
+    if (!column) return;
     if (type === 'Document') {
       if (!this.expanded().has(column.label)) this.toggle(column.label);
       return;
@@ -191,18 +215,12 @@ export class MongoResults {
         { row, path: column.path, label: column.label || `[${row}]` },
       ]);
       this.selected.set(undefined);
-      this.painted.set(PAINTED);
       return;
     }
-    this.selected.set({ row, path: column.path });
   }
   protected leave(depth: number) {
     this.steps.update((steps) => steps.slice(0, depth));
     this.selected.set(undefined);
-    this.painted.set(PAINTED);
-  }
-  protected selectRow(row: number) {
-    this.selected.set({ row, path: [] });
   }
   protected selectTree(row: { document: number; path: Path; expandable: boolean; id: string }) {
     this.selected.set({ row: row.document, path: row.path });

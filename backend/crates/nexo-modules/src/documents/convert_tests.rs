@@ -19,7 +19,10 @@ fn requests_keep_every_field_on_the_wire() {
     };
     let sent = find(request.clone());
     assert_eq!(sent.filter, request.filter);
-    assert_eq!((sent.skip, sent.limit, sent.page_size), (Some(2), Some(5), 10));
+    assert_eq!(
+        (sent.skip, sent.limit, sent.page_size),
+        (Some(2), Some(5), 10)
+    );
     let explained = explain(app::ExplainRequest {
         id: "e".into(),
         database: "shop".into(),
@@ -99,7 +102,9 @@ fn writes_and_their_changes_go_and_come_back_whole() {
         level: "strict",
         action: "warn",
     });
-    assert!(matches!(validator, wire::CollectionChange::Validator { ref level, .. } if level == "strict"));
+    assert!(
+        matches!(validator, wire::CollectionChange::Validator { ref level, .. } if level == "strict")
+    );
     for change in [
         app::CollectionChange::Create {
             database: "d".into(),
@@ -177,7 +182,11 @@ fn answers_become_the_application_types() {
         ..wire::ConnectionReport::default()
     });
     assert_eq!(report.hosts[0].reason.as_deref(), Some("no"));
-    assert!(answers::database(wire::DatabaseSummary::default()).name.is_empty());
+    assert!(
+        answers::database(wire::DatabaseSummary::default())
+            .name
+            .is_empty()
+    );
     let collection = answers::collection(wire::CollectionSummary {
         gridfs: Some("fs".into()),
         ..wire::CollectionSummary::default()
@@ -204,6 +213,14 @@ fn answers_become_the_application_types() {
         ..wire::ImportResult::default()
     });
     assert_eq!(imported.failed[0].index, 2);
-    assert!(answers::events(wire::WatchEvents::default()).events.is_empty());
-    assert!(answers::watching(wire::WatchSummary::default()).id.is_empty());
+    assert!(
+        answers::events(wire::WatchEvents::default())
+            .events
+            .is_empty()
+    );
+    assert!(
+        answers::watching(wire::WatchSummary::default())
+            .id
+            .is_empty()
+    );
 }

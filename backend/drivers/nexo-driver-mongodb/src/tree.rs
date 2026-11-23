@@ -74,7 +74,10 @@ mod tests {
             kind: kind.into(),
             ..CollectionSummary::default()
         };
-        assert_eq!(collection(&summary("orders", "collection")).kind, "collection");
+        assert_eq!(
+            collection(&summary("orders", "collection")).kind,
+            "collection"
+        );
         let view = CollectionSummary {
             view_on: Some("orders".into()),
             ..summary("recent", "view")
@@ -82,7 +85,10 @@ mod tests {
         let view = collection(&view);
         assert_eq!(view.kind, "view");
         assert_eq!(view.detail.as_deref(), Some("→ orders"));
-        assert_eq!(collection(&summary("metrics", "timeseries")).kind, "timeseries");
+        assert_eq!(
+            collection(&summary("metrics", "timeseries")).kind,
+            "timeseries"
+        );
         let files = CollectionSummary {
             gridfs: Some("fs".into()),
             ..summary("fs.files", "collection")

@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { clickButton, codeText, exerciseControls, fill, renderDeferred } from '../testing/controls';
+import { chooseCell, gridHeaders, openCell, roomyGrids } from '../testing/grid';
 import { MongoExplorer } from './mongo-explorer';
 import { WorkspaceState } from './workspace-state';
 import { WorkspaceDocument } from '../domain/models';
@@ -55,7 +56,11 @@ describe('MongoExplorer', { timeout: 20_000 }, () => {
 
   const copied: string[] = [];
 
+  let restore: () => void;
+  afterEach(() => restore());
+
   beforeEach(async () => {
+    restore = roomyGrids();
     await TestBed.configureTestingModule({
       providers: testProviders({
         'mongo.databases': { databases: [{ name: 'shop', sizeOnDisk: 2048, empty: false }] },
@@ -192,28 +197,30 @@ describe('MongoExplorer', { timeout: 20_000 }, () => {
     await openOrders();
     expect(text()).toContain('65a1b2c3d4e5f6a7b8c9d0e1');
     expect(text()).toContain('2024-01-02T03:04:05.006Z');
-    // An embedded document opens into columns of its fields.
-    await click('{ 2 fields }');
-    const headers = () =>
-      [...root().querySelectorAll('thead th')].map((th) =>
-        th.textContent?.replace(/[⊞⊟]/g, '').trim(),
-      );
+    // An embedded document opens into columns of its fields, with a double click.
+    await openCell(fixture, '{ 2 fields }');
+    const headers = () => gridHeaders(root());
     expect(headers()).toContain('customer.name');
     expect(headers()).toContain('customer.city');
+    await chooseCell(fixture, 'C1');
     await click('Show customer as one column again');
     expect(headers()).toContain('customer');
-    await click('{ 2 fields }');
+    // Or from the bar, on the cell chosen.
+    await chooseCell(fixture, '{ 2 fields }');
+    await click('Show its fields as columns');
+    expect(headers()).toContain('customer.name');
     // An array is entered as a table of its own.
-    await click('[ 2 elements ]');
+    await chooseCell(fixture, '[ 2 elements ]');
+    await click('Enter the array');
     expect(text()).toContain('items (1)');
     expect(text()).toContain('S1');
-    await click(/^S1$/);
+    await chooseCell(fixture, /^S1$/);
     await click('Copy value');
     expect(copied).toEqual(['S1']);
     // The way back of the results, not the tab of the same name.
     await clickButton(fixture, /^Documents$/, root().querySelector('app-mongo-results')!);
     await settle();
-    await click('65a1b2c3d4e5f6a7b8c9d0e1');
+    await chooseCell(fixture, '65a1b2c3d4e5f6a7b8c9d0e1');
     await click('Copy ObjectId date');
     await click('Copy document');
     expect(copied[1]).toBe('2024-01-12T21:44:35.000Z');
@@ -234,7 +241,8 @@ describe('MongoExplorer', { timeout: 20_000 }, () => {
     await openOrders();
     await click('More options');
     const unchanged = await exerciseControls(fixture, () => fixture.componentInstance['model'](), {
-      skip: (control) => control.closest('.mongo-format') !== null,
+      // The format of the results and the grid's own filter are not the query.
+      skip: (control) => control.closest('.mongo-format, app-data-grid') !== null,
     });
     expect(unchanged).toEqual([]);
   });

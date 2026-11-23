@@ -15,7 +15,7 @@ use crate::{
     search::{SearchParams, SearchResult},
     statements::{
         CancelParams, CursorParams, ExecuteParams, ExecuteResult, FetchParams, Page,
-        TransactionParams, TransactionState,
+        TransactionAction, TransactionParams, TransactionState,
     },
 };
 use async_trait::async_trait;
@@ -123,8 +123,21 @@ pub trait Driver: Send + Sync + 'static {
     async fn cancel(&self, _params: CancelParams) -> Result<()> {
         unsupported("cancelling a statement")
     }
-    async fn transaction(&self, _params: TransactionParams) -> Result<TransactionState> {
-        unsupported("transactions")
+    /// A driver without transactions (Cassandra, Elasticsearch, Drill, Hive) commits every
+    /// statement: its state says so, also when a production connection asks for manual
+    /// commits, and only what needs a transaction is refused.
+    async fn transaction(&self, params: TransactionParams) -> Result<TransactionState> {
+        match params.action {
+            TransactionAction::Status | TransactionAction::Auto | TransactionAction::Manual => {
+                Ok(TransactionState {
+                    auto_commit: true,
+                    open: false,
+                })
+            }
+            TransactionAction::Begin | TransactionAction::Commit | TransactionAction::Rollback => {
+                unsupported("transactions")
+            }
+        }
     }
     /// Writes rows changed in the data grid as one, with the driver's own `execute` and
     /// `transaction` (see [`crate::rows`]); a driver may write them its own way.

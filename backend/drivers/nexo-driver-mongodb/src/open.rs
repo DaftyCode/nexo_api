@@ -28,7 +28,9 @@ impl MongoDriver {
     ) -> Result<Opened> {
         let (mut options, files) = connection::options(connection, &self.tls_directory).await?;
         options.socks5_proxy = connection.proxy.clone().map(|proxy| {
-            let credentials = proxy.user.map(|user| (user, proxy.password.unwrap_or_default()));
+            let credentials = proxy
+                .user
+                .map(|user| (user, proxy.password.unwrap_or_default()));
             Socks5Proxy::builder()
                 .host(proxy.host)
                 .port(proxy.port)

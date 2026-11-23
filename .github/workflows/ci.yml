@@ -134,8 +134,8 @@ jobs:
         run: node tools/cargo.mjs test --locked -p nexo-driver-mssql
       - name: MySQL driver against MySQL and MariaDB
         run: node tools/cargo.mjs test --locked -p nexo-driver-mysql
-      - name: Start Cassandra, Redis, Valkey, Elasticsearch, OpenSearch and Drill for their driver and contract tests
-        run: bash tools/nosql-fixture.sh start cassandra redis elastic drill
+      - name: Start Cassandra, Redis, Valkey, Elasticsearch, OpenSearch, Drill, Hive and Ignite for their driver and contract tests
+        run: bash tools/nosql-fixture.sh start cassandra redis elastic drill hive ignite
       - name: Cassandra driver against a real node
         run: node tools/cargo.mjs test --locked -p nexo-driver-cassandra
       - name: Redis driver against Redis and Valkey
@@ -146,6 +146,10 @@ jobs:
         run: node tools/cargo.mjs test --locked -p nexo-driver-drill
       - name: MongoDB driver against a real server
         run: node tools/cargo.mjs test --locked -p nexo-driver-mongodb
+      - name: Hive driver against HiveServer2 in HTTP mode
+        run: node tools/cargo.mjs test --locked -p nexo-driver-hive
+      - name: Ignite driver against Ignite 3 nodes, open and with TLS and authentication
+        run: node tools/cargo.mjs test --locked -p nexo-driver-ignite
       - run: npm run engine:test
       - name: Stop the Kafka broker
         if: always()

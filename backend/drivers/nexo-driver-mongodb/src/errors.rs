@@ -1,7 +1,7 @@
 //! Driver errors as Nexo shows them: what went wrong and what to check. The driver is built
 //! with `redact-errors`, so server errors about credentials come without them.
-use mongodb::error::{Error as DriverError, ErrorKind};
 use crate::error::Error;
+use mongodb::error::{Error as DriverError, ErrorKind};
 
 /// A driver error as a message for the person.
 pub fn driver(error: DriverError) -> Error {

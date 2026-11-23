@@ -52,6 +52,9 @@ export interface EngineProfile {
   /** A document database (MongoDB): its connections have their own form, and their
    * collections open in the explorer of documents (DB-39). */
   documents?: boolean;
+  /** Its URLs carry their settings after `;` in the path, as Hive's JDBC ones
+   * (`jdbc:hive2://host:10001/default;httpPath=cliservice`), not in a query. */
+  pathSettings?: boolean;
   /** The statement that makes a schema the session's default, with its name quoted. */
   schemaStatement?: (schema: string) => string;
 }

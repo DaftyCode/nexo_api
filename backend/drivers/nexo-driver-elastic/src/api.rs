@@ -55,7 +55,10 @@ impl ElasticDriver {
             other => ("application/json", other.to_string().into_bytes()),
         });
         let started = Instant::now();
-        let answer = connection.client.send_as(&method, &path, body, false).await?;
+        let answer = connection
+            .client
+            .send_as(&method, &path, body, false)
+            .await?;
         let body = serde_json::from_slice(&answer.body)
             .unwrap_or_else(|_| Json::String(String::from_utf8_lossy(&answer.body).into_owned()));
         Ok(RestResponse {

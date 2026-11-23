@@ -40,6 +40,11 @@ test('a PostGIS table is drawn on a canvas without a background map', async ({ p
   await expect(spatial.locator('circle')).toHaveCount(3);
   await expect(spatial.locator('path')).toHaveCount(2);
   expect(await violations(page)).toEqual([]);
+  // A window 720 pixels high leaves the results little room: the editor is made smaller, as a
+  // person would with the divider.
+  const divider = page.getByRole('separator', { name: 'Resize the editor and the results' });
+  await divider.focus();
+  for (let step = 0; step < 4; step++) await page.keyboard.press('Shift+ArrowUp');
   await spatial.locator('path.sp-area').click();
   await expect(spatial.getByRole('status')).toContainText('name: Park');
   await spatial.getByRole('button', { name: 'Show as a list' }).click();

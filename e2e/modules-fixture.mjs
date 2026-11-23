@@ -44,6 +44,18 @@ const DRIVERS = [
     licenses: ['MIT OR Apache-2.0', 'BSD-3-Clause'],
   },
   {
+    id: 'hive',
+    name: 'Apache Hive',
+    description: 'Apache Hive (HiveServer2), through Thrift over HTTP',
+    licenses: ['MIT OR Apache-2.0'],
+  },
+  {
+    id: 'ignite',
+    name: 'Apache Ignite',
+    description: 'Apache Ignite 3, through its client protocol',
+    licenses: ['MIT OR Apache-2.0'],
+  },
+  {
     id: 'mongodb',
     name: 'MongoDB',
     description: 'MongoDB and the servers compatible with it',
@@ -61,8 +73,9 @@ const DRIVERS = [
  * The test database driver (built with `cargo build -p nexo-driver-test`), the PostgreSQL
  * one (`-p nexo-driver-postgres`), the SQL Server one (`-p nexo-driver-mssql`), the MySQL
  * one (`-p nexo-driver-mysql`), the SQLite one (`-p nexo-driver-sqlite`), the Redis one
- * (`-p nexo-driver-redis`), the MongoDB one (`-p nexo-driver-mongodb`) and the Elasticsearch
- * one (`-p nexo-driver-elastic`) as downloadable
+ * (`-p nexo-driver-redis`), the MongoDB one (`-p nexo-driver-mongodb`), the Hive one
+ * (`-p nexo-driver-hive`), the Ignite one (`-p nexo-driver-ignite`) and the Elasticsearch one
+ * (`-p nexo-driver-elastic`) as downloadable
  * modules, served by a local server that
  * stands for the releases. None when the test driver is not built; `ids` lists those served.
  */

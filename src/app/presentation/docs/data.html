@@ -15,6 +15,12 @@
     </li>
     <li>
       {{
+        'Documents are in the data grid of the databases: double-click an embedded document (or press Enter) to show its fields as columns, or an array to enter it.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
         'Build aggregations stage by stage, explore the schema of a collection, and manage indexes, explain plans and the profiler.'
           | transloco
       }}
@@ -105,6 +111,18 @@
     <li>
       {{
         'The Apache Drill module connects to a Drillbit through its REST API (port 8047). Its storage plugins show their schemas, tables and files; query a file as a table, such as dfs.`/data/sales.parquet`. Each page of a result runs the statement again, and values go in the statement, without parameters.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Apache Hive module connects to HiveServer2 in HTTP mode (port 10001), with a user and a password; paste its JDBC URL, such as jdbc:hive2://host:10001/default;transportMode=http;httpPath=cliservice. Databases show their tables, views and columns; a table shows its DDL and the details of DESCRIBE FORMATTED. Rows come by pages of the server cursor, and a statement can be cancelled.'
+          | transloco
+      }}
+    </li>
+    <li>
+      {{
+        'The Apache Ignite module connects to an Ignite 3 node by its client protocol (port 10800), with a user and a password when the cluster has authentication, and TLS; paste its JDBC URL, such as jdbc:ignite:thin://host:10800/PUBLIC. Schemas show their tables, with their distribution zone, and the system views; a table shows its keys, its indexes and its DDL rebuilt from the system views. Rows come by pages of the server cursor, transactions are those of Ignite, and a running query can be cancelled, also from Sessions.'
           | transloco
       }}
     </li>

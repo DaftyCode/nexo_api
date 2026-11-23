@@ -78,20 +78,22 @@ test('MongoDB: browse 100 000 documents, filter an embedded field, sort, page, c
     .fill("{'customer.address.city': 'Madrid'}");
   await query.getByLabel('Sort').fill('{n: -1}');
   await query.getByRole('button', { name: 'Find', exact: true }).click();
-  const results = query.getByRole('group', { name: 'Results' });
-  await expect(results.locator('tbody tr').first()).toContainText('99999');
+  const results = query.getByRole('grid', { name: 'Documents' });
+  const firstRow = results.getByRole('row').nth(1);
+  await expect(firstRow).toContainText('99999');
   await query.getByRole('button', { name: 'Next page' }).click();
   await expect(range).toContainText('Documents 51 to 100');
-  await expect(results.locator('tbody tr').first()).toContainText('99899');
+  await expect(firstRow).toContainText('99899');
   await query.getByRole('button', { name: 'Previous page' }).click();
   await expect(range).toContainText('Documents 1 to 50');
   await query.getByRole('button', { name: 'Count documents' }).click();
   await expect(range).toContainText('of 50000');
 
-  // An embedded document opens into columns; an array is entered as its own table.
-  await results.getByRole('button', { name: '{ 2 fields }' }).first().click();
+  // An embedded document opens into columns with a double click; an array is entered as its
+  // own table.
+  await results.getByRole('gridcell', { name: '{ 2 fields }' }).first().dblclick();
   await expect(results.getByRole('columnheader', { name: 'customer.name' })).toBeVisible();
-  await results.getByRole('button', { name: '[ 2 elements ]' }).first().click();
+  await results.getByRole('gridcell', { name: '[ 2 elements ]' }).first().dblclick();
   await expect(query.getByRole('navigation', { name: 'Arrays entered' })).toContainText('items');
   await expect(results.getByRole('columnheader', { name: 'sku' })).toBeVisible();
   expect(await violations(page)).toEqual([]);
@@ -139,15 +141,15 @@ test('MongoDB: a database is created, written, edited keeping types, undone and 
       "[{_id: 1, at: ISODate('2024-01-02T03:04:05Z'), price: NumberDecimal('1.10')}, {_id: 2}, {_id: 3}]",
     );
   await dialog.getByRole('button', { name: 'Insert' }).click();
-  const results = query.getByRole('group', { name: 'Results' });
-  await expect(results.locator('tbody tr')).toHaveCount(3);
+  const results = query.getByRole('grid', { name: 'Documents' });
+  await expect(results.locator('[role="rowheader"]')).toHaveCount(3);
 
   // A date edited in the table stays a date.
-  await results.getByRole('button', { name: '2024-01-02T03:04:05.000Z' }).click();
+  await results.getByRole('gridcell', { name: '2024-01-02T03:04:05.000Z' }).click();
   await query.getByRole('button', { name: 'Edit value' }).click();
   await dialog.locator('.cm-content[aria-label="Value"]').fill("ISODate('2025-05-05T00:00:00Z')");
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(results.getByRole('button', { name: '2025-05-05T00:00:00.000Z' })).toBeVisible();
+  await expect(results.getByRole('gridcell', { name: '2025-05-05T00:00:00.000Z' })).toBeVisible();
   await query.getByRole('button', { name: 'JSON', exact: true }).click();
   await query.getByLabel('Format').selectOption('canonical');
   await expect(query.locator('.cm-content[aria-label="Results"]')).toContainText('"$date"');
@@ -161,7 +163,7 @@ test('MongoDB: a database is created, written, edited keeping types, undone and 
   await expect(dialog).toContainText('3 documents match the filter');
   await dialog.locator('.cm-content[aria-label="Update"]').fill('{$set: {flag: true}}');
   await dialog.getByRole('button', { name: 'Update documents' }).click();
-  await expect(results.locator('thead')).toContainText('flag');
+  await expect(results.getByRole('columnheader', { name: 'flag' })).toBeVisible();
 
   // A write to many documents is listed but cannot be undone; the edit of one can.
   const undo = tree.getByRole('button', { name: /^Undo mongo\.update/ });

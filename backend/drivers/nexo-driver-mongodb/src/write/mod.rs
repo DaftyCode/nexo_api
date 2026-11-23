@@ -6,6 +6,7 @@ mod collections;
 mod documents;
 mod import;
 
+use crate::error::{Error, Result};
 use crate::{
     browse::check_name,
     errors,
@@ -24,7 +25,6 @@ use mongodb::{
 use nexo_driver_sdk::document::{
     CollectionChange, DocumentChange, DocumentWrite, WriteResult, WriteTarget,
 };
-use crate::error::{Error, Result};
 use serde_json::Value;
 use std::time::Duration;
 

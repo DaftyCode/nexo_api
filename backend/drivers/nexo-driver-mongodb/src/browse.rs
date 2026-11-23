@@ -1,13 +1,15 @@
 //! The explorer's tree: databases, their collections, views and time series, and the size
 //! and indexes of a collection.
+use crate::error::{Error, Result};
 use crate::errors;
 use mongodb::{
     Client,
     bson::{Bson, Document, doc},
     error::ErrorKind,
 };
-use nexo_driver_sdk::document::{CollectionStats, CollectionSummary, DatabaseSummary, IndexSummary};
-use crate::error::{Error, Result};
+use nexo_driver_sdk::document::{
+    CollectionStats, CollectionSummary, DatabaseSummary, IndexSummary,
+};
 use std::collections::HashSet;
 
 /// MongoDB's code for a command the user has no privilege to run.

@@ -198,6 +198,11 @@ try {
     'mongo_list_databases',
     'mongo_schema',
     'send_request',
+    'sql_describe_table',
+    'sql_explain',
+    'sql_list_connections',
+    'sql_list_tables',
+    'sql_query',
   ]);
   checks.push('MCP tool discovery');
 

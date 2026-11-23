@@ -1,5 +1,6 @@
 //! Indexes of a collection: listed with their size and how often queries use them, created,
 //! hidden from the query planner or shown again, and dropped.
+use crate::error::{Error, Result};
 use crate::{
     browse::{check_name, number},
     errors,
@@ -8,7 +9,6 @@ use crate::{
 use bson::{Bson, Document, doc};
 use mongodb::Client;
 use nexo_driver_sdk::document::{IndexChange, IndexDetail};
-use crate::error::{Error, Result};
 use std::collections::HashMap;
 
 /// Options of `createIndexes` Nexo passes on; anything else is refused by name.

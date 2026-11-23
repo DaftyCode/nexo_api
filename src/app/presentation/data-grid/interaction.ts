@@ -18,11 +18,13 @@ export interface InteractionContext {
   menus: GridMenus;
   editor: GridCellEditor;
   viewport: () => HTMLElement | undefined;
+  /** The screen opens the active cell itself (a document of MongoDB); true when it did. */
+  open: () => boolean;
 }
 
 /**
- * The pointer and the keys of a grid: a click chooses a cell or a row, a double click edits
- * the cell (or shows its value when nothing can be edited), the keys move, select, find and
+ * The pointer and the keys of a grid: a click chooses a cell or a row, a double click opens
+ * what the screen opens itself, or edits the cell (or shows its value when nothing can be edited), the keys move, select, find and
  * open menus, and the record view and the finder move the active cell.
  */
 export class GridInteraction {
@@ -52,6 +54,7 @@ export class GridInteraction {
       copy: (keys) => output.copy(keys, 'text'),
       menu: () => menus.under(viewport()?.querySelector('.grid-active') ?? viewport()),
       reveal: () => this.reveal(),
+      open: () => this.context.open(),
     });
   }
 
@@ -85,6 +88,7 @@ export class GridInteraction {
   }
   doubleClicked(event: MouseEvent) {
     if ((event.target as HTMLElement).closest('.grid-editor')) return;
+    if (this.context.open()) return;
     if (this.context.editor.enabled()) this.context.editor.start();
     else this.context.panel.set('value');
   }

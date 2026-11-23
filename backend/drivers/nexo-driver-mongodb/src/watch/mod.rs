@@ -6,6 +6,7 @@
 mod follow;
 mod log;
 
+use crate::error::{Error, Result};
 use crate::{MongoDriver, browse::check_name, errors, limits, query::document};
 use bson::{Bson, Document};
 use follow::follow;
@@ -17,7 +18,6 @@ use mongodb::{
     options::{FullDocumentBeforeChangeType, FullDocumentType},
 };
 use nexo_driver_sdk::document::{WATCH_PREFIX, WatchEvents, WatchRequest, WatchSummary};
-use crate::error::{Error, Result};
 use serde_json::{Value, json};
 use std::{
     sync::{Arc, Mutex, PoisonError},
@@ -124,11 +124,7 @@ fn explain(error: DriverError) -> Error {
     errors::driver(error)
 }
 
-pub async fn watch(
-    driver: &MongoDriver,
-    client: Client,
-    request: WatchRequest,
-) -> Result<String> {
+pub async fn watch(driver: &MongoDriver, client: Client, request: WatchRequest) -> Result<String> {
     let open_now = {
         let mut watches = driver
             .watches

@@ -32,9 +32,9 @@ test('MongoDB: SQL becomes a query that runs, shows as blocks and as code', asyn
   await expect(query.locator('.cm-content[aria-label="MongoDB query"]')).toContainText('Madrid');
   expect(await violations(page)).toEqual([]);
   await query.getByRole('button', { name: 'Run in Documents' }).click();
-  const results = query.getByRole('group', { name: 'Results' });
-  await expect(results.locator('tbody tr')).toHaveCount(3);
-  await expect(results.locator('tbody tr').first()).toContainText('99999');
+  const results = query.getByRole('grid', { name: 'Documents' });
+  await expect(results.locator('[role="rowheader"]')).toHaveCount(3);
+  await expect(results.getByRole('row').nth(1)).toContainText('99999');
 
   // The filter of the SELECT, as blocks.
   await query.getByRole('button', { name: 'Blocks', exact: true }).click();

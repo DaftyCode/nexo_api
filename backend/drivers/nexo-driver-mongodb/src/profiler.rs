@@ -1,5 +1,6 @@
 //! The database profiler: its level and `slowms`, read and changed, and the slowest
 //! operations it recorded in `system.profile`.
+use crate::error::Result;
 use crate::{
     browse::{check_name, number},
     errors, limits,
@@ -7,7 +8,6 @@ use crate::{
 use bson::{Bson, Document, doc};
 use mongodb::{Client, options::FindOptions};
 use nexo_driver_sdk::document::{ProfileEntry, ProfileStatus};
-use crate::error::Result;
 
 /// Bytes of a recorded command sent to the interface; larger ones are left out.
 const COMMAND_BYTES: usize = 64 * 1024;

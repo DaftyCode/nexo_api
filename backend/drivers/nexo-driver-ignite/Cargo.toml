@@ -1,0 +1,25 @@
+[package]
+name = "nexo-driver-ignite"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Apache Ignite 3, through its client protocol"
+
+[package.metadata.nexo]
+module = "ignite"
+
+[dependencies]
+# MessagePack and Ignite's BinaryTuple are written by hand (src/msgpack, src/tuple): the
+# protocol uses a dozen of their forms, so no new crate.
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["tls"] }
+async-trait.workspace = true
+tokio.workspace = true
+# TLS on the SDK's rustls configuration (aws-lc-rs), the versions the engine already uses.
+tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws_lc_rs", "tls12", "logging"] }
+rustls-pki-types = "1.16.0"
+
+[dev-dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["conformance", "tls"] }
+serde_json.workspace = true

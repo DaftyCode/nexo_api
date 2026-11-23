@@ -1,0 +1,22 @@
+[package]
+name = "nexo-driver-hive"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish = false
+description = "Apache Hive (HiveServer2), through Thrift over HTTP"
+
+[package.metadata.nexo]
+module = "hive"
+
+[dependencies]
+# Thrift's binary protocol is written by hand (src/thrift.rs): no new crate.
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["http"] }
+async-trait.workspace = true
+base64.workspace = true
+serde_json.workspace = true
+tokio.workspace = true
+
+[dev-dependencies]
+nexo-driver-sdk = { path = "../../crates/nexo-driver-sdk", features = ["conformance", "http"] }

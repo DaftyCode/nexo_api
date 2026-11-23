@@ -5,8 +5,8 @@ use nexo_application::ports::{
     AggregateRequest, AggregateWrite, CollectionChange, CollectionStats, CollectionSummary,
     ConnectionReport, CountRequest, DatabaseConnection, DatabaseSummary, DocumentDatabase,
     DocumentPage, DocumentWrite, ExplainRequest, FindRequest, ImportBatch, ImportResult,
-    IndexChange, IndexDetail, ProfileEntry, ProfileStatus, WatchEvents, WatchRequest,
-    WatchSummary, WriteResult, WriteTarget,
+    IndexChange, IndexDetail, ProfileEntry, ProfileStatus, WatchEvents, WatchRequest, WatchSummary,
+    WriteResult, WriteTarget,
 };
 use nexo_domain::{Error, Result};
 use nexo_driver_sdk::document::{self as wire, methods};
@@ -147,7 +147,8 @@ impl DocumentDatabase for Documents {
         let Some(session) = self.routes.of(id) else {
             return Ok(false);
         };
-        self.call(&session, methods::CANCEL, json!({"id": id})).await
+        self.call(&session, methods::CANCEL, json!({"id": id}))
+            .await
     }
     async fn close(&self, cursor: &str) -> Result<()> {
         let Some(session) = self.routes.of(cursor) else {
@@ -184,8 +185,7 @@ impl DocumentDatabase for Documents {
         collection: &str,
     ) -> Result<Vec<IndexDetail>> {
         let request = json!({"database": database, "collection": collection});
-        let found: Vec<wire::IndexDetail> =
-            self.on(&connection, methods::INDEXES, request).await?;
+        let found: Vec<wire::IndexDetail> = self.on(&connection, methods::INDEXES, request).await?;
         Ok(found.into_iter().map(answers::index).collect())
     }
     async fn index(&self, connection: DatabaseConnection, change: IndexChange) -> Result<()> {

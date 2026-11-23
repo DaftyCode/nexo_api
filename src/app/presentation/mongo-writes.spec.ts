@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { buttons, clickButton, codeText, fill, renderDeferred } from '../testing/controls';
+import { chooseCell, chooseRow, openCell, roomyGrids } from '../testing/grid';
 import { MongoExplorer } from './mongo-explorer';
 import { WorkspaceState } from './workspace-state';
 import { WorkspaceDocument } from '../domain/models';
@@ -80,7 +81,11 @@ describe('MongoDB writes in the explorer', () => {
     await click(/^orders/);
   };
 
+  let restore: () => void;
+  afterEach(() => restore());
+
   beforeEach(async () => {
+    restore = roomyGrids();
     changes = 0;
     await TestBed.configureTestingModule({
       providers: testProviders({
@@ -118,7 +123,7 @@ describe('MongoDB writes in the explorer', () => {
     'edits a field keeping its type, the whole document, and undoes a change',
     async () => {
       await open();
-      await click('2024-01-02T03:04:05.006Z');
+      await chooseCell(fixture, '2024-01-02T03:04:05.006Z');
       await click('Edit value');
       expect(codeText(dialog()!, 'Value')).toBe('ISODate("2024-01-02T03:04:05.006Z")');
       await fill(fixture, 'Value', 'ISODate("2025-05-05T00:00:00Z")', dialog()!);
@@ -139,8 +144,8 @@ describe('MongoDB writes in the explorer', () => {
       expect(calls('mongo.find')).toHaveLength(2);
 
       // An element of an array entered is edited by its full path.
-      await click('[ 1 element ]');
-      await click(/^S1$/);
+      await openCell(fixture, '[ 1 element ]');
+      await chooseCell(fixture, /^S1$/);
       await click('Edit value');
       await fill(fixture, 'Value', "'S2'", dialog()!);
       await confirm(/^Save$/);
@@ -149,7 +154,7 @@ describe('MongoDB writes in the explorer', () => {
       // The way back of the results, not the tab of the same name.
       await clickButton(fixture, /^Documents$/, root().querySelector('app-mongo-results')!);
       await settle();
-      await click('Choose document 1');
+      await chooseRow(fixture, 1);
       await click('Edit document');
       expect(codeText(dialog()!, 'Document')).toContain('"price": NumberDecimal("1.10")');
       await fill(fixture, 'Document', '{a: }', dialog()!);
@@ -183,18 +188,18 @@ describe('MongoDB writes in the explorer', () => {
     'removes fields, duplicates, deletes and inserts documents',
     async () => {
       await open();
-      await click('2024-01-02T03:04:05.006Z');
+      await chooseCell(fixture, '2024-01-02T03:04:05.006Z');
       await click('Remove field');
       await confirm(/^Remove field$/);
       expect(calls('mongo.update')[0].payload['update']).toEqual({ $unset: { at: '' } });
-      await click('Choose document 1');
+      await chooseRow(fixture, 1);
       await click('Duplicate document');
       expect(codeText(dialog()!, 'Documents')).not.toContain('_id');
       await confirm(/^Insert$/);
       expect(calls('mongo.insert')[0].payload['documents']).toEqual([
         { at: order.at, price: order.price, items: order.items },
       ]);
-      await click('Choose document 1');
+      await chooseRow(fixture, 1);
       await click('Delete document');
       expect(dialog()?.textContent).toContain('ObjectId("65a1b2c3d4e5f6a7b8c9d0e1")');
       await confirm(/^Delete document$/);

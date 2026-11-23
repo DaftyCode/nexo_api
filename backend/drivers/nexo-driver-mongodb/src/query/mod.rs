@@ -10,6 +10,7 @@ mod aggregate;
 mod cursor;
 mod options;
 
+use crate::error::{Error, Result};
 use crate::{MongoDriver, errors, limits, within};
 pub use aggregate::{aggregate, aggregate_write};
 use bson::{Bson, Document, RawDocument, RawDocumentBuf, doc};
@@ -20,7 +21,6 @@ use mongodb::{
     options::{Collation, CountOptions, FindOptions, Hint},
 };
 use nexo_driver_sdk::document::{CountRequest, DocumentPage, FindRequest};
-use crate::error::{Error, Result};
 use options::{collation, hint, page_size};
 pub use options::{document, extended_json, extended_json_document};
 use serde_json::Value;

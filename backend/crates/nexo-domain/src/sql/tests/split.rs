@@ -179,4 +179,19 @@ fn a_cql_batch_is_one_statement_and_double_slashes_comment() {
         ]
     );
     assert_eq!(Dialect::parse("cql"), Dialect::Cql);
+    assert_eq!(Dialect::parse("hive"), Dialect::MySql);
+    // A quote escaped with a backslash and a name in backticks hold no end of statement.
+    let hive = split(
+        r"SELECT 'it\'s; fine' FROM `a;b`; SHOW TABLES",
+        Dialect::parse("hive"),
+    );
+    assert_eq!(hive.len(), 2);
+    // Ignite 3's SQL (Calcite) is ANSI: double quotes, doubled quotes in strings, both comments.
+    assert_eq!(Dialect::parse("ignite"), Dialect::Ansi);
+    let ignite = split(
+        "CREATE ZONE z (REPLICAS 1) STORAGE PROFILES ['default']; -- a; zone\n\
+         SELECT 'O''Brien; x' AS \"a;b\" /* ; */ FROM t",
+        Dialect::parse("ignite"),
+    );
+    assert_eq!(ignite.len(), 2);
 }

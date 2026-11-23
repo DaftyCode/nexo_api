@@ -5,9 +5,7 @@ mod common;
 
 use common::{Host, call, driver, driver_with, params};
 use nexo_driver_sdk::{
-    document::{
-        ConnectionReport, DatabaseSummary, DocumentPage, WriteResult, methods,
-    },
+    document::{ConnectionReport, DatabaseSummary, DocumentPage, WriteResult, methods},
     protocol::{ObjectParams, ProxySettings},
 };
 use serde_json::{Value as Json, json};
@@ -141,12 +139,15 @@ async fn the_fixture_is_browsed_queried_and_written_through_the_extension() {
     let host = Host::default();
     let client = driver_with(host.clone());
     client.connect(&params("p", &uri)).await.unwrap();
-    assert!(host.asked.lock().unwrap().contains(&"127.0.0.1:27117".into()));
+    assert!(
+        host.asked
+            .lock()
+            .unwrap()
+            .contains(&"127.0.0.1:27117".into())
+    );
     let report: ConnectionReport = call(&client, methods::REPORT, "p", ()).await.unwrap();
     assert_eq!(report.topology, "standalone");
-    let databases: Vec<DatabaseSummary> = call(&client, methods::DATABASES, "p", ())
-        .await
-        .unwrap();
+    let databases: Vec<DatabaseSummary> = call(&client, methods::DATABASES, "p", ()).await.unwrap();
     assert!(databases.iter().any(|database| database.name == "nexo"));
     let tree = client
         .tree(&ObjectParams {
@@ -172,6 +173,8 @@ async fn the_fixture_is_browsed_queried_and_written_through_the_extension() {
     assert_eq!(written.inserted.len(), 1);
     assert_eq!(written.changes.len(), 1, "a change to undo travels back");
     let drop = json!({"kind": "drop", "database": "nexo", "collection": "driver_scratch"});
-    call::<_, Json>(&client, methods::CHANGE, "p", drop).await.unwrap();
+    call::<_, Json>(&client, methods::CHANGE, "p", drop)
+        .await
+        .unwrap();
     client.disconnect("p").await.unwrap();
 }

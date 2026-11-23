@@ -65,7 +65,11 @@ function hostAndPort(authority: string): { host: string; port: string } {
  */
 export function parseDbUrl(text: string, modules: readonly string[] = []): ParsedUrl {
   if (isSqliteUrl(text)) return parseSqliteUrl(text);
-  const trimmed = text.trim().replace(/^jdbc:/i, '');
+  // Ignite's JDBC URLs name their protocol too: `jdbc:ignite:thin://`.
+  const trimmed = text
+    .trim()
+    .replace(/^jdbc:/i, '')
+    .replace(/^ignite:thin:\/\//i, 'ignite://');
   const match = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/i.exec(trimmed);
   if (!match) throw new Error('Paste a URL such as postgresql://user@host:5432/database');
   const driver = engineOfScheme(match[1], modules);
@@ -80,7 +84,11 @@ export function parseDbUrl(text: string, modules: readonly string[] = []): Parse
   if (question >= 0) rest = rest.slice(0, question);
   const slash = rest.indexOf('/');
   const authority = slash >= 0 ? rest.slice(0, slash) : rest;
-  const database = slash >= 0 ? decode(rest.slice(slash + 1)) : '';
+  let path = slash >= 0 ? rest.slice(slash + 1) : '';
+  // Hive's settings follow the database, after `;`: read as those of a query.
+  let settings: string[] = [];
+  if (profile.pathSettings) [path, ...settings] = path.split(';');
+  const database = decode(path);
   const at = authority.lastIndexOf('@');
   const userinfo = at >= 0 ? authority.slice(0, at) : '';
   const colon = userinfo.indexOf(':');
@@ -93,7 +101,7 @@ export function parseDbUrl(text: string, modules: readonly string[] = []): Parse
     ignored: [],
   };
   if (colon >= 0) parsed.password = decode(userinfo.slice(colon + 1));
-  for (const pair of query.split('&').filter(Boolean)) {
+  for (const pair of [...settings, ...query.split('&')].filter(Boolean)) {
     const equals = pair.indexOf('=');
     const name = decode(equals >= 0 ? pair.slice(0, equals) : pair);
     const value = decode((equals >= 0 ? pair.slice(equals + 1) : '').replace(/\+/g, ' '));
@@ -147,6 +155,7 @@ export function formatDbUrl(parts: UrlParts): string {
       .map((param) => [param.name.trim(), param.value]),
   ]
     .map(([name, value]) => `${encode(name)}=${encode(value)}`)
-    .join('&');
-  return `${profile.schemes[0]}://${user}${parts.host.trim()}${port}${database}${query ? `?${query}` : ''}`;
+    .join(profile.pathSettings ? ';' : '&');
+  const after = query ? `${profile.pathSettings ? ';' : '?'}${query}` : '';
+  return `${profile.schemes[0]}://${user}${parts.host.trim()}${port}${database}${after}`;
 }

@@ -1,6 +1,7 @@
 /**
  * The engines that are not the relational servers of the first modules: Cassandra, Redis,
- * Elasticsearch, Drill, MongoDB and the files module, as the connection form knows them.
+ * Elasticsearch, Drill, MongoDB, Hive, Ignite and the files module, as the connection form
+ * knows them.
  */
 import { TLS_MODES } from '../connection';
 import type { EngineProfile } from '../engines';
@@ -90,6 +91,51 @@ export const OTHER_ENGINES: Record<string, EngineProfile> = {
     schemes: [],
     tlsModes: [],
     properties: [],
+  },
+  // Apache Hive (DB-42): HiveServer2 in HTTP mode, with a user and a password; its JDBC URLs
+  // carry their settings after `;` in the path.
+  hive: {
+    id: 'hive',
+    name: 'Apache Hive',
+    summary: 'db.engine.hive',
+    defaultPort: 10001,
+    defaultHost: 'localhost',
+    defaultDatabase: 'default',
+    defaultUser: 'hive',
+    schemes: ['hive2', 'hive'],
+    tlsParameter: 'ssl',
+    tlsValues: {
+      disable: 'false',
+      prefer: 'true',
+      require: 'true',
+      verify: 'true',
+    },
+    tlsModes: TLS_MODES,
+    pathSettings: true,
+    properties: [{ name: 'httpPath', description: 'db.property.httpPath' }],
+    limits: 'db.limits.hive',
+  },
+  // Apache Ignite 3 (DB-43): its client protocol on port 10800; the database is the default
+  // schema. Its JDBC URLs (`jdbc:ignite:thin://host:10800/SHOP?sslEnabled=true`) are read too.
+  ignite: {
+    id: 'ignite',
+    name: 'Apache Ignite',
+    summary: 'db.engine.ignite',
+    defaultPort: 10800,
+    defaultHost: 'localhost',
+    defaultDatabase: 'PUBLIC',
+    defaultUser: '',
+    schemes: ['ignite'],
+    tlsParameter: 'sslEnabled',
+    tlsValues: {
+      disable: 'false',
+      prefer: 'true',
+      require: 'true',
+      verify: 'true',
+    },
+    tlsModes: TLS_MODES,
+    properties: [{ name: 'timeZone', description: 'db.property.timeZone' }],
+    limits: 'db.limits.ignite',
   },
   // Files as tables and DuckDB databases (DB-30): a folder, files or a `.duckdb` file.
   files: {

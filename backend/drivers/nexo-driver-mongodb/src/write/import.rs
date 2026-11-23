@@ -2,6 +2,7 @@
 //! upsert by the values of some fields. Without `ordered`, the documents that fail are
 //! reported by their position and the others are written.
 use super::{required, write_concern};
+use crate::error::Result;
 use crate::{browse::check_name, errors};
 use bson::{Bson, Document};
 use mongodb::{
@@ -10,7 +11,6 @@ use mongodb::{
     options::CollectionOptions,
 };
 use nexo_driver_sdk::document::{ImportBatch, ImportFailure, ImportResult, WriteTarget};
-use crate::error::Result;
 
 pub async fn import(
     client: &Client,

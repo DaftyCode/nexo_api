@@ -40,15 +40,14 @@ use mongodb::{
     bson::{Document, doc},
     options::{ClientOptions, ServerAddress},
 };
+use nexo_driver_sdk::document::{ConnectionReport, DatabaseHost};
 use nexo_driver_sdk::{
     Driver, DriverError, HostLink, PROTOCOL_VERSION, document,
     protocol::{
-        Capabilities, ConnectParams, Dialect, DriverInfo, Hello, ObjectParams, ServerInfo,
-        TreeNode,
+        Capabilities, ConnectParams, Dialect, DriverInfo, Hello, ObjectParams, ServerInfo, TreeNode,
     },
     statements::{CursorParams, ExecuteParams, ExecuteResult, FetchParams, Page},
 };
-use nexo_driver_sdk::document::{ConnectionReport, DatabaseHost};
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},

@@ -108,6 +108,11 @@ export class DataGrid {
   }>();
   /** The row the person is on, by its index among the rows loaded. */
   readonly activeRow = output<number>();
+  /** The cell the person is on (indexes of those given); `whole` when the row was chosen. */
+  readonly activeCell = output<{ row: number; column: number; whole: boolean }>();
+  /** Cells the screen opens itself on a double click or Enter (a document of MongoDB). */
+  readonly opens = input<((row: number, column: number) => boolean) | undefined>(undefined);
+  readonly opened = output<{ row: number; column: number }>();
 
   protected readonly id = `grid-${++grids}`;
   protected readonly viewport = viewChild<ElementRef<HTMLElement>>('viewport');
@@ -206,6 +211,12 @@ export class DataGrid {
     menus: this.menus,
     editor: this.editor,
     viewport: () => this.viewport()?.nativeElement,
+    open: () => {
+      const cell = this.active();
+      if (!cell || !this.opens()?.(cell.row, cell.column)) return false;
+      this.opened.emit({ row: cell.row, column: cell.column });
+      return true;
+    },
   });
   private asked = -1;
 
@@ -233,7 +244,12 @@ export class DataGrid {
     });
     effect(() => {
       const active = this.active();
-      if (active) untracked(() => this.activeRow.emit(active.row));
+      const whole = this.selection().mode === 'rows';
+      if (!active) return;
+      untracked(() => {
+        this.activeRow.emit(active.row);
+        this.activeCell.emit({ row: active.row, column: active.column, whole });
+      });
     });
   }
 

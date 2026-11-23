@@ -14,11 +14,14 @@ export interface KeyTarget {
   menu(): void;
   /** Scrolls the active cell into sight. */
   reveal(): void;
+  /** The screen opens the active cell itself; true when it did. */
+  open?(): boolean;
 }
 
 /**
  * The keys of a grid, as DBeaver's: arrows and pages move (with Shift they select), Ctrl+C
- * copies, Ctrl+A selects all, Ctrl+F finds, Enter shows the value, the menu key or Shift+F10
+ * copies, Ctrl+A selects all, Ctrl+F finds, Enter opens what the screen opens or shows the
+ * value, the menu key or Shift+F10
  * opens the cell's menu.
  */
 export function gridKey(event: KeyboardEvent, target: KeyTarget) {
@@ -37,6 +40,7 @@ export function gridKey(event: KeyboardEvent, target: KeyTarget) {
   }
   if (event.key === 'Enter') {
     event.preventDefault();
+    if (target.open?.()) return;
     return target.panel.set('value');
   }
   if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {

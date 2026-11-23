@@ -1,5 +1,5 @@
 import { emptyDbForm, formOf, formProblem, formUrl, typedSecrets, valueOf, withUrl } from './form';
-import { parseDbUrl } from './url';
+import { formatDbUrl, parseDbUrl } from './url';
 
 describe('database URLs', () => {
   it('reads a PostgreSQL URL into the form and takes its password out', () => {
@@ -88,6 +88,64 @@ describe('database URLs', () => {
     expect(parsed).toEqual(
       expect.objectContaining({ host: 'localhost', port: '5433', user: 'bob', password: 'x' }),
     );
+  });
+
+  it('reads and writes Hive JDBC URLs, their settings after the database', () => {
+    const parsed = parseDbUrl(
+      'jdbc:hive2://ana:pw@hive.test:10001/sales;transportMode=http;httpPath=hs2;ssl=true',
+    );
+    expect(parsed).toMatchObject({
+      driver: 'hive',
+      host: 'hive.test',
+      port: '10001',
+      database: 'sales',
+      user: 'ana',
+      password: 'pw',
+      tlsMode: 'require',
+    });
+    expect(parsed.params).toEqual({ httpPath: 'hs2' });
+    expect(parsed.ignored).toEqual(['transportMode']);
+    expect(
+      formatDbUrl({
+        driver: 'hive',
+        host: 'hive.test',
+        port: '10001',
+        database: 'sales',
+        user: 'ana',
+        tlsMode: 'require',
+        params: [{ name: 'httpPath', value: 'hs2' }],
+      }),
+    ).toBe('hive2://ana@hive.test:10001/sales;ssl=true;httpPath=hs2');
+    expect(parseDbUrl('hive://h/db').database).toBe('db');
+  });
+
+  it('reads and writes Ignite JDBC URLs, with their schema and time zone', () => {
+    const parsed = parseDbUrl(
+      'jdbc:ignite:thin://ignite.test:10800/SHOP?username=ana&password=pw&sslEnabled=true&timeZone=UTC&partitionAwareness=false',
+    );
+    expect(parsed).toMatchObject({
+      driver: 'ignite',
+      host: 'ignite.test',
+      port: '10800',
+      database: 'SHOP',
+      user: 'ana',
+      password: 'pw',
+      tlsMode: 'require',
+    });
+    expect(parsed.params).toEqual({ timeZone: 'UTC' });
+    expect(parsed.ignored).toEqual(['partitionAwareness']);
+    expect(
+      formatDbUrl({
+        driver: 'ignite',
+        host: 'ignite.test',
+        port: '10800',
+        database: 'SHOP',
+        user: '',
+        tlsMode: 'disable',
+        params: [{ name: 'timeZone', value: 'Europe/Madrid' }],
+      }),
+    ).toBe('ignite://ignite.test:10800/SHOP?timeZone=Europe%2FMadrid');
+    expect(parseDbUrl('ignite://h').driver).toBe('ignite');
   });
 
   it('refuses what is not a URL of a known engine', () => {
