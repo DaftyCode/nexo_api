@@ -24,6 +24,7 @@ pub fn typescript_contract() -> String {
         AiContext::TYPESCRIPT.to_string(),
         AiToolResult::TYPESCRIPT.to_string(),
         SharedLocation::TYPESCRIPT.to_string(),
+        SharedCredential::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
     parts.push(GitPayload::TYPESCRIPT.to_string());

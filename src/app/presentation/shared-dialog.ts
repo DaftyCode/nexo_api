@@ -10,18 +10,34 @@ import {
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { NATIVE_FILES } from '../composition/providers';
-import { sharedFileName, sharedPath } from '../domain/shared';
+import { SharedPlace, sharedFileName, sharedPath } from '../domain/shared';
 import { SharedState } from './shared-state';
 import { WorkspaceState, success } from './workspace-state';
 
 /** What the dialog's fields hold. */
 interface SharedForm {
+  /** A file in a synced folder or on a network drive, or on a server. */
+  where: 'folder' | 'url';
   path: string;
+  url: string;
+  scheme: 'none' | 'basic' | 'bearer';
+  user: string;
+  secret: string;
   key: string;
   encrypt: boolean;
   environments: string[];
 }
-const empty = (): SharedForm => ({ path: '', key: '', encrypt: true, environments: [] });
+const empty = (): SharedForm => ({
+  where: 'folder',
+  path: '',
+  url: '',
+  scheme: 'none',
+  user: '',
+  secret: '',
+  key: '',
+  encrypt: true,
+  environments: [],
+});
 
 /**
  * The dialog of the collections shared by the team (C-01): bringing one in from its file
@@ -55,6 +71,21 @@ export class SharedDialog {
   protected readonly link = computed(() =>
     this.shared.byCollection().get(this.collection()?.id ?? ''),
   );
+  /** The file or the server is said. */
+  protected readonly ready = computed(() => {
+    const model = this.model();
+    return !!(model.where === 'url' ? model.url : model.path).trim();
+  });
+
+  /** Where the file is, with how Nexo signs in to its server. */
+  private place(): SharedPlace {
+    const { where, path, url, scheme, user, secret } = this.model();
+    if (where === 'folder') return { path: sharedPath(path) };
+    return {
+      url: url.trim(),
+      ...(scheme === 'none' ? {} : { credential: { scheme, user: user.trim(), secret } }),
+    };
+  }
 
   constructor() {
     effect(() => {
@@ -103,8 +134,7 @@ export class SharedDialog {
 
   protected bringIn() {
     return this.attempt(async () => {
-      const { path, key } = this.model();
-      await this.shared.link(sharedPath(path), key);
+      await this.shared.link(this.place(), this.model().key);
       this.state.tell(success('Shared collection brought in'));
       this.close();
     });
@@ -114,8 +144,8 @@ export class SharedDialog {
     return this.attempt(async () => {
       const collection = this.collection();
       if (!collection) return;
-      const { path, encrypt, environments } = this.model();
-      const key = await this.shared.share(collection.id, sharedPath(path), encrypt, environments);
+      const { encrypt, environments } = this.model();
+      const key = await this.shared.share(collection.id, this.place(), encrypt, environments);
       this.state.tell(success('Collection shared with the team'));
       if (key) this.key.set(key);
       else this.close();

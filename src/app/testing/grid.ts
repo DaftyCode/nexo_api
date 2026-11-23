@@ -79,8 +79,15 @@ export function roomyGrids(width = 4000, height = 2000): () => void {
   });
   Object.defineProperty(prototype, 'clientWidth', sized(width, original.width));
   Object.defineProperty(prototype, 'clientHeight', sized(height, original.height));
+  // jsdom defines the measures on Element: where HTMLElement had none of its own, the one
+  // given here goes away, or every grid of the later tests of this worker would be roomy.
   return () => {
-    if (original.width) Object.defineProperty(prototype, 'clientWidth', original.width);
-    if (original.height) Object.defineProperty(prototype, 'clientHeight', original.height);
+    for (const [name, descriptor] of [
+      ['clientWidth', original.width],
+      ['clientHeight', original.height],
+    ] as const) {
+      if (descriptor) Object.defineProperty(prototype, name, descriptor);
+      else Reflect.deleteProperty(prototype, name);
+    }
   };
 }

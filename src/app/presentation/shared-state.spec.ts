@@ -71,12 +71,17 @@ describe('SharedState', () => {
     api.responses['shared.share'] = { collection: 'c1', key: 'nexo-team-key-1' };
     api.responses['shared.status'] = { links: [link] };
     api.responses['shared.poll'] = { changed: [], links: [link] };
-    expect(await shared.share('c1', link.path, true, [])).toBe('nexo-team-key-1');
+    expect(await shared.share('c1', { path: link.path }, true, [])).toBe('nexo-team-key-1');
+    // Opening the workspace asked the servers too.
+    expect(api.calls.find((call) => call.operation === 'shared.poll')?.payload).toEqual({
+      workspace: 'local',
+      opening: true,
+    });
     expect(shared.links()).toEqual([link]);
     api.responses['shared.share'] = { collection: 'c1' };
-    expect(await shared.share('c1', link.path, false, [])).toBe('');
+    expect(await shared.share('c1', { path: link.path }, false, [])).toBe('');
     api.responses['shared.link'] = { collection: 'c2' };
-    expect(await shared.link('D:/Drive/Team.nexo-collection', 'k')).toBe('c2');
+    expect(await shared.link({ path: 'D:/Drive/Team.nexo-collection' }, 'k')).toBe('c2');
     api.responses['shared.sync'] = { links: [link] };
     await shared.sync('c1');
     api.responses['shared.resolve'] = { links: [link] };

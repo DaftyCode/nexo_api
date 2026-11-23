@@ -65,6 +65,7 @@ pub(super) fn collection(fake: &Fake) -> Value {
 
 mod conflicts;
 mod link;
+mod remote;
 
 #[tokio::test]
 async fn a_collection_is_shared_masked_sealed_and_kept_in_step() {

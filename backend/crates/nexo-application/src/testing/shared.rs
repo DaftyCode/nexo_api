@@ -40,8 +40,10 @@ impl Fake {
 
     pub(super) fn shared_answer(&self, operation: Operation, payload: &Value) -> Result<Value> {
         let mut shared = self.shared.lock().unwrap();
-        let path = payload["location"]["path"]
+        let location = &payload["location"];
+        let path = location["path"]
             .as_str()
+            .or(location["url"].as_str())
             .unwrap_or_default()
             .to_owned();
         let key = payload["resolvedKey"].as_str().map(String::from);
@@ -52,6 +54,15 @@ impl Fake {
                 };
                 let mut read = answer(version);
                 read["found"] = json!(true);
+                // A server asked with the version it has sends nothing.
+                if location["kind"] == "url" {
+                    read["stamp"] = Value::Null;
+                    if payload["known"] == read["version"] {
+                        return Ok(
+                            json!({"found": true, "unchanged": true, "version": read["version"]}),
+                        );
+                    }
+                }
                 read["encrypted"] = json!(sealed.is_some());
                 match (sealed, key) {
                     (Some(_), None) => read["locked"] = json!(true),
@@ -70,7 +81,11 @@ impl Fake {
                     return Err(Error::Conflict);
                 }
                 let version = shared.put(&path, payload["content"].clone(), key);
-                Ok(answer(version))
+                let mut written = answer(version);
+                if location["kind"] == "url" {
+                    written["stamp"] = Value::Null;
+                }
+                Ok(written)
             }
             Operation::SharedStat => {
                 let stamps: serde_json::Map<String, Value> = payload["paths"]

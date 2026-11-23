@@ -1,4 +1,4 @@
-import { SharedLink } from '../domain/shared';
+import { SharedLink, SharedPlace } from '../domain/shared';
 import { ExecutionPort } from './ports';
 
 /** What a poll found: the collections that took a teammate's changes, and every link. */
@@ -19,29 +19,33 @@ export class SharedUseCases {
   async status(workspace: string): Promise<SharedLink[]> {
     return (await this.api.execute<{ links: SharedLink[] }>('shared.status', { workspace })).links;
   }
-  async poll(workspace: string): Promise<SharedPoll> {
-    const answer = await this.api.execute<Partial<SharedPoll>>('shared.poll', { workspace });
+  /** The files that changed; a server is asked only when the workspace is `opening`. */
+  async poll(workspace: string, opening = false): Promise<SharedPoll> {
+    const answer = await this.api.execute<Partial<SharedPoll>>('shared.poll', {
+      workspace,
+      ...(opening ? { opening } : {}),
+    });
     return { changed: answer.changed ?? [], links: answer.links ?? [] };
   }
   share(
     workspace: string,
     collection: string,
-    path: string,
+    place: SharedPlace,
     encrypt: boolean,
     environments: readonly string[],
   ): Promise<{ collection: string; key?: string | null }> {
     return this.api.execute('shared.share', {
       workspace,
       collection,
-      path,
+      ...place,
       encrypt,
       environments,
     });
   }
-  link(workspace: string, path: string, key?: string): Promise<{ collection: string }> {
+  link(workspace: string, place: SharedPlace, key?: string): Promise<{ collection: string }> {
     return this.api.execute('shared.link', {
       workspace,
-      path,
+      ...place,
       ...(key?.trim() ? { key: key.trim() } : {}),
     });
   }

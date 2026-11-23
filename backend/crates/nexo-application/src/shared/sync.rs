@@ -40,6 +40,23 @@ impl Application {
         })
     }
 
+    /// The credential of a server, from the vault, as the engine uses it.
+    pub(super) async fn resolved_auth(&self, location: &Value) -> Result<Option<Value>> {
+        let auth = &location["auth"];
+        let Some(name) = auth["secretName"].as_str() else {
+            return Ok(None);
+        };
+        let secret = self.secrets.resolve(name).await.map_err(|_| {
+            Error::Validation(format!(
+                "The credential {name} of the shared collection is not in the vault"
+            ))
+        })?;
+        Ok(Some(match auth["scheme"].as_str() {
+            Some("bearer") => json!({"scheme": "bearer", "token": secret}),
+            _ => json!({"scheme": "basic", "user": auth["user"], "password": secret}),
+        }))
+    }
+
     pub(super) async fn write_shared(
         &self,
         link: &Value,
@@ -47,7 +64,9 @@ impl Application {
         key: &Option<String>,
         expected: Option<&str>,
     ) -> Result<Value> {
-        let mut payload = json!({"location": link["location"], "content": content});
+        let auth = self.resolved_auth(&link["location"]).await?;
+        let mut payload =
+            json!({"location": link["location"], "content": content, "resolvedAuth": auth});
         if let Some(key) = key {
             payload["resolvedKey"] = json!(key);
         }
@@ -82,11 +101,13 @@ impl Application {
             )?)
             .await?;
         let key = self.team_key(&state).await?;
+        // A server is asked with the version this Nexo knows: unchanged, it sends nothing.
+        let auth = self.resolved_auth(&state["location"]).await?;
         let read = self
             .executor
             .execute(
                 Operation::SharedRead,
-                json!({"location": state["location"], "resolvedKey": key}),
+                json!({"location": state["location"], "resolvedKey": key, "resolvedAuth": auth, "known": state["version"]}),
             )
             .await?;
         if read["locked"] == true {
@@ -155,7 +176,7 @@ impl Application {
             state["conflicts"] = Value::Array(conflicts);
         }
         state["version"] = written["version"].clone();
-        state["stamp"] = written["stamp"].clone();
+        state["stamp"] = super::share::stamp(&written);
         state["error"] = Value::Null;
         state["synced"] = json!(now());
         self.workspaces

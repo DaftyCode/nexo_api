@@ -8,13 +8,25 @@ import type { CollectionItem } from './models';
 export interface SharedLink {
   collection: string;
   name: string;
+  /** The path of its file, or the URL of its server. */
   path: string;
+  kind?: 'folder' | 'url';
   encrypted: boolean;
   environments: string[];
   conflicts: { id: string; name: string }[];
   error?: string | null;
   synced?: number | null;
 }
+
+/** How Nexo signs in to the server of a shared collection; the secret goes to the vault. */
+export interface SharedCredential {
+  scheme: 'none' | 'basic' | 'bearer';
+  user?: string;
+  secret?: string;
+}
+
+/** Where a shared collection's file is: a path in a folder, or the URL of a server. */
+export type SharedPlace = { path: string } | { url: string; credential?: SharedCredential };
 
 /** The extension of a shared collection's file: Nexo reads and writes no other. */
 export const SHARED_EXTENSION = '.nexo-collection';

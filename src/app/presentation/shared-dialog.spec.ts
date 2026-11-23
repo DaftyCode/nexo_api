@@ -141,6 +141,37 @@ describe('SharedDialog', () => {
     expect(shared.dialog()).toBeUndefined();
   });
 
+  it('brings a collection in from a server with its credential', async () => {
+    await create();
+    await open({ mode: 'link' });
+    await fill(fixture, 'Where the team keeps it', 'url');
+    expect(text()).toContain('never on a schedule');
+    await fill(fixture, 'URL of its file on the server', ' https://dav.test/Team.nexo-collection ');
+    await fill(fixture, 'Sign in with', 'basic');
+    await fill(fixture, 'User', 'ana');
+    await fill(fixture, 'Password', 'pw');
+    api.responses['shared.link'] = { collection: 'c2' };
+    await clickButton(fixture, 'Bring it in');
+    expect(call('shared.link')?.payload).toEqual({
+      workspace: 'local',
+      url: 'https://dav.test/Team.nexo-collection',
+      credential: { scheme: 'basic', user: 'ana', secret: 'pw' },
+    });
+    // Without signing in, no credential goes.
+    await open({ mode: 'share', collection: 'c1' });
+    await fill(fixture, 'Where the team keeps it', 'url');
+    await fill(fixture, 'URL of its file on the server', 'https://dav.test/Shop.nexo-collection');
+    api.responses['shared.share'] = { collection: 'c1' };
+    await clickButton(fixture, 'Share the collection');
+    expect(call('shared.share')?.payload).toMatchObject({
+      url: 'https://dav.test/Shop.nexo-collection',
+    });
+    expect(call('shared.share')?.payload['credential']).toBeUndefined();
+    shared.show([{ ...link, kind: 'url', path: 'https://dav.test/Shop.nexo-collection' }]);
+    await open({ mode: 'manage', collection: 'c1' });
+    expect(text()).toContain('Server');
+  });
+
   it('shows how a collection is shared, what waits for the person, and stops sharing', async () => {
     await create();
     shared.show([

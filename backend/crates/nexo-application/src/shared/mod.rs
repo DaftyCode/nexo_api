@@ -22,14 +22,38 @@ pub(super) fn text(payload: &Map<String, Value>, name: &str) -> String {
         .to_owned()
 }
 
-pub(super) fn location(path: &str) -> Result<Value> {
-    if !shared::is_shared_file(path) {
+/// Where a payload says the file is: the URL of a server, or a path in a folder.
+pub(super) fn location(payload: &Map<String, Value>) -> Result<Value> {
+    let url = text(payload, "url");
+    if !url.is_empty() {
+        let lower = url.to_ascii_lowercase();
+        let path = lower.split(['?', '#']).next().unwrap_or_default();
+        if !(lower.starts_with("https://") || lower.starts_with("http://"))
+            || !shared::is_shared_file(path)
+        {
+            return Err(Error::Validation(format!(
+                "A shared collection on a server is an http or https URL ending in {}",
+                shared::EXTENSION
+            )));
+        }
+        return Ok(json!({"kind": "url", "url": url}));
+    }
+    let path = text(payload, "path");
+    if !shared::is_shared_file(&path) {
         return Err(Error::Validation(format!(
             "A shared collection is a file ending in {}",
             shared::EXTENSION
         )));
     }
     Ok(json!({"kind": "folder", "path": path}))
+}
+
+/// The path or the URL of a location.
+pub(super) fn place(location: &Value) -> &str {
+    location["path"]
+        .as_str()
+        .or(location["url"].as_str())
+        .unwrap_or_default()
 }
 
 pub(super) fn new_id() -> Result<DocumentId> {
@@ -51,7 +75,8 @@ fn status(link: &Document) -> Value {
         .flatten()
         .map(|(_, id)| id.clone())
         .collect();
-    json!({"collection": value["collection"], "name": link.name, "path": value["location"]["path"],
+    json!({"collection": value["collection"], "name": link.name, "path": place(&value["location"]),
+           "kind": value["location"]["kind"],
            "encrypted": !value["keyName"].is_null(), "environments": environments,
            "conflicts": conflicts, "error": value["error"], "synced": value["synced"]})
 }
@@ -70,7 +95,10 @@ impl Application {
         match operation {
             Operation::SharedShare => self.share_collection(&workspace, &payload).await,
             Operation::SharedLink => self.link_shared(&workspace, &payload).await,
-            Operation::SharedPoll => self.poll_shared(&workspace).await,
+            Operation::SharedPoll => {
+                let opening = payload.get("opening").and_then(Value::as_bool) == Some(true);
+                self.poll_shared(&workspace, opening).await
+            }
             Operation::SharedResolve => self.resolve_shared(&workspace, &payload).await,
             Operation::SharedStatus => self.shared_status(&workspace).await,
             _ => {
@@ -124,11 +152,14 @@ impl Application {
     }
 
     /// `shared.poll`: brings in step the links whose file changed on the disk, and those
-    /// that failed last time. Only the size and time of each file are read when nothing did.
-    async fn poll_shared(&self, workspace: &WorkspaceId) -> Result<Value> {
+    /// that failed or were left behind last time. Only the size and time of each file are
+    /// read when nothing did; a server is asked only when the workspace opens (`opening`) or
+    /// after a save found a teammate's change there, never on a schedule.
+    async fn poll_shared(&self, workspace: &WorkspaceId, opening: bool) -> Result<Value> {
         let links = self.links(workspace).await?;
         let paths: Vec<Value> = links
             .iter()
+            .filter(|link| link.value["location"]["kind"] != "url")
             .map(|link| link.value["location"]["path"].clone())
             .collect();
         let stamps = if paths.is_empty() {
@@ -141,8 +172,14 @@ impl Application {
         };
         let mut changed = Vec::new();
         for link in &links {
-            let path = link.value["location"]["path"].as_str().unwrap_or_default();
-            if stamps[path] == link.value["stamp"] && link.value["error"].is_null() {
+            let calm = link.value["error"].is_null();
+            let quiet = if link.value["location"]["kind"] == "url" {
+                !opening && !link.value["stamp"].is_null()
+            } else {
+                let path = link.value["location"]["path"].as_str().unwrap_or_default();
+                stamps[path] == link.value["stamp"]
+            };
+            if quiet && calm {
                 continue;
             }
             match self.sync_link(link, true).await {

@@ -1,7 +1,7 @@
 import { DestroyRef, Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { SHARED } from '../composition/providers';
 import { WorkspaceDocument, asCollection, fromItem } from '../domain/models';
-import { SharedLink, itemAt, pathOf } from '../domain/shared';
+import { SharedLink, SharedPlace, itemAt, pathOf } from '../domain/shared';
 import { WorkspaceState } from './workspace-state';
 import { success } from './state/state-context';
 
@@ -41,7 +41,8 @@ export class SharedState {
     if (!workspace) return;
     try {
       this.show(await this.cases.status(workspace));
-      if (this.links().length) await this.poll();
+      // Opening the workspace is when a collection on a server is asked again.
+      if (this.links().length) await this.poll(true);
     } catch {
       this.show([]);
     }
@@ -57,14 +58,14 @@ export class SharedState {
     }
   }
 
-  /** Brings in step the collections whose file changed. */
-  async poll() {
+  /** Brings in step the collections whose file changed; on `opening`, those on a server too. */
+  async poll(opening = false) {
     if (this.polling) return;
     this.polling = true;
     try {
       const workspace = this.state.workspaceId();
       const before = this.state.documents();
-      const found = await this.cases.poll(workspace);
+      const found = await this.cases.poll(workspace, opening);
       if (workspace !== this.state.workspaceId()) return;
       if (found.changed.length) await this.follow(found.changed, before);
       this.show(found.links);
@@ -108,11 +109,11 @@ export class SharedState {
   }
 
   /** Shares a collection; the team key, when there is one, to give to the team. */
-  async share(collection: string, path: string, encrypt: boolean, environments: string[]) {
+  async share(collection: string, place: SharedPlace, encrypt: boolean, environments: string[]) {
     const shared = await this.cases.share(
       this.workspace(),
       collection,
-      path,
+      place,
       encrypt,
       environments,
     );
@@ -120,8 +121,8 @@ export class SharedState {
     return shared.key ?? '';
   }
   /** Brings a shared collection in, with the team key when it is sealed. */
-  async link(path: string, key?: string) {
-    const linked = await this.cases.link(this.workspace(), path, key);
+  async link(place: SharedPlace, key?: string) {
+    const linked = await this.cases.link(this.workspace(), place, key);
     await this.state.refresh();
     await this.load(this.workspace());
     return linked.collection;

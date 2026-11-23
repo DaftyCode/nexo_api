@@ -32,7 +32,7 @@
       @if (dialog.mode === 'manage') {
         @if (link(); as link) {
           <dl class="shared-facts">
-            <dt>{{ 'File' | transloco }}</dt>
+            <dt>{{ (link.kind === 'url' ? 'Server' : 'File') | transloco }}</dt>
             <dd>{{ link.path }}</dd>
             <dt>{{ 'Encrypted' | transloco }}</dt>
             <dd>{{ (link.encrypted ? 'Yes' : 'No') | transloco }}</dd>
@@ -56,17 +56,58 @@
           }
         }
       } @else {
-        <div class="row">
-          <label class="field grow"
-            >{{ (dialog.mode === 'share' ? 'Where its file goes' : 'Its file') | transloco
-            }}<input [formField]="fields.path" spellcheck="false" autocomplete="off" />
-          </label>
-          @if (chooses) {
-            <button type="button" class="button" (click)="choose()">
-              {{ 'Choose…' | transloco }}
-            </button>
+        <label class="field"
+          >{{ 'Where the team keeps it' | transloco
+          }}<select [formField]="fields.where">
+            <option value="folder">
+              {{ 'In a synced folder or on a network drive' | transloco }}
+            </option>
+            <option value="url">{{ 'On a server (WebDAV)' | transloco }}</option>
+          </select></label
+        >
+        @if (model().where === 'folder') {
+          <div class="row">
+            <label class="field grow"
+              >{{ (dialog.mode === 'share' ? 'Where its file goes' : 'Its file') | transloco
+              }}<input [formField]="fields.path" spellcheck="false" autocomplete="off" />
+            </label>
+            @if (chooses) {
+              <button type="button" class="button" (click)="choose()">
+                {{ 'Choose…' | transloco }}
+              </button>
+            }
+          </div>
+        } @else {
+          <label class="field"
+            >{{ 'URL of its file on the server' | transloco
+            }}<input
+              [formField]="fields.url"
+              spellcheck="false"
+              autocomplete="off"
+              placeholder="https://cloud.example.com/remote.php/dav/files/ana/Team.nexo-collection"
+          /></label>
+          <p class="muted">{{ 'shared.server.hint' | transloco }}</p>
+          <label class="field"
+            >{{ 'Sign in with' | transloco
+            }}<select [formField]="fields.scheme">
+              <option value="none">{{ 'Nothing' | transloco }}</option>
+              <option value="basic">{{ 'User and password' | transloco }}</option>
+              <option value="bearer">{{ 'Token' | transloco }}</option>
+            </select></label
+          >
+          @if (model().scheme === 'basic') {
+            <label class="field"
+              >{{ 'User' | transloco
+              }}<input [formField]="fields.user" spellcheck="false" autocomplete="off"
+            /></label>
           }
-        </div>
+          @if (model().scheme !== 'none') {
+            <label class="field"
+              >{{ (model().scheme === 'basic' ? 'Password' : 'Token') | transloco
+              }}<input type="password" [formField]="fields.secret" autocomplete="off"
+            /></label>
+          }
+        }
       }
       @if (dialog.mode === 'link') {
         <label class="field"
@@ -124,22 +165,12 @@
           {{ (key() || dialog.mode === 'manage' ? 'Close' : 'Cancel') | transloco }}
         </button>
         @if (dialog.mode === 'link') {
-          <button
-            type="button"
-            class="button primary"
-            [disabled]="!model().path.trim()"
-            (click)="bringIn()"
-          >
+          <button type="button" class="button primary" [disabled]="!ready()" (click)="bringIn()">
             {{ 'Bring it in' | transloco }}
           </button>
         }
         @if (dialog.mode === 'share' && !key()) {
-          <button
-            type="button"
-            class="button primary"
-            [disabled]="!model().path.trim()"
-            (click)="share()"
-          >
+          <button type="button" class="button primary" [disabled]="!ready()" (click)="share()">
             {{ 'Share the collection' | transloco }}
           </button>
         }

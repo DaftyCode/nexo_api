@@ -4,13 +4,26 @@
 use super::*;
 
 payload! {
-    /// Where the file of a shared collection is: a synced folder or a network drive.
+    /// Where the file of a shared collection is: a synced folder or a network drive
+    /// (`path`), or a server (`url`, signed in with the vault secret `auth` names).
     closed SharedLocation {
-        required {
-            kind "kind": String => "'folder'",
+        required { kind "kind": String => "'folder' | 'url'" }
+        optional {
             path "path": String => "string",
+            url "url": String => "string",
+            auth "auth": Map<String, Value> => "{\n    scheme: 'basic' | 'bearer';\n    user?: string;\n    secretName: string;\n  }",
         }
-        optional {}
+    }
+}
+
+payload! {
+    /// How Nexo signs in to the server of a shared collection; the secret goes to the vault.
+    closed SharedCredential {
+        required { scheme "scheme": String => "'none' | 'basic' | 'bearer'" }
+        optional {
+            user "user": String => "string",
+            secret "secret": String => "string",
+        }
     }
 }
 
@@ -46,14 +59,17 @@ payload! {
 
 payload! {
     /// `shared.share`: writes a collection, and the environments chosen, to a new file that
-    /// the team will keep in sync; sealed with a new team key when `encrypt` is not `false`.
+    /// the team will keep in sync, in a folder (`path`) or on a server (`url`); sealed with a
+    /// new team key when `encrypt` is not `false`.
     closed SharedSharePayload {
         required {
             workspace "workspace": String => "string",
             collection "collection": String => "string",
-            path "path": String => "string",
         }
         optional {
+            path "path": String => "string",
+            url "url": String => "string",
+            credential "credential": SharedCredential => "SharedCredential",
             encrypt "encrypt": bool => "boolean",
             environments "environments": Vec<String> => "readonly string[]",
         }
@@ -61,14 +77,28 @@ payload! {
 }
 
 payload! {
-    /// `shared.link`: brings a shared collection into the workspace, opened with the team
-    /// `key` pasted when it is sealed.
+    /// `shared.link`: brings a shared collection into the workspace from a folder (`path`)
+    /// or a server (`url`), opened with the team `key` pasted when it is sealed.
     closed SharedLinkPayload {
-        required {
-            workspace "workspace": String => "string",
+        required { workspace "workspace": String => "string" }
+        optional {
             path "path": String => "string",
+            url "url": String => "string",
+            credential "credential": SharedCredential => "SharedCredential",
+            key "key": String => "string",
         }
-        optional { key "key": String => "string" }
+    }
+}
+
+payload! {
+    /// `shared.poll`: the files that changed; a server is asked only when the workspace
+    /// is `opening`.
+    closed SharedPollPayload {
+        required {}
+        optional {
+            workspace "workspace": String => "string",
+            opening "opening": bool => "boolean",
+        }
     }
 }
 

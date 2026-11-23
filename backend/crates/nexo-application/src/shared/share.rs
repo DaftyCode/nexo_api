@@ -1,7 +1,7 @@
 //! Sharing a collection (a new file, sealed with a new team key unless the person turns it
 //! off), bringing a shared one into a workspace, and keeping one side of what both people
 //! changed.
-use super::{content::locked, location, new_id, text};
+use super::{content::locked, location, new_id, place, text};
 use crate::{Application, operations::Operation};
 use nexo_domain::{Document, DocumentId, DocumentKind, Error, Result, WorkspaceId, shared};
 use serde_json::{Map, Value, json};
@@ -33,7 +33,57 @@ fn replace(collection: &mut Value, id: &str, content: &Value) -> bool {
     find(&mut collection["item"], id, content)
 }
 
+/// The credential a payload gives to reach a server, as the engine uses it.
+fn given_auth(payload: &Map<String, Value>) -> Option<Value> {
+    let credential = payload.get("credential")?.as_object()?;
+    let text = |name: &str| {
+        credential
+            .get(name)
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+    };
+    match text("scheme") {
+        "basic" => {
+            Some(json!({"scheme": "basic", "user": text("user"), "password": text("secret")}))
+        }
+        "bearer" => Some(json!({"scheme": "bearer", "token": text("secret")})),
+        _ => None,
+    }
+}
+
+/// What tells a later look that nothing changed: the stamp of a file in a folder, the
+/// version of one on a server.
+pub(super) fn stamp(answer: &Value) -> Value {
+    match &answer["stamp"] {
+        Value::Null => answer["version"].clone(),
+        stamp => stamp.clone(),
+    }
+}
+
 impl Application {
+    /// Keeps the credential of a server in the vault; the location keeps only its name.
+    async fn keep_credential(
+        &self,
+        location: &mut Value,
+        payload: &Map<String, Value>,
+        name: &str,
+        id: &DocumentId,
+    ) -> Result<()> {
+        let Some(auth) = given_auth(payload).filter(|_| location["kind"] == "url") else {
+            return Ok(());
+        };
+        let short: String = id.as_str().chars().take(4).collect();
+        let secret = format!("shared: {} ({short})", name.replace(['{', '}'], ""));
+        let value = auth["password"]
+            .as_str()
+            .or(auth["token"].as_str())
+            .unwrap_or_default();
+        self.secrets.put(&secret, Some(value), None).await?;
+        location["auth"] =
+            json!({"scheme": auth["scheme"], "user": auth["user"], "secretName": secret});
+        Ok(())
+    }
+
     /// Keeps the team key in the vault under a name that says what it opens.
     async fn keep_team_key(&self, name: &str, id: &DocumentId, key: &str) -> Result<String> {
         let short: String = id.as_str().chars().take(4).collect();
@@ -71,10 +121,14 @@ impl Application {
                 "This collection is already shared".into(),
             ));
         }
-        let place = location(&text(payload, "path"))?;
+        let mut where_to = location(payload)?;
+        let given = given_auth(payload);
         if self
             .executor
-            .execute(Operation::SharedRead, json!({"location": place}))
+            .execute(
+                Operation::SharedRead,
+                json!({"location": where_to, "resolvedAuth": given}),
+            )
             .await?["found"]
             == true
         {
@@ -111,11 +165,13 @@ impl Application {
             Some(key) => Some(self.keep_team_key(&collection.name, &id, key).await?),
             None => None,
         };
-        let mut state = json!({"collection": id.as_str(), "location": place, "keyName": key_name, "environments": environments, "conflicts": [], "error": null});
+        self.keep_credential(&mut where_to, payload, &collection.name, &id)
+            .await?;
+        let mut state = json!({"collection": id.as_str(), "location": where_to, "keyName": key_name, "environments": environments, "conflicts": [], "error": null});
         let content = self.shared_content(&state, &collection).await?;
         let written = self.write_shared(&state, &content, &key, None).await?;
         state["version"] = written["version"].clone();
-        state["stamp"] = written["stamp"].clone();
+        state["stamp"] = stamp(&written);
         state["base"] = content;
         self.save_link(workspace, &collection.name, state).await?;
         Ok(json!({"collection": id.as_str(), "key": key}))
@@ -128,13 +184,13 @@ impl Application {
         payload: &Map<String, Value>,
     ) -> Result<Value> {
         self.require_workspace(workspace).await?;
-        let path = text(payload, "path");
-        let place = location(&path)?;
+        let mut where_from = location(payload)?;
+        let wanted = place(&where_from).to_owned();
         if self
             .links(workspace)
             .await?
             .iter()
-            .any(|link| link.value["location"]["path"] == path.as_str())
+            .any(|link| place(&link.value["location"]) == wanted)
         {
             return Err(Error::Validation(
                 "This shared collection is already in this workspace".into(),
@@ -148,7 +204,7 @@ impl Application {
             .executor
             .execute(
                 Operation::SharedRead,
-                json!({"location": place, "resolvedKey": key}),
+                json!({"location": where_from, "resolvedKey": key, "resolvedAuth": given_auth(payload)}),
             )
             .await?;
         if read["found"] != true {
@@ -180,8 +236,10 @@ impl Application {
             Some(key) => Some(self.keep_team_key(&name, &id, key).await?),
             None => None,
         };
-        let mut state = json!({"collection": id.as_str(), "location": place, "keyName": key_name, "environments": {}, "conflicts": [], "error": null,
-                               "version": read["version"], "stamp": read["stamp"], "base": content});
+        self.keep_credential(&mut where_from, payload, &name, &id)
+            .await?;
+        let mut state = json!({"collection": id.as_str(), "location": where_from, "keyName": key_name, "environments": {}, "conflicts": [], "error": null,
+                               "version": read["version"], "stamp": stamp(&read), "base": content});
         let mut sync_state = state.clone();
         self.apply_environments(workspace, &mut sync_state, &content["environments"])
             .await?;

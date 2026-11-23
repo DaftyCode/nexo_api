@@ -1,10 +1,12 @@
 // Contract tests of the collections shared by the team (C-01): two Nexo on one folder, as two
-// computers whose cloud client syncs it. One shares a collection sealed with a team key; the
-// other brings it in with the key; what each saves reaches the other at its next look; what
-// both changed is asked and either side kept; the file never carries a credential, the name
-// of a request in the clear, nor a value of the vault.
+// computers whose cloud client syncs it, and on a WebDAV server played here. One shares a
+// collection sealed with a team key; the other brings it in with the key; what each saves
+// reaches the other at its next look (a server only on Reload or when the workspace opens,
+// and with nothing sent when nothing changed); what both changed is asked and either side
+// kept; the file never carries a credential nor a value of the vault.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -117,4 +119,97 @@ test('a file that is not a shared collection, or not where it says, is refused',
     }),
     /Nexo's own/,
   );
+});
+
+/** A WebDAV server: versions by ETag, `304` when nothing changed, `412` over another's version. */
+async function dav() {
+  const state = { body: undefined, version: 0, asked: [] };
+  const signed = `Basic ${Buffer.from('ana:dav-pw').toString('base64')}`;
+  const server = createServer((request, response) => {
+    const chunks = [];
+    request.on('data', (chunk) => chunks.push(chunk));
+    request.on('end', () => {
+      const etag = state.body ? `"v${state.version}"` : undefined;
+      const { authorization, 'if-match': match, 'if-none-match': none } = request.headers;
+      state.asked.push([request.method, none ?? match ?? ''].join(' ').trim());
+      if (authorization !== signed) return response.writeHead(401).end();
+      if (request.method === 'GET') {
+        if (!state.body) return response.writeHead(404).end();
+        if (none === etag) return response.writeHead(304, { etag }).end();
+        return response.writeHead(200, { etag }).end(state.body);
+      }
+      if ((match && match !== etag) || (none === '*' && state.body)) {
+        return response.writeHead(412).end();
+      }
+      state.body = Buffer.concat(chunks);
+      state.version += 1;
+      return response.writeHead(201, { etag: `"v${state.version}"` }).end();
+    });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  return {
+    server,
+    state,
+    url: `http://127.0.0.1:${server.address().port}/dav/Team.nexo-collection`,
+  };
+}
+
+test('a collection on a server is asked only on Reload, and never written over', async () => {
+  const { server, state, url } = await dav();
+  const credential = { scheme: 'basic', user: 'ana', secret: 'dav-pw' };
+  try {
+    await save(ana, {
+      id: 'c2',
+      workspace_id: 'local',
+      kind: 'collection',
+      name: 'Team',
+      revision: 0,
+      updated_at: 0,
+      value: { info: { name: 'Team', schema: '' }, item: [request('t1', '/team')] },
+    });
+    await ana.execute('shared.share', { collection: 'c2', url, credential, encrypt: false });
+    assert.equal(state.version, 1);
+    assert.ok(
+      !(await ana.execute('shared.status', {})).links.some((l) =>
+        JSON.stringify(l).includes('dav-pw'),
+      ),
+    );
+    const { collection } = await ben.execute('shared.link', { url, credential });
+    const bens = await read(ben, collection);
+    bens.value.item.push(request('t2', '/team/members'));
+    await save(ben, bens);
+    assert.equal(state.version, 2);
+
+    // Ana's look every few seconds leaves the server alone; Reload brings the change.
+    const asked = state.asked.length;
+    assert.deepEqual((await ana.execute('shared.poll', {})).changed, []);
+    assert.equal(state.asked.length, asked);
+    await ana.execute('shared.sync', { collection: 'c2' });
+    assert.deepEqual(
+      (await read(ana, 'c2')).value.item.map((item) => item.id),
+      ['t1', 't2'],
+    );
+    // Nothing changed since: the server answers 304 and sends nothing.
+    await ana.execute('shared.sync', { collection: 'c2' });
+    assert.equal(state.asked.at(-1), 'GET "v2"');
+
+    // Ana writes v3; Ben's save from v2 finds it and leaves his change for his next look.
+    const anas = await read(ana, 'c2');
+    anas.value.item[0].request.url = '/team?by=ana';
+    await save(ana, anas);
+    const mine = await read(ben, collection);
+    mine.value.item[1].request.url = '/team/members?by=ben';
+    await save(ben, mine);
+    assert.equal(state.version, 3);
+    assert.deepEqual((await ben.execute('shared.poll', {})).changed, [collection]);
+    assert.equal(state.version, 4);
+    const joined = JSON.parse(state.body.toString()).content.collection.item;
+    assert.deepEqual(
+      joined.map((item) => item.request.url),
+      ['/team?by=ana', '/team/members?by=ben'],
+    );
+    await ana.execute('shared.unlink', { collection: 'c2' });
+  } finally {
+    server.close();
+  }
 });

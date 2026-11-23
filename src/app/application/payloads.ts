@@ -118,8 +118,20 @@ export interface AiToolResult {
 }
 
 export interface SharedLocation {
-  kind: 'folder';
-  path: string;
+  kind: 'folder' | 'url';
+  path?: string;
+  url?: string;
+  auth?: {
+    scheme: 'basic' | 'bearer';
+    user?: string;
+    secretName: string;
+  };
+}
+
+export interface SharedCredential {
+  scheme: 'none' | 'basic' | 'bearer';
+  user?: string;
+  secret?: string;
 }
 
 export interface RequestPayload {
@@ -482,20 +494,29 @@ export interface SharedStatPayload {
 export interface SharedSharePayload {
   workspace: string;
   collection: string;
-  path: string;
+  path?: string;
+  url?: string;
+  credential?: SharedCredential;
   encrypt?: boolean;
   environments?: readonly string[];
 }
 
 export interface SharedLinkPayload {
   workspace: string;
-  path: string;
+  path?: string;
+  url?: string;
+  credential?: SharedCredential;
   key?: string;
 }
 
 export interface SharedCollectionPayload {
   workspace: string;
   collection: string;
+}
+
+export interface SharedPollPayload {
+  workspace?: string;
+  opening?: boolean;
 }
 
 export interface SharedResolvePayload {
@@ -1275,7 +1296,7 @@ export interface OperationPayloads {
   'shared.share': SharedSharePayload;
   'shared.link': SharedLinkPayload;
   'shared.sync': SharedCollectionPayload;
-  'shared.poll': WorkspacePayload;
+  'shared.poll': SharedPollPayload;
   'shared.status': WorkspacePayload;
   'shared.resolve': SharedResolvePayload;
   'shared.unlink': SharedCollectionPayload;

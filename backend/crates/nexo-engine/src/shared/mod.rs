@@ -1,9 +1,11 @@
-//! The file of a collection shared by the team (C-01), as the application asks for it:
-//! read in the clear or opened with the team key, written whole and at once (to a file
-//! beside it, then renamed over it) only when nobody changed it since the version the
-//! application read, and looked at by its size and time of change, a check that never
-//! leaves this computer. Only `.nexo-collection` files are read or written.
-use crate::{hex, vault::rand_bytes};
+//! The file of a collection shared by the team (C-01), as the application asks for it: in
+//! a folder (folder.rs) or at the URL of a server (remote.rs), read in the clear or opened
+//! with the team key, and written only when nobody changed it since the version the
+//! application read. Only `.nexo-collection` files are read or written.
+mod folder;
+mod remote;
+
+use crate::{egress::Policy, hex, vault::rand_bytes};
 use aws_lc_rs::{
     aead::{AES_256_GCM, Aad, LessSafeKey, Nonce, UnboundKey},
     digest::{SHA256, digest},
@@ -12,50 +14,9 @@ use nexo_domain::{
     Error, Result,
     shared::{self, Envelope},
 };
-use serde_json::{Map, Value, json};
-use std::{
-    io::ErrorKind,
-    path::{Path, PathBuf},
-    time::UNIX_EPOCH,
-};
+use serde_json::{Value, json};
 
-fn path(payload: &Value) -> Result<PathBuf> {
-    let text = payload["location"]["path"]
-        .as_str()
-        .unwrap_or_default()
-        .trim();
-    if !shared::is_shared_file(text) {
-        return Err(Error::Validation(format!(
-            "A shared collection is a file ending in {}",
-            shared::EXTENSION
-        )));
-    }
-    Ok(PathBuf::from(text))
-}
-
-fn io(error: std::io::Error) -> Error {
-    match error.kind() {
-        ErrorKind::PermissionDenied => {
-            Error::Validation("Nexo may not read or write the shared collection there".into())
-        }
-        ErrorKind::NotFound => {
-            Error::Validation("The folder of the shared collection is not there".into())
-        }
-        _ => Error::Infrastructure(error.to_string()),
-    }
-}
-
-/// What tells two versions of a file apart, without reading it: its size and time of change.
-fn stamp(path: &Path) -> Option<String> {
-    let metadata = std::fs::metadata(path).ok()?;
-    let changed = metadata
-        .modified()
-        .ok()?
-        .duration_since(UNIX_EPOCH)
-        .ok()?
-        .as_nanos();
-    Some(format!("{}-{changed}", metadata.len()))
-}
+pub use folder::stat;
 
 fn version(bytes: &[u8]) -> String {
     hex::encode(digest(&SHA256, bytes))
@@ -93,18 +54,11 @@ fn seal(key: &str, content: &Value) -> Result<Value> {
     Ok(shared::sealed(&hex::encode(nonce), &hex::encode(data)))
 }
 
-/// `shared.read`: the content of the file, opened with `resolvedKey` when it is sealed
-/// (`locked` without it), its version and its stamp; `found: false` when it is not there.
-pub fn read(payload: &Value) -> Result<Value> {
-    let path = path(payload)?;
-    let bytes = match std::fs::read(&path) {
-        Ok(bytes) => bytes,
-        Err(error) if error.kind() == ErrorKind::NotFound => return Ok(json!({"found": false})),
-        Err(error) => return Err(io(error)),
-    };
-    let file: Value = serde_json::from_slice(&bytes)
+/// What a file holds, opened with `resolvedKey` when it is sealed (`locked` without it).
+fn decode(bytes: &[u8], payload: &Value) -> Result<Value> {
+    let file: Value = serde_json::from_slice(bytes)
         .map_err(|_| Error::Validation("This file is not a collection shared by Nexo".into()))?;
-    let mut answer = json!({"found": true, "version": version(&bytes), "stamp": stamp(&path)});
+    let mut answer = json!({"found": true});
     match shared::read(&file)? {
         Envelope::Plain(content) => {
             answer["encrypted"] = json!(false);
@@ -121,55 +75,44 @@ pub fn read(payload: &Value) -> Result<Value> {
     Ok(answer)
 }
 
-/// `shared.write`: writes `content`, sealed with `resolvedKey` when there is one, if the
-/// file is still at version `expected` (or not there, when none is expected).
-pub fn write(payload: &Value) -> Result<Value> {
-    let path = path(payload)?;
-    let current = match std::fs::read(&path) {
-        Ok(bytes) => Some(version(&bytes)),
-        Err(error) if error.kind() == ErrorKind::NotFound => None,
-        Err(error) => return Err(io(error)),
-    };
-    let expected = payload["expected"].as_str();
-    if current.is_some() && current.as_deref() != expected {
-        return Err(Error::Conflict);
-    }
+/// The bytes of the file of `content`: sealed with `resolvedKey` when there is one.
+fn encode(payload: &Value) -> Result<Vec<u8>> {
     let content = &payload["content"];
     if !content["collection"].is_object() {
         return Err(Error::Validation(
             "A shared collection needs its collection".into(),
         ));
     }
-    let file = match payload["resolvedKey"].as_str() {
+    match payload["resolvedKey"].as_str() {
         Some(key) => serde_json::to_vec(&seal(key, content)?),
         None => serde_json::to_vec_pretty(&shared::plain(content)),
     }
-    .map_err(|error| Error::Infrastructure(error.to_string()))?;
-    let mut beside = path.clone().into_os_string();
-    beside.push(".nexo-writing");
-    let beside = PathBuf::from(beside);
-    std::fs::write(&beside, &file).map_err(io)?;
-    if let Err(error) = std::fs::rename(&beside, &path) {
-        let _ = std::fs::remove_file(&beside);
-        return Err(io(error));
-    }
-    Ok(json!({"version": version(&file), "stamp": stamp(&path)}))
+    .map_err(|error| Error::Infrastructure(error.to_string()))
 }
 
-/// `shared.stat`: the stamp of each file, `null` when it is not there.
-pub fn stat(payload: &Value) -> Result<Value> {
-    let mut stamps = Map::new();
-    for path in payload["paths"]
-        .as_array()
-        .into_iter()
-        .flatten()
-        .filter_map(Value::as_str)
-    {
-        if shared::is_shared_file(path) {
-            stamps.insert(path.into(), json!(stamp(Path::new(path))));
-        }
+fn is_remote(payload: &Value) -> bool {
+    payload["location"]["kind"] == "url"
+}
+
+/// `shared.read`: the content of the file, its version and, in a folder, its stamp;
+/// `found: false` when it is not there. A server answering that the version `known` did
+/// not change sends nothing: `unchanged`.
+pub async fn read(payload: &Value, egress: &Policy, ports: &[u16]) -> Result<Value> {
+    if is_remote(payload) {
+        remote::read(payload, egress, ports).await
+    } else {
+        folder::read(payload)
     }
-    Ok(json!({"stamps": stamps}))
+}
+
+/// `shared.write`: writes `content`, sealed with `resolvedKey` when there is one, if the
+/// file is still at version `expected` (or not there, when none is expected).
+pub async fn write(payload: &Value, egress: &Policy, ports: &[u16]) -> Result<Value> {
+    if is_remote(payload) {
+        remote::write(payload, egress, ports).await
+    } else {
+        folder::write(payload)
+    }
 }
 
 /// `shared.key.new`: a new team key, as people copy it.

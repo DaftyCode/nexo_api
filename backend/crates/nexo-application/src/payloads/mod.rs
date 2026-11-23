@@ -182,7 +182,7 @@ operation_payloads! {
     SharedShare => SharedSharePayload,
     SharedLink => SharedLinkPayload,
     SharedSync => SharedCollectionPayload,
-    SharedPoll => WorkspacePayload,
+    SharedPoll => SharedPollPayload,
     SharedStatus => WorkspacePayload,
     SharedResolve => SharedResolvePayload,
     SharedUnlink => SharedCollectionPayload,

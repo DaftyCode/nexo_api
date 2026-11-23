@@ -127,6 +127,7 @@
     "GET user:1",
     "ID",
     "news, orders",
-    "news.*"
+    "news.*",
+    "https://cloud.example.com/remote.php/dav/files/ana/Team.nexo-collection"
   ]
 }

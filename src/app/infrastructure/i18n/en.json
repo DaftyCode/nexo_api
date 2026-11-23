@@ -3738,5 +3738,13 @@
   "docs.shared.share": "To share one, open the menu of a collection and choose Share with the team…: say where its file goes, choose the environments that go with it, and keep Encrypt it with a team key on. Nexo writes the file and shows the team key once: give it to each teammate by a channel you trust. Sharing… in the same menu, or the ⇄ mark beside its name, shows the file, Reload, the team key again and Stop sharing.",
   "docs.shared.bring": "To bring one in, choose Import → From a shared location, choose its file and paste the team key if it is encrypted. The collection and its environments appear in the workspace, and the key goes to your vault.",
   "docs.shared.changes": "Every save of the collection, or of an environment shared with it, reaches the file. Every few seconds Nexo looks at the file's size and time on the disk, a check that never leaves the computer: when a teammate's change arrives, the collection updates on its own, each open tab stays on its request and your unsaved changes are kept. Changes are joined request by request; when you both changed the same one, Nexo keeps theirs, marks the collection with ⇄ ! and asks in Sharing… whether to keep yours or theirs.",
-  "docs.shared.safe": "Nothing secret travels: credentials in requests are masked as in a Git export and stay yours on your computer, secret values of environments stay out, and history, responses and the vault never go. Encrypted with AES-256-GCM, the file opens only with the team key, which never goes in it."
+  "docs.shared.safe": "Nothing secret travels: credentials in requests are masked as in a Git export and stay yours on your computer, secret values of environments stay out, and history, responses and the vault never go. Encrypted with AES-256-GCM, the file opens only with the team key, which never goes in it.",
+  "Where the team keeps it": "Where the team keeps it",
+  "In a synced folder or on a network drive": "In a synced folder or on a network drive",
+  "On a server (WebDAV)": "On a server (WebDAV)",
+  "URL of its file on the server": "URL of its file on the server",
+  "shared.server.hint": "A server that reads with GET and writes with PUT, such as WebDAV in Nextcloud, ownCloud, a NAS or IIS. Nexo asks it when the workspace opens and on Reload, never on a schedule, and writes only if nobody changed the file since.",
+  "Nothing": "Nothing",
+  "User and password": "User and password",
+  "docs.shared.server": "A team without a synced folder can keep the file on a WebDAV server (Nextcloud, ownCloud, a NAS, IIS): choose On a server (WebDAV) in Where the team keeps it, write the URL of the file and how Nexo signs in (a user and password, or a token, which go to your vault). The server is asked only when the workspace opens and on Reload, never on a schedule; when nothing changed it sends nothing, and a save is written only if nobody changed the file since. When a save finds a teammate's change, Nexo joins both at once."
 }

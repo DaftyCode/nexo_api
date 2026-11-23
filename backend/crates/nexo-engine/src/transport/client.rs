@@ -78,6 +78,21 @@ impl Transport {
         request.send().await.map_err(request_error)
     }
 
+    /// Puts `body` at `url` with `headers`, such as a shared collection on a WebDAV server.
+    /// Its egress, TLS and proxy settings are this transport's.
+    pub async fn put(
+        &self,
+        url: &Url,
+        headers: &[(String, String)],
+        body: Vec<u8>,
+    ) -> Result<reqwest::Response> {
+        let mut request = self.client.put(url.clone()).body(body);
+        for (key, value) in headers {
+            request = request.header(key.as_str(), value.as_str());
+        }
+        request.send().await.map_err(request_error)
+    }
+
     /// Gets a JSON resource with `headers`, such as the models of an AI provider. Its egress,
     /// TLS and proxy settings are this transport's.
     pub async fn get(&self, url: &Url, headers: &[(String, String)]) -> Result<reqwest::Response> {

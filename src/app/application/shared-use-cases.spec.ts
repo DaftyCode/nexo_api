@@ -22,12 +22,19 @@ describe('SharedUseCases', () => {
     } as never);
     expect(await cases.status('local')).toEqual([link]);
     expect(await cases.poll('local')).toEqual({ changed: [], links: [] });
-    expect(await cases.share('local', 'c1', 'D:/x.nexo-collection', true, ['e1'])).toEqual({
+    await cases.poll('local', true);
+    expect(
+      await cases.share('local', 'c1', { path: 'D:/x.nexo-collection' }, true, ['e1']),
+    ).toEqual({
       collection: 'c1',
       key: 'nexo-team-key-1',
     });
-    await cases.link('local', 'D:/y.nexo-collection', ' nexo-team-key-2 ');
-    await cases.link('local', 'D:/y.nexo-collection', '  ');
+    await cases.link('local', { path: 'D:/y.nexo-collection' }, ' nexo-team-key-2 ');
+    await cases.link(
+      'local',
+      { url: 'https://dav.test/y.nexo-collection', credential: { scheme: 'bearer', secret: 't' } },
+      '  ',
+    );
     expect(await cases.sync('local', 'c1')).toEqual([link]);
     expect(await cases.resolve('local', 'c1', 'r1', 'mine')).toEqual([]);
     expect(await cases.unlink('local', 'c1')).toEqual([]);
@@ -35,6 +42,7 @@ describe('SharedUseCases', () => {
     expect(calls.map((call) => [call.operation, call.payload])).toEqual([
       ['shared.status', { workspace: 'local' }],
       ['shared.poll', { workspace: 'local' }],
+      ['shared.poll', { workspace: 'local', opening: true }],
       [
         'shared.share',
         {
@@ -46,7 +54,14 @@ describe('SharedUseCases', () => {
         },
       ],
       ['shared.link', { workspace: 'local', path: 'D:/y.nexo-collection', key: 'nexo-team-key-2' }],
-      ['shared.link', { workspace: 'local', path: 'D:/y.nexo-collection' }],
+      [
+        'shared.link',
+        {
+          workspace: 'local',
+          url: 'https://dav.test/y.nexo-collection',
+          credential: { scheme: 'bearer', secret: 't' },
+        },
+      ],
       ['shared.sync', { workspace: 'local', collection: 'c1' }],
       ['shared.resolve', { workspace: 'local', collection: 'c1', id: 'r1', keep: 'mine' }],
       ['shared.unlink', { workspace: 'local', collection: 'c1' }],
