@@ -13,6 +13,7 @@ import type { MongoUseCases } from '../application/mongo-use-cases';
 import type { DatabaseUseCases } from '../application/database-use-cases';
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
+import { AiUseCases } from '../application/ai-use-cases';
 import { BrowserPrinter } from '../infrastructure/browser-printer';
 import { BrowserPageExit } from '../infrastructure/browser-page-exit';
 import { BrowserNotifications } from '../infrastructure/browser-notifications';
@@ -28,6 +29,7 @@ export const PROTOCOLS = new InjectionToken<ProtocolUseCases>('Nexo protocol use
 export const REPORTS = new InjectionToken<ReportUseCases>('Nexo printable reports');
 /** The database modules, downloaded when they are needed. */
 export const MODULES = new InjectionToken<ModulesUseCases>('Nexo database modules');
+export const AI = new InjectionToken<AiUseCases>('Nexo AI assistant');
 /** Loads the MongoDB use cases with the panel, so the first screen does not carry them. */
 export type MongoLoader = () => Promise<MongoUseCases>;
 export const MONGO = new InjectionToken<MongoLoader>('Nexo MongoDB connections');
@@ -64,6 +66,13 @@ export const workspaceProviders = [
     provide: MODULES,
     useFactory: () =>
       new ModulesUseCases(inject(HttpApi), inject(BrowserFiles), inject(BrowserPreferences)),
+  },
+  {
+    provide: AI,
+    useFactory: () => {
+      const api = inject(HttpApi);
+      return new AiUseCases(api, api, inject(BrowserPreferences), api);
+    },
   },
   { provide: TRANSFER_FILES, useFactory: transferFiles },
   { provide: DATABASE_FILES, useFactory: databaseFiles },

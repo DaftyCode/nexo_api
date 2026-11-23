@@ -133,6 +133,11 @@
               'MCP' | transloco
             }}</a>
           </li>
+          <li>
+            <a href="#ai" [class.active]="active() === 'ai'" (click)="go($event, 'ai')">{{
+              'AI assistant' | transloco
+            }}</a>
+          </li>
         </ol>
       </li>
       <li>

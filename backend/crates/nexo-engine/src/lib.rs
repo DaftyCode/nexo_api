@@ -11,6 +11,7 @@ use nexo_domain::{Error, Result, SecretSummary, hosts::AllowedHosts};
 use serde_json::{Map, Value, json};
 use std::{path::Path, sync::Arc, time::Duration};
 
+pub mod ai;
 pub mod api_spec;
 pub mod auth;
 pub mod collection;
@@ -81,6 +82,7 @@ pub struct Engine {
     mocks: Arc<Mocks>,
     runs: Arc<Runs>,
     realtime: Realtime,
+    assistant: ai::Assistant,
     datasets: Arc<Datasets>,
     performance: Performance,
     vault: Arc<Vault>,
@@ -113,6 +115,7 @@ impl Engine {
             },
         ));
         Ok(Self {
+            assistant: ai::Assistant::new(egress.clone(), ports.clone()),
             realtime: Realtime::new(egress.clone(), ports),
             datasets: Arc::new(Datasets::new(data.join("datasets"))),
             performance: Performance::new(runs.clone()),
@@ -135,6 +138,7 @@ impl Engine {
     pub fn close(&self) {
         self.oauth2_flows.close();
         self.realtime.close();
+        self.assistant.close();
         self.mocks.close();
         self.performance.close();
         self.runs.cancel_all();

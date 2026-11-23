@@ -1,3 +1,4 @@
+import { AiChat } from './ai-chat';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   afterRenderEffect,
@@ -42,6 +43,7 @@ import { insertAt } from '../domain/graphql-schema';
     TranslocoPipe,
     FormField,
     KeyValueEditor,
+    AiChat,
     StudioIcon,
     AuthEditor,
     GraphqlExplorer,
@@ -79,6 +81,8 @@ export class RequestEditor {
     max(p.timeout, 120000);
   });
   protected readonly tab = signal('params');
+  /** The AI assistant beside the request (IA-01). */
+  protected readonly assistant = signal(false);
   protected readonly scriptTab = signal('tests');
   protected readonly tabs = ['params', 'authorization', 'headers', 'body', 'scripts', 'settings'];
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;

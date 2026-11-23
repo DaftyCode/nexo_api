@@ -36,6 +36,9 @@ pub(crate) struct Fake {
     pub(crate) aggregate_writes: Mutex<Vec<ports::AggregateWrite>>,
     pub(crate) changes: Mutex<Vec<ports::CollectionChange>>,
     pub(crate) watches: Mutex<Vec<ports::WatchRequest>>,
+    /// The names the vault lists, and those it has no value for.
+    pub(crate) listed: Mutex<Vec<String>>,
+    pub(crate) missing: Mutex<Vec<String>>,
 }
 pub(crate) fn workspace(id: &str) -> Workspace {
     Workspace {
@@ -150,7 +153,7 @@ impl SecretVault for Fake {
         Ok(())
     }
     async fn resolve(&self, name: &str) -> Result<String> {
-        if name.contains("deleted") {
+        if name.contains("deleted") || self.missing.lock().unwrap().iter().any(|n| n == name) {
             return Err(nexo_domain::Error::Validation(format!(
                 "Secret not found: {name}"
             )));
@@ -158,7 +161,14 @@ impl SecretVault for Fake {
         Ok(format!("secret-of-{name}"))
     }
     async fn secrets(&self) -> Result<Vec<SecretSummary>> {
-        Ok(vec![])
+        let listed = self.listed.lock().unwrap().clone();
+        Ok(listed
+            .into_iter()
+            .map(|name| SecretSummary {
+                name,
+                allowed_hosts: Vec::new(),
+            })
+            .collect())
     }
 }
 #[async_trait]

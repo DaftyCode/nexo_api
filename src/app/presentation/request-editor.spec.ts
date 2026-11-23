@@ -33,6 +33,18 @@ describe('RequestEditor', () => {
     expect(component).toBeTruthy();
   });
 
+  it('opens the AI assistant over the request and closes it', async () => {
+    fixture.componentRef.setInput('request', newRequest('r1'));
+    await fixture.whenStable();
+    await clickButton(fixture, /^AI assistant$/);
+    await fixture.whenStable();
+    const chat = root().querySelector('app-ai-chat');
+    expect(chat?.classList).toContain('ai-floating');
+    (chat?.querySelector('.db-side-head button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(root().querySelector('app-ai-chat')).toBeNull();
+  });
+
   it('edits every part of the request in its tabs', async () => {
     fixture.componentRef.setInput('request', {
       ...newRequest('r1'),

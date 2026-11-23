@@ -11,6 +11,12 @@
       ><button class="button subtle" (click)="code.emit()">
         <app-studio-icon name="code" />
         {{ 'Code' | transloco }}</button
+      ><button
+        class="button subtle"
+        [attr.aria-pressed]="assistant()"
+        (click)="assistant.set(!assistant())"
+      >
+        {{ 'AI assistant' | transloco }}</button
       ><button class="button" (click)="save.emit()" [disabled]="readonly()">
         <app-studio-icon name="save" />{{ 'Save' | transloco }} <kbd>Ctrl S</kbd>
       </button>
@@ -286,3 +292,6 @@
     }
   </div>
 </div>
+@if (assistant()) {
+  <app-ai-chat place="request" [floating]="true" (closed)="assistant.set(false)" />
+}

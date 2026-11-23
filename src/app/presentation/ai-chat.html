@@ -1,0 +1,99 @@
+<aside class="db-side ai-chat" [attr.aria-label]="'AI assistant' | transloco">
+  <header class="row db-side-head">
+    <h3>{{ 'AI assistant' | transloco }}</h3>
+    <button
+      type="button"
+      class="icon-button"
+      [attr.aria-label]="'Close' | transloco"
+      (click)="closed.emit()"
+    >
+      ×
+    </button>
+  </header>
+  @if (missing(); as missing) {
+    <p class="muted" role="status">{{ missing | transloco }}</p>
+    <app-ai-settings (saved)="refresh()" />
+  } @else if (hasKey() !== undefined) {
+    <div class="row ai-chat-conversations">
+      <label class="field grow"
+        >{{ 'Conversation' | transloco
+        }}<select
+          [value]="current().revision === undefined ? '' : current().id"
+          (change)="open($any($event.target).value)"
+        >
+          <option value="">{{ 'New conversation' | transloco }}</option>
+          @for (conversation of list(); track conversation.id) {
+            <option [value]="conversation.id">{{ conversation.title }}</option>
+          }
+        </select></label
+      >
+      <button type="button" class="button small" (click)="start()">
+        {{ 'New' | transloco }}
+      </button>
+      @if (current().revision !== undefined) {
+        <button type="button" class="text-button danger" (click)="remove()">
+          {{ 'Delete' | transloco }}
+        </button>
+      }
+    </div>
+    <div class="ai-chat-log" role="log" [attr.aria-label]="'Conversation' | transloco">
+      <ol class="ai-chat-messages">
+        @for (message of current().messages; track $index) {
+          <li class="ai-message" [class.ai-message-user]="message.role === 'user'">
+            <span class="ai-message-who">{{
+              (message.role === 'user' ? 'You' : 'Assistant') | transloco
+            }}</span>
+            @if (message.text) {
+              <div class="ai-message-text">{{ message.text }}</div>
+            }
+            @if (message.failed) {
+              <p class="ai-message-failed" role="alert">{{ message.failed | transloco }}</p>
+            }
+            @if (note(message.stop); as stopped) {
+              <p class="muted">{{ stopped | transloco }}</p>
+            }
+            @if (message.role === 'assistant' && message.text) {
+              <button type="button" class="text-button" (click)="copy(message.text)">
+                {{ 'Copy' | transloco }}
+              </button>
+            }
+          </li>
+        } @empty {
+          <li class="muted">{{ 'ai.chat.empty' | transloco }}</li>
+        }
+        @if (writing() !== undefined) {
+          <li class="ai-message" aria-busy="true">
+            <span class="ai-message-who">{{ 'Assistant' | transloco }}</span>
+            <div class="ai-message-text">{{ writing() || ('Thinking…' | transloco) }}</div>
+          </li>
+        }
+      </ol>
+    </div>
+    @if (error(); as error) {
+      <p class="global-alert" role="alert">{{ error | transloco }}</p>
+    }
+    <form class="ai-chat-ask" (submit)="$event.preventDefault(); send()">
+      <label class="field"
+        >{{ 'Ask the assistant' | transloco
+        }}<textarea
+          rows="3"
+          [formField]="fields.text"
+          [placeholder]="'ai.chat.placeholder' | transloco"
+          (keydown)="keydown($event)"
+        ></textarea>
+      </label>
+      <div class="row">
+        <span class="muted grow">{{ settings().model }}</span>
+        @if (writing() !== undefined) {
+          <button type="button" class="button" (click)="stop()">
+            {{ 'Stop' | transloco }}
+          </button>
+        } @else {
+          <button type="submit" class="button primary" [disabled]="!question().text.trim()">
+            {{ 'Send' | transloco }}
+          </button>
+        }
+      </div>
+    </form>
+  }
+</aside>

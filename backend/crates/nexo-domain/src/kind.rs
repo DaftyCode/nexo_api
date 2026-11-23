@@ -79,9 +79,13 @@ pub enum DocumentKind {
     /// with what it authorizes and when it runs. Its runs go in a `monitor-history`.
     #[serde(rename = "db-task")]
     DbTask,
+    /// A conversation with the AI assistant (IA-01): what the person asked and what it
+    /// answered, never the key nor a value of the vault. It only grows: its last state matters.
+    #[serde(rename = "ai-conversation")]
+    AiConversation,
 }
 impl DocumentKind {
-    pub const ALL: [DocumentKind; 28] = [
+    pub const ALL: [DocumentKind; 29] = [
         Self::Collection,
         Self::Environment,
         Self::Globals,
@@ -110,6 +114,7 @@ impl DocumentKind {
         Self::ConnectionType,
         Self::ProxyProfile,
         Self::DbTask,
+        Self::AiConversation,
     ];
     pub fn as_str(self) -> &'static str {
         match self {
@@ -141,6 +146,7 @@ impl DocumentKind {
             Self::ConnectionType => "connection-type",
             Self::ProxyProfile => "proxy-profile",
             Self::DbTask => "db-task",
+            Self::AiConversation => "ai-conversation",
         }
     }
     pub fn parse(value: &str) -> Result<Self> {
@@ -162,6 +168,7 @@ impl DocumentKind {
                 | Self::SqlHistory
                 | Self::Session
                 | Self::MonitorHistory
+                | Self::AiConversation
         )
     }
     /// Request history and run reports grow with use, so a workspace lists them without
@@ -173,7 +180,11 @@ impl DocumentKind {
         // The history of a monitor is read when the monitor is opened.
         !matches!(
             self,
-            Self::History | Self::Run | Self::SqlHistory | Self::MonitorHistory
+            Self::History
+                | Self::Run
+                | Self::SqlHistory
+                | Self::MonitorHistory
+                | Self::AiConversation
         )
     }
 }

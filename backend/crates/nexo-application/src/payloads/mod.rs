@@ -14,6 +14,7 @@ use serde_json::{Map, Value};
 #[macro_use]
 mod declare;
 
+mod ai;
 mod auth;
 mod common;
 mod datasource;
@@ -38,6 +39,7 @@ mod ssh;
 mod tests;
 mod typescript;
 
+pub use ai::*;
 pub use auth::*;
 pub use common::*;
 pub use datasource::*;
@@ -161,6 +163,10 @@ operation_payloads! {
     CookiesDelete => CookieDeletePayload,
     Performance => PerformancePayload,
     PerformanceCancel => IdPayload,
+    AiModels => AiModelsPayload,
+    AiChat => AiChatPayload,
+    AiPoll => AiPollPayload,
+    AiStop => IdPayload,
     MongoTest => MongoConnectionPayload,
     MongoDatabases => MongoConnectionPayload,
     MongoCollections => MongoDatabasePayload,

@@ -48,6 +48,7 @@
     "http://localhost:8080/callback",
     "HttpOnly",
     "https://github.com/acme/api.git",
+    "https://api.mistral.ai/v1",
     "id > 10 AND status = 'sent'",
     "Java",
     "JavaScript",

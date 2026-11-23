@@ -77,4 +77,17 @@ impl Transport {
         }
         request.send().await.map_err(request_error)
     }
+
+    /// Gets a JSON resource with `headers`, such as the models of an AI provider. Its egress,
+    /// TLS and proxy settings are this transport's.
+    pub async fn get(&self, url: &Url, headers: &[(String, String)]) -> Result<reqwest::Response> {
+        let mut request = self
+            .client
+            .get(url.clone())
+            .header(reqwest::header::ACCEPT, "application/json");
+        for (key, value) in headers {
+            request = request.header(key.as_str(), value.as_str());
+        }
+        request.send().await.map_err(request_error)
+    }
 }

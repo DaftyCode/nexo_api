@@ -107,6 +107,7 @@ fn every_operation_has_a_payload_type() {
                     | Operation::NativeStatus
                     | Operation::NativeCancel
             )
+            || operation.is_ai()
             // Every database operation names its session, script or driver; only a test (of
             // the connection or of its tunnel) may name nothing yet (and is refused
             // afterwards), and the list of open transactions is of the whole workspace.

@@ -125,6 +125,10 @@ impl ExecutionGateway for Engine {
                 )
             }
             Operation::McpRequest => self.mcp(&payload).await,
+            Operation::AiModels => self.assistant.models(&payload).await,
+            Operation::AiChat => self.assistant.start(&payload).await,
+            Operation::AiPoll => self.assistant.poll(&payload),
+            Operation::AiStop => self.assistant.stop(&payload),
             Operation::OauthToken => self.oauth_token(&payload).await,
             Operation::Oauth2Token => self.oauth2_token(&payload).await,
             Operation::Oauth2Authorize => self.oauth2_authorize(&payload).await,

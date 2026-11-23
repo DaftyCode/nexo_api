@@ -1,3 +1,4 @@
+import { AiChat } from './ai-chat';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -60,6 +61,7 @@ import { named } from './workspace-state';
     Splitter,
     DbQueryBuilder,
     DbSqlViews,
+    AiChat,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-db-sql-tab',
@@ -96,12 +98,15 @@ export class DbSqlTab {
   protected readonly opened = signal({ text: '', cursor: 0 });
   protected readonly codeHeight = signal(0);
   /** The panel beside the editor, one at a time. */
-  protected readonly side = signal<'' | 'history' | 'variables' | 'outline' | 'templates'>('');
+  protected readonly side = signal<'' | 'history' | 'variables' | 'outline' | 'templates' | 'ai'>(
+    '',
+  );
   protected readonly sides = [
     ['history', 'History'],
     ['variables', 'Variables'],
     ['outline', 'Outline'],
     ['templates', 'Templates'],
+    ['ai', 'AI assistant'],
   ] as const;
   protected readonly dialog = signal<
     { request: DialogRequest; run: (a: DialogAnswer) => void } | undefined

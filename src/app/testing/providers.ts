@@ -11,6 +11,7 @@ import {
   DATA,
   INTEGRATION,
   MODULES,
+  AI,
   MONGO,
   DATABASES,
   TRANSFER_FILES,
@@ -22,6 +23,7 @@ import {
 } from '../composition/providers';
 import { ReportUseCases } from '../application/report-use-cases';
 import { ModulesUseCases } from '../application/modules-use-cases';
+import { AiUseCases } from '../application/ai-use-cases';
 import { DataUseCases } from '../application/data-use-cases';
 import { ProtocolUseCases } from '../application/protocol-use-cases';
 import { MongoUseCases } from '../application/mongo-use-cases';
@@ -168,6 +170,10 @@ export function testProviders(responses: Record<string, FakeResponse> = {}) {
     {
       provide: MODULES,
       useValue: new ModulesUseCases(api, files, memoryPreferences(), () => Promise.resolve()),
+    },
+    {
+      provide: AI,
+      useValue: new AiUseCases(api, api, memoryPreferences(), api, () => Promise.resolve()),
     },
     { provide: TRANSFER_FILES, useValue: new TestTransferFiles() },
     // The web version: the file of a SQLite connection is typed.

@@ -5,7 +5,7 @@
 
 mod kind;
 pub use kind::DocumentKind;
-
+pub mod ai;
 pub mod db_task;
 pub mod diff;
 pub mod hosts;

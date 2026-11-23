@@ -1,4 +1,5 @@
 //! Use cases depend only on domain types and outbound ports.
+mod ai;
 mod database;
 mod datasource;
 mod environments;

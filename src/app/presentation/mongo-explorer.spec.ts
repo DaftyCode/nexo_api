@@ -112,6 +112,14 @@ describe('MongoExplorer', { timeout: 20_000 }, () => {
     await click(/^orders/);
   };
 
+  it('opens the AI assistant over the collection', async () => {
+    await openOrders();
+    await click(/^AI assistant$/);
+    expect(root().querySelector('app-ai-chat')?.classList).toContain('ai-floating');
+    await click(/^AI assistant$/);
+    expect(root().querySelector('app-ai-chat')).toBeNull();
+  });
+
   it('lists databases and collections, and pages through a query with its cursor', async () => {
     expect(text()).toContain('shop');
     expect(text()).toContain('2.0 KB');

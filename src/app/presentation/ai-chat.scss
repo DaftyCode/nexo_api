@@ -1,0 +1,61 @@
+:host(.ai-floating) {
+  position: fixed;
+  inset-block: calc(var(--nexo-size-unit) * 40) 0;
+  inset-inline-end: 0;
+  z-index: var(--nexo-z-popover);
+  display: flex;
+  background: var(--nexo-color-surface);
+  box-shadow: var(--nexo-shadow-lg);
+}
+.ai-chat {
+  width: calc(var(--nexo-size-unit) * 170);
+}
+.ai-chat-conversations {
+  align-items: end;
+  gap: var(--nexo-space-2);
+}
+.ai-chat-log {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.ai-chat-messages {
+  gap: var(--nexo-space-3);
+}
+.ai-message {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--nexo-space-1);
+  padding: var(--nexo-space-3);
+  border: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
+  border-radius: var(--nexo-radius-md);
+  background: var(--nexo-color-surface);
+}
+.ai-message-user {
+  background: var(--nexo-color-accent-soft);
+}
+.ai-message-who {
+  color: var(--nexo-color-text-muted);
+  font-size: var(--nexo-font-size-xs);
+  font-weight: var(--nexo-font-weight-semibold);
+}
+.ai-message-text {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.ai-message-failed {
+  margin: 0;
+  color: var(--nexo-color-danger-text);
+}
+.ai-message .text-button {
+  align-self: flex-start;
+}
+.ai-chat-ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nexo-space-2);
+}
+.ai-chat-ask textarea {
+  resize: vertical;
+}

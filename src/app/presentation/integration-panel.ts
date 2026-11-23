@@ -81,6 +81,7 @@ import { SettingsTabs } from './settings-tabs';
 import { SshProfiles } from './ssh-profiles';
 import { ProxyProfiles } from './proxy-profiles';
 import { MaskingSets } from './masking-sets';
+import { AiSettingsPanel } from './ai-settings';
 import { ConnectionTypesSettings } from './connection-types-settings';
 import { DocumentRevisions } from './document-revisions';
 @Component({
@@ -103,6 +104,7 @@ import { DocumentRevisions } from './document-revisions';
     SshProfiles,
     ProxyProfiles,
     MaskingSets,
+    AiSettingsPanel,
     ConnectionTypesSettings,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

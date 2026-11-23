@@ -91,6 +91,11 @@ export interface CompareTable {
   schema?: string;
 }
 
+export interface AiMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -371,6 +376,38 @@ export interface PerformancePayload {
   context?: ExecutionContext;
   strictSSL?: boolean;
   followRedirects?: boolean;
+}
+
+export interface AiModelsPayload {
+  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible';
+  workspace?: string;
+  baseUrl?: string;
+  route?: {
+    via?: 'direct' | 'http' | 'socks5' | 'ssh';
+    profile?: string;
+  };
+  caPem?: string;
+}
+
+export interface AiChatPayload {
+  provider: 'anthropic' | 'openai' | 'gemini' | 'compatible';
+  model: string;
+  messages: readonly AiMessage[];
+  workspace?: string;
+  baseUrl?: string;
+  system?: string;
+  effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  route?: {
+    via?: 'direct' | 'http' | 'socks5' | 'ssh';
+    profile?: string;
+  };
+  caPem?: string;
+}
+
+export interface AiPollPayload {
+  id: string;
+  workspace?: string;
+  after?: number;
 }
 
 export interface MongoConnectionPayload {
@@ -1126,6 +1163,10 @@ export interface OperationPayloads {
   'cookies.delete': CookieDeletePayload;
   performance: PerformancePayload;
   'performance.cancel': IdPayload;
+  'ai.models': AiModelsPayload;
+  'ai.chat': AiChatPayload;
+  'ai.poll': AiPollPayload;
+  'ai.stop': IdPayload;
   'mongo.test': MongoConnectionPayload;
   'mongo.databases': MongoConnectionPayload;
   'mongo.collections': MongoDatabasePayload;

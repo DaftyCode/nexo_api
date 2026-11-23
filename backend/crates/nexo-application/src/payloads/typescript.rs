@@ -20,6 +20,7 @@ pub fn typescript_contract() -> String {
         ComparedResponse::TYPESCRIPT.to_string(),
         CompareSide::TYPESCRIPT.to_string(),
         CompareTable::TYPESCRIPT.to_string(),
+        AiMessage::TYPESCRIPT.to_string(),
     ];
     parts.extend(typescript_interfaces().into_iter().map(String::from));
     parts.push(GitPayload::TYPESCRIPT.to_string());

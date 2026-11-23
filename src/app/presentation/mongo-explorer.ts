@@ -1,3 +1,4 @@
+import { AiChat } from './ai-chat';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -97,6 +98,7 @@ const SUGGESTED = 50;
 @Component({
   imports: [
     TranslocoPipe,
+    AiChat,
     MongoDialog,
     MongoIndexes,
     MongoExplain,
@@ -172,6 +174,8 @@ export class MongoExplorer {
   readonly schema = new SchemaExplorer(this, inject(Injector), inject(TRANSFER_FILES));
   /** The query or pipeline whose driver code is shown. */
   readonly code = signal<CodeQuery | undefined>(undefined);
+  /** The AI assistant beside the collection (IA-01). */
+  readonly assistant = signal(false);
   readonly blocks = new FilterBuilder(this);
   readonly comparisons = new MongoComparisons(this);
   /** The shell of the connection, shown instead of the collection while open. */

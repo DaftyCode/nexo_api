@@ -11,7 +11,8 @@ use nexo_domain::{Error, Result, WorkspaceId};
 use serde_json::{Map, Value};
 
 /// Payload fields that only the backend may set; values sent by clients are discarded.
-const INTERNAL_FIELDS: [&str; 9] = [
+const INTERNAL_FIELDS: [&str; 10] = [
+    "resolvedKey",
     "sshProfiles",
     "readOnlyEnvironment",
     "unattendedEnvironment",
@@ -34,6 +35,9 @@ impl Application {
         let payload = self.checked(operation, payload).await?;
         if operation.is_module() {
             return self.module(operation, &payload).await;
+        }
+        if operation.is_ai() {
+            return self.ai(operation, payload).await;
         }
         if operation.is_datasource() {
             return self.datasource(operation, Value::Object(payload)).await;

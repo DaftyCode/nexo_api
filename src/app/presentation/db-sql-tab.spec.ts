@@ -211,4 +211,13 @@ describe('DbSqlTab', () => {
       expect.objectContaining({ script: script.id, text: '' }),
     );
   });
+
+  it('opens the AI assistant beside the script', async () => {
+    await start();
+    await openScript('select 1');
+    await clickButton(fixture, /^AI assistant$/);
+    await settle();
+    expect(root().querySelector('app-ai-chat')?.classList).not.toContain('ai-floating');
+    expect(root().textContent).toContain('The assistant is off');
+  }, 20_000);
 });

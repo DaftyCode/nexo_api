@@ -46,6 +46,14 @@
         }
       </div>
 
+      <button
+        type="button"
+        class="button subtle"
+        [attr.aria-pressed]="assistant()"
+        (click)="assistant.set(!assistant())"
+      >
+        {{ 'AI assistant' | transloco }}
+      </button>
       <nav class="editor-tabs mongo-tabs" [attr.aria-label]="'Collection views' | transloco">
         @for (option of tabs(); track option) {
           <button
@@ -152,4 +160,7 @@
 }
 @if (transfers.draft(); as draft) {
   <app-mongo-transfer [transfers]="transfers" [draft]="draft" />
+}
+@if (assistant()) {
+  <app-ai-chat place="mongo" [floating]="true" (closed)="assistant.set(false)" />
 }

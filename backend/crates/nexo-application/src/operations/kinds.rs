@@ -142,6 +142,13 @@ impl Operation {
                 | Self::MongoSync
         )
     }
+    /// The AI assistant's operations: the key of the provider comes from the vault.
+    pub fn is_ai(self) -> bool {
+        matches!(
+            self,
+            Self::AiModels | Self::AiChat | Self::AiPoll | Self::AiStop
+        )
+    }
     /// Operations whose data belongs to a workspace and need one.
     pub fn needs_workspace(self) -> bool {
         matches!(

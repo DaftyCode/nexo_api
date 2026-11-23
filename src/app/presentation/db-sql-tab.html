@@ -256,6 +256,9 @@
           (closed)="side.set('')"
         />
       }
+      @case ('ai') {
+        <app-ai-chat place="sql" (closed)="side.set('')" />
+      }
       @case ('templates') {
         <app-db-sql-templates
           [own]="templates()"
