@@ -52,6 +52,11 @@ export class AiSettingsPanel {
   /** Whether the vault keeps a key of the provider chosen. */
   protected readonly hasKey = signal(false);
   protected readonly models = signal<{ id: string; name: string }[]>([]);
+  /** The model chosen when the provider's list does not have it, kept as one more option. */
+  protected readonly unlisted = computed(() => {
+    const chosen = this.model().model;
+    return this.models().some((model) => model.id === chosen) ? undefined : chosen;
+  });
   protected readonly proxies = computed(() =>
     this.state.cases.proxies.profiles(this.state.documents()),
   );
@@ -114,5 +119,10 @@ export class AiSettingsPanel {
       this.hasKey.set(false);
       return success('Key deleted', 'ai.toast.keyDeleted');
     });
+  }
+
+  /** A model as the list shows it: its name, and its id when the name is another. */
+  protected named(model: { id: string; name: string }) {
+    return model.name && model.name !== model.id ? `${model.name} (${model.id})` : model.id;
   }
 }

@@ -109,4 +109,36 @@ describe('AiChat panel', () => {
     expect(api.secretNames).toContain('ai:openai');
     expect(root().querySelector('textarea')).not.toBeNull();
   });
+
+  it('follows what is written, until the person scrolls up; at the end it follows again', async () => {
+    await create();
+    const log = root().querySelector<HTMLElement>('.ai-chat-log')!;
+    let height = 1000;
+    Object.defineProperty(log, 'scrollHeight', { configurable: true, get: () => height });
+    Object.defineProperty(log, 'clientHeight', { configurable: true, get: () => 200 });
+    // A message more on screen, as an answer that grows.
+    const chat = fixture.componentInstance as unknown as {
+      current: { update(change: (now: { messages: unknown[] }) => unknown): void };
+    };
+    const grow = async () => {
+      height += 100;
+      chat.current.update((now) => ({
+        ...now,
+        messages: [...now.messages, { role: 'user', text: 'more' }],
+      }));
+      await settle();
+    };
+    await grow();
+    expect(log.scrollTop).toBe(height);
+    // Scrolled up: it stays where the person left it.
+    log.scrollTop = 300;
+    log.dispatchEvent(new Event('scroll'));
+    await grow();
+    expect(log.scrollTop).toBe(300);
+    // Back at the end: it follows again.
+    log.scrollTop = height - 200;
+    log.dispatchEvent(new Event('scroll'));
+    await grow();
+    expect(log.scrollTop).toBe(height);
+  });
 });

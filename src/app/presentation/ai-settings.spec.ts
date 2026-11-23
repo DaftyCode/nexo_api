@@ -56,9 +56,13 @@ describe('AiSettingsPanel', () => {
       payload: { workspace: 'local', provider: 'openai' },
     });
     expect(state.toast()).toMatchObject({ title: 'Models listed', params: { v0: '1' } });
-    expect(root().querySelector('datalist option')?.getAttribute('value')).toBe('gpt-x');
+    // Every model listed, to choose from; the one chosen before stays while it is not one of them.
+    const options = () =>
+      [...(control(root(), 'Model') as HTMLSelectElement).options].map((o) => o.text.trim());
+    expect(options()).toEqual(['Choose a model', 'GPT X (gpt-x)']);
     expect(text()).toContain('Choose the model to ask');
     await fill(fixture, 'Model', 'gpt-x');
+    expect(options()).toEqual(['GPT X (gpt-x)']);
     // Bodies of responses may stay on this computer.
     expect(text()).toContain('its body stays on this computer');
     (control(root(), 'Let the assistant read response bodies') as HTMLInputElement).click();

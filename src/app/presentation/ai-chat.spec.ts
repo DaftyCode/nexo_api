@@ -118,6 +118,8 @@ describe('AiChat', () => {
     expect(text()).toContain('Use an index.');
     const chat = api.calls.find((call) => call.operation === 'ai.chat')!.payload;
     expect(chat['messages']).toEqual([{ role: 'user', text: 'Why is this slow?' }]);
+    // The model knows which one it is.
+    expect(chat['system']).toContain('The model answering is claude-opus-5-5, from Anthropic');
     const [kept] = api.documentsStore;
     expect(kept).toMatchObject({ kind: 'ai-conversation', name: 'Why is this slow?' });
     expect(text()).toContain('Why is this slow?');
@@ -131,13 +133,39 @@ describe('AiChat', () => {
 
     await click(/^New$/);
     expect(text()).toContain('Ask anything about your query');
-    await fill(fixture, 'Conversation', kept.id);
+    // The list of conversations: a row opens its conversation, its bin deletes it once asked.
+    await click('Conversation');
+    await click(/^Why is this slow\?$/);
     await until(() => text().includes('Use an index.'));
     expect(text()).toContain('Use an index.');
+    expect(root().querySelector('.list')).toBeNull();
 
-    state.confirm = () => true;
-    await click(/^Delete$/);
+    const asked: unknown[] = [];
+    state.confirm = (message, params) => {
+      asked.push([message, params]);
+      return asked.length > 1;
+    };
+    await click('Conversation');
+    await click('Delete the conversation «Why is this slow?»');
+    expect(api.documentsStore).toHaveLength(1);
+    await click('Delete the conversation «Why is this slow?»');
+    expect(asked).toEqual([
+      ['ai.conversation.confirm', { v0: 'Why is this slow?' }],
+      ['ai.conversation.confirm', { v0: 'Why is this slow?' }],
+    ]);
     expect(api.documentsStore).toEqual([]);
+    expect(text()).toContain('Ask anything about your query');
+    expect(text()).toContain('No conversations yet');
+    // Escape, or a click elsewhere, closes the list.
+    root()
+      .querySelector('app-ai-conversations')!
+      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    await settle();
+    expect(root().querySelector('.list')).toBeNull();
+    await click('Conversation');
+    document.body.click();
+    await settle();
+    expect(root().querySelector('.list')).toBeNull();
   });
 
   it('shows what the model reasons while it thinks, folded once it answers', async () => {
@@ -205,7 +233,7 @@ describe('AiChat', () => {
     );
   });
 
-  it('asks a question of the place, shows the tools it read with and adds its tests', async () => {
+  it('asks about the place, shows the tools it read with and adds its tests', async () => {
     state.tabsStore.open({ ...newRequest('r1'), name: 'Login' });
     await create(true, 'request');
     api.responses['ai.tool'] = { text: 'the request' };
@@ -213,7 +241,7 @@ describe('AiChat', () => {
       { text: '', next: 0, done: false, tools: [{ id: 't1', name: 'read_open', input: {} }] },
       { text: 'Add this:\n```javascript\npm.test("ok", () => {});\n```', next: 40, done: true },
     );
-    await click('Write tests');
+    await ask('Write tests for the request I have open');
     await until(() => api.documentsStore.length > 0);
     const chat = api.calls.find((call) => call.operation === 'ai.chat')!.payload;
     expect(chat['tools']).toBe('request');
@@ -246,6 +274,7 @@ describe('AiChat', () => {
     await until(() => api.documentsStore.length > 0);
     await click('Use in the query');
     expect(used).toEqual([{ action: 'use', code: '{ "paid": true }', language: 'json' }]);
-    expect(text()).toContain('Document this collection');
+    // No buttons of ready-made questions: the room goes to the answer.
+    expect(text()).not.toContain('Document this collection');
   });
 });

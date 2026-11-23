@@ -31,34 +31,24 @@
       {{ 'Back to the conversation' | transloco }}
     </button>
   } @else if (hasKey() !== undefined) {
-    <!-- Its name above, and the list with its buttons on one line. -->
-    <div class="field ai-chat-conversations">
-      <span>{{ 'Conversation' | transloco }}</span>
-      <div class="row">
-        <select
-          [attr.aria-label]="'Conversation' | transloco"
-          [value]="current().revision === undefined ? '' : current().id"
-          (change)="open($any($event.target).value)"
-        >
-          <option value="">{{ 'New conversation' | transloco }}</option>
-          @for (conversation of list(); track conversation.id) {
-            <option [value]="conversation.id">{{ conversation.title }}</option>
-          }
-        </select>
-        <button type="button" class="button" (click)="start()">
-          {{ 'New' | transloco }}
-        </button>
-        @if (current().revision !== undefined) {
-          <button type="button" class="text-button danger" (click)="remove()">
-            {{ 'Delete' | transloco }}
-          </button>
-        }
-      </div>
-    </div>
+    <app-ai-conversations
+      [list]="list()"
+      [current]="current().revision === undefined ? undefined : current().id"
+      [busy]="writing() !== undefined"
+      (opened)="open($event)"
+      (started)="start()"
+      (removed)="remove($event)"
+    />
     @if (reads(); as connection) {
       <p class="muted ai-chat-reads">{{ 'ai.reads' | transloco: { v0: connection } }}</p>
     }
-    <div class="ai-chat-log" role="log" [attr.aria-label]="'Conversation' | transloco">
+    <div
+      #log
+      class="ai-chat-log"
+      role="log"
+      [attr.aria-label]="'Conversation' | transloco"
+      (scroll)="scrolled()"
+    >
       <ol class="ai-chat-messages">
         @for (message of current().messages; track $index) {
           <li class="ai-message" [class.ai-message-user]="message.role === 'user'">
@@ -131,18 +121,6 @@
     @if (error(); as error) {
       <p class="global-alert" role="alert">{{ error | transloco }}</p>
     }
-    <div class="row ai-chat-actions">
-      @for (action of actions(); track action) {
-        <button
-          type="button"
-          class="button small"
-          [disabled]="writing() !== undefined"
-          (click)="quick(action)"
-        >
-          {{ 'ai.action.' + action | transloco }}
-        </button>
-      }
-    </div>
     <form class="ai-chat-ask" (submit)="$event.preventDefault(); send()">
       <label class="field"
         >{{ 'Ask the assistant' | transloco

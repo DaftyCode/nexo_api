@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  afterRenderEffect,
   computed,
   effect,
   inject,
@@ -10,20 +11,14 @@ import {
   output,
   signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { AiAnswer as Answering, AiWritten } from '../application/ai-use-cases';
 import { AI } from '../composition/providers';
-import {
-  AI_ACTIONS,
-  AI_PROVIDERS,
-  AiMessage,
-  AiPlace,
-  AiUse,
-  aiMissing,
-  stopNote,
-} from '../domain/ai';
+import { AI_PROVIDERS, AiMessage, AiPlace, AiUse, aiMissing, stopNote } from '../domain/ai';
 import { AiAnswer } from './ai-answer';
+import { AiConversations, ConversationEntry } from './ai-chat/conversations';
 import { AiChatSession, ShownConversation, freshConversation as fresh } from './ai-chat/session';
 import { AiHost, requestHost, sqlHost } from './ai-hosts';
 import { AiSettingsPanel } from './ai-settings';
@@ -42,7 +37,7 @@ const WIDTH = { min: 280, room: 320 };
  * panel shows its settings.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, AiSettingsPanel, AiAnswer, Splitter],
+  imports: [TranslocoPipe, FormField, AiSettingsPanel, AiAnswer, AiConversations, Splitter],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-ai-chat',
   host: { '[class.ai-floating]': 'floating()' },
@@ -70,8 +65,6 @@ export class AiChat {
       this.transloco.translate(key, params);
     return this.place() === 'sql' && this.section ? sqlHost(this.section, translate) : undefined;
   });
-  /** The questions offered in this place. */
-  protected readonly actions = computed(() => AI_ACTIONS[this.place()]);
   /** The connection the tools read: the one the person works with here. */
   protected readonly reads = computed(() => this.where()?.context()?.connection);
   readonly closed = output<void>();
@@ -82,7 +75,7 @@ export class AiChat {
     const kept = this.hasKey();
     return kept === undefined ? undefined : aiMissing(this.settings(), kept);
   });
-  protected readonly list = signal<{ id: string; title: string }[]>([]);
+  protected readonly list = signal<ConversationEntry[]>([]);
   protected readonly current = signal<ShownConversation>(fresh());
   protected readonly question = signal({ text: '' });
   protected readonly fields = form(this.question);
@@ -98,6 +91,9 @@ export class AiChat {
   private answer?: Answering;
   /** Whether what the place showed last is on screen again, so it may be kept. */
   private restored = false;
+  private readonly log = viewChild<ElementRef<HTMLElement>>('log');
+  /** The log follows what is written, until the person scrolls up; at its end it follows again. */
+  private follow = true;
 
   constructor() {
     void this.refresh();
@@ -122,6 +118,18 @@ export class AiChat {
       if (this.restored)
         untracked(() => this.session.shown.update((all) => ({ ...all, [this.place()]: shown })));
     });
+    afterRenderEffect(() => {
+      this.writing();
+      this.current();
+      const log = this.log()?.nativeElement;
+      if (log && this.follow) log.scrollTop = log.scrollHeight;
+    });
+  }
+
+  /** Where the person left the log: following its end, or reading above it. */
+  protected scrolled() {
+    const log = this.log()?.nativeElement;
+    if (log) this.follow = log.scrollHeight - log.scrollTop - log.clientHeight < 24;
   }
 
   /** A width dragged to, kept between the narrowest and the room of what it sits beside. */
@@ -156,6 +164,7 @@ export class AiChat {
         revision: conversation.revision,
         messages: conversation.messages,
       });
+      this.follow = true;
       this.error.set('');
     } catch (error) {
       this.error.set(this.state.describe(error));
@@ -174,6 +183,7 @@ export class AiChat {
     const messages: AiMessage[] = [...this.current().messages, { role: 'user', text }];
     this.current.update((current) => ({ ...current, messages }));
     this.question.set({ text: '' });
+    this.follow = true;
     this.writing.set({ text: '', thinking: '', steps: [] });
     this.error.set('');
     let message: AiMessage;
@@ -218,12 +228,6 @@ export class AiChat {
     this.answer?.stop();
   }
 
-  /** One of the questions of the place, asked in the person's language. */
-  protected quick(action: string) {
-    this.question.set({ text: this.transloco.translate(`ai.ask.${action}`) });
-    void this.send();
-  }
-
   /** A block of code of an answer goes where the place takes it. */
   protected use(use: AiUse) {
     this.where()?.use(use);
@@ -241,13 +245,13 @@ export class AiChat {
     this.state.tell(success('Copied to the clipboard'));
   }
 
-  protected async remove() {
-    const { id, revision } = this.current();
-    if (revision === undefined || this.writing() !== undefined) return;
-    if (!this.state.confirm('Delete this conversation?')) return;
+  /** Deletes a kept conversation once the person says so; the one on screen gives way to a new one. */
+  protected async remove(entry: ConversationEntry) {
+    if (this.writing() !== undefined) return;
+    if (!this.state.confirm('ai.conversation.confirm', { v0: entry.title })) return;
     try {
-      await this.ai.remove(this.state.workspaceId(), id, revision);
-      this.current.set(fresh());
+      await this.ai.remove(this.state.workspaceId(), entry.id, entry.revision);
+      if (this.current().id === entry.id) this.current.set(fresh());
       await this.loadList();
     } catch (error) {
       this.error.set(this.state.describe(error));

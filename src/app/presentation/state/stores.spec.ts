@@ -34,6 +34,7 @@ function context(cases: Fakes, confirm = true) {
   const value: StateContext = {
     cases: {
       files: { id: () => `id${++next}` },
+      sessions: { lastWorkspace: () => '', rememberWorkspace: () => undefined },
       ...cases,
       variables: cases,
     } as unknown as WorkspaceUseCases,

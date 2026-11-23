@@ -129,7 +129,7 @@ export class AiUseCases {
       ...(await this.reach(settings, workspace)),
       model: settings.model,
       ...(settings.provider === 'anthropic' && settings.effort ? { effort: settings.effort } : {}),
-      system: aiInstructions(place),
+      system: aiInstructions(place, settings),
       tools: place,
       messages: messages
         .filter((message) => !message.failed)
@@ -154,11 +154,14 @@ export class AiUseCases {
   }
 
   /** The conversations of a workspace, by name; each is read whole when it is opened. */
-  async conversations(workspace: string): Promise<{ id: string; title: string }[]> {
+  /** The conversations kept, newest first, with the revision a deletion is based on. */
+  async conversations(
+    workspace: string,
+  ): Promise<{ id: string; title: string; revision: number }[]> {
     return (await this.documents.documents(workspace))
       .filter((document) => document.kind === KIND)
       .sort((a, b) => b.updated_at - a.updated_at)
-      .map((document) => ({ id: document.id, title: document.name }));
+      .map((document) => ({ id: document.id, title: document.name, revision: document.revision }));
   }
 
   /** A conversation, with the revision its next save is based on. */

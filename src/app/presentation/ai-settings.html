@@ -46,15 +46,27 @@
       }
     </div>
     <div class="row">
-      <label class="field grow"
-        >{{ 'Model' | transloco
-        }}<input [formField]="fields.model" list="ai-models" autocomplete="off" spellcheck="false"
-      /></label>
-      <datalist id="ai-models">
-        @for (choice of models(); track choice.id) {
-          <option [value]="choice.id">{{ choice.name || choice.id }}</option>
-        }
-      </datalist>
+      <!-- Every model the provider listed, to choose from; typed while there is no list. -->
+      @if (models().length) {
+        <label class="field grow"
+          >{{ 'Model' | transloco
+          }}<select [formField]="fields.model">
+            @if (unlisted() !== undefined) {
+              <option [value]="unlisted()">
+                {{ unlisted() || ('Choose a model' | transloco) }}
+              </option>
+            }
+            @for (choice of models(); track choice.id) {
+              <option [value]="choice.id">{{ named(choice) }}</option>
+            }
+          </select></label
+        >
+      } @else {
+        <label class="field grow"
+          >{{ 'Model' | transloco
+          }}<input [formField]="fields.model" autocomplete="off" spellcheck="false"
+        /></label>
+      }
       <button type="button" class="button" [disabled]="state.busy()" (click)="loadModels()">
         {{ 'List the models' | transloco }}
       </button>

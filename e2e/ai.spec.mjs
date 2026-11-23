@@ -55,7 +55,7 @@ test('the assistant is set up and answers beside a request', async ({ page, nexo
     await page.getByLabel('Address of the server').fill(address);
     await page.getByRole('button', { name: 'List the models' }).click();
     await expect(page.getByText('The provider lists 1 models.')).toBeVisible();
-    await page.getByLabel('Model', { exact: true }).fill('local-model');
+    await page.getByLabel('Model', { exact: true }).selectOption('local-model');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
     expect(await violations(page)).toEqual([]);
 

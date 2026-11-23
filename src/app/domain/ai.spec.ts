@@ -103,6 +103,11 @@ describe('the AI assistant', () => {
     expect(aiInstructions('sql')).toContain('sql_list_connections and ask which one');
     expect(aiInstructions('mongo')).toContain('mongo_list_connections and ask which one');
     expect(aiInstructions('request')).not.toContain('list_connections');
+    // The model knows which one it is.
+    expect(aiInstructions('sql', { provider: 'anthropic', model: 'claude-sonnet-5-5' })).toContain(
+      'The model answering is claude-sonnet-5-5, from Anthropic',
+    );
+    expect(aiInstructions('sql')).not.toContain('The model answering');
   });
 
   it('reads a kept conversation, leaving out what is not a message', () => {

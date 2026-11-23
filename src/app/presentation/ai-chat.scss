@@ -14,19 +14,6 @@
 .ai-chat {
   width: calc(var(--nexo-size-unit) * 170);
 }
-.ai-chat-conversations .row {
-  gap: var(--nexo-space-3);
-}
-.ai-chat-conversations select {
-  flex: 1;
-  min-width: 0;
-  color: var(--nexo-color-text);
-  font-size: var(--nexo-font-size-sm);
-}
-/* As tall as the list beside it. */
-.ai-chat-conversations .button {
-  align-self: stretch;
-}
 .ai-chat-log {
   flex: 1;
   min-height: 0;
@@ -96,10 +83,6 @@
 .ai-chat-reads {
   margin: 0;
   font-size: var(--nexo-font-size-xs);
-}
-.ai-chat-actions {
-  flex-wrap: wrap;
-  gap: var(--nexo-space-1);
 }
 .ai-chat-ask {
   display: flex;

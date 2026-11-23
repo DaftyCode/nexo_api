@@ -126,8 +126,8 @@ describe('AiUseCases', () => {
     });
     documents = documents.map((d, at) => ({ ...d, updated_at: at }));
     expect(await cases.conversations('local')).toEqual([
-      { id: 'c2', title: 'Conversation' },
-      { id: 'c1', title: 'Why is this slow?' },
+      { id: 'c2', title: 'Conversation', revision: 1 },
+      { id: 'c1', title: 'Why is this slow?', revision: 1 },
     ]);
     expect(await cases.conversation('c1')).toMatchObject({ id: 'c1', revision: 1, place: 'sql' });
     const long = Array.from({ length: 205 }, (_, at) => ({

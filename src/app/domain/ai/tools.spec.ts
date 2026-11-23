@@ -1,5 +1,5 @@
 import { readConversation, stopNote, aiInstructions } from '../ai';
-import { AI_ACTIONS, readSteps, stepLabel, stepOf } from './tools';
+import { readSteps, stepLabel, stepOf } from './tools';
 
 describe('the tools of the assistant', () => {
   it('says what each tool did and what it was about', () => {
@@ -30,10 +30,7 @@ describe('the tools of the assistant', () => {
     expect(kept.messages[0]?.steps).toEqual([{ tool: 'read_open' }]);
   });
 
-  it('offers questions in each place and tells the model how its code is used', () => {
-    expect(AI_ACTIONS.request).toContain('writeTests');
-    expect(AI_ACTIONS.sql).toContain('explainPlan');
-    expect(AI_ACTIONS.mongo).toContain('documentCollection');
+  it('tells the model how its code is used', () => {
     expect(stopNote('tools')).toBe('ai.stop.tools');
     expect(stopNote('empty')).toBe('ai.stop.empty');
     expect(aiInstructions('request')).toContain('read_open');

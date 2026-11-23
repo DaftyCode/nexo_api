@@ -1,5 +1,3 @@
-import type { AiPlace } from '../ai';
-
 /** A tool the model used while it answered, as the chat shows it. */
 export interface AiStep {
   tool: string;
@@ -58,13 +56,3 @@ export function readSteps(value: unknown): AiStep[] | undefined {
     }));
   return steps.length ? steps : undefined;
 }
-
-/**
- * The questions the chat offers in each place: `ai.action.<id>` names the button and
- * `ai.ask.<id>` is the question asked, in the person's language.
- */
-export const AI_ACTIONS: Readonly<Record<AiPlace, readonly string[]>> = {
-  request: ['explainResponse', 'writeTests'],
-  sql: ['explainQuery', 'explainPlan', 'fixError'],
-  mongo: ['explainQuery', 'documentCollection'],
-};

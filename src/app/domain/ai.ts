@@ -10,7 +10,7 @@ export { MODEL_SIZES, byteSize, localReady } from './ai/local';
 export type { LocalAiStatus } from './ai/local';
 export { answerParts, codeActions, mongoQueryOf } from './ai/answer';
 export type { AiCodeAction, AiUse, AnswerPart } from './ai/answer';
-export { AI_ACTIONS, readSteps, stepLabel, stepOf } from './ai/tools';
+export { readSteps, stepLabel, stepOf } from './ai/tools';
 export type { AiStep } from './ai/tools';
 export type AiProvider = 'local' | 'anthropic' | 'openai' | 'gemini' | 'compatible';
 export type AiEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
@@ -169,7 +169,19 @@ export function stopNote(stop: string | undefined): string | undefined {
 }
 
 /** The instructions of the assistant in each place, in the language of the model. */
-export function aiInstructions(place: AiPlace): string {
+/** Who answers, as the model is told: it knows its own name only from this. */
+const MAKER: Record<AiProvider, string> = {
+  local: 'run inside Nexo on this computer with llama.cpp',
+  anthropic: 'from Anthropic',
+  openai: 'from OpenAI',
+  gemini: 'from Google',
+  compatible: 'served by a server compatible with OpenAI’s API',
+};
+
+export function aiInstructions(
+  place: AiPlace,
+  settings?: Pick<AiSettings, 'provider' | 'model'>,
+): string {
   const where = {
     sql: 'The person is writing SQL in the editor of a database connection.',
     mongo: 'The person is querying a MongoDB collection (filters, aggregation pipelines, shell).',
@@ -190,6 +202,9 @@ export function aiInstructions(place: AiPlace): string {
   }[place];
   return [
     'You are the assistant of Nexo, an API client and database tool that runs on the person’s computer.',
+    settings?.model
+      ? `The model answering is ${settings.model}, ${MAKER[settings.provider]}; say so when the person asks which model they use.`
+      : '',
     where,
     'When the question is about what the person has open, read it first with the read_open tool, and read what else you need with the other tools; they only read.',
     reads,
