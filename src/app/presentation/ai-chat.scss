@@ -73,6 +73,10 @@
 .ai-message .text-button {
   align-self: flex-start;
 }
+.ai-chat-actions {
+  flex-wrap: wrap;
+  gap: var(--nexo-space-1);
+}
 .ai-chat-ask {
   display: flex;
   flex-direction: column;

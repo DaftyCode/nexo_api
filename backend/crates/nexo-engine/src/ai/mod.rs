@@ -1,14 +1,18 @@
 //! The AI assistant's calls (IA-01). A chat streams its answer in the background while the
 //! interface asks for what arrived (`ai.poll`), as realtime connections do, and `ai.stop`
-//! ends it. Each call goes through the transport of requests: the egress policy, the route
-//! of the settings (a proxy or an SSH tunnel) and TLS with aws-lc-rs. The key comes from the
-//! vault, filled in by the application, and is never part of an answer.
+//! ends it. When the model asks for tools, the chat waits: the application runs them and
+//! `ai.continue` gives their answers back, in the same chat. Each call goes through the
+//! transport of requests: the egress policy, the route of the settings (a proxy or an SSH
+//! tunnel) and TLS with aws-lc-rs. The key comes from the vault, filled in by the
+//! application, and is never part of an answer.
+mod listing;
+mod resume;
 mod stream;
 pub mod wire;
 
 use crate::{
     egress::Policy,
-    transport::{Options, Transport, parse_url, read_limited},
+    transport::{Options, Transport, parse_url},
 };
 use nexo_domain::{
     Error, Result,
@@ -22,7 +26,7 @@ use std::{
 };
 use tokio_util::sync::CancellationToken;
 use url::Url;
-use wire::Settings;
+use wire::{Settings, Tool, ToolCall};
 
 /// Chats that run at once.
 const RUNNING: usize = 8;
@@ -32,8 +36,6 @@ const MAX_ANSWER: usize = 1 << 20;
 const KEPT: Duration = Duration::from_secs(300);
 /// How long an answer may take in all.
 const TIMEOUT: Duration = Duration::from_secs(600);
-/// Pages of a list of models read at most.
-const MODEL_PAGES: usize = 10;
 
 type Ports = Arc<dyn Fn() -> Vec<u16> + Send + Sync>;
 
@@ -48,11 +50,30 @@ struct State {
     input: u64,
     output: u64,
     ended: Option<Instant>,
+    /// The tools the model waits for.
+    waiting: Vec<ToolCall>,
+    /// The next text and reasoning start a new paragraph: they follow the reading of tools.
+    separate: bool,
+    separate_thinking: bool,
+}
+
+/// The conversation of a chat in the provider's words, to continue it after its tools.
+struct Turns {
+    settings: Settings,
+    system: String,
+    tools: Vec<Tool>,
+    native: Vec<Value>,
+    /// The last turn, while it waits for the answers of its tools.
+    pending: Option<(Value, Vec<ToolCall>)>,
+    rounds: usize,
 }
 
 struct Chat {
     state: Mutex<State>,
+    turns: Mutex<Turns>,
     stop: CancellationToken,
+    transport: Transport,
+    url: Url,
 }
 
 pub struct Assistant {
@@ -137,54 +158,31 @@ impl Assistant {
         Transport::new(options, Arc::default())
     }
 
-    /// `ai.models`: the models the provider lists for the key.
-    pub async fn models(&self, payload: &Value) -> Result<Value> {
-        let settings = settings(payload)?;
-        let first = wire::models(&settings, None);
-        let transport = self.transport(&parse_url(&first.url)?, payload).await?;
-        let mut found: Vec<wire::Model> = Vec::new();
-        let mut call = first;
-        for _ in 0..MODEL_PAGES {
-            let response = transport.get(&parse_url(&call.url)?, &call.headers).await?;
-            let status = response.status().as_u16();
-            let body = read_limited(response, 8 * 1024 * 1024).await?;
-            if !(200..300).contains(&status) {
-                return Err(Error::Validation(wire::failure(status, &body, None)));
-            }
-            let body: Value = serde_json::from_str(&body).map_err(|_| {
-                Error::Validation("The provider did not answer a list of models".into())
-            })?;
-            let (page, next) = wire::model_page(settings.provider, &body);
-            for model in page {
-                if !found.iter().any(|seen| seen.id == model.id) {
-                    found.push(model);
-                }
-            }
-            match next {
-                Some(after) => call = wire::models(&settings, Some(&after)),
-                None => break,
-            }
-        }
-        let models: Vec<Value> = found
-            .iter()
-            .map(|model| json!({"id": model.id, "name": model.name}))
-            .collect();
-        Ok(json!({"models": models}))
-    }
-
     /// `ai.chat`: starts the answer to a conversation and gives its id.
     pub async fn start(&self, payload: &Value) -> Result<Value> {
         let settings = settings(payload)?;
         let messages: Vec<Message> = serde_json::from_value(payload["messages"].clone())
             .map_err(|_| Error::Validation("The conversation is not valid".into()))?;
-        let system = text(&payload["system"]);
-        let messages = ai::conversation(messages, Some(system))?;
-        let call = wire::chat(&settings, &messages, system)?;
+        let system = text(&payload["system"]).to_owned();
+        let messages = ai::conversation(messages, Some(&system))?;
+        let tools = wire::tools::parse(&payload["tools"])?;
+        let native = wire::native(settings.provider, &messages);
+        let call = wire::request(&settings, &native, &system, &tools)?;
         let url = parse_url(&call.url)?;
         let transport = self.transport(&url, payload).await?;
         let chat = Arc::new(Chat {
             state: Mutex::default(),
+            turns: Mutex::new(Turns {
+                settings,
+                system,
+                tools,
+                native,
+                pending: None,
+                rounds: 0,
+            }),
             stop: CancellationToken::new(),
+            transport,
+            url,
         });
         let id = uuid::Uuid::new_v4().to_string();
         {
@@ -204,7 +202,7 @@ impl Assistant {
             }
             chats.insert(id.clone(), chat.clone());
         }
-        tokio::spawn(stream::run(chat, transport, url, call, settings.provider));
+        tokio::spawn(stream::run(chat, call));
         Ok(json!({"id": id}))
     }
 
@@ -226,6 +224,7 @@ impl Assistant {
             "next": state.text.len(),
             "thinking": since(&state.thinking, &payload["thinkingAfter"]),
             "thinkingNext": state.thinking.len(),
+            "tools": state.waiting,
             "done": state.done,
             "stop": state.stop,
             "error": state.error,
@@ -248,6 +247,15 @@ impl Assistant {
             .cloned();
         if let Some(chat) = &found {
             chat.stop.cancel();
+            // An answer that waits for its tools ends here too.
+            let mut state = chat.state.lock().unwrap();
+            if !state.waiting.is_empty() {
+                state.waiting.clear();
+                state.stop = Some("stopped".into());
+                state.done = true;
+                state.ended = Some(Instant::now());
+                chat.turns.lock().unwrap().pending = None;
+            }
         }
         Ok(json!({"stopped": found.is_some()}))
     }

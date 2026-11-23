@@ -59,11 +59,15 @@ describe('AiSettingsPanel', () => {
     expect(root().querySelector('datalist option')?.getAttribute('value')).toBe('gpt-x');
     expect(text()).toContain('Choose the model to ask');
     await fill(fixture, 'Model', 'gpt-x');
+    // Bodies of responses may stay on this computer.
+    expect(text()).toContain('its body stays on this computer');
+    (control(root(), 'Let the assistant read response bodies') as HTMLInputElement).click();
     await click(/^Save$/);
     expect(TestBed.inject(AI).settings()).toMatchObject({
       enabled: true,
       provider: 'openai',
       model: 'gpt-x',
+      bodies: false,
     });
     expect(state.toast()).toMatchObject({ title: 'Assistant saved' });
 

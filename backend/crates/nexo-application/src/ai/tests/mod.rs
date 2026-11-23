@@ -188,3 +188,5 @@ async fn the_local_model_answers_on_loopback_with_the_key_of_its_start() {
         "the local model is never reached through a proxy"
     );
 }
+
+mod tools;

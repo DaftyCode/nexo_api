@@ -6,7 +6,7 @@ use nexo_domain::{Document, DocumentKind, Result, WorkspaceId};
 pub(super) const JSON: &str = "application/json";
 
 /// The request of a collection with this identifier or name, depth first.
-pub(super) fn find_request<'a>(items: &'a Value, wanted: &str) -> Option<&'a Value> {
+pub(crate) fn find_request<'a>(items: &'a Value, wanted: &str) -> Option<&'a Value> {
     for item in items.as_array()? {
         if item.get("request").is_some()
             && (item["id"].as_str() == Some(wanted)
@@ -196,7 +196,7 @@ impl Application {
     }
 
     /// A document of a workspace, of the kind asked.
-    pub(super) async fn owned(
+    pub(crate) async fn owned(
         &self,
         workspace: &WorkspaceId,
         id: &str,
@@ -230,7 +230,7 @@ impl Application {
 
     /// Pretty JSON with every vault value replaced. Without the vault's list the text is not
     /// shared, since nothing could be checked.
-    pub(super) async fn redacted(&self, value: &Value) -> Result<String> {
+    pub(crate) async fn redacted(&self, value: &Value) -> Result<String> {
         let mut text = serde_json::to_string_pretty(value)
             .map_err(|error| Error::Infrastructure(error.to_string()))?;
         for secret in self.secrets.secrets().await? {

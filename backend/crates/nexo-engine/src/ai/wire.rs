@@ -62,21 +62,44 @@ fn role(role: Role, gemini: bool) -> &'static str {
     }
 }
 
+/// A conversation in the provider's words.
+pub fn native(provider: Provider, messages: &[Message]) -> Vec<Value> {
+    messages
+        .iter()
+        .map(|message| match provider {
+            Provider::Gemini => {
+                json!({"role": role(message.role, true), "parts": [{"text": message.text}]})
+            }
+            _ => json!({"role": role(message.role, false), "content": message.text}),
+        })
+        .collect()
+}
+
 /// The streamed chat of `messages`, after the instructions `system`.
 pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<Call> {
+    request(settings, &native(settings.provider, messages), system, &[])
+}
+
+/// The streamed request of a conversation already in the provider's words, after the
+/// instructions `system`, with the `tools` the model may ask for.
+pub fn request(
+    settings: &Settings,
+    native: &[Value],
+    system: &str,
+    tools: &[Tool],
+) -> Result<Call> {
     let mut headers = key_headers(settings);
-    let (url, body) = match settings.provider {
+    let offered = tools::definitions(settings.provider, tools);
+    let (url, mut body) = match settings.provider {
         Provider::Anthropic => {
             let mut body = json!({
                 "model": settings.model,
                 "max_tokens": MAX_TOKENS,
                 "stream": true,
-                // The instructions and the conversation so far are read again from the cache.
+                // The instructions, the tools and the conversation so far are read again
+                // from the cache.
                 "cache_control": {"type": "ephemeral"},
-                "messages": messages.iter().map(|message| json!({
-                    "role": role(message.role, false),
-                    "content": message.text,
-                })).collect::<Vec<_>>(),
+                "messages": native,
             });
             if !system.is_empty() {
                 body["system"] = json!(system);
@@ -103,9 +126,7 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             if !system.is_empty() {
                 sent.push(json!({"role": "system", "content": system}));
             }
-            sent.extend(messages.iter().map(
-                |message| json!({"role": role(message.role, false), "content": message.text}),
-            ));
+            sent.extend(native.iter().cloned());
             let body = json!({
                 "model": settings.model,
                 "stream": true,
@@ -115,12 +136,7 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             (format!("{}/chat/completions", settings.base), body)
         }
         Provider::Gemini => {
-            let mut body = json!({
-                "contents": messages.iter().map(|message| json!({
-                    "role": role(message.role, true),
-                    "parts": [{"text": message.text}],
-                })).collect::<Vec<_>>(),
-            });
+            let mut body = json!({"contents": native});
             if !system.is_empty() {
                 body["systemInstruction"] = json!({"parts": [{"text": system}]});
             }
@@ -138,6 +154,10 @@ pub fn chat(settings: &Settings, messages: &[Message], system: &str) -> Result<C
             )
         }
     };
+    if let Some(offered) = offered {
+        // The model chooses whether to read with them (`auto`, every provider's default).
+        body["tools"] = offered;
+    }
     if settings.model.trim().is_empty() {
         return Err(Error::Validation("Choose the model to ask".into()));
     }
@@ -194,8 +214,12 @@ pub fn failure(status: u16, body: &str, retry_after: Option<&str>) -> String {
 mod events;
 mod models;
 mod thinking;
+pub mod tools;
+mod turn;
 pub use events::{Delta, deltas};
 pub use models::{Model, model_page, models};
+pub use tools::{Answer, Tool, ToolCall};
+pub use turn::Turn;
 
 #[cfg(test)]
 mod tests;

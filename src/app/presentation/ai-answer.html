@@ -1,0 +1,33 @@
+@if (steps()?.length) {
+  <ul class="ai-steps" [attr.aria-label]="'Tools used' | transloco">
+    @for (step of steps(); track $index) {
+      <li [class.failed]="step.failed">
+        {{ label(step.tool) | transloco: { v0: step.detail ?? step.tool } }}
+      </li>
+    }
+  </ul>
+}
+@for (part of parts(); track $index) {
+  @if (part.kind === 'text') {
+    <div class="ai-answer-text">{{ part.text }}</div>
+  } @else {
+    <figure class="ai-code">
+      <figcaption class="ai-code-head">
+        <span class="muted grow">{{ part.language || ('Code' | transloco) }}</span>
+        @for (action of actions(part.language); track action) {
+          <button
+            type="button"
+            class="text-button"
+            (click)="use.emit({ action, code: part.code, language: part.language })"
+          >
+            {{ 'ai.use.' + action | transloco }}
+          </button>
+        }
+        <button type="button" class="text-button" (click)="copy(part.code)">
+          {{ 'Copy' | transloco }}
+        </button>
+      </figcaption>
+      <pre class="ai-code-text"><code>{{ part.code }}</code></pre>
+    </figure>
+  }
+}

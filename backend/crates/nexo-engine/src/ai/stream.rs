@@ -1,30 +1,37 @@
-//! An answer read from its stream into its chat, until it ends, fails or is stopped.
+//! A turn of an answer read from its stream into its chat, until it ends, fails, is stopped
+//! or waits for the tools the model asked for.
 use super::{
     Chat, MAX_ANSWER, TIMEOUT,
-    wire::{self, Call, Delta},
+    wire::{self, Call, Delta, Turn},
 };
 use crate::{
     graphql_sse::{Event, Parser},
-    transport::{Transport, read_limited, request_error},
+    transport::{read_limited, request_error},
 };
 use nexo_domain::ai::Provider;
+use serde_json::Value;
 use std::{sync::Arc, time::Instant};
-use url::Url;
 
-pub(super) async fn run(
-    chat: Arc<Chat>,
-    transport: Transport,
-    url: Url,
-    call: Call,
-    provider: Provider,
-) {
+pub(super) async fn run(chat: Arc<Chat>, call: Call) {
+    let provider = chat.turns.lock().unwrap().settings.provider;
+    let mut turn = Turn::default();
     let outcome = tokio::select! {
         _ = chat.stop.cancelled() => Ok(Some("stopped".to_owned())),
-        streamed = tokio::time::timeout(TIMEOUT, stream(&chat, &transport, &url, &call, provider)) => {
+        streamed = tokio::time::timeout(TIMEOUT, stream(&chat, &call, provider, &mut turn)) => {
             streamed.unwrap_or_else(|_| Err("The answer took too long".to_owned()))
         }
     };
+    let (native, calls) = turn.finish(provider);
     let mut state = chat.state.lock().unwrap();
+    if matches!(&outcome, Ok(stop) if stop.as_deref() != Some("stopped")) && !calls.is_empty() {
+        // The model waits for its tools; what ended this turn is not the end of the answer.
+        state.stop = None;
+        state.waiting = calls.clone();
+        state.ended = Some(Instant::now());
+        drop(state);
+        chat.turns.lock().unwrap().pending = Some((native, calls));
+        return;
+    }
     match outcome {
         Ok(Some(stop)) => state.stop = Some(stop),
         Ok(None) => {}
@@ -39,7 +46,11 @@ fn apply(
     chat: &Chat,
     provider: Provider,
     event: &Event,
+    turn: &mut Turn,
 ) -> std::result::Result<Option<String>, String> {
+    if let Ok(data) = serde_json::from_str::<Value>(&event.data) {
+        turn.push(provider, &data);
+    }
     let mut state = chat.state.lock().unwrap();
     for delta in wire::deltas(provider, event) {
         match delta {
@@ -47,11 +58,23 @@ fn apply(
                 if state.text.len() + text.len() > MAX_ANSWER {
                     return Ok(Some("length".into()));
                 }
+                if std::mem::take(&mut state.separate)
+                    && !state.text.is_empty()
+                    && !state.text.ends_with('\n')
+                {
+                    state.text.push_str("\n\n");
+                }
                 state.text.push_str(&text);
             }
             // Reasoning past the limit of an answer is left out; the answer goes on.
             Delta::Thinking(text) => {
                 if state.thinking.len() + text.len() <= MAX_ANSWER {
+                    if std::mem::take(&mut state.separate_thinking)
+                        && !state.thinking.is_empty()
+                        && !state.thinking.ends_with('\n')
+                    {
+                        state.thinking.push_str("\n\n");
+                    }
                     state.thinking.push_str(&text);
                 }
             }
@@ -68,14 +91,14 @@ fn apply(
 
 async fn stream(
     chat: &Chat,
-    transport: &Transport,
-    url: &Url,
     call: &Call,
     provider: Provider,
+    turn: &mut Turn,
 ) -> std::result::Result<Option<String>, String> {
     let body = call.body.clone().unwrap_or_default();
-    let mut response = transport
-        .stream(url, &call.headers, body)
+    let mut response = chat
+        .transport
+        .stream(&chat.url, &call.headers, body)
         .await
         .map_err(|error| error.to_string())?;
     let status = response.status().as_u16();
@@ -95,14 +118,14 @@ async fn stream(
         .map_err(|error| request_error(error).to_string())?
     {
         for event in parser.push(&chunk) {
-            if let Some(stop) = apply(chat, provider, &event)? {
+            if let Some(stop) = apply(chat, provider, &event, turn)? {
                 return Ok(Some(stop));
             }
         }
     }
     // A last event the server did not end with a blank line.
     for event in parser.push(b"\n\n") {
-        if let Some(stop) = apply(chat, provider, &event)? {
+        if let Some(stop) = apply(chat, provider, &event, turn)? {
             return Ok(Some(stop));
         }
     }

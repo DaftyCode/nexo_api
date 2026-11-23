@@ -41,6 +41,8 @@ export const EXECUTION_OPERATIONS = [
   'ai.chat',
   'ai.poll',
   'ai.stop',
+  'ai.tool',
+  'ai.continue',
   'ai.local.status',
   'ai.local.install',
   'ai.local.file',

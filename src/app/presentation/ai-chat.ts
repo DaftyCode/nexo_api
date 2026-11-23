@@ -1,4 +1,4 @@
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -11,10 +11,13 @@ import {
   untracked,
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
-import { AiAnswer, AiWritten } from '../application/ai-use-cases';
+import { AiAnswer as Answering, AiWritten } from '../application/ai-use-cases';
 import { AI } from '../composition/providers';
-import { AiMessage, AiPlace, aiMissing, stopNote } from '../domain/ai';
+import { AI_ACTIONS, AiMessage, AiPlace, AiUse, aiMissing, stopNote } from '../domain/ai';
+import { AiAnswer } from './ai-answer';
+import { AiHost, requestHost, sqlHost } from './ai-hosts';
 import { AiSettingsPanel } from './ai-settings';
+import { DbSection } from './db-panel/section';
 import { WorkspaceState, success } from './workspace-state';
 
 /** The conversation on screen; one without `revision` is not saved yet. */
@@ -27,11 +30,13 @@ const fresh = (): Current => ({ id: crypto.randomUUID(), messages: [] });
 
 /**
  * The AI assistant beside the SQL editor, a MongoDB collection or a request (IA-01): the
- * person asks, the answer streams in and can be stopped, and each conversation is kept in the
- * workspace. Until the assistant is set up, the panel shows its settings.
+ * person asks, or picks one of the questions of the place; the model reads what is open with
+ * its tools, the answer streams in and can be stopped, and its code goes where the place
+ * takes it. Each conversation is kept in the workspace. Until the assistant is set up, the
+ * panel shows its settings.
  */
 @Component({
-  imports: [TranslocoPipe, FormField, AiSettingsPanel],
+  imports: [TranslocoPipe, FormField, AiSettingsPanel, AiAnswer],
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-ai-chat',
   host: { '[class.ai-floating]': 'floating()' },
@@ -40,10 +45,24 @@ const fresh = (): Current => ({ id: crypto.randomUUID(), messages: [] });
 })
 export class AiChat {
   private readonly ai = inject(AI);
+  private readonly transloco = inject(TranslocoService);
+  private readonly section = inject(DbSection, { optional: true });
   protected readonly state = inject(WorkspaceState);
   readonly place = input.required<AiPlace>();
   /** Over the screen, at its right, where there is no room beside it. */
   readonly floating = input(false);
+  /** What the tools read and where code goes, when the place gives its own. */
+  readonly host = input<AiHost | undefined>(undefined);
+  private readonly where = computed<AiHost | undefined>(() => {
+    const given = this.host();
+    if (given) return given;
+    if (this.place() === 'request') return requestHost(this.state);
+    const translate = (key: string, params?: Record<string, string>) =>
+      this.transloco.translate(key, params);
+    return this.place() === 'sql' && this.section ? sqlHost(this.section, translate) : undefined;
+  });
+  /** The questions offered in this place. */
+  protected readonly actions = computed(() => AI_ACTIONS[this.place()]);
   readonly closed = output<void>();
   protected readonly settings = signal(this.ai.settings());
   /** Whether the vault keeps the provider's key; unknown until it is asked. */
@@ -60,7 +79,7 @@ export class AiChat {
   protected readonly writing = signal<AiWritten | undefined>(undefined);
   protected readonly error = signal('');
   protected readonly note = stopNote;
-  private answer?: AiAnswer;
+  private answer?: Answering;
 
   constructor() {
     void this.refresh();
@@ -111,7 +130,7 @@ export class AiChat {
     const messages: AiMessage[] = [...this.current().messages, { role: 'user', text }];
     this.current.update((current) => ({ ...current, messages }));
     this.question.set({ text: '' });
-    this.writing.set({ text: '', thinking: '' });
+    this.writing.set({ text: '', thinking: '', steps: [] });
     this.error.set('');
     let message: AiMessage;
     try {
@@ -121,6 +140,7 @@ export class AiChat {
         this.place(),
         messages,
         (written) => this.writing.set(written),
+        () => this.where()?.context(),
       );
       message = await this.answer.done;
     } catch (error) {
@@ -152,6 +172,17 @@ export class AiChat {
 
   protected stop() {
     this.answer?.stop();
+  }
+
+  /** One of the questions of the place, asked in the person's language. */
+  protected quick(action: string) {
+    this.question.set({ text: this.transloco.translate(`ai.ask.${action}`) });
+    void this.send();
+  }
+
+  /** A block of code of an answer goes where the place takes it. */
+  protected use(use: AiUse) {
+    this.where()?.use(use);
   }
 
   protected keydown(event: KeyboardEvent) {

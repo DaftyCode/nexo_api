@@ -12,34 +12,18 @@ import {
   readAiSettings,
   localReady,
   readConversation,
-  thoughtSeconds,
 } from '../domain/ai';
 import { WorkspaceDocument } from '../domain/models';
 import { readProxyProfile } from '../domain/proxy';
+import { AiWritten, follow } from './ai-use-cases/answer';
+import type { AiContext } from './payloads';
 import { DocumentRepositoryPort, ExecutionPort, PreferencePort, SecretVaultPort } from './ports';
+
+export type { AiWritten } from './ai-use-cases/answer';
 
 /** The preference with the assistant's settings on this device. */
 const SETTINGS = 'ai.settings';
-/** How often a running answer is asked what it gained. */
-const POLL = 120;
 const KIND = 'ai-conversation';
-
-/** What an answer gained since the last time it was asked. */
-interface Polled {
-  text: string;
-  next: number;
-  thinking?: string;
-  thinkingNext?: number;
-  done: boolean;
-  stop?: string | null;
-  error?: string | null;
-}
-
-/** An answer as far as it has come: its text and the reasoning before it. */
-export interface AiWritten {
-  text: string;
-  thinking: string;
-}
 
 /** An answer being written: stop it, or wait for its end. */
 export interface AiAnswer {
@@ -129,8 +113,9 @@ export class AiUseCases {
 
   /**
    * Asks the conversation `messages` (ending with the question) and streams the answer to
-   * `written` as it grows: the whole text and reasoning so far each time. The reasoning is
-   * shown, never sent back to the model.
+   * `written` as it grows: the whole text, reasoning and tools so far each time. The model
+   * reads with the tools of the place, which see what `context` says is open. The reasoning
+   * is shown, never sent back to the model.
    */
   async ask(
     settings: AiSettings,
@@ -138,57 +123,26 @@ export class AiUseCases {
     place: AiPlace,
     messages: readonly AiMessage[],
     written: (answer: AiWritten) => void,
+    context?: () => AiContext | undefined,
   ): Promise<AiAnswer> {
     const { id } = await this.api.execute<{ id: string }>('ai.chat', {
       ...(await this.reach(settings, workspace)),
       model: settings.model,
       ...(settings.provider === 'anthropic' && settings.effort ? { effort: settings.effort } : {}),
       system: aiInstructions(place),
+      tools: place,
       messages: messages
         .filter((message) => !message.failed)
         .map(({ role, text }) => ({ role, text })),
     });
     let stopped = false;
-    const done = (async (): Promise<AiMessage> => {
-      const answer: AiWritten = { text: '', thinking: '' };
-      let next = 0;
-      let thought = 0;
-      // When the reasoning began, and when the answer after it did.
-      let began: number | undefined;
-      let ended: number | undefined;
-      for (;;) {
-        const polled = await this.api.execute<Polled>('ai.poll', {
-          id,
-          after: next,
-          thinkingAfter: thought,
-        });
-        if (polled.thinking) {
-          answer.thinking += polled.thinking;
-          began ??= this.now();
-        }
-        if (polled.text) {
-          answer.text += polled.text;
-          if (began !== undefined) ended ??= this.now();
-        }
-        if (polled.text || polled.thinking) written({ ...answer });
-        next = polled.next ?? next;
-        thought = polled.thinkingNext ?? thought;
-        if (polled.done) {
-          return {
-            role: 'assistant',
-            text: answer.text,
-            ...(began !== undefined
-              ? { thinking: answer.thinking, thought: thoughtSeconds(began, ended ?? this.now()) }
-              : {}),
-            ...(polled.stop && polled.stop !== 'end_turn' && polled.stop !== 'stop'
-              ? { stop: polled.stop }
-              : {}),
-            ...(polled.error ? { failed: polled.error } : {}),
-          };
-        }
-        await this.wait(POLL);
-      }
-    })();
+    const done = follow(
+      this.api,
+      id,
+      { workspace, ...(context ? { context } : {}), bodies: settings.bodies },
+      written,
+      { wait: this.wait, now: this.now },
+    );
     return {
       stop: () => {
         if (stopped) return;

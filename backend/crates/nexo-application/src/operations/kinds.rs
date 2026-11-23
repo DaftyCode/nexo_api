@@ -150,6 +150,8 @@ impl Operation {
                 | Self::AiChat
                 | Self::AiPoll
                 | Self::AiStop
+                | Self::AiTool
+                | Self::AiContinue
                 | Self::AiLocalStatus
                 | Self::AiLocalInstall
                 | Self::AiLocalFile

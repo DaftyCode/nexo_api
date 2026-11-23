@@ -60,7 +60,7 @@ fn bounded(rows: Vec<Value>, total: usize, cut: bool) -> Value {
 
 impl Application {
     /// The exposed SQL connections of a workspace.
-    pub(super) async fn mcp_sql_connections(
+    pub(crate) async fn mcp_sql_connections(
         &self,
         workspace: &WorkspaceId,
     ) -> Result<Vec<Document>> {
@@ -74,7 +74,7 @@ impl Application {
     }
 
     /// Runs an SQL tool; `None` when the name is not one of them.
-    pub(super) async fn sql_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
+    pub(crate) async fn sql_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
         if !name.starts_with("sql_") {
             return None;
         }

@@ -55,8 +55,15 @@
                 <div class="ai-thinking-text">{{ message.thinking }}</div>
               </details>
             }
-            @if (message.text) {
+            @if (message.role === 'user') {
               <div class="ai-message-text">{{ message.text }}</div>
+            } @else {
+              <app-ai-answer
+                [text]="message.text"
+                [steps]="message.steps"
+                [place]="place()"
+                (use)="use($event)"
+              />
             }
             @if (message.failed) {
               <p class="ai-message-failed" role="alert">{{ message.failed | transloco }}</p>
@@ -85,8 +92,13 @@
                 </div>
               </details>
             }
-            @if (writing.text) {
-              <div class="ai-message-text">{{ writing.text }}</div>
+            @if (writing.text || writing.steps.length) {
+              <app-ai-answer
+                [text]="writing.text"
+                [steps]="writing.steps"
+                [place]="place()"
+                [actionable]="false"
+              />
             } @else if (!writing.thinking) {
               <div class="ai-message-text">{{ 'Thinking…' | transloco }}</div>
             }
@@ -97,6 +109,18 @@
     @if (error(); as error) {
       <p class="global-alert" role="alert">{{ error | transloco }}</p>
     }
+    <div class="row ai-chat-actions">
+      @for (action of actions(); track action) {
+        <button
+          type="button"
+          class="button small"
+          [disabled]="writing() !== undefined"
+          (click)="quick(action)"
+        >
+          {{ 'ai.action.' + action | transloco }}
+        </button>
+      }
+    </div>
     <form class="ai-chat-ask" (submit)="$event.preventDefault(); send()">
       <label class="field"
         >{{ 'Ask the assistant' | transloco

@@ -96,6 +96,27 @@ export interface AiMessage {
   text: string;
 }
 
+export interface AiContext {
+  place?: 'request' | 'sql' | 'mongo';
+  request?: Record<string, unknown>;
+  response?: Record<string, unknown>;
+  collectionId?: string;
+  connection?: string;
+  engine?: string;
+  database?: string;
+  collection?: string;
+  script?: string;
+  query?: string;
+  error?: string;
+  plan?: string;
+}
+
+export interface AiToolResult {
+  id: string;
+  text: string;
+  error?: boolean;
+}
+
 export interface RequestPayload {
   workspace?: string;
   id?: string;
@@ -402,6 +423,7 @@ export interface AiChatPayload {
     profile?: string;
   };
   caPem?: string;
+  tools?: 'request' | 'sql' | 'mongo';
 }
 
 export interface AiPollPayload {
@@ -409,6 +431,20 @@ export interface AiPollPayload {
   workspace?: string;
   after?: number;
   thinkingAfter?: number;
+}
+
+export interface AiToolPayload {
+  name: string;
+  workspace?: string;
+  input?: Record<string, unknown>;
+  context?: AiContext;
+  bodies?: boolean;
+}
+
+export interface AiContinuePayload {
+  id: string;
+  results: readonly AiToolResult[];
+  workspace?: string;
 }
 
 export interface AiLocalInstallPayload {
@@ -1178,6 +1214,8 @@ export interface OperationPayloads {
   'ai.chat': AiChatPayload;
   'ai.poll': AiPollPayload;
   'ai.stop': IdPayload;
+  'ai.tool': AiToolPayload;
+  'ai.continue': AiContinuePayload;
   'ai.local.status': WorkspacePayload;
   'ai.local.install': AiLocalInstallPayload;
   'ai.local.file': AiLocalFilePayload;

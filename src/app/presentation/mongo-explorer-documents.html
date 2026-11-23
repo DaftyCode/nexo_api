@@ -213,7 +213,7 @@
         class="button small"
         [class.primary]="explorer().view() === option"
         [attr.aria-pressed]="explorer().view() === option"
-        (click)="explorer().setView($any(option))"
+        (click)="explorer().view.set($any(option))"
       >
         {{ (option === 'table' ? 'Table' : option === 'tree' ? 'Tree' : 'JSON') | transloco }}
       </button>

@@ -1,7 +1,8 @@
 // Contract tests of the AI assistant (IA-01) through Nexo, against a provider played on
 // loopback: the key comes from the vault, a value of the vault never reaches the provider,
-// the answer streams and is read by polls, its reasoning apart, it can be stopped, and the
-// models are listed. Without a key nothing is called.
+// the answer streams and is read by polls, its reasoning apart, it reads with tools whose
+// answers go back masked, it can be stopped, and the models are listed. Without a key
+// nothing is called.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -13,6 +14,8 @@ let address;
 const received = [];
 /** How the provider answers the next chat: its events and the pause between them. */
 let script = { events: [], pause: 0 };
+/** Scripts for the chats that come next, one each, before `script` again. */
+let queue = [];
 
 const sse = (event, data) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 const text = (value) =>
@@ -38,10 +41,11 @@ before(async () => {
         return;
       }
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      for (const event of script.events) {
+      const answer = queue.shift() ?? script;
+      for (const event of answer.events) {
         if (response.destroyed) return;
         response.write(event);
-        await new Promise((wait) => setTimeout(wait, script.pause));
+        await new Promise((wait) => setTimeout(wait, answer.pause));
       }
       response.end();
     });
@@ -157,6 +161,82 @@ test('the reasoning streams apart from the answer', async () => {
   assert.equal(local.written, 'Done');
   assert.equal(local.thinking, 'Plan.');
   assert.equal(received.at(-1).url, '/v1/chat/completions');
+});
+
+test('the model reads with tools and their answers go back masked', async () => {
+  const chunk = (delta, finish) =>
+    `data: ${JSON.stringify({ choices: [{ delta, ...(finish ? { finish_reason: finish } : {}) }] })}\n\n`;
+  const call = { index: 0, id: 'call_1', type: 'function' };
+  queue = [
+    {
+      events: [
+        chunk({ tool_calls: [{ ...call, function: { name: 'read_open', arguments: '' } }] }),
+        chunk({ tool_calls: [{ index: 0, function: { arguments: '{}' } }] }, 'tool_calls'),
+        'data: [DONE]\n\n',
+      ],
+      pause: 5,
+    },
+    { events: [chunk({ content: 'It logs in.' }, 'stop'), 'data: [DONE]\n\n'], pause: 5 },
+  ];
+  const started = await server.api('POST', '/execute/ai.chat', {
+    workspace: 'local',
+    provider: 'compatible',
+    baseUrl: address,
+    model: 'qwen',
+    tools: 'request',
+    messages: [{ role: 'user', text: 'What does this request do?' }],
+  });
+  assert.equal(started.status, 200, JSON.stringify(started.body));
+  const id = started.body.id;
+  let waiting;
+  await until(async () => {
+    waiting = await server.execute('ai.poll', { id });
+    return waiting.tools?.length > 0;
+  });
+  assert.deepEqual(waiting.tools, [{ id: 'call_1', name: 'read_open', input: {} }]);
+  const offered = JSON.parse(received.at(-1).body).tools.map((tool) => tool.function.name);
+  assert.ok(offered.includes('read_open') && offered.includes('read_response'), offered);
+  // The tool reads what is open as agents may: no credential, no value of the vault.
+  const read = await server.execute('ai.tool', {
+    workspace: 'local',
+    name: 'read_open',
+    context: {
+      place: 'request',
+      request: {
+        name: 'Login',
+        request: {
+          method: 'POST',
+          url: 'https://api.test/login',
+          header: [{ key: 'Authorization', value: 'Bearer abc' }],
+          body: { mode: 'raw', raw: 'pass=hunter2-secret' },
+        },
+      },
+    },
+  });
+  assert.equal(read.error, false);
+  assert.ok(read.text.includes('https://api.test/login'), read.text);
+  assert.ok(!read.text.includes('Bearer abc') && !read.text.includes('hunter2-secret'), read.text);
+  const refused = await server.execute('ai.tool', {
+    workspace: 'local',
+    name: 'sql_query',
+    input: { connection: 'Prod', sql: 'SELECT 1' },
+  });
+  assert.equal(refused.error, true);
+  await server.execute('ai.continue', {
+    id,
+    results: [{ id: 'call_1', text: `${read.text} and hunter2-secret` }],
+  });
+  const { written, last } = await answer(id);
+  assert.equal(written, 'It logs in.');
+  assert.equal(last.stop, 'stop');
+  const sent = received.at(-1).body;
+  const messages = JSON.parse(sent).messages;
+  assert.equal(messages.at(-2).tool_calls[0].id, 'call_1');
+  assert.deepEqual(
+    { role: messages.at(-1).role, id: messages.at(-1).tool_call_id },
+    { role: 'tool', id: 'call_1' },
+  );
+  assert.ok(!sent.includes('hunter2-secret'), sent);
 });
 
 test('an answer is stopped where it is', async () => {

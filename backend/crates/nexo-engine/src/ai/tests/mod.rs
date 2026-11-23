@@ -7,6 +7,34 @@ use tokio::{
     sync::oneshot,
 };
 
+/// The request a provider reads: its head and as much body as it announces.
+pub(super) async fn read_request(socket: &mut tokio::net::TcpStream) -> String {
+    let mut request = Vec::new();
+    let mut buffer = [0u8; 8192];
+    loop {
+        let read = socket.read(&mut buffer).await.unwrap_or(0);
+        request.extend_from_slice(&buffer[..read]);
+        let text = String::from_utf8_lossy(&request).to_string();
+        if let Some(end) = text.find("\r\n\r\n") {
+            let length = text
+                .lines()
+                .find_map(|line| {
+                    line.to_ascii_lowercase()
+                        .strip_prefix("content-length:")
+                        .map(|n| n.trim().parse::<usize>().unwrap_or(0))
+                })
+                .unwrap_or(0);
+            if request.len() >= end + 4 + length {
+                break;
+            }
+        }
+        if read == 0 {
+            break;
+        }
+    }
+    String::from_utf8_lossy(&request).to_string()
+}
+
 /// A provider that answers one request with `status`, `body` (sent in `parts`, with a pause
 /// between them) and hands back the request it read.
 async fn provider(
@@ -19,30 +47,8 @@ async fn provider(
     let (sender, receiver) = oneshot::channel();
     tokio::spawn(async move {
         let (mut socket, _) = listener.accept().await.unwrap();
-        let mut request = Vec::new();
-        let mut buffer = [0u8; 8192];
-        loop {
-            let read = socket.read(&mut buffer).await.unwrap();
-            request.extend_from_slice(&buffer[..read]);
-            let text = String::from_utf8_lossy(&request).to_string();
-            if let Some(end) = text.find("\r\n\r\n") {
-                let length = text
-                    .lines()
-                    .find_map(|line| {
-                        line.to_ascii_lowercase()
-                            .strip_prefix("content-length:")
-                            .map(|n| n.trim().parse::<usize>().unwrap_or(0))
-                    })
-                    .unwrap_or(0);
-                if request.len() >= end + 4 + length || read == 0 {
-                    break;
-                }
-            }
-            if read == 0 {
-                break;
-            }
-        }
-        let _ = sender.send(String::from_utf8_lossy(&request).to_string());
+        let request = read_request(&mut socket).await;
+        let _ = sender.send(request);
         let kind = if status == 200 {
             "text/event-stream"
         } else {
@@ -102,6 +108,8 @@ async fn finished(assistant: &Assistant, id: &str) -> (String, Value) {
 fn sse(event: &str, data: Value) -> String {
     format!("event: {event}\ndata: {data}\n\n")
 }
+
+mod tools;
 
 #[tokio::test]
 async fn an_answer_streams_and_is_read_by_polls() {

@@ -1,7 +1,10 @@
 import { AiSettings, DEFAULT_AI_SETTINGS } from '../domain/ai';
-import { AiUseCases } from './ai-use-cases';
+import { AiUseCases, AiWritten } from './ai-use-cases';
 
-/** Answers streamed by polls: their text, their reasoning apart, a stop and a failure. */
+/**
+ * Answers streamed by polls: their text, their reasoning apart, the tools they read with, a
+ * stop and a failure.
+ */
 describe('AiUseCases answers', () => {
   let calls: { operation: string; payload: Record<string, unknown> }[];
   let polls: unknown[];
@@ -24,6 +27,10 @@ describe('AiUseCases answers', () => {
         calls.push({ operation, payload });
         if (operation === 'ai.chat') return { id: 'c1' } as T;
         if (operation === 'ai.poll') return polls.shift() as T;
+        if (operation === 'ai.tool' && payload['name'] === 'sql_query') {
+          throw new Error('Prod is not exposed to MCP');
+        }
+        if (operation === 'ai.tool') return { text: `read ${String(payload['name'])}` } as T;
         return {} as T;
       },
     };
@@ -44,7 +51,7 @@ describe('AiUseCases answers', () => {
       { text: '', next: 3, done: false },
       { text: 'lo', next: 5, done: true, stop: 'end_turn' },
     );
-    const written: { text: string; thinking: string }[] = [];
+    const written: AiWritten[] = [];
     const answer = await cases.ask(
       on,
       'local',
@@ -58,8 +65,8 @@ describe('AiUseCases answers', () => {
     );
     expect(await answer.done).toEqual({ role: 'assistant', text: 'Hello' });
     expect(written).toEqual([
-      { text: 'Hel', thinking: '' },
-      { text: 'Hello', thinking: '' },
+      { text: 'Hel', thinking: '', steps: [] },
+      { text: 'Hello', thinking: '', steps: [] },
     ]);
     const chat = calls.find((call) => call.operation === 'ai.chat')!.payload;
     expect(chat['effort']).toBe('high');
@@ -84,7 +91,7 @@ describe('AiUseCases answers', () => {
       { text: '', next: 0, thinking: ' client.', thinkingNext: 16, done: false },
       { text: 'GROUP BY', next: 8, thinking: '', thinkingNext: 16, done: true, stop: 'stop' },
     );
-    const written: { text: string; thinking: string }[] = [];
+    const written: AiWritten[] = [];
     const answer = await cases.ask(
       { ...on, provider: 'local', model: 'local' },
       'local',
@@ -165,5 +172,81 @@ describe('AiUseCases answers', () => {
       text: '',
       failed: 'The provider refused the API key',
     });
+  });
+
+  it('reads with the tools the model asks for and gives their answers back', async () => {
+    polls.push(
+      {
+        text: 'Let me look.',
+        next: 12,
+        done: false,
+        tools: [
+          { id: 't1', name: 'read_open', input: {} },
+          { id: 't2', name: 'sql_query', input: { connection: 'Prod', sql: 'SELECT 1' } },
+        ],
+      },
+      { text: ' It counts.', next: 23, done: true, stop: 'end_turn' },
+    );
+    const written: AiWritten[] = [];
+    const answer = await cases.ask(
+      on,
+      'local',
+      'sql',
+      [{ role: 'user', text: 'Count' }],
+      (part) => written.push(part),
+      () => ({ place: 'sql', script: 'SELECT 1' }),
+    );
+    expect(await answer.done).toEqual({
+      role: 'assistant',
+      text: 'Let me look. It counts.',
+      steps: [{ tool: 'read_open' }, { tool: 'sql_query', detail: 'Prod', failed: true }],
+    });
+    expect(calls.find((call) => call.operation === 'ai.chat')!.payload['tools']).toBe('sql');
+    expect(
+      calls.filter((call) => call.operation === 'ai.tool').map((call) => call.payload),
+    ).toEqual([
+      {
+        workspace: 'local',
+        name: 'read_open',
+        input: {},
+        context: { place: 'sql', script: 'SELECT 1' },
+        bodies: true,
+      },
+      {
+        workspace: 'local',
+        name: 'sql_query',
+        input: { connection: 'Prod', sql: 'SELECT 1' },
+        context: { place: 'sql', script: 'SELECT 1' },
+        bodies: true,
+      },
+    ]);
+    expect(calls.find((call) => call.operation === 'ai.continue')!.payload).toEqual({
+      id: 'c1',
+      results: [
+        { id: 't1', text: 'read read_open' },
+        { id: 't2', text: 'Prod is not exposed to MCP', error: true },
+      ],
+    });
+    // Each step shows as it starts, and how it went once every tool answered.
+    expect(written.map((part) => part.steps.length)).toEqual([0, 1, 2, 2, 2]);
+    expect(written[3]!.steps[1]).toEqual({ tool: 'sql_query', detail: 'Prod', failed: true });
+
+    // Bodies kept home, nothing open and input that is not an object.
+    polls.push(
+      { text: '', next: 0, done: false, tools: [{ id: 't3', name: 'read_response', input: 'x' }] },
+      { text: 'Done', next: 4, done: true },
+    );
+    const kept = await cases.ask({ ...on, bodies: false }, 'local', 'request', [], () => {});
+    await kept.done;
+    expect(calls.filter((call) => call.operation === 'ai.tool').at(-1)!.payload).toEqual({
+      workspace: 'local',
+      name: 'read_response',
+      input: {},
+      bodies: false,
+    });
+    // A model that ends without a word says so.
+    polls.push({ text: ' ', next: 1, done: true, stop: 'stop' });
+    const silent = await cases.ask(on, 'local', 'sql', [], () => {});
+    expect(await silent.done).toMatchObject({ stop: 'empty' });
   });
 });

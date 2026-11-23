@@ -36,7 +36,9 @@ describe('the AI assistant', () => {
       baseUrl: 'http://127.0.0.1:8080/v1',
       effort: '',
       proxy: 'p1',
+      bodies: true,
     });
+    expect(readAiSettings(JSON.stringify({ bodies: false })).bodies).toBe(false);
     expect(readAiSettings(JSON.stringify({ provider: 'other', effort: 'high' }))).toMatchObject({
       provider: 'local',
       model: 'local',

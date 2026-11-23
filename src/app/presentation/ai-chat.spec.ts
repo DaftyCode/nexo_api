@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ApiFailure } from '../application/ports';
 import { AI } from '../composition/providers';
-import { DEFAULT_AI_SETTINGS } from '../domain/ai';
+import { AiUse, DEFAULT_AI_SETTINGS } from '../domain/ai';
+import { newRequest } from '../domain/models/items';
 import { buttons, clickButton, control, fill } from '../testing/controls';
 import { TEST_API, TestApi, testProviders } from '../testing/providers';
 import { AiChat } from './ai-chat';
@@ -35,7 +36,7 @@ describe('AiChat', () => {
     );
     await settle();
   };
-  const create = async (ready = true) => {
+  const create = async (ready = true, place: 'sql' | 'request' | 'mongo' = 'sql') => {
     if (ready) {
       TestBed.inject(AI).saveSettings({
         ...DEFAULT_AI_SETTINGS,
@@ -46,7 +47,7 @@ describe('AiChat', () => {
       api.secretNames.push('ai:anthropic');
     }
     fixture = TestBed.createComponent(AiChat);
-    fixture.componentRef.setInput('place', 'sql');
+    fixture.componentRef.setInput('place', place);
     await settle();
   };
 
@@ -181,5 +182,49 @@ describe('AiChat', () => {
     expect(root().querySelector('.ai-message-failed')?.textContent).toContain(
       'The provider refused the API key',
     );
+  });
+
+  it('asks a question of the place, shows the tools it read with and adds its tests', async () => {
+    state.tabsStore.open({ ...newRequest('r1'), name: 'Login' });
+    await create(true, 'request');
+    api.responses['ai.tool'] = { text: 'the request' };
+    polls.push(
+      { text: '', next: 0, done: false, tools: [{ id: 't1', name: 'read_open', input: {} }] },
+      { text: 'Add this:\n```javascript\npm.test("ok", () => {});\n```', next: 40, done: true },
+    );
+    await click('Write tests');
+    await until(() => api.documentsStore.length > 0);
+    const chat = api.calls.find((call) => call.operation === 'ai.chat')!.payload;
+    expect(chat['tools']).toBe('request');
+    expect(chat['messages']).toEqual([
+      { role: 'user', text: expect.stringContaining('Write tests for the request I have open') },
+    ]);
+    expect(api.calls.find((call) => call.operation === 'ai.tool')!.payload).toMatchObject({
+      name: 'read_open',
+      context: { place: 'request', request: { name: 'Login' } },
+    });
+    expect(api.calls.find((call) => call.operation === 'ai.continue')!.payload).toEqual({
+      id: 'c1',
+      results: [{ id: 't1', text: 'the request' }],
+    });
+    expect(text()).toContain('Read what is open');
+    await click('Add to the tests');
+    expect(state.active()!.request.tests).toBe('pm.test("ok", () => {});\n');
+    expect(state.toast()).toMatchObject({ title: 'Added to the tests' });
+  });
+
+  it('gives the code of an answer to the place it is in', async () => {
+    await create(true, 'mongo');
+    const used: AiUse[] = [];
+    fixture.componentRef.setInput('host', {
+      context: () => ({ place: 'mongo', collection: 'orders' }),
+      use: (use: AiUse) => used.push(use),
+    });
+    polls.push({ text: '```json\n{ "paid": true }\n```', next: 20, done: true });
+    await ask('Only the paid ones');
+    await until(() => api.documentsStore.length > 0);
+    await click('Use in the query');
+    expect(used).toEqual([{ action: 'use', code: '{ "paid": true }', language: 'json' }]);
+    expect(text()).toContain('Document this collection');
   });
 });

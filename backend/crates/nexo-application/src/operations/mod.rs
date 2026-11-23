@@ -75,6 +75,8 @@ operations!(
         AiChat => "ai.chat",
         AiPoll => "ai.poll",
         AiStop => "ai.stop",
+        AiTool => "ai.tool",
+        AiContinue => "ai.continue",
         AiLocalStatus => "ai.local.status",
         AiLocalInstall => "ai.local.install",
         AiLocalFile => "ai.local.file",

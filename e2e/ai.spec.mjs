@@ -1,10 +1,12 @@
 // End-to-end test of the AI assistant (IA-01) against a server compatible with OpenAI's API,
 // played by the test: it is set up in Settings → AI assistant (off until then), its models
-// are listed, and a question asked beside a request streams its answer. axe finds nothing
-// serious in either place.
+// are listed, and a question asked beside a request reads the request with a tool, streams
+// its answer, and its tests go into the request. axe finds nothing serious in either place.
 import { createServer } from 'node:http';
 import { expect, test } from './fixture.mjs';
 import { violations } from './helpers.mjs';
+
+const TEST = 'pm.test("answers", () => pm.response.to.have.status(200));';
 
 test('the assistant is set up and answers beside a request', async ({ page, nexo }) => {
   const asked = [];
@@ -17,12 +19,26 @@ test('the assistant is set up and answers beside a request', async ({ page, nexo
         response.end(JSON.stringify({ data: [{ id: 'local-model' }] }));
         return;
       }
-      asked.push(JSON.parse(body));
+      const sent = JSON.parse(body);
+      asked.push(sent);
       response.writeHead(200, { 'content-type': 'text/event-stream' });
-      for (const piece of ['Hola ', 'desde ', 'el servidor.']) {
-        response.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`);
+      const send = (delta, finish) =>
+        response.write(
+          `data: ${JSON.stringify({ choices: [{ delta, finish_reason: finish ?? null }] })}\n\n`,
+        );
+      // First it reads what is open; with that, it answers.
+      if (sent.messages.at(-1).role !== 'tool') {
+        const call = { name: 'read_open', arguments: '{}' };
+        send({ tool_calls: [{ index: 0, id: 'call_1', type: 'function', function: call }] });
+        response.end('data: [DONE]\n\n');
+        return;
+      }
+      const pieces = ['Hola ', 'desde ', 'el servidor.\n```javascript\n', TEST, '\n```'];
+      for (const piece of pieces) {
+        send({ content: piece });
         await new Promise((wait) => setTimeout(wait, 50));
       }
+      send({}, 'stop');
       response.end('data: [DONE]\n\n');
     });
   });
@@ -49,13 +65,23 @@ test('the assistant is set up and answers beside a request', async ({ page, nexo
     await chat.getByLabel('Ask the assistant').fill('¿Qué devuelve esta petición?');
     await chat.getByLabel('Ask the assistant').press('Enter');
     await expect(chat.getByRole('log')).toContainText('Hola desde el servidor.');
+    await expect(chat.getByRole('log')).toContainText('Read what is open');
     expect(asked[0].model).toBe('local-model');
     expect(asked[0].messages.at(-1)).toEqual({
       role: 'user',
       content: '¿Qué devuelve esta petición?',
     });
     expect(asked[0].messages[0].role).toBe('system');
+    expect(asked[0].tools.map((tool) => tool.function.name)).toContain('read_response');
+    // The request open went back to the model, read as agents may read it.
+    expect(asked[1].messages.at(-1)).toMatchObject({ role: 'tool', tool_call_id: 'call_1' });
+    expect(asked[1].messages.at(-1).content).toContain('"request"');
     expect(await violations(page)).toEqual([]);
+    await chat.getByRole('button', { name: 'Add to the tests' }).click();
+    await expect(page.getByRole('strong').filter({ hasText: 'Added to the tests' })).toBeVisible();
+    await chat.getByRole('button', { name: 'Close' }).click();
+    await page.getByRole('button', { name: 'Scripts', exact: true }).click();
+    await expect(page.getByText('pm.response.to.have.status(200)')).toBeVisible();
   } finally {
     provider.close();
   }

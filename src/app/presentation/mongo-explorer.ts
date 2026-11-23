@@ -1,4 +1,5 @@
 import { AiChat } from './ai-chat';
+import { mongoHost } from './ai-hosts';
 import { TranslocoPipe } from '@jsverse/transloco';
 import {
   ChangeDetectionStrategy,
@@ -176,6 +177,7 @@ export class MongoExplorer {
   readonly code = signal<CodeQuery | undefined>(undefined);
   /** The AI assistant beside the collection (IA-01). */
   readonly assistant = signal(false);
+  readonly aiHost = mongoHost(this);
   readonly blocks = new FilterBuilder(this);
   readonly comparisons = new MongoComparisons(this);
   /** The shell of the connection, shown instead of the collection while open. */
@@ -285,9 +287,6 @@ export class MongoExplorer {
   openShell() {
     this.shellOpen.set(true);
     void this.shell.open().catch((error: unknown) => this.fail(error));
-  }
-  setView(view: ResultsView) {
-    this.view.set(view);
   }
   setFormat(event: Event) {
     this.format.set((event.target as HTMLSelectElement).value as JsonFormat);

@@ -41,7 +41,65 @@ payload! {
             effort "effort": String => "'low' | 'medium' | 'high' | 'xhigh' | 'max'",
             route "route": Map<String, Value> => "{\n    via?: 'direct' | 'http' | 'socks5' | 'ssh';\n    profile?: string;\n  }",
             ca_pem "caPem": String => "string",
+            tools "tools": String => "'request' | 'sql' | 'mongo'",
         }
+    }
+}
+
+payload! {
+    /// `ai.tool`: a tool the model asked for, read with what the person has open (`context`).
+    /// Response bodies are left out when `bodies` is `false`.
+    closed AiToolPayload {
+        required { name "name": String => "string" }
+        optional {
+            workspace "workspace": String => "string",
+            input "input": Map<String, Value> => "Record<string, unknown>",
+            context "context": AiContext => "AiContext",
+            bodies "bodies": bool => "boolean",
+        }
+    }
+}
+
+payload! {
+    /// What the person has open beside the assistant, for its tools to read.
+    closed AiContext {
+        required {}
+        optional {
+            place "place": String => "'request' | 'sql' | 'mongo'",
+            request "request": Map<String, Value> => "Record<string, unknown>",
+            response "response": Map<String, Value> => "Record<string, unknown>",
+            collection_id "collectionId": String => "string",
+            connection "connection": String => "string",
+            engine "engine": String => "string",
+            database "database": String => "string",
+            collection "collection": String => "string",
+            script "script": String => "string",
+            query "query": String => "string",
+            error "error": String => "string",
+            plan "plan": String => "string",
+        }
+    }
+}
+
+payload! {
+    /// What a tool gave the model: its text, and whether it failed.
+    closed AiToolResult {
+        required {
+            id "id": String => "string",
+            text "text": String => "string",
+        }
+        optional { error "error": bool => "boolean" }
+    }
+}
+
+payload! {
+    /// `ai.continue`: the answers of the tools an answer waits for.
+    closed AiContinuePayload {
+        required {
+            id "id": String => "string",
+            results "results": Vec<AiToolResult> => "readonly AiToolResult[]",
+        }
+        optional { workspace "workspace": String => "string" }
     }
 }
 

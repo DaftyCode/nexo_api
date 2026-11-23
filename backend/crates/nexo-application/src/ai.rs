@@ -1,6 +1,10 @@
 //! The AI assistant (IA-01): the key of the provider comes from the vault, under the
 //! provider's name (`ai:anthropic`), and never from the interface; what is sent never carries
-//! a value of the vault, replaced by `[redacted]`, as in the history.
+//! a value of the vault, replaced by `[redacted]`, as in the history. The tools the model
+//! reads with run here (`ai.tool`, see tools.rs) and their answers go back to the engine
+//! with `ai.continue`.
+mod tools;
+
 use crate::{
     Application,
     operations::Operation,
@@ -55,11 +59,33 @@ impl Application {
         ) {
             return self.local(operation, &payload).await;
         }
-        if matches!(operation, Operation::AiPoll | Operation::AiStop) {
+        if operation == Operation::AiTool {
+            // Boxed: a tool runs operations of the databases, which come back through here.
+            return Box::pin(self.ai_tool(&payload)).await;
+        }
+        if operation == Operation::AiContinue {
+            // What the tools gave, without a value of the vault, as everything sent.
+            let values = self.vault_values().await?;
+            if let Some(results) = payload.remove("results") {
+                payload.insert("results".into(), redact_secrets(results, &values));
+            }
+        }
+        if matches!(
+            operation,
+            Operation::AiPoll | Operation::AiStop | Operation::AiContinue
+        ) {
             return self
                 .executor
                 .execute(operation, Value::Object(payload))
                 .await;
+        }
+        // The tools of the place the person asks from: `request`, `sql` or `mongo`.
+        if let Some(place) = payload
+            .get("tools")
+            .and_then(Value::as_str)
+            .map(String::from)
+        {
+            payload.insert("tools".into(), Value::Array(tools::catalog(&place)));
         }
         let provider = Provider::parse(
             payload

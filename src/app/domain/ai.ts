@@ -1,8 +1,17 @@
 /**
- * The AI assistant (IA-01): off until the person turns it on, with the key of a provider of
- * their own (kept in the vault, never here) or a server compatible with OpenAI's API. Its
- * settings are of this device; its conversations, documents of the workspace.
+ * The AI assistant (IA-01): off until the person turns it on, with the model run inside Nexo
+ * or the key of a provider of their own (kept in the vault, never here). Its settings are of
+ * this device; its conversations, documents of the workspace. Its parts: the local model,
+ * the code of an answer and the tools it reads with.
  */
+import { AiStep, readSteps } from './ai/tools';
+
+export { MODEL_SIZES, byteSize, localReady } from './ai/local';
+export type { LocalAiStatus } from './ai/local';
+export { answerParts, codeActions, mongoQueryOf } from './ai/answer';
+export type { AiCodeAction, AiUse, AnswerPart } from './ai/answer';
+export { AI_ACTIONS, readSteps, stepLabel, stepOf } from './ai/tools';
+export type { AiStep } from './ai/tools';
 export type AiProvider = 'local' | 'anthropic' | 'openai' | 'gemini' | 'compatible';
 export type AiEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 /** Where a conversation is held: beside a SQL script, a MongoDB collection or a request. */
@@ -27,6 +36,8 @@ export interface AiSettings {
   effort: AiEffort | '';
   /** A proxy profile to reach the provider through, by its id; empty goes directly. */
   proxy: string;
+  /** The tools may read response bodies; off, bodies stay on this computer. */
+  bodies: boolean;
 }
 
 /** The model each provider starts with; the others are chosen from its list. */
@@ -46,6 +57,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   baseUrl: '',
   effort: '',
   proxy: '',
+  bodies: true,
 };
 
 const isProvider = (value: unknown): value is AiProvider =>
@@ -70,6 +82,7 @@ export function readAiSettings(saved: string | undefined): AiSettings {
     baseUrl: text(value['baseUrl']),
     effort: isEffort(value['effort']) ? value['effort'] : '',
     proxy: text(value['proxy']),
+    bodies: value['bodies'] !== false,
   };
 }
 
@@ -110,6 +123,8 @@ export interface AiMessage {
   failed?: string;
   /** Why an answer ended early: `refusal`, `max_tokens`, `length`, `stopped`… */
   stop?: string;
+  /** The tools it read with, in order. */
+  steps?: AiStep[];
 }
 
 export interface AiConversation {
@@ -144,6 +159,10 @@ export function stopNote(stop: string | undefined): string | undefined {
       return 'ai.stop.length';
     case 'stopped':
       return 'ai.stop.stopped';
+    case 'tools':
+      return 'ai.stop.tools';
+    case 'empty':
+      return 'ai.stop.empty';
     default:
       return undefined;
   }
@@ -156,9 +175,18 @@ export function aiInstructions(place: AiPlace): string {
     mongo: 'The person is querying a MongoDB collection (filters, aggregation pipelines, shell).',
     request: 'The person is building and sending HTTP requests and reading their responses.',
   }[place];
+  const code = {
+    sql: 'Write each statement the person may run in its own ```sql block, for the engine of the connection: Nexo offers to open or run it.',
+    mongo:
+      'Write a MongoDB filter as a document, or a pipeline as an array, in a ```json block: Nexo offers to use or run it.',
+    request:
+      'Write tests with pm.test and pm.expect in one ```javascript block: Nexo offers to add it to the request’s tests.',
+  }[place];
   return [
     'You are the assistant of Nexo, an API client and database tool that runs on the person’s computer.',
     where,
+    'When the question is about what the person has open, read it first with the read_open tool, and read what else you need with the other tools; they only read, and they cannot reach what the person did not let agents read.',
+    code,
     'Answer in the language the person writes in. Be concise; put code in fenced blocks with its language.',
     'Never invent results: say what you would check when you are not sure.',
   ].join(' ');
@@ -187,50 +215,14 @@ export function readConversation(document: {
           ['user', 'assistant'].includes((message as AiMessage).role) &&
           typeof (message as AiMessage).text === 'string',
       )
-      .map(({ role, text, thinking, thought, failed, stop }) => ({
+      .map(({ role, text, thinking, thought, failed, stop, steps }) => ({
         role,
         text,
+        ...(readSteps(steps) ? { steps: readSteps(steps) } : {}),
         ...(typeof thinking === 'string' && thinking ? { thinking } : {}),
         ...(typeof thought === 'number' ? { thought } : {}),
         ...(typeof failed === 'string' ? { failed } : {}),
         ...(typeof stop === 'string' ? { stop } : {}),
       })),
   };
-}
-
-/** Bytes of the two models Nexo downloads (Qwen3.5-9B and 4B, Q4_K_M), said before. */
-export const MODEL_SIZES = { large: 5_680_522_464, small: 2_740_937_888 };
-
-/** The model run inside Nexo, as the backend reports it. */
-export interface LocalAiStatus {
-  /** `cuda`, `vulkan`, `metal` or `cpu`. */
-  backend: string;
-  engine: boolean;
-  /** An id of the catalog, `file` for one of the person's own, or none. */
-  model?: string | null;
-  modelName?: string | null;
-  engineSize: number;
-  modelSize: number;
-  recommended?: string | null;
-  /** `ai.local.why.*`, or the reason it does not fit. */
-  reason?: string | null;
-  devices: { id: string; name: string; totalMib: number; freeMib: number }[];
-  device?: string | null;
-  ramFreeMib: number;
-  running: boolean;
-  gpuLayers?: string | null;
-  context?: number | null;
-  installing: boolean;
-  received: number;
-  total: number;
-  error?: string | null;
-}
-
-/** The local model can answer: an engine and a model are there. */
-export const localReady = (status: LocalAiStatus | undefined) => !!status?.engine && !!status.model;
-
-/** Bytes as people read them: `5.3 GB`, `39 MB`. */
-export function byteSize(bytes: number): string {
-  if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-  return `${Math.max(1, Math.round(bytes / 1e6))} MB`;
 }

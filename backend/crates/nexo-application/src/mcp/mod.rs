@@ -21,6 +21,17 @@ use serde_json::{Value, json};
 
 #[cfg(test)]
 pub(crate) use mongo::bounded as mongo_bounded;
+pub(crate) use resources::find_request;
+pub(crate) use share::shareable;
+
+/// The MongoDB tools, which the AI assistant offers too.
+pub(crate) fn mongo_tools() -> Vec<Value> {
+    mongo::tools()
+}
+/// The SQL tools, which the AI assistant offers too.
+pub(crate) fn sql_tools() -> Vec<Value> {
+    sql::tools()
+}
 
 pub const PROTOCOL: &str = "2025-06-18";
 const SUPPORTED: [&str; 3] = ["2025-06-18", "2025-03-26", "2024-11-05"];

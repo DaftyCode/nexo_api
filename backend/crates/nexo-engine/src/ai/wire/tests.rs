@@ -192,3 +192,21 @@ fn a_refused_call_says_why() {
     );
     assert!(failure(400, "{\"error\": \"plain\"}", None).ends_with("(plain)"));
 }
+
+#[test]
+fn the_tools_go_in_the_request_of_every_provider() {
+    let offered =
+        tools::parse(&json!([{"name": "read_open", "description": "What is open"}])).unwrap();
+    for provider in [Provider::Anthropic, Provider::Openai, Provider::Gemini] {
+        let conversation = native(provider, &[said(Role::User, "Hi")]);
+        let call = request(&settings(provider, "model-x"), &conversation, "", &offered).unwrap();
+        assert!(body(&call)["tools"].is_array(), "{provider:?}");
+    }
+    let plain = chat(
+        &settings(Provider::Openai, "m"),
+        &[said(Role::User, "Hi")],
+        "",
+    )
+    .unwrap();
+    assert!(body(&plain).get("tools").is_none());
+}

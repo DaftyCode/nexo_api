@@ -102,7 +102,7 @@ fn exposed_mongo(document: &Document) -> bool {
 
 impl Application {
     /// The exposed connections of a workspace.
-    pub(super) async fn mcp_connections(&self, workspace: &WorkspaceId) -> Result<Vec<Document>> {
+    pub(crate) async fn mcp_connections(&self, workspace: &WorkspaceId) -> Result<Vec<Document>> {
         Ok(self
             .workspaces
             .documents(workspace, Some(DocumentKind::Connection))
@@ -162,7 +162,7 @@ impl Application {
         Ok(json!({"connection": connection, "databases": overview}))
     }
     /// Runs a MongoDB tool; `None` when the name is not one of them.
-    pub(super) async fn mongo_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
+    pub(crate) async fn mongo_tool(&self, name: &str, arguments: &Value) -> Option<Result<Value>> {
         if !name.starts_with("mongo_") {
             return None;
         }

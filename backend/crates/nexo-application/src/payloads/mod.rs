@@ -167,6 +167,8 @@ operation_payloads! {
     AiChat => AiChatPayload,
     AiPoll => AiPollPayload,
     AiStop => IdPayload,
+    AiTool => AiToolPayload,
+    AiContinue => AiContinuePayload,
     AiLocalStatus => WorkspacePayload,
     AiLocalInstall => AiLocalInstallPayload,
     AiLocalFile => AiLocalFilePayload,

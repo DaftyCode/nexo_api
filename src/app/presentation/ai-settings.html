@@ -80,6 +80,11 @@
       </select></label
     >
   }
+  <label class="check">
+    <input type="checkbox" [formField]="fields.bodies" />
+    {{ 'Let the assistant read response bodies' | transloco }}
+  </label>
+  <p class="muted">{{ 'ai.bodies.hint' | transloco }}</p>
   @if (missing(); as missing) {
     <p class="muted" role="status">{{ missing | transloco }}</p>
   }

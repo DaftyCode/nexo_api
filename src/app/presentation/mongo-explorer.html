@@ -162,5 +162,5 @@
   <app-mongo-transfer [transfers]="transfers" [draft]="draft" />
 }
 @if (assistant()) {
-  <app-ai-chat place="mongo" [floating]="true" (closed)="assistant.set(false)" />
+  <app-ai-chat place="mongo" [floating]="true" [host]="aiHost" (closed)="assistant.set(false)" />
 }
