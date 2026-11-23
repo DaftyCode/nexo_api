@@ -29,6 +29,11 @@ describe('AiChat', () => {
     await clickButton(fixture, label);
     await settle();
   };
+  /** Opens the list of conversations with its button. */
+  const openList = async () => {
+    root().querySelector<HTMLButtonElement>('app-ai-conversations .toggle')!.click();
+    await settle();
+  };
   const ask = async (question: string, keys: KeyboardEventInit = { key: 'Enter' }) => {
     await fill(fixture, 'Ask the assistant', question);
     control(root(), 'Ask the assistant').dispatchEvent(
@@ -134,7 +139,7 @@ describe('AiChat', () => {
     await click(/^New$/);
     expect(text()).toContain('Ask anything about your query');
     // The list of conversations: a row opens its conversation, its bin deletes it once asked.
-    await click('Conversation');
+    await openList();
     await click(/^Why is this slow\?$/);
     await until(() => text().includes('Use an index.'));
     expect(text()).toContain('Use an index.');
@@ -145,7 +150,7 @@ describe('AiChat', () => {
       asked.push([message, params]);
       return asked.length > 1;
     };
-    await click('Conversation');
+    await openList();
     await click('Delete the conversation «Why is this slow?»');
     expect(api.documentsStore).toHaveLength(1);
     await click('Delete the conversation «Why is this slow?»');
@@ -162,7 +167,7 @@ describe('AiChat', () => {
       .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     await settle();
     expect(root().querySelector('.list')).toBeNull();
-    await click('Conversation');
+    await openList();
     document.body.click();
     await settle();
     expect(root().querySelector('.list')).toBeNull();

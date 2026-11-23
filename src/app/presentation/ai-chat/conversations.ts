@@ -33,7 +33,7 @@ export interface ConversationEntry {
   },
   template: `
     <div class="field">
-      <span>{{ 'Conversation' | transloco }}</span>
+      <span [id]="id + '-label'">{{ 'Conversation' | transloco }}</span>
       <div class="row">
         <div class="pick">
           <button
@@ -41,11 +41,13 @@ export interface ConversationEntry {
             class="toggle"
             aria-haspopup="true"
             [attr.aria-expanded]="shown()"
-            [attr.aria-label]="'Conversation' | transloco"
+            [attr.aria-labelledby]="id + '-label ' + id + '-title'"
             [disabled]="busy()"
             (click)="shown.set(!shown())"
           >
-            <span class="title">{{ title() || ('New conversation' | transloco) }}</span>
+            <span class="title" [id]="id + '-title'">{{
+              title() || ('New conversation' | transloco)
+            }}</span>
             <span aria-hidden="true">▾</span>
           </button>
           @if (shown()) {
@@ -156,6 +158,9 @@ export interface ConversationEntry {
   `,
 })
 export class AiConversations {
+  private static count = 0;
+  /** Names its button by «Conversation» and the one on screen, as both are seen. */
+  protected readonly id = `ai-conversations-${++AiConversations.count}`;
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   readonly list = input<readonly ConversationEntry[]>([]);
   /** The conversation on screen, when it is kept. */

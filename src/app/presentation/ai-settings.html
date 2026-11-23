@@ -50,7 +50,7 @@
       @if (models().length) {
         <label class="field grow"
           >{{ 'Model' | transloco
-          }}<select [formField]="fields.model">
+          }}<select [formField]="fields.model" [attr.aria-label]="'Model' | transloco">
             @if (unlisted() !== undefined) {
               <option [value]="unlisted()">
                 {{ unlisted() || ('Choose a model' | transloco) }}
