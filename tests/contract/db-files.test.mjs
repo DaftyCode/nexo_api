@@ -1,7 +1,7 @@
 // Contract tests of the files module through Nexo (DB-30): a folder of a CSV and a JSON file
 // is two tables that join, and nothing outside the connection's files is read or installed.
-// The driver compiles DuckDB, so it is built apart (npm run files:test, its CI job): without
-// it these tests skip.
+// The driver compiles DuckDB, which takes too long for CI: build it apart (npm run files:test)
+// and run these tests by hand before a release; without it they skip.
 import test, { after, before } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
