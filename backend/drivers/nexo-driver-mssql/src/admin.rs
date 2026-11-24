@@ -23,11 +23,14 @@ const WAITED: &str = "COALESCE(\
     r.wait_resource)";
 
 impl AdminCatalog for SqlServerAdmin {
+    // A session that has not ended a request yet has 1900-01-01 as its end, which is no time
+    // at all: its login counts instead. DATEDIFF_BIG never overflows.
     fn sessions(&self) -> String {
         "SELECT s.session_id, s.login_name, DB_NAME(s.database_id), NULLIF(s.program_name, ''), \
          COALESCE(c.client_net_address + ':' + CAST(c.client_tcp_port AS varchar(10)), \
          NULLIF(s.host_name, '')), COALESCE(r.status, s.status), \
-         DATEDIFF(SECOND, COALESCE(r.start_time, s.last_request_end_time, s.login_time), SYSDATETIME()), \
+         DATEDIFF_BIG(SECOND, COALESCE(r.start_time, NULLIF(s.last_request_end_time, '19000101'), \
+         s.login_time), SYSDATETIME()), \
          r.wait_type, t.text, CASE WHEN s.session_id = @@SPID THEN 1 ELSE 0 END, \
          CASE WHEN r.session_id IS NULL THEN 0 ELSE 1 END \
          FROM sys.dm_exec_sessions s \
@@ -89,5 +92,14 @@ mod tests {
         );
         assert!(SqlServerAdmin.kill("57", KillMode::Cancel).is_err());
         assert!(SqlServerAdmin.kill("57 --", KillMode::Terminate).is_err());
+    }
+
+    #[test]
+    fn the_time_of_a_session_never_overflows() {
+        // DATEDIFF(SECOND, '19000101', now) does not fit an int: SQL Server says error 535.
+        let sessions = SqlServerAdmin.sessions();
+        assert!(sessions.contains("DATEDIFF_BIG(SECOND"));
+        assert!(!sessions.contains("DATEDIFF(SECOND"));
+        assert!(sessions.contains("NULLIF(s.last_request_end_time, '19000101')"));
     }
 }
