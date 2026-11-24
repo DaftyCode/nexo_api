@@ -4244,7 +4244,7 @@ checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nexo-application"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4259,7 +4259,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-desktop"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "nexo-server",
  "rfd",
@@ -4274,7 +4274,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-domain"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4283,7 +4283,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-cassandra"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4296,7 +4296,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-drill"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "nexo-driver-sdk",
@@ -4306,7 +4306,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-elastic"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4319,7 +4319,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-files"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "calamine",
@@ -4332,7 +4332,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-hive"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4343,7 +4343,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-ignite"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "nexo-driver-sdk",
@@ -4355,7 +4355,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-mongodb"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4372,7 +4372,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-mssql"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4390,7 +4390,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-mysql"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4402,7 +4402,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-postgres"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4421,7 +4421,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-redis"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4434,7 +4434,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-sdk"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
@@ -4453,7 +4453,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-sqlite"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "nexo-driver-sdk",
@@ -4464,7 +4464,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-driver-test"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "nexo-application",
@@ -4477,7 +4477,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-engine"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -4527,7 +4527,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-http"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "axum",
  "nexo-application",
@@ -4542,7 +4542,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-infrastructure"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -4560,7 +4560,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-modules"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-trait",
  "aws-lc-rs",
@@ -4582,7 +4582,7 @@ dependencies = [
 
 [[package]]
 name = "nexo-server"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "axum",
  "base64 0.23.1",

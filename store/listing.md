@@ -10,9 +10,9 @@ Texts to paste into Partner Center → Store listings (one listing per language)
 
 Nexo API is a fast, open source workspace for building, organizing and testing APIs, built to run entirely on your computer.
 
-Send HTTP and GraphQL requests, organize them in collections and folders, switch between environments and keep your secrets encrypted on your device. Write pre-request and test scripts, run whole collections with data files and check every assertion. Connect to WebSocket, Socket.IO, MQTT, Kafka and gRPC services, browse and edit MongoDB databases, work with PostgreSQL, SQL Server, MySQL, MariaDB and SQLite in a SQL editor, spin up local mock servers and query JSON or CSV datasets with SQL.
+Send HTTP and GraphQL requests, organize them in collections and folders, switch between environments and keep your secrets encrypted on your device. Write pre-request and test scripts, run whole collections with data files and check every assertion. Connect to WebSocket, Socket.IO, MQTT, Kafka and gRPC services, browse and edit MongoDB databases, work with PostgreSQL, SQL Server, MySQL, MariaDB, SQLite, Cassandra, Redis, Elasticsearch and more in a SQL editor, ask an AI assistant about your requests and queries, spin up local mock servers and query JSON or CSV datasets with SQL.
 
-Nexo API has no accounts, no cloud sync and no telemetry: your collections, environments and history never leave your computer. Requests go only where you send them.
+Nexo API has no accounts, no cloud of its own and no telemetry: your collections, environments and history stay on your computer. Requests go only where you send them, and a collection leaves it only when you share it with your team, through your own synced folder or WebDAV server.
 
 It is built with Rust and Tauri, so it starts quickly and uses little memory, and it is free and open source under the MIT license.
 
@@ -27,23 +27,24 @@ It is built with Rust and Tauri, so it starts quickly and uses little memory, an
 - WebSocket, Socket.IO, MQTT, Kafka and gRPC clients
 - Reach servers through HTTP and SOCKS5 proxies or SSH tunnels with reusable profiles
 - MongoDB: explorer, aggregations, schema, indexes, shell, SQL, import/export and compare
-- PostgreSQL, SQL Server, MySQL, MariaDB and SQLite: navigator, SQL editor, data grid, structure editor, data transfer, ER diagrams, session and lock managers and server dashboards
+- PostgreSQL, SQL Server, MySQL, MariaDB, SQLite, Cassandra, Redis, Elasticsearch, Drill, Hive, Ignite and files with DuckDB: navigator, SQL editor, data grid, structure editor, data transfer, compare and sync, ER diagrams, session and lock managers and server dashboards
+- AI assistant run inside Nexo on your GPU, or with your own key for Anthropic, OpenAI, Google or compatible servers
+- Collections shared with your team through a synced folder or a WebDAV server, encrypted with a team key
 - Local mock servers and SQL queries over JSON/CSV datasets
-- Import cURL, OpenAPI/Swagger, HAR and portable collections; generate code in 8 languages
+- Import cURL, OpenAPI/Swagger, HAR, portable collections, Insomnia, Bruno, Hoppscotch and Thunder Client; generate code in 8 languages
 - Works offline, without an account; English and Spanish; four visual themes
 
 ### What's new in this version
 
-Reach the servers that only a bastion or a proxy sees, in a new light look.
+An AI assistant beside your requests and queries, collections your team shares, and many more databases.
 
-- Connect through an HTTP proxy, a SOCKS5 proxy (also letting the proxy resolve names) or an SSH tunnel, in requests, collections and folders, WebSocket, Socket.IO, MQTT, Kafka, gRPC, GraphQL subscriptions and MongoDB connections.
-- Reusable SSH profiles in Settings → SSH, with the password or private key kept in the vault. Test signs in once and shows the server's key to trust; a key that changes later blocks the connection.
-- Collections and folders choose how their requests connect, and requests and folders inherit it, like authorization.
-- The egress policy checks both the proxy or SSH server and the final destination.
-- A light Aurora is the new default template; the dark one stays as Aurora full color, and the app opens with the last template you chose.
-- The documentation has an index, a short guide to every part and the colours of your template.
-- What Nexo keeps by itself has a cap: logs, cookies, history, runs and revisions never fill the disk.
-- Every text of the interface is translated, settings and database dashboards included.
+- An AI assistant beside requests, SQL scripts and MongoDB collections: a model run inside Nexo on your GPU, with nothing leaving your computer, or your own key for Anthropic, OpenAI, Google or any server compatible with OpenAI's API. You see its reasoning as it thinks; it reads what you have open and the connection you work with, never writing, and its code opens, runs or goes into your tests with one click.
+- Share a collection with your team through a synced folder (Google Drive, OneDrive, Dropbox, a network drive) or a WebDAV server, encrypted with a team key, with what each person saves joined item by item.
+- New database modules: Cassandra and ScyllaDB, Redis and Valkey, Elasticsearch and OpenSearch, Apache Drill, Apache Hive, Apache Ignite and files with DuckDB. MongoDB is a module now too, downloaded the first time it is used; its connections and queries stay as they were.
+- Compare and synchronize schemas and data, back up and restore with the local client tools, build queries visually, chart results, generate test data and run saved tasks.
+- Database connections through SOCKS5 proxies and SSH tunnels, with startup queries, sessions that stay alive and reconnect, passwords asked for or read from pgpass, and connection types of your own.
+- Import Insomnia, Bruno, Hoppscotch and Thunder Client collections, export results to Excel or CSV with data masking, and create JSON Schema tests from a response.
+- The app opens with the workspace you used last.
 
 ### Search terms
 
@@ -74,9 +75,9 @@ Reach the servers that only a bastion or a proxy sees, in a new light look.
 
 Nexo API es un espacio de trabajo rápido y de código abierto para crear, organizar y probar APIs, pensado para funcionar por completo en tu equipo.
 
-Envía peticiones HTTP y GraphQL, organízalas en colecciones y carpetas, cambia de entorno con un clic y guarda tus secretos cifrados en tu dispositivo. Escribe scripts previos y de pruebas, ejecuta colecciones completas con archivos de datos y comprueba cada aserción. Conéctate a servicios WebSocket, Socket.IO, MQTT, Kafka y gRPC, explora y edita bases de datos MongoDB, trabaja con PostgreSQL, SQL Server, MySQL, MariaDB y SQLite en un editor SQL, arranca servidores mock locales y consulta datasets JSON o CSV con SQL.
+Envía peticiones HTTP y GraphQL, organízalas en colecciones y carpetas, cambia de entorno con un clic y guarda tus secretos cifrados en tu dispositivo. Escribe scripts previos y de pruebas, ejecuta colecciones completas con archivos de datos y comprueba cada aserción. Conéctate a servicios WebSocket, Socket.IO, MQTT, Kafka y gRPC, explora y edita bases de datos MongoDB, trabaja con PostgreSQL, SQL Server, MySQL, MariaDB, SQLite, Cassandra, Redis, Elasticsearch y más en un editor SQL, pregunta a un asistente de IA por tus peticiones y consultas, arranca servidores mock locales y consulta datasets JSON o CSV con SQL.
 
-Nexo API no tiene cuentas, ni sincronización en la nube, ni telemetría: tus colecciones, entornos e historial nunca salen de tu equipo. Las peticiones solo van adonde tú las envías.
+Nexo API no tiene cuentas, ni nube propia, ni telemetría: tus colecciones, entornos e historial se quedan en tu equipo. Las peticiones solo van adonde tú las envías, y una colección solo sale cuando la compartes con tu equipo, por tu propia carpeta sincronizada o tu servidor WebDAV.
 
 Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y es gratuito y de código abierto con licencia MIT.
 
@@ -91,23 +92,24 @@ Está hecho con Rust y Tauri, así que arranca rápido y consume poca memoria, y
 - Clientes de WebSocket, Socket.IO, MQTT, Kafka y gRPC
 - Llega a los servidores por proxies HTTP y SOCKS5 o túneles SSH con perfiles reutilizables
 - MongoDB: explorador, agregaciones, esquema, índices, shell, SQL, importar/exportar y comparar
-- PostgreSQL, SQL Server, MySQL, MariaDB y SQLite: navegador, editor SQL, rejilla de datos, editor de estructura, transferencia de datos, diagramas ER, gestores de sesiones y bloqueos y paneles del servidor
+- PostgreSQL, SQL Server, MySQL, MariaDB, SQLite, Cassandra, Redis, Elasticsearch, Drill, Hive, Ignite y ficheros con DuckDB: navegador, editor SQL, rejilla de datos, editor de estructura, transferencia de datos, comparar y sincronizar, diagramas ER, gestores de sesiones y bloqueos y paneles del servidor
+- Asistente de IA que funciona dentro de Nexo en tu GPU, o con tu propia clave de Anthropic, OpenAI, Google o servidores compatibles
+- Colecciones compartidas con tu equipo por una carpeta sincronizada o un servidor WebDAV, cifradas con una clave de equipo
 - Servidores mock locales y consultas SQL sobre datasets JSON/CSV
-- Importa cURL, OpenAPI/Swagger, HAR y colecciones portables; genera código en 8 lenguajes
+- Importa cURL, OpenAPI/Swagger, HAR, colecciones portables, Insomnia, Bruno, Hoppscotch y Thunder Client; genera código en 8 lenguajes
 - Funciona sin conexión y sin cuenta; en español e inglés; cuatro temas visuales
 
 ### Novedades de esta versión
 
-Llega a los servidores que solo ve un bastión o un proxy, con un nuevo aspecto claro.
+Un asistente de IA junto a tus peticiones y consultas, colecciones que comparte tu equipo, y muchas más bases de datos.
 
-- Conecta a través de un proxy HTTP, un proxy SOCKS5 (también dejando que el proxy resuelva los nombres) o un túnel SSH, en peticiones, colecciones y carpetas, WebSocket, Socket.IO, MQTT, Kafka, gRPC, subscriptions GraphQL y conexiones MongoDB.
-- Perfiles SSH reutilizables en Ajustes → SSH, con la contraseña o la clave privada en el vault. Probar inicia sesión una vez y enseña la clave del servidor para confiar en ella; una clave que cambie después bloquea la conexión.
-- Las colecciones y carpetas eligen cómo conectan sus peticiones, y las peticiones y carpetas lo heredan, como la autorización.
-- La política de salida comprueba el proxy o el servidor SSH y también el destino final.
-- Un Aurora claro es la nueva plantilla por defecto; la oscura sigue como Aurora full color, y la app se abre con la última plantilla que elegiste.
-- La documentación tiene índice, una guía breve de cada parte y los colores de tu plantilla.
-- Lo que Nexo guarda por su cuenta tiene tope: logs, cookies, historial, ejecuciones y revisiones nunca llenan el disco.
-- Todos los textos de la interfaz están traducidos, también los ajustes y los paneles de bases de datos.
+- Un asistente de IA junto a las peticiones, los scripts SQL y las colecciones de MongoDB: un modelo que funciona dentro de Nexo en tu GPU, sin que nada salga de tu equipo, o tu propia clave de Anthropic, OpenAI, Google o cualquier servidor compatible con la API de OpenAI. Ves su razonamiento mientras piensa; lee lo que tienes abierto y la conexión con la que trabajas, sin escribir nunca, y su código se abre, se ejecuta o va a tus tests con un clic.
+- Comparte una colección con tu equipo por una carpeta sincronizada (Google Drive, OneDrive, Dropbox, una unidad de red) o un servidor WebDAV, cifrada con una clave de equipo, juntando elemento a elemento lo que guarda cada persona.
+- Nuevos módulos de bases de datos: Cassandra y ScyllaDB, Redis y Valkey, Elasticsearch y OpenSearch, Apache Drill, Apache Hive, Apache Ignite y ficheros con DuckDB. MongoDB también es un módulo ahora, que se descarga la primera vez que se usa; sus conexiones y consultas siguen como estaban.
+- Compara y sincroniza esquemas y datos, haz copias y restaura con las herramientas cliente locales, construye consultas de forma visual, dibuja gráficos de los resultados, genera datos de prueba y ejecuta tareas guardadas.
+- Conexiones a bases de datos por proxies SOCKS5 y túneles SSH, con consultas de inicio, sesiones que se mantienen vivas y se reconectan, contraseñas que se piden o se leen de pgpass, y tipos de conexión propios.
+- Importa colecciones de Insomnia, Bruno, Hoppscotch y Thunder Client, exporta resultados a Excel o CSV con enmascarado de datos y crea tests de JSON Schema a partir de una respuesta.
+- La app se abre con el workspace que usaste por última vez.
 
 ### Términos de búsqueda
 
@@ -134,7 +136,7 @@ Llega a los servidores que solo ve un bastión o un proxy, con un nuevo aspecto 
 
 ## Submission options → Restricted capabilities (runFullTrust)
 
-> Nexo API is a Win32 desktop application built with Tauri and packaged as MSIX. It requires runFullTrust to start its own local HTTP service on the loopback interface (127.0.0.1) and to host its interface in WebView2. The service only accepts connections from this computer and requires a per-session token. Optional database modules (for PostgreSQL, SQL Server, MySQL and MariaDB, and SQLite) are downloaded only when the user adds a connection of that type, from the app's own GitHub release, checked against the SHA-256 listed inside the app, and run as child processes of the app. The app does not install system drivers or services, and does not modify system settings.
+> Nexo API is a Win32 desktop application built with Tauri and packaged as MSIX. It requires runFullTrust to start its own local HTTP service on the loopback interface (127.0.0.1) and to host its interface in WebView2. The service only accepts connections from this computer and requires a per-session token. Optional database modules (one per engine: PostgreSQL, SQL Server, MySQL and MariaDB, SQLite, MongoDB, Cassandra, Redis, Elasticsearch, Drill, Hive, Ignite and DuckDB files) are downloaded only when the user adds a connection of that type, from the app's own GitHub release, checked against the SHA-256 listed inside the app, and run as child processes of the app. The optional local AI model (the llama.cpp server from its GitHub release and a Qwen3.5 GGUF file from Hugging Face) is downloaded only when the user asks for it, checked against the SHA-256 listed inside the app, and runs as a child process that listens only on 127.0.0.1. The app does not install system drivers or services, and does not modify system settings.
 
 ## Notes for certification (Información adicional sobre pruebas)
 
