@@ -29,6 +29,24 @@ export interface LocalAiStatus {
 /** The local model can answer: an engine and a model are there. */
 export const localReady = (status: LocalAiStatus | undefined) => !!status?.engine && !!status.model;
 
+/** The models of the catalog, the smallest first, with their names. */
+export const LOCAL_MODELS = [
+  { id: 'qwen3.5-4b', name: 'Qwen3.5-4B' },
+  { id: 'qwen3.5-9b', name: 'Qwen3.5-9B' },
+] as const;
+
+/**
+ * The model of the catalog that fits this computer better than the one there, as measured
+ * now: only a larger one, never in place of a GGUF file of the person's own.
+ */
+export function betterLocalModel(status: LocalAiStatus) {
+  const rank = (id: string | null | undefined) =>
+    LOCAL_MODELS.findIndex((model) => model.id === id);
+  const there = rank(status.model);
+  const fits = rank(status.recommended);
+  return there >= 0 && fits > there ? LOCAL_MODELS[fits] : undefined;
+}
+
 /** Bytes as people read them: `5.3 GB`, `39 MB`. */
 export function byteSize(bytes: number): string {
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;

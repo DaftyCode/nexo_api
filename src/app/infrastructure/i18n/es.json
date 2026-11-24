@@ -3648,7 +3648,7 @@
   "Delete the local model and its engine from this computer?": "¿Borrar de este equipo el modelo local y su motor?",
   "Local model deleted": "Modelo local borrado",
   "ai.local.deleted": "El modelo y su motor ya no están en este equipo.",
-  "docs.ai.local": "En Nexo (modelo local) es la primera opción: un botón descarga llama.cpp para tu GPU (CUDA con un driver de NVIDIA reciente, Vulkan para las demás tarjetas y los drivers antiguos, Metal en un Mac) y el modelo Qwen3.5 que cabe en tu memoria libre, 9B o 4B, cada uno comprobado con el SHA-256 que lleva Nexo. Nada de lo que preguntes sale del equipo. El modelo arranca cuando preguntas algo y se para tras diez minutos sin uso, y se cierra con Nexo aunque Nexo termine de golpe; al cargar, usa la memoria de la GPU libre en ese momento, así que otro programa nunca lo hace fallar. Ajustes muestra qué se eligió y por qué, deja usar un fichero GGUF tuyo y lo borra todo.",
+  "docs.ai.local": "En Nexo (modelo local) es la primera opción: un botón descarga llama.cpp para tu GPU (CUDA con un driver de NVIDIA reciente, Vulkan para las demás tarjetas y los drivers antiguos, Metal en un Mac) y el modelo Qwen3.5 que cabe en tu memoria libre, 9B o 4B, cada uno comprobado con el SHA-256 que lleva Nexo. Nada de lo que preguntes sale del equipo. El modelo arranca cuando preguntas algo y se para tras diez minutos sin uso, y se cierra con Nexo aunque Nexo termine de golpe; al cargar, usa la memoria de la GPU libre en ese momento, así que otro programa nunca lo hace fallar. Ajustes muestra qué se eligió y por qué, deja usar un fichero GGUF tuyo y lo borra todo. Medir de nuevo vuelve a leer la memoria libre, dice lo que encontró y, si ahora cabe el modelo más grande, ofrece descargarlo en lugar del que hay.",
   "Reasoning": "Razonamiento",
   "ai.thought": "Pensó durante {{v0}} s",
   "docs.ai.reasoning": "Los modelos que razonan lo muestran: mientras piensa, la respuesta dice Pensando… y su razonamiento aparece a medida que lo escribe; cuando empieza la respuesta, se pliega en «Pensó durante N s», que se vuelve a abrir con un clic. Lo muestran el modelo de Nexo, los servidores que envían su razonamiento (llama.cpp, vLLM, OpenRouter…), Claude desde 4.6 y Gemini desde 2.5; la API de OpenAI no lo da, así que solo aparece Pensando…. El razonamiento se guarda con la conversación, pero nunca se reenvía al modelo.",
@@ -3743,5 +3743,11 @@
   "Conversations": "Conversaciones",
   "No conversations yet": "Todavía no hay conversaciones",
   "ai.conversation.delete": "Borrar la conversación «{{v0}}»",
-  "ai.conversation.confirm": "Vas a borrar la conversación «{{v0}}». ¿Estás seguro?"
+  "ai.conversation.confirm": "Vas a borrar la conversación «{{v0}}». ¿Estás seguro?",
+  "Measured again": "Medido de nuevo",
+  "Measuring\u2026": "Midiendo…",
+  "ai.local.measured": "La {{v0}} tiene {{v1}} de {{v2}} MiB libres.",
+  "ai.local.measuredRam": "Ninguna GPU ejecuta el modelo: hay {{v0}} MiB de memoria libres.",
+  "ai.local.better": "Con la memoria libre de ahora cabe {{v0}}: responde mejor y ocupa el lugar del modelo que hay.",
+  "ai.local.download": "Descargar {{v0}}"
 }

@@ -10,7 +10,14 @@ import {
 } from '@angular/core';
 import { FormField, form } from '@angular/forms/signals';
 import { AI, NATIVE_FILES } from '../composition/providers';
-import { LocalAiStatus, MODEL_SIZES, byteSize, localReady } from '../domain/ai';
+import {
+  LOCAL_MODELS,
+  LocalAiStatus,
+  MODEL_SIZES,
+  betterLocalModel,
+  byteSize,
+  localReady,
+} from '../domain/ai';
 import { WorkspaceState, success } from './workspace-state';
 
 /** How often an installation is asked how it goes. */
@@ -41,6 +48,13 @@ export class AiLocal {
   protected readonly size = byteSize;
   protected readonly sizes = MODEL_SIZES;
   protected readonly ready = computed(() => localReady(this.status()));
+  /** A measurement is under way, started by the person. */
+  protected readonly measuring = signal(false);
+  /** A larger model that fits now, offered after a measurement. */
+  protected readonly better = computed(() => {
+    const status = this.status();
+    return status ? betterLocalModel(status) : undefined;
+  });
   protected readonly device = computed(() => {
     const status = this.status();
     return status?.devices.find((device) => device.id === status.device);
@@ -75,6 +89,28 @@ export class AiLocal {
 
   protected load() {
     return this.run(() => this.ai.localStatus());
+  }
+  /** Measures again and says what it found: the free memory, and a model that fits better. */
+  protected async measure() {
+    this.measuring.set(true);
+    await this.load();
+    this.measuring.set(false);
+    const status = this.status();
+    const device = this.device();
+    if (!status || this.error()) return;
+    this.state.tell(
+      device
+        ? success('Measured again', 'ai.local.measured', {
+            v0: device.name,
+            v1: String(device.freeMib),
+            v2: String(device.totalMib),
+          })
+        : success('Measured again', 'ai.local.measuredRam', { v0: String(status.ramFreeMib) }),
+    );
+  }
+  /** Downloads a model of the catalog, which takes the place of the one there. */
+  protected installModel(id: (typeof LOCAL_MODELS)[number]['id']) {
+    return this.run(() => this.ai.installLocal(id));
   }
   protected install() {
     return this.run(() => this.ai.installLocal());

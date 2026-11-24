@@ -3648,7 +3648,7 @@
   "Delete the local model and its engine from this computer?": "Delete the local model and its engine from this computer?",
   "Local model deleted": "Local model deleted",
   "ai.local.deleted": "The model and its engine are no longer on this computer.",
-  "docs.ai.local": "In Nexo (local model) is the first choice: one button downloads llama.cpp for your GPU (CUDA with a recent NVIDIA driver, Vulkan for the other cards and older drivers, Metal on a Mac) and the Qwen3.5 model that fits your free memory, 9B or 4B, each checked against the SHA-256 Nexo carries. Nothing you ask leaves the computer. The model starts when you ask something and stops after ten minutes without use, and it closes with Nexo even when Nexo ends suddenly; when it loads, it takes the GPU memory free at that moment, so another program never makes it fail. Settings shows what was chosen and why, lets you use a GGUF file of your own, and deletes it all.",
+  "docs.ai.local": "In Nexo (local model) is the first choice: one button downloads llama.cpp for your GPU (CUDA with a recent NVIDIA driver, Vulkan for the other cards and older drivers, Metal on a Mac) and the Qwen3.5 model that fits your free memory, 9B or 4B, each checked against the SHA-256 Nexo carries. Nothing you ask leaves the computer. The model starts when you ask something and stops after ten minutes without use, and it closes with Nexo even when Nexo ends suddenly; when it loads, it takes the GPU memory free at that moment, so another program never makes it fail. Settings shows what was chosen and why, lets you use a GGUF file of your own, and deletes it all. Measure again reads the free memory once more, says what it found and, when the larger model fits now, offers to download it in place of the one there.",
   "Reasoning": "Reasoning",
   "ai.thought": "Thought for {{v0}} s",
   "docs.ai.reasoning": "Models that reason show it: while the model thinks, the answer says Thinking… and its reasoning appears as it is written; when the answer begins, it folds into “Thought for N s”, which opens again with a click. The model inside Nexo, servers that send their reasoning (llama.cpp, vLLM, OpenRouter…), Claude from 4.6 and Gemini from 2.5 show it; OpenAI’s API does not give it, so only Thinking… appears. The reasoning is kept with the conversation, but never sent back to the model.",
@@ -3743,5 +3743,11 @@
   "Conversations": "Conversations",
   "No conversations yet": "No conversations yet",
   "ai.conversation.delete": "Delete the conversation «{{v0}}»",
-  "ai.conversation.confirm": "You are going to delete the conversation «{{v0}}». Are you sure?"
+  "ai.conversation.confirm": "You are going to delete the conversation «{{v0}}». Are you sure?",
+  "Measured again": "Measured again",
+  "Measuring\u2026": "Measuring…",
+  "ai.local.measured": "The {{v0}} has {{v1}} of {{v2}} MiB free.",
+  "ai.local.measuredRam": "No GPU runs the model: {{v0}} MiB of memory are free.",
+  "ai.local.better": "With the memory free now, {{v0}} fits this computer: it answers better, and takes the place of the model there.",
+  "ai.local.download": "Download {{v0}}"
 }

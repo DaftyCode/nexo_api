@@ -2,6 +2,9 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
+  // When the editor leaves it little room, what does not fit scrolls here instead of being
+  // drawn under the status line of the tab, which would take its clicks.
+  overflow: auto;
   border-top: var(--nexo-border-width) solid var(--nexo-color-border-subtle);
 }
 .db-results-strip {

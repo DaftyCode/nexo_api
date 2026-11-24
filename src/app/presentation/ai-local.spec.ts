@@ -113,4 +113,40 @@ describe('AiLocal', () => {
     await until(() => text().includes('The download does not match'));
     expect(text()).toContain('The download does not match');
   });
+
+  it('measures again and says what it found, offering a larger model that fits now', async () => {
+    await create(ready);
+    expect(text()).not.toContain('Download Qwen3.5-9B');
+    let release!: () => void;
+    const measured = new Promise<void>((done) => (release = done));
+    api.responses['ai.local.status'] = async () => {
+      await measured;
+      return {
+        ...ready,
+        recommended: 'qwen3.5-9b',
+        devices: [{ ...ready.devices[1], freeMib: 5900 }],
+      };
+    };
+    await clickButton(fixture, 'Measure again');
+    expect(text()).toContain('Measuring…');
+    release();
+    await until(() => text().includes('Download Qwen3.5-9B'));
+    expect(state.toast()).toMatchObject({
+      title: 'Measured again',
+      message: 'ai.local.measured',
+      params: { v0: 'NVIDIA GeForce RTX 3060 Laptop GPU', v1: '5900', v2: '5996' },
+    });
+    expect(text()).toContain('Qwen3.5-9B fits this computer');
+    api.responses['ai.local.install'] = { ...ready, installing: true, total: 5_700_000_000 };
+    await clickButton(fixture, 'Download Qwen3.5-9B');
+    expect(api.calls.find((call) => call.operation === 'ai.local.install')?.payload).toEqual({
+      model: 'qwen3.5-9b',
+    });
+    // Without a GPU, the free memory of the computer.
+    api.responses['ai.local.status'] = { ...ready, devices: [], device: null };
+    await create({ ...ready, devices: [], device: null });
+    await clickButton(fixture, 'Measure again');
+    await until(() => state.toast()?.message === 'ai.local.measuredRam');
+    expect(state.toast()).toMatchObject({ params: { v0: '8192' } });
+  });
 });

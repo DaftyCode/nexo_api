@@ -1,5 +1,6 @@
 import {
   DEFAULT_AI_SETTINGS,
+  betterLocalModel,
   aiInstructions,
   aiKeyName,
   aiMissing,
@@ -155,5 +156,18 @@ describe('the AI assistant', () => {
     expect(byteSize(5_680_522_464)).toBe('5.7 GB');
     expect(byteSize(38_935_891)).toBe('39 MB');
     expect(byteSize(10)).toBe('1 MB');
+  });
+
+  it('offers a larger model of the catalog when it fits now, never a smaller one or over a file', () => {
+    const status = { model: 'qwen3.5-4b', recommended: 'qwen3.5-9b' } as Parameters<
+      typeof betterLocalModel
+    >[0];
+    expect(betterLocalModel(status)).toEqual({ id: 'qwen3.5-9b', name: 'Qwen3.5-9B' });
+    expect(betterLocalModel({ ...status, recommended: 'qwen3.5-4b' })).toBeUndefined();
+    expect(
+      betterLocalModel({ ...status, model: 'qwen3.5-9b', recommended: 'qwen3.5-4b' }),
+    ).toBeUndefined();
+    expect(betterLocalModel({ ...status, model: 'file' })).toBeUndefined();
+    expect(betterLocalModel({ ...status, recommended: null })).toBeUndefined();
   });
 });

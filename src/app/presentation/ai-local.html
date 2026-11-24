@@ -37,9 +37,15 @@
         }
       </dl>
       <p class="muted">{{ 'ai.local.fit' | transloco }}</p>
+      @if (better(); as better) {
+        <p role="status">{{ 'ai.local.better' | transloco: { v0: better.name } }}</p>
+        <button type="button" class="button primary" (click)="installModel(better.id)">
+          {{ 'ai.local.download' | transloco: { v0: better.name } }}
+        </button>
+      }
       <div class="button-grid">
-        <button type="button" class="button" (click)="load()">
-          {{ 'Measure again' | transloco }}
+        <button type="button" class="button" [disabled]="measuring()" (click)="measure()">
+          {{ (measuring() ? 'Measuring…' : 'Measure again') | transloco }}
         </button>
         <button type="button" class="text-button danger" (click)="remove()">
           {{ 'Delete the local model' | transloco }}

@@ -6,7 +6,7 @@
  */
 import { AiStep, readSteps } from './ai/tools';
 
-export { MODEL_SIZES, byteSize, localReady } from './ai/local';
+export { LOCAL_MODELS, MODEL_SIZES, betterLocalModel, byteSize, localReady } from './ai/local';
 export type { LocalAiStatus } from './ai/local';
 export { answerParts, codeActions, mongoQueryOf } from './ai/answer';
 export type { AiCodeAction, AiUse, AnswerPart } from './ai/answer';
