@@ -81,7 +81,7 @@
     "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
     "@vitest/coverage-v8": "5.1.0",
-    "angular-eslint": "22.7.0",
+    "angular-eslint": "22.8.0",
     "eslint": "10.15.0",
     "jsdom": "31.0.1",
     "mqtt-packet": "9.0.2",
