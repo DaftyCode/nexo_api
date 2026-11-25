@@ -66,7 +66,7 @@
     "@jsverse/transloco": "8.4.0",
     "@lezer/highlight": "1.2.5",
     "@tauri-apps/api": "2.12.5",
-    "@tauri-apps/cli": "2.12.5",
+    "@tauri-apps/cli": "2.12.6",
     "cm6-graphql": "1.0.0",
     "graphql": "17.1.0",
     "rxjs": "7.8.2",
