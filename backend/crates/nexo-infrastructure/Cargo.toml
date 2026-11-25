@@ -17,6 +17,6 @@ rusqlite.workspace = true
 keyring.workspace = true
 url = "2.5.8"
 # The time zone of this computer, daylight saving time included, for the monitors.
-jiff = "0.2.46"
+jiff = "1.0.2"
 [dev-dependencies]
 futures-util.workspace = true
